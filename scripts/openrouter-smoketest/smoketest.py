@@ -27,19 +27,31 @@ except ImportError:
     print("Missing dependency. Run: pip install -r requirements.txt", file=sys.stderr)
     sys.exit(1)
 
-ENV_FILE = Path(__file__).parent / ".env"
+SCRIPT_DIR = Path(__file__).parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+
+# Searched in order. The first file to define a variable wins, so a script-local .env
+# overrides the repo-root one rather than the other way round. Both are gitignored by
+# the bare `.env` rule in .gitignore, which matches at any depth.
+ENV_FILES = (SCRIPT_DIR / ".env", REPO_ROOT / ".env")
 
 
-def load_env_file(path: Path) -> None:
-    """Minimal .env loader so this script has no dependency beyond `openai`."""
+def load_env_file(path: Path) -> bool:
+    """Minimal .env loader so this script has no dependency beyond `openai`.
+
+    Returns True if the file existed and was read.
+    """
     if not path.exists():
-        return
+        return False
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        os.environ.setdefault(key.strip(), value.strip())
+        # setdefault: a real environment variable beats any file, and the first file
+        # in ENV_FILES beats later ones.
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+    return True
 
 
 def check_model(client: OpenAI, model_id: str, label: str) -> bool:
@@ -70,15 +82,26 @@ def check_model(client: OpenAI, model_id: str, label: str) -> bool:
 
 
 def main() -> int:
-    load_env_file(ENV_FILE)
+    loaded = [p for p in ENV_FILES if load_env_file(p)]
+    if loaded:
+        for p in loaded:
+            print(f"loaded env from: {p}")
+    else:
+        print("no .env file found (checked script dir and repo root)")
 
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not api_key:
+        searched = "\n".join(f"  - {p}" for p in ENV_FILES)
         print(
-            "OPENROUTER_API_KEY is not set. Copy .env.example to .env and fill it in.",
+            "OPENROUTER_API_KEY is not set.\n"
+            f"Searched:\n{searched}\n"
+            "Copy .env.example to either location and fill in the key, or export "
+            "OPENROUTER_API_KEY in your shell.",
             file=sys.stderr,
         )
         return 1
+    print(f"key loaded: ...{api_key[-4:]} ({len(api_key)} chars)")
+    print()
 
     client = OpenAI(
         base_url="https://openrouter.ai/api/v1",

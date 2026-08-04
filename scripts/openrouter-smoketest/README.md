@@ -44,6 +44,25 @@ pip install -r requirements.txt
 python smoketest.py
 ```
 
+### Where the .env can live
+
+Either location works. The script searches both, in this order:
+
+1. `scripts/openrouter-smoketest/.env` (script-local)
+2. `<repo root>/.env`
+
+The first file to define a variable wins, so a script-local `.env` overrides the
+root one. A real environment variable beats both. Both paths are covered by the bare
+`.env` rule in `.gitignore`, which matches at any depth, so neither can be committed.
+
+The script prints which file it loaded and the last four characters of the key, so a
+run that picks up the wrong file is visible immediately rather than failing
+mysteriously.
+
+The repo root is a perfectly reasonable place for it. `.env.example` lives in this
+directory rather than at the root only so that a root-level example does not imply the
+scoring library needs an API key: it does not, and only this script does.
+
 Prints, per model: latency, the model actually observed to respond (not just the one
 requested — useful since a provider can silently route to a different checkpoint),
 token counts, and the raw response text. Exits non-zero if either call fails.
