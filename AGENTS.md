@@ -85,21 +85,31 @@ that point. Today it would be a dependency with nothing to route.
 
 ## Open items
 
-**Repository location conflicts with canon, and the right answer is not obvious.**
+**Repository location: a deliberate, owner-approved departure from canon.**
+
 `canon/guides/project-structure.md` states repos MUST be under the `ObjectiveFunction`
 org, MUST be private, and must never sit on a personal account. This repository is
-**private** (satisfied) but lives at `tkhongsap/model-eval-harness` (violated).
+**private** (satisfied) but lives at `tkhongsap/model-eval-harness` (a departure).
 
-Three options, none clearly correct:
+**Decision, 2026-08-04, by the owner: stay on the private personal account.** The
+alternative that canon prescribes, `ObjectiveFunction`, is the studio org, so moving
+there would relocate True Corp work product into a studio namespace: a different
+governance question rather than a fix. Moving to True's own GitHub Enterprise is
+plausibly the right long-term home and remains blocked on the licence and org
+questions tracked separately.
 
-1. **Leave it.** Violates canon. Simplest, and the repo is private.
-2. **Move to `ObjectiveFunction`.** Canon-compliant, but puts True Corp work product
-   into the studio org, which is a different governance question rather than a fix.
-3. **Move to True's GitHub Enterprise.** Probably correct on ownership grounds, and
-   blocked on the licence and org questions tracked separately.
+Recorded rather than left implicit so a later reader can tell this was weighed and
+settled, not overlooked. Two conditions that make it defensible, and that should be
+re-checked if either changes:
 
-The repository cites internal SharePoint site names, production file paths and line
-numbers. It contains no customer data. **Owner decision, deliberately unresolved here.**
+- The repository **must stay private**. It cites internal SharePoint site names,
+  production file paths and line numbers.
+- It contains **no customer data**, and the controls in `keys.py`, `paths.py` and
+  `.gitignore` exist to keep it that way. Fixture phone numbers are the synthetic
+  `08100000xx` range.
+
+Revisit if the True GitHub Enterprise org becomes available, or if anyone outside
+True needs access.
 
 **No linter, type checker or `pyproject.toml`.** Canon's Python CI template expects
 ruff, mypy and a `pyproject.toml` under `backend/`. This repository has none. CI runs
