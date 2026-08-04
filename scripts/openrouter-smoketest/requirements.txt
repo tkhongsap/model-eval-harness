@@ -1,0 +1,4 @@
+# Intentionally separate from the repo's root requirements.txt, which is pinned to
+# True's production dependency versions for the differential test and must not carry
+# unrelated packages.
+openai>=1.0

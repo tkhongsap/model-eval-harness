@@ -12,7 +12,9 @@
 - **Language**: Python 3.12, standard library only for the scoring path
 - **Backend**: none. This is a library plus a test suite, not a service. No HTTP, no
   database, no deployment target.
-- **AI/ML**: **none, deliberately.** See "Service layers do not apply" below.
+- **AI/ML**: **the scoring library makes none, deliberately.** `scripts/` carries one
+  exploratory exception, an OpenRouter pipe test, kept out of `src/`. See "Service
+  layers do not apply" below.
 - **Auth**: none. The one secret is `EVAL_HARNESS_KEY_HMAC`, which salts item keys and
   is held by True's team, never by this repository.
 - **External integrations**: none at runtime. The test suite optionally reaches True's
@@ -33,6 +35,8 @@
 - `src/evalharness/adapters/retention.py`: **the only file that changes when real data arrives.**
 - `tests/fixtures/WORKED-COMPUTATION.md`: the hand arithmetic every expectation comes from.
 - `tests/production_ref.py`: test-only scaffolding to import True's real scorer.
+- `scripts/openrouter-smoketest/`: exploratory model-calling tooling. See "Service
+  layers do not apply" below for why it lives outside `src/`.
 
 ## Conventions
 
@@ -48,19 +52,28 @@
   whether the fixture is wrong, not the code. Changing an expectation to match output
   destroys the only thing that makes the numbers credible.
 
-## Service layers do not apply, and here is why
+## Service layers do not apply to the scoring library, and here is why
 
 Canon mandates OpenRouter for AI routing, WorkOS for identity, and Composio for tool
-execution. **None applies here, and their absence is not an oversight.**
+execution. **None applies to `src/evalharness/`, and their absence there is not an
+oversight.**
 
-| Layer | Status | Reason |
+| Layer | Status in `src/` | Reason |
 |---|---|---|
-| OpenRouter | not used | This package makes **no model calls at all**. It scores outputs produced elsewhere. `google.genai` appears only as a stub in test scaffolding, never as a dependency. |
+| OpenRouter | not used | The scoring library makes **no model calls at all**. It scores outputs produced elsewhere. `google.genai` appears only as a stub in test scaffolding, never as a dependency. |
 | WorkOS | not used | No users, no sessions, no HTTP surface. |
 | Composio | not used | No external API execution. |
 
-If a future version runs candidate models directly, OpenRouter becomes mandatory at
-that point. Today it would be a dependency with nothing to route.
+**`scripts/openrouter-smoketest/` is the one deliberate exception, and it proves the
+rule rather than breaking it.** It exists to answer one question, whether an OpenRouter
+key works through the OpenAI SDK, before any real candidate-generation work happens. It
+is exploratory tooling: separate `requirements.txt`, own `.env.example`, no import from
+`src/evalharness/`, and it produces no scored output. Per canon, since it does make a
+model call, it correctly routes through OpenRouter rather than a provider SDK directly.
+
+If a future version runs candidate models as part of a real evaluation pipeline (not
+just a pipe test), that is new work with its own review, not an extension of this
+script, and OpenRouter becomes a real dependency of `src/` at that point.
 
 ## Cross-Project References
 
