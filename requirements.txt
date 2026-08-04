@@ -1,0 +1,9 @@
+# Pinned to production's own versions (sentiment-batch-retention-main/requirements.txt).
+# NOT cosmetic: under pandas 3.x the dtype=='object' guard in pre_process (:734,:738)
+# is False, normalisation never fires, and call_result accuracy collapses from 0.75
+# to 0.25 with all weights zeroed. The differential test skips rather than compare
+# against a broken production.
+pandas==2.3.3
+numpy==2.3.4
+openpyxl==3.1.5
+pytest

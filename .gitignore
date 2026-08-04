@@ -1,0 +1,117 @@
+# ===================================================================
+# DATA: deny by default.
+#
+# This harness scores model outputs against human labels for True's
+# call-centre apps. The ground-truth workbooks carry customer phone
+# numbers and verbatim call-content snippets. Nothing derived from
+# them may ever be committed.
+#
+# These rules ignore DIRECTORIES, not extensions, on purpose: a pandas
+# pipeline emits .parquet, .jsonl, .feather and .ipynb as readily as
+# .csv, and a notebook's stored cell outputs embed real rows. An
+# extension allowlist leaks the first time someone uses a new format.
+#
+# There are deliberately NO negation exceptions. An exception is a
+# hole, and there is nothing in these directories worth tracking.
+#
+# The real control is the runtime refusal in src/evalharness/paths.py:
+# EVAL_HARNESS_DATA_DIR has no default and must resolve OUTSIDE any
+# git worktree. This file is the second line of defence.
+# ===================================================================
+data/
+out/
+build/
+*.xlsm
+
+# Belt and braces: raw workbooks and extracts anywhere in the tree.
+# tests/fixtures/*.csv is synthetic (08100000xx) and IS tracked, so
+# csv is not blanket-ignored; the data/ rule above covers real ones.
+**/ground_truth*.xlsx
+**/Post Evaluate*
+**/*_PRIVATE.*
+**/*NAMED-PRIVATE*
+
+# ===================================================================
+# Secrets
+# EVAL_HARNESS_KEY_HMAC salts the item key. True's team holds it and
+# resolves hashes back to calls inside their systems. It never lives here.
+# ===================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+**/secrets/
+
+# ===================================================================
+# Python
+# ===================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+pip-log.txt
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ===================================================================
+# Jupyter: outputs embed DataFrame reprs of real rows
+# ===================================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ===================================================================
+# IDE and editors
+# ===================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ===================================================================
+# OS
+# ===================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===================================================================
+# Logs, temp, scratch
+# ===================================================================
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+Untitled.*
+~$*
