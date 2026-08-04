@@ -35,6 +35,21 @@ REPO_ROOT = SCRIPT_DIR.parent.parent
 # the bare `.env` rule in .gitignore, which matches at any depth.
 ENV_FILES = (SCRIPT_DIR / ".env", REPO_ROOT / ".env")
 
+# Accepted spellings for the key, in priority order. More than one exists because the
+# obvious name is not the only obvious name: a key stored as OPEN_ROUTER_API is a
+# perfectly reasonable guess, and failing with "not set" while the key sits in the
+# file is a worse outcome than accepting a synonym.
+API_KEY_VARS = ("OPENROUTER_API_KEY", "OPEN_ROUTER_API", "OPENROUTER_KEY")
+
+
+def find_api_key() -> tuple[str, str] | tuple[None, None]:
+    """Return (value, variable_name_it_came_from), or (None, None)."""
+    for name in API_KEY_VARS:
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value, name
+    return None, None
+
 
 def load_env_file(path: Path) -> bool:
     """Minimal .env loader so this script has no dependency beyond `openai`.
@@ -89,18 +104,19 @@ def main() -> int:
     else:
         print("no .env file found (checked script dir and repo root)")
 
-    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    api_key, key_var = find_api_key()
     if not api_key:
         searched = "\n".join(f"  - {p}" for p in ENV_FILES)
+        names = ", ".join(API_KEY_VARS)
         print(
-            "OPENROUTER_API_KEY is not set.\n"
-            f"Searched:\n{searched}\n"
-            "Copy .env.example to either location and fill in the key, or export "
-            "OPENROUTER_API_KEY in your shell.",
+            f"No OpenRouter key found. Looked for any of: {names}\n"
+            f"In these files:\n{searched}\n"
+            "Add one to a .env in either location, or export it in your shell. "
+            "See .env.example at the repo root.",
             file=sys.stderr,
         )
         return 1
-    print(f"key loaded: ...{api_key[-4:]} ({len(api_key)} chars)")
+    print(f"key loaded from {key_var}: ...{api_key[-4:]} ({len(api_key)} chars)")
     print()
 
     client = OpenAI(
