@@ -1,0 +1,52 @@
+# CI for model-eval-harness
+#
+# Adapted from canon templates/github-actions/ci-python.yml. Every deviation is
+# listed here rather than silently dropped, so the gaps are visible:
+#
+#   1. NO `working-directory: backend`. This repo is a library at the root, not a
+#      service with a backend/ directory.
+#   2. NO `pip install -e ".[dev]"`. There is no pyproject.toml. Dependencies come
+#      from requirements.txt, whose pins mirror the production app EXACTLY and are
+#      load-bearing: under pandas 3.x the production scorer's dtype guard stops
+#      firing and call_result accuracy collapses from 0.75 to 0.25.
+#   3. NO ruff step. No linter is configured yet. Tracked in AGENTS.md > Open items.
+#   4. NO mypy step. No type checker is configured yet. Same tracking.
+#   5. TRUE_SOURCE_ROOT is deliberately unset. True's production source is not
+#      available to CI, so the differential test SKIPS here. CI therefore proves
+#      LESS than a local run: it shows the harness is internally consistent, not
+#      that it agrees with production. Expected: 82 passed, 11 skipped.
+#
+# Items 3 and 4 are real gaps against canon, not decisions. Closing them means
+# adding a pyproject.toml, which is a build change rather than documentation.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Confirm the pins actually installed
+        run: |
+          python -c "import pandas, numpy, openpyxl; print(f'pandas {pandas.__version__} numpy {numpy.__version__} openpyxl {openpyxl.__version__}')"
+
+      - name: Run tests
+        run: pytest tests/ -q -rs
