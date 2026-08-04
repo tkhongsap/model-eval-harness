@@ -71,8 +71,35 @@ Prints, per model: latency, the model actually observed to respond (not just the
 requested — useful since a provider can silently route to a different checkpoint),
 token counts, and the raw response text. Exits non-zero if either call fails.
 
-**Not yet run.** This was written before a key was available. Run it and confirm both
-models PASS before relying on it for anything.
+## Result, 2026-08-04
+
+Both models reachable and answering. Run against a live key:
+
+| | requested | observed | latency | tokens (reasoning / visible) | cost |
+|---|---|---|---|---|---|
+| incumbent | `google/gemini-3.6-flash` | same | 2.61s | 86 (85 / **1**) | $0.000656 |
+| candidate | `qwen/qwen3.7-flash` | same | 1.89s | 155 (149 / **6**) | $0.000021 |
+
+**Both defaults are reasoning models, and that is the finding worth carrying forward.**
+A one-word answer cost 85 and 149 tokens of internal reasoning respectively. Visible
+output was 1 and 6 tokens.
+
+The first version of this script used `max_tokens=10` and reported **PASS for both
+while content was empty**: the entire budget went to reasoning, `finish_reason` came
+back `"length"`, and the models never got to answer. The test passed because its only
+criterion was that the HTTP call did not raise.
+
+Two things changed as a result:
+
+- `MAX_TOKENS = 2000`, because for a reasoning model a small budget is not a
+  conservative setting, it is a guarantee of empty output.
+- **PASS now requires non-empty content**, and a length-truncated empty response
+  reports FAIL naming the reasoning-token count. An eval harness whose smoke test can
+  pass without a model saying anything is not a useful smoke test.
+
+Cost note: gemini-3.6-flash was **31x** more expensive than qwen3.7-flash for the same
+one-word answer, driven mostly by reasoning tokens. Worth knowing before sizing a real
+evaluation run over hundreds of call transcripts.
 
 ## What this is not
 

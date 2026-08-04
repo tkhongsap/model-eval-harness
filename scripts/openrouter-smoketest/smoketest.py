@@ -69,6 +69,17 @@ def load_env_file(path: Path) -> bool:
     return True
 
 
+# Both current defaults are REASONING models: they spend completion tokens on internal
+# reasoning before emitting any content. Measured on a one-word prompt, gemini-3.6-flash
+# burned 96 reasoning tokens and qwen3.7-flash burned 177, for a two-character answer.
+#
+# The first version of this script used max_tokens=10 and reported PASS for both while
+# content came back empty and finish_reason was "length": the whole budget went to
+# reasoning and nothing was left to answer with. A budget this large is not generosity,
+# it is the minimum that lets a reasoning model finish thinking and then speak.
+MAX_TOKENS = 2000
+
+
 def check_model(client: OpenAI, model_id: str, label: str) -> bool:
     print(f"--- {label}: {model_id} ---")
     start = time.monotonic()
@@ -78,21 +89,51 @@ def check_model(client: OpenAI, model_id: str, label: str) -> bool:
             messages=[
                 {"role": "user", "content": "Reply with exactly one word: OK"}
             ],
-            max_tokens=10,
+            max_tokens=MAX_TOKENS,
         )
     except Exception as exc:  # noqa: BLE001 - report whatever OpenRouter/HTTP gives us
         print(f"  FAILED: {type(exc).__name__}: {exc}")
         return False
 
     elapsed = time.monotonic() - start
-    text = (response.choices[0].message.content or "").strip()
+    choice = response.choices[0]
+    text = (choice.message.content or "").strip()
     observed_model = response.model  # what actually answered, not what we requested
-    print(f"  OK in {elapsed:.2f}s")
+    print(f"  responded in {elapsed:.2f}s")
     print(f"  requested model : {model_id}")
     print(f"  observed model  : {observed_model}")
+    print(f"  finish_reason   : {choice.finish_reason}")
     print(f"  response        : {text!r}")
+
+    reasoning_tokens = None
     if response.usage:
-        print(f"  tokens          : in={response.usage.prompt_tokens} out={response.usage.completion_tokens}")
+        details = getattr(response.usage, "completion_tokens_details", None)
+        reasoning_tokens = getattr(details, "reasoning_tokens", None) if details else None
+        line = (
+            f"  tokens          : in={response.usage.prompt_tokens} "
+            f"out={response.usage.completion_tokens}"
+        )
+        if reasoning_tokens:
+            visible = response.usage.completion_tokens - reasoning_tokens
+            line += f" (reasoning={reasoning_tokens}, visible={visible})"
+        print(line)
+        cost = getattr(response.usage, "cost", None)
+        if cost is not None:
+            print(f"  cost            : ${cost:.6f}")
+
+    # PASS requires an actual answer, not merely an HTTP 200. A reasoning model that
+    # spends its whole budget thinking returns finish_reason="length" with empty
+    # content, which is a failure however successful the request looked.
+    if not text:
+        print("  FAILED: no content returned.")
+        if choice.finish_reason == "length":
+            print(
+                f"          finish_reason is 'length' and reasoning used "
+                f"{reasoning_tokens} tokens: the model never got to answer. "
+                f"Raise MAX_TOKENS (currently {MAX_TOKENS})."
+            )
+        return False
+
     return True
 
 
