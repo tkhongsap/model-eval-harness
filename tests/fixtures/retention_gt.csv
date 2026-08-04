@@ -1,0 +1,11 @@
+call_id,phone_number,product,call_result,main,secondary,third
+5001,0810000001,postpaid,save,network,,
+5002,0810000002,postpaid,churn,save cost,network,
+5003,0810000003,tol,Save,Network,,
+5004,0810000004,postpaid,unknown,contract end,,
+5005,0,tvs,save,other,,
+5006,0810000006,postpaid,save,network,,
+5006,0810000006,tol,churn,save cost,,
+5007,0810000007,postpaid,save,"network, save cost",,
+5008,0810000008,postpaid,churn,promotion related,,
+5010,0810000010,postpaid,undefined,other,,

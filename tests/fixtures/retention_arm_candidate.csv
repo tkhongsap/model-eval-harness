@@ -1,0 +1,10 @@
+call_id,phone_number,product,call_result,main,secondary,third,parse_ok
+5001,0810000001,postpaid,save,network,,,true
+5002,0810000002,postpaid,churn,save cost,network,,true
+5003,0810000003,tol,save,network,,,true
+5005,0,tvs,churn,other,,,true
+5006,0810000006,postpaid,save,network,,,true
+5006,0810000006,tol,churn,save cost,,,true
+5007,0810000007,postpaid,save,network,,,true
+5008,0810000008,postpaid,,,,,false
+5010,0810000010,postpaid,undefined,other,,,true

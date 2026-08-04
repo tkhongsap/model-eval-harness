@@ -1,0 +1,10 @@
+call_id,phone_number,product,call_result,main,secondary,third,parse_ok
+5001,0810000001,,,,,,false
+5002,0810000002,,,,,,false
+5003,0810000003,,,,,,false
+5004,0810000004,,,,,,false
+5005,0,,,,,,false
+5006,0810000006,,,,,,false
+5007,0810000007,,,,,,false
+5008,0810000008,,,,,,false
+5010,0810000010,,,,,,false

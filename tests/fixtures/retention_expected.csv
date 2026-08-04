@@ -1,0 +1,23 @@
+dimension,label,tp,fp,fn,tn,weight,accuracy,precision,recall,f1
+call_result,save,5,2,0,3,5,0.8000,0.7143,1.0000,0.8333
+call_result,churn,2,0,1,7,3,0.9000,1.0000,0.6667,0.8000
+call_result,unknown,0,0,1,9,1,0.9000,0.0000,0.0000,0.0000
+call_result,undefined,0,0,1,9,1,0.9000,0.0000,0.0000,0.0000
+call_result,weighted_avg,7,2,3,28,10,0.8500,0.6571,0.7000,0.6567
+reason,network,4,2,1,4,5,0.7273,0.6667,0.8000,0.7273
+reason,promotion related,1,0,0,10,1,1.0000,1.0000,1.0000,1.0000
+reason,device promotion related,0,0,0,11,0,1.0000,0.0000,0.0000,0.0000
+reason,save cost,3,0,0,8,3,1.0000,1.0000,1.0000,1.0000
+reason,contract end,0,0,1,10,1,0.9091,0.0000,0.0000,0.0000
+reason,sale upsell problem,0,0,0,11,0,1.0000,0.0000,0.0000,0.0000
+reason,dissatisfied service,0,0,0,11,0,1.0000,0.0000,0.0000,0.0000
+reason,other,1,0,1,9,2,0.9091,1.0000,0.5000,0.6667
+reason,post to pre,0,0,0,11,0,1.0000,0.0000,0.0000,0.0000
+reason,customer reason,0,0,0,11,0,1.0000,0.0000,0.0000,0.0000
+reason,down sell not success,0,0,0,11,0,1.0000,0.0000,0.0000,0.0000
+reason,weighted_avg,9,2,3,107,12,0.8636,0.7778,0.7500,0.7475
+product,postpaid,6,1,1,1,7,0.7778,0.8571,0.8571,0.8571
+product,tol,2,0,0,7,2,1.0000,1.0000,1.0000,1.0000
+product,tvs,0,0,0,9,0,1.0000,0.0000,0.0000,0.0000
+product,unknown,0,0,0,9,0,1.0000,0.0000,0.0000,0.0000
+product,weighted_avg,8,1,1,26,9,0.8272,0.8889,0.8889,0.8889
