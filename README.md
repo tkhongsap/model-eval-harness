@@ -1,9 +1,29 @@
-# eval-harness
+# model-eval-harness
 
 Scores model outputs against human labels for the Gemini to self-hosted migration.
 **Retention app only** for now.
 
-It does not run models. Anan's team runs both arms; this scores what they produce.
+It does not run models. The app team runs both arms; this scores what they produce.
+
+> ⚠️ **No number from this harness is a migration verdict yet.** Every report prints
+> `RECONCILED: NO` until a run has been checked against the app's own live Gemini
+> fact-check report. See [What it cannot prove](#what-it-cannot-prove).
+
+## Documentation
+
+| If you need... | Read this |
+|---|---|
+| Project context, architecture, open items | [AGENTS.md](./AGENTS.md) |
+| Working here with Claude Code | [CLAUDE.md](./CLAUDE.md) |
+| How to run the tests, and what they prove | [TESTING.md](./TESTING.md) |
+| What changed, and when | [CHANGELOG.md](./CHANGELOG.md) |
+| What is being worked on now, and what is next | [DEVLOG.md](./DEVLOG.md) |
+| How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |
+| The arithmetic every expectation comes from | [WORKED-COMPUTATION.md](./tests/fixtures/WORKED-COMPUTATION.md) |
+
+Cross-project standards live in **canon** and are linked from `AGENTS.md`, never
+restated here.
 
 ## What it proves today, with zero real data
 
