@@ -21,6 +21,7 @@ It does not run models. The app team runs both arms; this scores what they produ
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |
 | The arithmetic every expectation comes from | [WORKED-COMPUTATION.md](./tests/fixtures/WORKED-COMPUTATION.md) |
+| Test an OpenRouter API key via the OpenAI SDK | [scripts/openrouter-smoketest/](./scripts/openrouter-smoketest/) — exploratory, **not part of the scorer** ([why](./AGENTS.md#service-layers-do-not-apply-to-the-scoring-library-and-here-is-why)) |
 
 Cross-project standards live in **canon** and are linked from `AGENTS.md`, never
 restated here.
