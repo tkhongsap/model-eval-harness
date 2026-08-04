@@ -21,6 +21,14 @@ import sys
 import time
 from pathlib import Path
 
+# Windows consoles default to a legacy codepage (cp874 for Thai locales), which raises
+# UnicodeEncodeError on any character outside it. That is fatal here for two reasons:
+# a model may return an emoji, and more importantly the real evaluation data is THAI.
+# A script that dies when a model speaks Thai is useless for this project.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 try:
     from openai import OpenAI
 except ImportError:
@@ -137,6 +145,65 @@ def check_model(client: OpenAI, model_id: str, label: str) -> bool:
     return True
 
 
+def check_thai(client: OpenAI, model_id: str, label: str) -> tuple[bool, bool]:
+    """Round-trip Thai text. The evaluation corpus is Thai call content, so a suite
+    that only sends ASCII proves nothing about the workload that matters.
+
+    Returns (thai_survived_the_pipe, reproduced_exactly).
+    """
+    thai = "ลูกค้าต้องการยกเลิกบริการเพราะสัญญาณไม่ดี"
+    try:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=[{
+                "role": "user",
+                "content": f"Repeat this Thai sentence back exactly, nothing else:\n{thai}",
+            }],
+            max_tokens=MAX_TOKENS,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"  {label:12s} FAILED: {type(exc).__name__}: {exc}")
+        return False, False
+
+    text = (response.choices[0].message.content or "").strip()
+    if not text:
+        finish = response.choices[0].finish_reason
+        print(f"  {label:12s} FAILED: empty response (finish_reason={finish})")
+        return False, False
+
+    has_thai = any("฀" <= ch <= "๿" for ch in text)
+
+    # Exact means EQUAL, not "contains". Substring containment silently passes a reply
+    # that duplicated a leading character, which is exactly what one model did here:
+    # the original is a substring of the corrupted output, so `thai in text` was True
+    # while the strings differed. For a transcription comparison that distinction is
+    # the entire point.
+    exact = text == thai
+
+    if exact:
+        status = "exact match"
+    elif has_thai:
+        status = f"Thai returned but NOT exact (got {len(text)} chars, expected {len(thai)})"
+    else:
+        status = "NO THAI CHARACTERS"
+
+    print(f"  {label:12s} {model_id}")
+    print(f"               {status}")
+    print(f"               {text[:70]!r}")
+    if has_thai and not exact:
+        # Show the first divergence so the difference is inspectable rather than implied.
+        for i, (a, b) in enumerate(zip(thai, text)):
+            if a != b:
+                print(f"               first difference at char {i}: expected {a!r}, got {b!r}")
+                break
+
+    # Two-part verdict on purpose. "Thai survived the pipe" is a plumbing question;
+    # "Thai came back faithfully" is a quality one. Collapsing them into a single PASS
+    # would hide a model returning fluent-looking but corrupted Thai, which is the
+    # failure mode that matters most for a Thai call-centre migration.
+    return has_thai, exact
+
+
 def main() -> int:
     loaded = [p for p in ENV_FILES if load_env_file(p)]
     if loaded:
@@ -171,17 +238,44 @@ def main() -> int:
     )
 
     models = {
-        "incumbent": os.environ.get("OPENROUTER_MODEL_INCUMBENT", "google/gemini-3.6-flash"),
-        "candidate": os.environ.get("OPENROUTER_MODEL_CANDIDATE", "qwen/qwen3.7-flash"),
+        "incumbent": os.environ.get("OPENROUTER_MODEL_INCUMBENT", "google/gemini-2.5-flash"),
+        "candidate": os.environ.get("OPENROUTER_MODEL_CANDIDATE", "qwen/qwen3.6-27b"),
+        "candidate_2": os.environ.get("OPENROUTER_MODEL_CANDIDATE_2", "google/gemma-4-26b-a4b-it"),
     }
 
     results = {label: check_model(client, model_id, label) for label, model_id in models.items()}
+
+    # Thai round-trip. The real evaluation data is Thai call content, so a suite that
+    # only ever sends ASCII proves nothing about the workload that matters.
+    print()
+    print("=== Thai round-trip ===")
+    thai_results = {}
+    for label, model_id in models.items():
+        thai_results[label] = check_thai(client, model_id, label)
+
     print()
     print("=== summary ===")
     for label, ok in results.items():
-        print(f"  {label}: {'PASS' if ok else 'FAIL'}")
+        print(f"  {label:14s} reachable   : {'PASS' if ok else 'FAIL'}")
+    for label, (has_thai, exact) in thai_results.items():
+        if has_thai and exact:
+            verdict = "PASS (exact)"
+        elif has_thai:
+            verdict = "PASS pipe / **CORRUPTED** text -- returned Thai, but not what was sent"
+        else:
+            verdict = "FAIL (no Thai returned)"
+        print(f"  {label:14s} thai        : {verdict}")
 
-    return 0 if all(results.values()) else 1
+    if any(has_thai and not exact for has_thai, exact in thai_results.values()):
+        print()
+        print("NOTE: a model returned Thai that does not match what was sent. Single")
+        print("      sample, default temperature, so this is a signal to investigate,")
+        print("      not a benchmark result. But for a Thai call-centre migration it is")
+        print("      exactly the failure mode worth measuring properly.")
+
+    reachable_ok = all(results.values())
+    thai_ok = all(has_thai for has_thai, _ in thai_results.values())
+    return 0 if (reachable_ok and thai_ok) else 1
 
 
 if __name__ == "__main__":

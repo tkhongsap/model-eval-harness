@@ -71,35 +71,91 @@ Prints, per model: latency, the model actually observed to respond (not just the
 requested — useful since a provider can silently route to a different checkpoint),
 token counts, and the raw response text. Exits non-zero if either call fails.
 
-## Result, 2026-08-04
+## Correction, 2026-08-04
 
-Both models reachable and answering. Run against a live key:
+An earlier version of this file claimed OpenRouter carried **no** Gemini 2.5 Flash,
+**no** Qwen 27B, and **no** Gemma models at all. **All three claims were wrong.**
 
-| | requested | observed | latency | tokens (reasoning / visible) | cost |
-|---|---|---|---|---|---|
-| incumbent | `google/gemini-3.6-flash` | same | 2.61s | 86 (85 / **1**) | $0.000656 |
-| candidate | `qwen/qwen3.7-flash` | same | 1.89s | 155 (149 / **6**) | $0.000021 |
+They came from scraping the `/models` page through a summarising fetch, which silently
+dropped entries from a 338-model list. Querying the API directly with a real key
+returns all of them. The lesson is recorded here because it nearly redirected the whole
+model selection: **query the endpoint, do not scrape and summarise it.**
 
-**Both defaults are reasoning models, and that is the finding worth carrying forward.**
-A one-word answer cost 85 and 149 tokens of internal reasoning respectively. Visible
-output was 1 and 6 tokens.
+```bash
+curl -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+     https://openrouter.ai/api/v1/models | jq -r '.data[].id' | grep -i gemma
+```
 
-The first version of this script used `max_tokens=10` and reported **PASS for both
-while content was empty**: the entire budget went to reasoning, `finish_reason` came
-back `"length"`, and the models never got to answer. The test passed because its only
-criterion was that the HTTP call did not raise.
+## Models, verified live 2026-08-04
 
-Two things changed as a result:
+| Role | Model | Context | Input modalities | $/Mtok in/out |
+|---|---|---|---|---|
+| incumbent | `google/gemini-2.5-flash` | 1,048,576 | file, image, text, **audio**, video | 0.300 / 2.500 |
+| candidate | `qwen/qwen3.6-27b` | 262,144 | text, image, video | 0.289 / 2.400 |
+| candidate_2 | `google/gemma-4-26b-a4b-it` | 262,144 | image, text, video | 0.070 / 0.340 |
 
-- `MAX_TOKENS = 2000`, because for a reasoning model a small budget is not a
-  conservative setting, it is a guarantee of empty output.
-- **PASS now requires non-empty content**, and a length-truncated empty response
-  reports FAIL naming the reasoning-token count. An eval harness whose smoke test can
-  pass without a model saying anything is not a useful smoke test.
+Gemma sizing note: **`gemma-4-12b-it` does not exist.** Gemma 4 comes in `26b-a4b` and
+`31b`; the only 12B is Gemma *3* (`google/gemma-3-12b-it`, and the cheapest of the lot
+at 0.050/0.150).
 
-Cost note: gemini-3.6-flash was **31x** more expensive than qwen3.7-flash for the same
-one-word answer, driven mostly by reasoning tokens. Worth knowing before sizing a real
-evaluation run over hundreds of call transcripts.
+### ASR is not available here
+
+`qwen/qwen3-asr-flash-2026-02-10` is **not in the catalog**, and neither is any other
+Qwen ASR model. Searching all 338 entries for `asr|speech|transcribe|whisper|audio`
+returns exactly two, both OpenAI: `openai/gpt-audio` and `openai/gpt-audio-mini`.
+
+So the Thai ASR track cannot be exercised through OpenRouter. Self-hosting Qwen3-ASR on
+the internal GPU was the plan regardless.
+
+## The modality gap, in one row of that table
+
+**`gemini-2.5-flash` accepts audio. `qwen3.6-27b` does not.**
+
+That is the migration problem stated precisely. Production sends a `.wav` to Gemini and
+gets structured JSON back in one call. The candidate cannot receive audio at all, so a
+separate ASR step and a transcript artifact have to exist, and neither exists today.
+The source-code review reached the same conclusion from the other direction; this is
+the first time it has been confirmed against the serving APIs themselves.
+
+## Findings from the runs
+
+**1. Both `qwen3.6-27b` and the earlier `3.7-flash` are reasoning models; `gemini-2.5-flash`
+is not.** On a one-word prompt, qwen3.6-27b spent 105 reasoning tokens for 16 visible
+ones. gemini-2.5-flash returned 1 token total and cost $0.000005, against $0.000233 for
+qwen: **the incumbent was ~47x cheaper than the candidate here**, the opposite of the
+usual assumption, entirely because of reasoning overhead.
+
+**2. The first version of this script reported PASS on empty responses.** With
+`max_tokens=10`, reasoning consumed the whole budget, `finish_reason` came back
+`"length"`, and no content was ever emitted. It passed because its only criterion was
+that the HTTP call did not raise. Now `MAX_TOKENS = 2000` and **PASS requires non-empty
+content**.
+
+**3. The script crashed on non-ASCII output.** A model returned an emoji and Windows'
+cp874 console encoding raised `UnicodeEncodeError`. **The real evaluation data is Thai**,
+so a script that dies on non-ASCII is useless for this project. Fixed by reconfiguring
+stdout to UTF-8, and a Thai round-trip check was added, because a suite that only ever
+sends ASCII proves nothing about the workload that matters.
+
+**4. `qwen3.6-27b` returned three different results for the same Thai prompt across
+three runs.** Default temperature, identical input:
+
+| run | result |
+|---|---|
+| 1 | **corrupted**: `ลลูกค้าตึงการยกเลิกบรการเพราะสญญญาณไม่ดี` — dropped and duplicated Thai vowel marks (`ต้องการ`→`ตึงการ`, `บริการ`→`บรการ`, `สัญญาณ`→`สญญญาณ`) |
+| 2 | **empty response** |
+| 3 | exact match |
+
+`gemini-2.5-flash` and `gemma-4-26b-a4b-it` were exact on every run.
+
+**This is n=3 at default temperature, so it is a signal to investigate, not a
+benchmark.** But a candidate that cannot reliably echo a 41-character Thai sentence is
+worth measuring properly before it scores call transcripts, and it is exactly the kind
+of variance the evaluation framework's noise-floor work exists to quantify.
+
+**5. Exactness must mean equality, not containment.** The first version of the Thai
+check used `expected in returned`, which passed the corrupted run above: the original
+is a substring of `ลลูกค้า...`. Substring containment is not a transcription check.
 
 ## What this is not
 
