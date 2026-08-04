@@ -77,8 +77,13 @@ silently stopped firing.
 ### 4. Customer data cannot reach the repository
 
 ```bash
-git check-ignore -q data/gt.xlsx data/preds.parquet data/notes.ipynb out/report.html && echo IGNORED
+# git check-ignore -q accepts only ONE path, so loop rather than listing them
+for f in data/gt.xlsx data/preds.parquet data/notes.ipynb out/report.html build/x.py; do
+  git check-ignore -q "$f" && echo "IGNORED  $f" || echo "LEAK     $f"
+done
+
 .venv/Scripts/python -m pytest tests/test_paths.py tests/test_compare.py -q -k "refus or shareable or worktree"
+
 git grep -ohE "\b0[689][0-9]{8}\b" | sort -u        # must be 08100000xx only
 ```
 
