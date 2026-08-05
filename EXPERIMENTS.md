@@ -332,7 +332,115 @@ pseudonymises invented identifiers only.
 
 ---
 
-## Experiment 3 — *not started*
+## Experiment 3 — 100 items, and the lead that turned out to be noise
+
+**Date:** 2026-08-05
+**Question:** Does the candidate's advantage on `reason` survive five times the data?
+
+**Prediction, stated before the run** (per the standing instruction at the foot of
+Experiment 1): if the `reason` net of +5/+6 were real, it should hold or grow at ~110
+scored rows. If it were small-sample noise, it should shrink toward zero.
+
+### What was run
+
+| # | Run | Model | Provider | Prompt | Result |
+|---|---|---|---|---|---|
+| 3.1 | v2-incumbent | gemini-2.5-flash | Google | `v9_16_base` | 300/300 ok |
+| 3.2 | v2-candidate | qwen3.6-27b | Morph | `v9_16_base` | 300/300 ok |
+
+`retention_v2.jsonl`: 100 items, 108 scored rows. 3 replicates. Decoding unchanged and
+identical across arms. Pin held: **100/100 items returned exactly one `prompt_tokens`
+value** on both arms. No parse failures, no truncation, no empty responses on either side.
+
+### Result
+
+**The candidate's `reason` lead was noise. It reversed.**
+
+| dimension | net at 22 rows | **net at 108 rows** | Gemini F1 | Qwen F1 |
+|---|---|---|---|---|
+| call_result | +1 | **+1** | 0.937 | **0.957** |
+| reason | +2 … +6 | **-1** | **0.787** | 0.759 |
+| product | 0 | **-2** | **0.945** | 0.915 |
+
+At 22 rows `reason` net read +3, then +5, then +4, then +6 — brushing the pre-registered
+AHEAD threshold. At 108 rows it is **-1**, and weighted F1 puts the incumbent ahead on
+that dimension. Every margin is now within 2 items. **The prediction that distinguishes
+signal from noise came out on the noise side**, and the number that would have been
+quoted in a migration memo was measuring nothing.
+
+This is the finding. It is also the clearest available argument for having expanded, and
+against having trusted the 22-row figures — including in this file, where they were
+reported with caveats but reported.
+
+**The mechanism table died, exactly as predicted.** All five rows are now FAIL/FAIL on
+both arms; the table carries zero information. `docs/eval-improvement-plan.md` set this
+out in advance: the verdict rule is FAIL if *any* item in a group fails on every
+replicate, which is monotone decreasing in group size. `multislot` went 2 -> 10 items and
+collapsed from FAIL/PASS to FAIL/FAIL. The headline this pack was designed to produce no
+longer separates the arms, and restoring it needs a different verdict rule, not more items.
+
+**Both arms are less stable at scale.** `N_flip` over 3 replicates: incumbent **12**,
+candidate **26**. The incumbent was perfectly stable across 20 items in Experiment 2; at
+100 it is not. The candidate remains roughly twice as unstable.
+
+**Whole-item correctness, and why it disagrees with F1.** Scoring all-or-nothing per item
+on replicate 1: incumbent **43/100**, candidate **35/100** — far harsher than F1 of
+0.76-0.96 on the same data. The gap is over-labelling, and it is measurable:
+
+| why the incumbent's 57 failures failed | n |
+|---|---:|
+| **extra reasons added** | **39** |
+| different reasons | 7 |
+| wrong product | 5 |
+| wrong outcome | 4 |
+| reasons missing | 2 |
+
+Two thirds of all failures are a correct answer with unsupported reasons bolted on
+(RET-02: truth `promotion related`, answer `down sell not success + other + promotion
+related`). That is one fixable behaviour, not a comprehension failure, and it is what
+`v9_16_e1` exists to address. **43% must not be quoted as accuracy** — it is the strictest
+reading available, and the per-dimension figures are the fairer one.
+
+**Cost and speed:** incumbent $0.3363, candidate $0.3891 over 300 calls each — the
+candidate ~16% dearer.
+
+### Verdict
+
+**No accuracy case for migrating, and a reliability case against it.** The incumbent wins
+`reason` and `product`, the candidate wins `call_result`, all by <= 2 items. On stability
+the incumbent is ahead by roughly 2x. On cost the incumbent is ~16% cheaper.
+
+`RECONCILED: NO` still stands, and production still reads audio while this pack reads
+text. This remains a comparison on one controlled dimension, not a production verdict.
+
+### Recommended next steps
+
+1. **Do not quote any 22-row figure from Experiments 1-2 again.** Experiment 3 supersedes
+   them on every dimension. They stay in this file as the record of how the answer moved.
+2. **Fix the `other` class before quoting it.** 8 of its 10 items are flood calls, so a
+   model can score the class by learning "flood -> other" (`docs/testset-v2-plan.md`).
+3. **Repair or replace the mechanism table.** It is the pack's designed headline and it is
+   now uninformative at 100 items. A group-level rule that is monotone in group size
+   cannot survive growth; this needs arguing, not patching.
+4. **Run `v9_16_e1` over the 100 items.** Over-labelling is two thirds of all failures and
+   e1 is the variant built to reduce it. ~$0.73.
+
+### Output files
+
+| What | Path |
+|---|---|
+| Comparison | `out/reports/compare-v2-100items.txt` |
+| Per transcript, per model | `out/reports/v2-100items-per-transcript.xlsx` |
+| Raw run data | `out/runs/20260805-140652Z-v2-incumbent/`, `out/runs/20260805-140947Z-v2-candidate/` |
+
+**Cost of Experiment 3: $0.7254 across 2 runs / 600 calls.**
+
+Item keys were generated with a local placeholder `EVAL_HARNESS_KEY_HMAC`, not True's;
+they do not resolve inside True's systems.
+
+---
+
+## Experiment 4 — *not started*
 
 Use this template:
 
