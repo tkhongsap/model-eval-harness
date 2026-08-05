@@ -597,6 +597,148 @@ def _phone_of(arm: Arm, item, product) -> str | None:
     return None
 
 
+# ------------------------------------------------------------------ side by side
+
+
+def _signature(rows) -> list[tuple]:
+    """One call's answer as a sortable multiset of (product, outcome, reasons).
+
+    A multiset rather than a dict keyed on the merge key, for the reason
+    `report._signature` gives: an arm that emits the same key twice has one of the two
+    silently dropped by `metrics.outer_join`, and comparing multisets keeps that visible
+    instead of hiding it behind a dict that quietly deduplicated.
+    """
+    return sorted(
+        (r.product or "", r.call_result or "", tuple(sorted(r.reasons))) for r in rows
+    )
+
+
+def _answer_text(rows) -> str:
+    """`product/outcome/reason+reason`, one clause per product, for eyeball comparison."""
+    if not rows:
+        return "(no answer)"
+    return "  |  ".join(
+        f"{p or '(none)'} / {o or '(empty)'} / {'+'.join(r) if r else '-'}"
+        for p, o, r in _signature(rows)
+    )
+
+
+def sheet_side_by_side(wb: Workbook, items, gt: list[Record], arms: dict[str, Arm],
+                       order: Sequence[str]) -> Worksheet:
+    """The at-a-glance view: one row per item, every arm's whole answer beside the truth.
+
+    This is the sheet a reader opens first and the only one that fits on a screen. `Per
+    item` carries the same facts at (item, product) grain with the transcript attached,
+    which is what you need to ADJUDICATE a disagreement; this is what you need to FIND
+    one.
+
+    Correctness here is deliberately **whole-item, all-or-nothing**, the same rule
+    `report._item_is_correct` applies: every product of the call, its outcome and its
+    full reason set must match. An arm that gets the product and outcome right and adds
+    one unsupported reason reads MISMATCH, because that is what it is. The per-dimension
+    view on `Comparison` is the one that gives partial credit, and the two are meant to
+    be read together -- a run can look far worse here than there, and the gap between
+    them is the over-labelling rate.
+
+    Replicate 1, matching every other scored sheet (`cli.py:25-31`). The `flips` marker
+    is what stops that being read as the whole story: a cell that moved between
+    replicates is flagged, because on a nondeterministic arm replicate 1 is one draw.
+    """
+    ws = wb.create_sheet("Side by side")
+
+    gt_by_call: dict[str, list[Record]] = defaultdict(list)
+    for record in gt:
+        gt_by_call[record.call_id].append(record)
+
+    lead = ["item_id", "family", "ground truth  (product / outcome / reasons)"]
+    widths(ws, [10, 15, 46])
+    per_arm = 2
+    widths(ws, [46, 11] * len(order), start=len(lead) + 1)
+
+    put(ws, 1, 1, "At a glance - every arm's whole answer against the ground truth",
+        font=TITLE_FONT)
+    ws.merge_cells(start_row=1, start_column=1, end_row=1,
+                   end_column=len(lead) + per_arm * len(order))
+    put(ws, 2, 1,
+        "Replicate 1. OK means the WHOLE item matched - every product, its outcome and "
+        "its full reason set. Adding one unsupported reason is a MISMATCH here and only "
+        "a partial loss on 'Comparison'; the gap between the two sheets is the "
+        "over-labelling rate. 'flips' means the arm did not give the same answer on all "
+        "replicates, so this row is one draw.",
+        font=BODY_FONT, wrap=True)
+    ws.merge_cells(start_row=2, start_column=1, end_row=2,
+                   end_column=len(lead) + per_arm * len(order))
+    ws.row_dimensions[2].height = 44
+
+    header = 4
+    for offset, label in enumerate(lead):
+        put(ws, header, 1 + offset, label, font=HEAD_FONT, fill=HEAD_FILL, wrap=True,
+            border=True)
+    col = len(lead) + 1
+    for slot in order:
+        put(ws, header, col, arms[slot].label, font=HEAD_FONT, fill=HEAD_FILL, wrap=True,
+            border=True)
+        put(ws, header, col + 1, "verdict", font=HEAD_FONT, fill=HEAD_FILL, wrap=True,
+            border=True)
+        col += per_arm
+
+    r = header + 1
+    tally: dict[str, int] = {slot: 0 for slot in order}
+    for item in items:
+        truth = gt_by_call.get(item.call_id, [])
+        put(ws, r, 1, item.item_id, font=BOLD_FONT, border=True)
+        put(ws, r, 2, item.family, border=True, wrap=True)
+        put(ws, r, 3, _answer_text(truth), font=BOLD_FONT, border=True, wrap=True)
+
+        col = len(lead) + 1
+        for slot in order:
+            arm = arms[slot]
+            rows = [rec for key, rec in arm.rep1.items() if key[0] == item.call_id]
+            correct = bool(truth) and _signature(rows) == _signature(truth)
+            if correct:
+                tally[slot] += 1
+            flipped = any(
+                arm.flips(truth[0] if truth else None, key, dim)
+                for key, rec in arm.rep1.items() if key[0] == item.call_id
+                for dim in DIMENSIONS
+            )
+            verdict = "OK" if correct else "MISMATCH"
+            fill = GOOD_FILL if correct else BAD_FILL
+            if flipped:
+                verdict += " +flips"
+                if correct:
+                    fill = WARN_FILL
+            put(ws, r, col, _answer_text(rows), font=BODY_FONT if correct else BAD_FONT,
+                fill=None if correct else BAD_FILL, border=True, wrap=True)
+            put(ws, r, col + 1, verdict, font=BOLD_FONT if not correct else BODY_FONT,
+                fill=fill, border=True, wrap=True)
+            col += per_arm
+        ws.row_dimensions[r].height = 34
+        r += 1
+
+    r += 1
+    put(ws, r, 1, "FULLY CORRECT", font=BOLD_FONT, border=True)
+    put(ws, r, 3, f"out of {len(items)} items", font=BODY_FONT, border=True)
+    col = len(lead) + 1
+    for slot in order:
+        put(ws, r, col, f"{tally[slot]} / {len(items)}", font=BOLD_FONT, border=True)
+        put(ws, r, col + 1, "", border=True)
+        col += per_arm
+    r += 2
+    put(ws, r, 1,
+        "This count is whole-item and all-or-nothing, so it is the HARSHEST reading "
+        "available and moves on a single added reason. It is not a percentage anyone "
+        "should quote: at 20 items one item is 5 points, and 'Mechanisms' is the "
+        "headline this pack is designed to produce.",
+        font=BODY_FONT, wrap=True)
+    ws.merge_cells(start_row=r, start_column=1, end_row=r,
+                   end_column=len(lead) + per_arm * len(order))
+    ws.row_dimensions[r].height = 32
+
+    ws.freeze_panes = ws.cell(row=header + 1, column=4)
+    return ws
+
+
 # ------------------------------------------------------------------ sheet 3
 
 
@@ -947,7 +1089,8 @@ def sheet_per_call(wb: Workbook, arms: dict[str, Arm], order: Sequence[str]) -> 
 # ------------------------------------------------------------------ verification
 
 
-EXPECTED_SHEETS = ("READ FIRST", "Per item", "Per call", "Comparison", "Mechanisms", "Runs")
+EXPECTED_SHEETS = ("READ FIRST", "Side by side", "Per item", "Per call", "Comparison",
+                   "Mechanisms", "Runs")
 
 
 def verify(path: Path, expected_item_rows: int, gt_path: Path, item_ids: Sequence[str]) -> list[str]:
@@ -1063,6 +1206,7 @@ def build(args) -> tuple[Path, int, list[str]]:
     wb.remove(wb.active)
     sheet_read_first(wb, arms, stamp,
                      consistency_block(arms, repeat, gt, testset.items))
+    sheet_side_by_side(wb, testset.items, gt, arms, order)
     _, item_rows = sheet_per_item(wb, testset.items, gt, arms, order)
     sheet_per_call(wb, arms, order)
     sheet_comparison(wb, gt, arms)
