@@ -184,7 +184,9 @@ Per `CLAUDE.md`'s Build and Verification Contract, applied to every task above:
      .venv/Scripts/python -m pytest tests/ -q
    ```
    Baseline before this plan: **375 passed / 11 skipped** standalone,
-   **386 passed / 0 skipped** differential.
+   **386 passed / 0 skipped** differential. Historical, and left at the measured value —
+   the suite stands at **451 / 11** and **462 / 0** as of 2026-08-05, and `TESTING.md`
+   is the one place to read the current count.
 2. **`evalgen check`** returns 0 problems after any fixture edit.
 3. **No expectation is edited to make a test pass.** If a hand-computed fixture and the
    code disagree, one of them has found something; work out which and write the answer

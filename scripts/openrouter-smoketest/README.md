@@ -164,3 +164,11 @@ actual candidate-generation path for real evaluation runs (rather than a pipe-te
 tool), that is new, separate work: a script that runs a real sample through a chosen
 model and emits the normalized record shape `records.py` expects, with its own
 fixtures and its own review, not an extension of this file.
+
+**That happened on 2026-08-05, and the paragraph above is left standing because it is
+the condition the change was measured against.** `src/evalgen/` is the real
+candidate-generation path: its own package, its own `requirements.txt`, its own tests,
+and no import in either direction — `config.py` re-implements this script's key handling
+rather than importing it, precisely so this script stays standalone. This file is still
+what it says it is: a pipe test for a key. See `AGENTS.md`, "Service layers do not
+apply", for the full accounting.

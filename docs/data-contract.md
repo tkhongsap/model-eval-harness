@@ -136,7 +136,10 @@ Three requirements:
 ## What we are not asking for
 
 - **The `.xlsm` workbook itself.** We do not need it and would rather not hold it.
-- **Any audio.** The harness scores model outputs; it does not run models.
+- **Any audio.** Nothing on our side transcribes. This line read *"the harness scores
+  model outputs; it does not run models"* until 2026-08-05, when `src/evalgen/` landed;
+  the harness does call models now, but only ever with text it already holds. The audio
+  path stays entirely inside production, and what we are asking for is unchanged.
 - **Transcripts.** None exist in production (audio goes to Gemini in one call), and the
   transcript question is a separate decision that has not been made.
 - **Anything from Sentiment QA yet.** Retention is first because it is the only app in the
