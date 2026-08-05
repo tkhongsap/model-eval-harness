@@ -223,7 +223,116 @@ Alibaba defect diagnosable; before it existed, all 10 violations were undiagnosa
 
 ---
 
-## Experiment 2 — *not started*
+## Experiment 2 — Five replicates, and the number that crossed the line without meaning it
+
+**Date:** 2026-08-05
+**Question:** Does raising both arms from 3 to 5 replicates change the verdict, and does
+the candidate's nondeterminism show up when given more chances to?
+
+### What was run
+
+| # | Run | Model | Provider | Prompt | Result |
+|---|---|---|---|---|---|
+| 2.1 | incumbent-base5 | gemini-2.5-flash | Google | `v9_16_base` | 100/100 ok |
+| 2.2 | candidate-base5 | qwen3.6-27b | Morph | `v9_16_base` | 97/100 ok, **3 `empty_other`** |
+| 2.3 | incumbent-e1-5 | gemini-2.5-flash | Google | `v9_16_e1` | 100/100 ok |
+| 2.4 | candidate-e1-5 | qwen3.6-27b | Morph | `v9_16_e1` | 99/100 ok, **1 `empty_other`** |
+
+20 items x 5 replicates per run. Decoding identical to Experiment 1 and identical across
+arms: `temperature=0.0, top_p=0, seed=0, max_tokens=8000`. Both arms pinned, and the pin
+held: **20/20 items returned exactly one `prompt_tokens` value on every run.**
+
+Both arms were raised, not just the candidate. `report.py:573-577` warns when arms carry
+unequal replicate counts, because their FLAKY verdicts and `N_flip` then had unequal
+chances to see instability — and next step 5 of Experiment 1 (candidate only) would have
+triggered it on every future comparison.
+
+### Result
+
+**The candidate is nondeterministic at temperature 0. The incumbent is not.** This is the
+finding, and it is what the extra replicates were for:
+
+| arm | `N_flip`, base | `N_flip`, e1 |
+|---|---|---|
+| gemini-2.5-flash | **0** | **0** |
+| qwen3.6-27b | **8** | **4** |
+
+Zero versus eight, over 200 calls per arm, on byte-identical requests. Experiment 1 saw
+`N_flip = 0` on both arms at three replicates; three replicates simply did not give the
+instability enough chances to appear. The 4 `empty_other` responses are the same story in
+the outcome vocabulary — the incumbent produced none in 200 calls.
+
+**One headline number crossed the pre-registered AHEAD threshold, and it should not be
+read as AHEAD.** `reason` net on `e1` came out **+6**, against a band fixed before any
+data existed (`>= +6` AHEAD). Three reasons not to call it:
+
+1. **Five replicates did not make this number more reliable.** The aggregate metrics are
+   scored on **replicate 1 alone** (`cli.py:25-31`; stated in the report's own footer),
+   because `metrics.outer_join` keys predictions by `(call_id, phone, product)` and
+   pooling replicates silently keeps the last. So `+6` is one draw, exactly as `+5` was.
+   What five replicates improved is `N_flip` and the mechanism verdicts — not this.
+2. **The same measurement has now produced +5, +4 and +6** across three passes. The
+   spread is as wide as the margin by which it crossed.
+3. **It is a draw from the arm that flips.** The candidate moved 4 cells between
+   replicates on this very run; the incumbent moved none.
+
+`EXPERIMENTS.md` already said it: *"a single Qwen run should not be quoted without a
+repeat."* That applies to this run too. **Verdict unchanged: INDISTINGUISHABLE.**
+
+Other dimensions, both prompts: `call_result` net **+1**, `product` net **0**. `reason`
+net on base fell to **+2** (from +3 at three replicates).
+
+**Mechanism table.** Four of five rows remain FAIL/FAIL on both arms. `multislot` is
+PASS/PASS on base and FAIL/PASS on e1 — the single row still carrying discriminating
+signal, and the reason `docs/eval-improvement-plan.md` argues against growing the pack
+in a way that would swamp it.
+
+**Cost and latency** (now printed in the report, section 6):
+
+| arm | prompt tok | completion tok | cost USD | latency median |
+|---|---|---|---|---|
+| gemini base | 282,160 | 21,170 | 0.0903 | 4.73s |
+| qwen base | 251,273 | 22,489 | 0.1266 *(3 calls unpriced)* | **9.55s** |
+| gemini e1 | 281,360 | 22,809 | 0.1074 | 5.60s |
+| qwen e1 | 255,789 | 21,889 | 0.1265 *(1 call unpriced)* | 5.44s |
+
+Qwen costs ~18-40% more. Latency is **not** stable between its own runs — 9.55s median on
+base against 5.44s on e1, same model, same pin, same decoding, minutes apart. Read the
+latency figures as provider variance, not as a model property. Neither arm reported any
+reasoning tokens on these runs.
+
+### Recommended next steps
+
+1. **Do not quote `reason` net e1 = +6 as AHEAD** without a repeat pass. If it must be
+   quoted, quote all three draws (+5, +4, +6) and `N_flip` beside it.
+2. **Score the aggregate on more than replicate 1.** This is the real limitation the
+   extra replicates exposed: five replicates cost five times as much and improved only
+   two of six report sections. Fixing it means changing the merge key or aggregating
+   across replicates properly — inside `evalharness`, which `CONTRIBUTING.md:59` calls
+   final. Argue it before doing it.
+3. **The remaining Experiment 1 next steps 1-3 are done** (RET-11 corrected, both class
+   boundaries arbitrated in `VOCABULARIES.md`); next step 4 was **withdrawn as false**,
+   see the retraction above.
+4. Everything else still waits on `RECONCILED`.
+
+### Output files
+
+| What | Path |
+|---|---|
+| Comparison, base | `out/reports/compare-base-5rep.txt` |
+| Comparison, e1 | `out/reports/compare-e1-5rep.txt` |
+| Raw run data | `out/runs/20260805-12*Z-{incumbent,candidate}-{base5,e1-5}/` |
+
+**Cost of Experiment 2: $0.4507 across 4 runs / 400 calls.**
+
+Item keys in these reports were generated with a **local placeholder**
+`EVAL_HARNESS_KEY_HMAC`, not True's key. They do not resolve inside True's systems. The
+pack is entirely synthetic (call ids 5001-5020, phones `08100000xx`), so the HMAC here
+pseudonymises invented identifiers only.
+
+---
+
+## Experiment 3 — *not started*
 
 Use this template:
 
