@@ -440,7 +440,162 @@ they do not resolve inside True's systems.
 
 ---
 
-## Experiment 4 — *not started*
+## Experiment 4 — A third arm, and the discovery that the endpoint moves the answer more than the model does
+
+**Date:** 2026-08-05
+**Question:** Is `qwen/qwen3.6-35b-a3b` — the MoE sibling, 35B total / 3B active, priced
+at $0.098/$0.95 per M tokens against the 27B's $0.60/$3.60 — good enough to change the
+migration economics?
+
+**Prediction, stated before the run:** the model is ~6x cheaper per input token and ~3.8x
+cheaper per output token. If it scores comparably it is the cheapest credible candidate
+seen so far. If it scores worse, the cheaper token price is irrelevant. **The prediction
+that turned out to matter was one nobody made: that per-token price would predict
+per-call cost.** It does not.
+
+### What was run
+
+| # | Run | Model | Provider | Result |
+|---|---|---|---|---|
+| 4.0a | probe | qwen3.6-35b-a3b | DeepInfra / AkashML / CoreWeave | all 3 honour the schema |
+| 4.1 | first attempt | qwen3.6-35b-a3b | DeepInfra, concurrency 8 | **110/300 `transport_error`** |
+| 4.2 | retry, lower concurrency | qwen3.6-35b-a3b | DeepInfra, concurrency 3 | **221/300 `transport_error`** |
+| 4.3 | endpoint probe | qwen3.6-35b-a3b | AkashML, CoreWeave | 10/10 ok each |
+| 4.4 | **the arm** | qwen3.6-35b-a3b | AkashML | 293/300 ok, 7 `empty_length` |
+| 4.5 | incumbent, re-run | gemini-2.5-flash | Google | 299/300 ok, 1 `provider_error` |
+| 4.6 | 27B, re-run | qwen3.6-27b | **Morph** | **300/300 HTTP 400** |
+| 4.7 | 27B, re-run | qwen3.6-27b | CoreWeave | 300/300 ok |
+
+100 items x 3 replicates. `retention_v2`, prompt `v9_16_base`, decoding unchanged. Runs
+4.4-4.7 all share `scorer_sha ea3c952` and `testset_sha 9c91b036`, which is what makes
+them comparable; 4.5 and 4.7 exist **only** because that gate refused a comparison
+against the Experiment 3 runs, which were made at `96afee3`.
+
+### Result
+
+**The 35B-A3B is worse than the 27B on every dimension, and much worse than the
+incumbent on stability.**
+
+| vs incumbent (gemini) | call_result | reason | product | `N_flip` |
+|---|---|---|---|---|
+| qwen3.6-27b (CoreWeave) | +1 | **+24** | 0 | 22 |
+| qwen3.6-35b-a3b (AkashML) | **-7** | +14 | **-4** | **62** |
+| *gemini itself* | — | — | — | **2** |
+
+Head to head, 27B against 35B-A3B: `call_result` **-8**, `reason` **-10**, `product`
+**-4**. The cheaper model loses on all three.
+
+Weighted F1 against the incumbent: `call_result` 0.937 vs 0.899, `reason` 0.796 vs 0.803,
+`product` 0.945 vs 0.914. One near-tie and two losses.
+
+**`N_flip = 62` against the incumbent's 2.** Thirty-one times less stable on
+byte-identical requests at `temperature=0`. The `reason` net of +14 is a single draw from
+that arm and should not be quoted on its own.
+
+### THE FINDING: the endpoint changes the answer more than the model does
+
+The 27B was re-run because Morph broke. CoreWeave served it **in a reasoning regime**;
+Morph had served it non-reasoning. Same model id, same prompt, same decoding, same pack:
+
+| qwen3.6-27b | Morph (Exp 3) | CoreWeave (Exp 4) |
+|---|---|---|
+| `reason` net vs incumbent | **-1** | **+24** |
+| reasoning tokens | ~0 | **1,731,272** |
+| latency median | ~9.5s | **40.31s** |
+| cost, 300 calls | **$0.389** | **$4.712** |
+
+A 25-point swing on the headline dimension, a 12x cost increase and a 4x latency
+increase, from changing nothing but the endpoint. **Production runs
+`thinkingBudget: 0`** (`config/model_setting/retention.yml`), so the `+24` describes a
+regime production does not deploy. Experiment 1 already found one endpoint defect
+(Alibaba's broken decoder); this is the stronger version of the same lesson — the pin is
+not a detail of the method, it is a term in the result.
+
+### Cost and latency, measured
+
+| arm | prompt tok | completion tok | reasoning tok | cost | latency median |
+|---|---|---|---|---|---|
+| gemini-2.5-flash | 839,078 | 61,312 | **0** | **$0.350** | **2.25s** |
+| qwen3.6-27b (CoreWeave) | 1,099,650 | 1,130,422 | 1,731,272 | $4.712 | 40.31s |
+| qwen3.6-35b-a3b (AkashML) | 1,099,650 | 1,239,886 | 1,852,965 | $1.394 | 33.55s |
+
+**The cheaper-per-token model is 4x dearer per call than the incumbent**, because it
+spends 1.85M reasoning tokens reaching the same answers. Per-token price did not survive
+contact with per-call cost.
+
+### Three provider failures, all in one day
+
+- **DeepInfra rate-limited the 35B-A3B upstream.** 110 then 221 failures, every one
+  `429 ... 'qwen/qwen3.6-35b-a3b is temporarily rate-limited upstream'`. **Lowering
+  concurrency 8 -> 3 made it worse**, which is how the initial diagnosis ("my concurrency
+  setting") was shown to be wrong: a longer run stayed inside the throttle window longer.
+- **Morph now returns HTTP 400 `'Multi-turn conversations are not supported'`** on all
+  300 calls. Morph served this exact two-message request throughout Experiments 1-3. The
+  endpoint changed under us, mid-evaluation.
+- **CoreWeave costs 12x Morph** for the same model, because it reasons and Morph did not.
+
+### Two harness defects found, recorded not patched
+
+1. **`prompt_token_spread` false-positives on a failed row.** The incumbent was flagged
+   `SPLIT 99/100` on RET-23 with values `[0, 2791]`. The `0` is the single
+   `provider_error` row, which carries no usage; `prompt_token_spread` skips `None` but
+   not `0`, so a failed call manufactures a phantom second tokenizer. The pin-proof
+   signal is the one that must not cry wolf.
+2. **`scorer_sha` is repo HEAD, so any commit invalidates comparability.** Runs 4.5 and
+   4.7 were paid for because a docs-only commit moved the sha; `git diff 96afee3 HEAD --
+   src/` is **empty**. The gate did its job as written and was not weakened
+   (`CLAUDE.md`), but a scorer hash that changes when a README changes is coarser than
+   its purpose requires.
+
+Both belong to layers `CONTRIBUTING.md:57` calls final. They are written down for
+argument, not patched mid-experiment.
+
+### Verdict
+
+**No. `qwen/qwen3.6-35b-a3b` is not a viable candidate.** It loses to the 27B on all
+three dimensions, loses to the incumbent on two, is 31x less stable than the incumbent,
+15x slower, and 4x dearer despite the cheaper token price.
+
+**And the 27B's apparent `+24` is not a reason to revisit it**, because it was bought in a
+reasoning regime production does not run. In the regime production *does* run, Experiment
+3 measured that same dimension at **-1**.
+
+`RECONCILED: NO`. Production reads audio; this pack reads text.
+
+### Recommended next steps
+
+1. **Pin the regime, not just the provider.** The `provider` field and even
+   `prompt_token_spread` agree across two endpoints that differ by 1.7M reasoning tokens.
+   Record `reasoning_tokens` in `_refuse_incomparable`'s blocking set, or at minimum warn
+   loudly when two arms differ by an order of magnitude on it. Falsified if a regime
+   change can be shown not to move a score — Experiment 4 shows it moves it 25 points.
+2. **Fix the `prompt_token_spread` zero.** One-line: ignore rows with no usage rather
+   than treating `0` as a token count. Falsified if a real split ever reports `0`.
+3. **Re-check Morph.** If `'Multi-turn conversations are not supported'` is permanent,
+   every Experiment 1-3 number came from an endpoint that no longer exists in that form,
+   and their reproducibility is gone.
+4. Everything else still waits on `RECONCILED`.
+
+### Output files
+
+| What | Path |
+|---|---|
+| Gemini vs 35B-A3B | `out/reports/compare-gemini-vs-35b-a3b.txt` |
+| Gemini vs 27B (CoreWeave) | `out/reports/compare-gemini-vs-27b-cw.txt` |
+| 27B vs 35B-A3B | `out/reports/compare-27b-vs-35b.txt` |
+| Every run, with provenance | `RUNS.md` |
+
+**Cost of Experiment 4: ~$7.73**, of which **$1.29 bought nothing** — two DeepInfra runs
+killed by upstream throttling and one Morph run killed by a 400. Recorded because a
+harness that reports only the runs that worked is a harness that under-reports what
+evaluation costs.
+
+Item keys used a local placeholder `EVAL_HARNESS_KEY_HMAC`; they do not resolve inside
+True's systems.
+
+---
+
+## Experiment 5 — *not started*
 
 Use this template:
 
