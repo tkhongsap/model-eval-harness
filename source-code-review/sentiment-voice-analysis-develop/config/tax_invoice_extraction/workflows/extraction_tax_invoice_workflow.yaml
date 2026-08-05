@@ -1,0 +1,14 @@
+main:
+    params: [event]
+    steps:
+        - run_job:
+            call: googleapis.run.v2.projects.locations.jobs.run
+            args:
+                name: ${"projects/" + sys.get_env("PROJECT_ID") + "/locations/" + sys.get_env("LOCATION") + "/jobs/" + sys.get_env("JOB_NAME")}
+                body:
+                    overrides:
+                        containerOverrides:
+                            - args: ["main.py", "-c", "${sys.get_env(\"POST_CONFIG_PATH\")}"]
+            result: execution
+        - return_result:
+            return: ${execution}

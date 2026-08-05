@@ -1,0 +1,164 @@
+# OCR pipeline v2 — retrieve + reconcile + finalize (post-processing) config.
+# Engine runs top-level keys in insertion order. The chain threads the typed OCRResult:
+#
+#   OCRRetrieveTask        → collects predictions into an OCRResult (carries final_df,
+#                            file_statuses, dead_job_names, and the pre_processing_log snapshot);
+#                            stamps NO terminal status.
+#   ReconcilePrecheckTask  → halts (and notifies) if Master-Buyer / Z45 sources are missing;
+#                            otherwise passes the OCRResult straight through.
+#   ReconcileTask          → reconciles OCRResult.final_df vs Master Buyer + Z45, exports the
+#                            Output workbooks + archives + audit logs, and RETURNS the OCRResult
+#                            unchanged. Reads the pre-processing log off the OCRResult (no GCS read).
+#   OCRFinalizeTask        → MUST stay last; stamps SUCCESS/SUCCESS_WITH_FAILURE/FAILED into the
+#                            pre-processing log only after reconcile succeeds. If reconcile raises,
+#                            finalize never runs → files stay PENDING/PARTIAL → the next run
+#                            re-collects from GCS at zero extra Gemini cost.
+#
+# Concurrency note: OCRSubmitTask and OCRRetrieveTask write the same pre_processing_log.csv;
+# the log write is generation-guarded with a single retry, but do not run the pre and post
+# pipelines simultaneously against the same log if avoidable.
+
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: tax-invoice-v1.0.0
+pipeline_name: "tax_invoice_extraction"
+
+ReconcilePrecheckTask:
+  domain: treasury
+  sharepoint:
+    source_site:
+      site_name: "${TAX_INVOICE_SITE_NAME}"
+      site_domain: "${TAX_INVOICE_SITE_SITE_DOMAIN}"
+      site_path: "${TAX_INVOICE_SITE_SITE_PATH}"
+      client_id: "${TAX_INVOICE_SITE_CLIENT_ID}"
+      client_secret: "${TAX_INVOICE_SITE_CLIENT_SECRET}"
+      tenant_id: "${TAX_INVOICE_SITE_TENANT_ID}"
+      master_buyer_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_MASTER_BUYERS}"
+      master_buyer_file: "Master Buyer Company_\\d{8}.xlsx"
+      z45_report_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_Z45_REPORT}"
+      z45_report_file: "ZAPRPT45_\\d{8}.xlsx"
+      master_vendor_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_MASTER_VENDORS}"
+      master_vendor_file: "Master Vendor Company_\\d{8}.xlsx"
+  framework:
+    email_template_dir: "config/tax_invoice_extraction/email_template"
+    notifications:
+      business_exception:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${USER_EMAIL}"
+        cc_email: "${DEVELOPER_EMAIL}"
+      system_exception:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${OPER_EMAIL}"
+        cc_email: "${USER_EMAIL}, ${DEVELOPER_EMAIL}"
+
+OCRRetrieveTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    project_name: "${TAX_INVOICE_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/pre_processing_log.csv"
+    page_manifest_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/page_manifest_log.csv"
+  vertexai:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    location: "${TAX_INVOICE_VERTEX_AI_LOCATION}"
+  sharepoint:
+    control_site:
+      pre_processing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_OCR_PREP_LOG_PATH}/ocr_pre_processing_log.csv"
+      page_manifest_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_PAGE_MANIFEST_LOG_PATH}/page_manifest_log.csv"
+      tracing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_OCR_TRACING_LOG_PATH}/tracing_log_%{DATA_DATE_YYYYMM}.csv"
+  framework:
+    # Retention window (days) for every tax-invoice log; -1 disables. Unset -> 90 days.
+    # Here it governs the tracing-log month-file sweep.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    # Optional system-error email (on_error). Set enabled: false to mute without removing the block.
+    # Body is either an inline `body:` string or a `body_path:` to a .txt file (body_path wins).
+    # Subject/body support {task}, {pipeline}, {date}, {error} placeholders.
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${OPER_EMAIL}"
+        cc_email: "${USER_EMAIL}, ${DEVELOPER_EMAIL}"
+        subject: "[AI-Tax Invoice][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"
+        # body: "OCR task {task} failed on {date}.\n\nError:\n{error}"
+
+ReconcileTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    project_name: "${TAX_INVOICE_GCP_PROJECT_NAME}"
+  sharepoint:
+    source_site:
+      site_name: "${TAX_INVOICE_SITE_NAME}"
+      site_domain: "${TAX_INVOICE_SITE_SITE_DOMAIN}"
+      site_path: "${TAX_INVOICE_SITE_SITE_PATH}"
+      client_id: "${TAX_INVOICE_SITE_CLIENT_ID}"
+      client_secret: "${TAX_INVOICE_SITE_CLIENT_SECRET}"
+      tenant_id: "${TAX_INVOICE_SITE_TENANT_ID}"
+      master_buyer_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_MASTER_BUYERS}"
+      master_buyer_file: "Master Buyer Company_\\d{8}.xlsx"
+      master_vendor_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_MASTER_VENDORS}"
+      master_vendor_file: "Master Vendor Company_\\d{8}.xlsx"
+      z45_report_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_Z45_REPORT}"
+      z45_report_file: "ZAPRPT45_\\d{8}.xlsx"
+    destination_site:
+      site_name: "${TAX_INVOICE_SITE_NAME}"
+      site_domain: "${TAX_INVOICE_SITE_SITE_DOMAIN}"
+      site_path: "${TAX_INVOICE_SITE_SITE_PATH}"
+      client_id: "${TAX_INVOICE_SITE_CLIENT_ID}"
+      client_secret: "${TAX_INVOICE_SITE_CLIENT_SECRET}"
+      tenant_id: "${TAX_INVOICE_SITE_TENANT_ID}"
+      dest_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_OUTPUT}"
+      archive_invoice_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_ARCHIVE_INV}"
+      archive_vat_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_ARCHIVE_VAT}"
+      # Reject root (date-less): SourceRejecter appends /{YYYYMMDD}/[E-TAX company-user subfolder]/{page}.
+      reject_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_REJECTED}"
+    control_site:
+      extraction_result_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_CONTROL_EXTRACTION_PATH}/extraction_result_%{DATA_DATE_YYYY-MM-DD}.csv"
+      transaction_log_file: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_TRANSACTION_LOG_PATH}/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      performance_log_file: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_PERFORMANCE_LOG_PATH}/performance_log_%{DATA_DATE_YYYYMM}.csv"
+  framework:
+    email_template_dir: "config/tax_invoice_extraction/email_template"
+    # Retention window (days) for every tax-invoice log; -1 disables. Unset -> 90 days.
+    # Here it governs the transaction + performance month-file sweep and row prune.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    notifications:
+      extraction_success:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${USER_EMAIL}"
+        cc_email: "${DEVELOPER_EMAIL}"
+      mapping_success:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${USER_EMAIL}"
+        cc_email: "${DEVELOPER_EMAIL}"
+      system_exception:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${OPER_EMAIL}"
+        cc_email: "${USER_EMAIL}, ${DEVELOPER_EMAIL}"
+
+OCRFinalizeTask:            # MUST stay the last key
+  domain: treasury
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/pre_processing_log.csv"
+  sharepoint:
+    control_site:
+      pre_processing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_OCR_PREP_LOG_PATH}/ocr_pre_processing_log.csv"
+  framework:
+    # Retention window (days) for every tax-invoice log; -1 disables. Unset -> 90 days.
+    # Here it prunes the pre-processing log on the terminal-status write.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    # Optional system-error email (on_error). Set enabled: false to mute without removing the block.
+    # Body is either an inline `body:` string or a `body_path:` to a .txt file (body_path wins).
+    # Subject/body support {task}, {pipeline}, {date}, {error} placeholders.
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${OPER_EMAIL}"
+        cc_email: "${USER_EMAIL}, ${DEVELOPER_EMAIL}"
+        subject: "[AI-Tax Invoice][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"
+        # body: "OCR task {task} failed on {date}.\n\nError:\n{error}"

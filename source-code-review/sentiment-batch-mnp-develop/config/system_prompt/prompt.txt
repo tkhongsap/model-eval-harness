@@ -1,0 +1,260 @@
+<reason_definitions_and_constraints>
+    1. "network"
+        - Definition: Issues related to network quality, coverage, speed, or connectivity.
+        - Keywords: เน็ตช้า, สัญญาณไม่เสถียร, ดูวิดีโอแล้วกระตุก, เล่นเกมแล้วหลุด, สัญญาณขาดๆหายๆ, ไฟดับสัญญาณหาย, ดูอะไรไม่ได้เลย, หมุนโหลด, เน็ตกากมาก, หลุดบ่อย, ค้างช้า, ไม่มีคลื่น, เน็ตล่ม, เน็ตไม่เหมือนเดิม, เน็ตกระตุก, ไม่มีสัญญาณ, โทรไม่ได้เลย, สัญญาณแย่มาก, ไม่ค่อยมีสัญญาณ, โทรไม่ติด, gps ไม่เสถียร, ไปเที่ยวไม่มีสัญญาณ
+
+    2. "promotion related"
+        - Definition: Issues related to promotions not as agreed, failed subscription, ended too quickly, or not worthwhile.
+        - Keywords: สมัครโปรโมชั่นแล้วใช้ไม่ได้, มีโปรโมชั่นถูกกว่านี้ไหม, โปรโมชั่นหมดแล้ว, โปรโมชั่นไม่ตรงตามที่โฆษณา, เน็ตหมดเร็วเกินไป, โปรโมชั่นคู่แข่งดีกว่า, ขอโปรโมชั่นเหมือนค่ายอื่นแล้วไม่ได้หรือไม่มี, อยากได้โปรเดิม, โปรที่ดีกว่า, อยากได้โปรโมชั่นเดิมหรือถูกกว่า, โปรโมชั่นที่ดีกว่าหรือส่วนลดเยอะกว่า, สนใจโปรโมชั่น, ราคาโปรโมชั่นปัจจุบันแพงเกินไป, ส่วนลดโปรโมชั่นเดิมหมดแล้ว, เน็ตไม่พอใช้, เพื่อนได้โปรโมชั่นดีกว่า, อยากใช้โปรโมชั่นเดิม, ไม่ได้โปรโมชั่นตามสื่อโฆษณา, อยากได้โปรโมชั่นเหมือนลูกค้าเปิดเบอร์ใหม่, โปรโมชั่นที่ใช้อยู่ไม่คุ้มค่า, ไม่ดูแลโปรโมชั่นลูกค้าเก่า
+
+    3. "device promotion related"
+        - Definition: Issues related to device promotions (unclear terms, unavailability, colors, high price vs competitors).
+        - Keywords: โปรโมชั่นเครื่องซ้ำซ้อนไม่เข้าใจ, ไม่มีเครื่องสีที่อยากได้, ค่ายอื่นเครื่องถูกกว่า, ส่วนลดค่าเครื่องของค่ายอื่นเยอะกว่า, ค่ายอื่นรับเครื่องได้เลย, ที่อื่นเครื่องไม่ต้องมัดจำ, เครื่องแพงกว่า, จะซื้อเครื่องแต่โปรที่ต้องใช้ร่วมราคาสูงกว่าค่ายอื่น, ของแถมจากการซื้อเครื่องน้อย, ที่อื่นราคาเครื่องถูกกว่า, ไม่มีเครื่องเลย, รอเครื่องนาน
+
+    4. "save cost"
+        - Definition: Issues related to direct costs where customers want to reduce expenses explicitly.
+        - Keywords: อยากลดค่าใช้จ่าย, อยากยกเลิกบางบริการเพื่อลดค่าใช้จ่าย, ค่าใช้จ่ายสูงเกินทิ่คิดไว้, ต้องการราคาถูกลง, ประหยัดค่าใช้จ่าย, ค่าใช้จ่ายรายเดือนสูง
+
+    5. "contract end"
+        - Definition: Issues related to customers whose contracts have ended and wish to make changes/cancel.
+        - Keywords: หมดสัญญาแล้ว, โปรโมชั่นที่ใช้อยู่หมดสัญญาแล้ว, เบอร์นี้ไม่ได้ใช้เป็นเบอร์หลัก, ย้ายค่ายมาซื้อเครื่องครบสัญญาแล้ว, ไม่อยากต่อสัญญา, ครบสัญญา, เบอร์นี้ติดสัญญาซื้อเครื่องแต่ครบแล้ว, ไม่ใช่เบอร์หลัก, เปิดเบอร์นี้เพราะซื้อเครื่องตอนนี้หมดสัญญา
+
+    6. "sale upsell problem"
+        - Definition: Unwanted upselling, forced activation, or misunderstanding of terms caused by agents.
+        - Keywords: โดนบังคับสมัครโปร, ไม่เคยขอแต่โดนเพิ่มบริการ, ขายเกินจริง, ลูกค้ายังไม่ตอบรับเลยเพิ่มให้พี่แล้ว, เสนอโปรโมชั่นที่แพง, ยังไม่ตอบตกลง, ไม่ตรงตามที่แจ้ง, พนักงานบอกโปรหมดอายุ, เข้าใจว่าถ้าไม่เปิดเบอร์ยังไม่มีค่าบริการ, เจ้าหน้าที่บอกว่าซิมฟรี, ไม่ได้สมัครเลย
+
+    7. "dissatisfied service"
+        - Definition: Poor customer service experience (rude staff, slow response, unhelpful).
+        - Keywords: พนักงานพูดไม่ดี, พนักงานไม่ช่วยอะไรเลย, รอนานมาก, บริการแย่, ไม่ใส่ใจลูกค้า, ไม่พอใจบริการของคนขาย, ไม่พอใจบริการ Call Center, ไม่พอใจบริการ Shop, ติดต่อ call center ยาก, ไม่ดูแลลูกค้า, ที่นี่ไม่มีศูนย์แล้ว, ใช้งานมาตั้งนานพอจะย้ายค่ายก็มาให้โปรโมชั่นถูก, ไม่ดูแล, ถูกหลอก, รอคิวนาน, วิดีโอคอลรอนาน, พนักงานพูดไม่รู้เรื่อง, รอสายนาน, เจอแต่มะลิ, ไม่เจอคนเลย, สาขาไม่ทำให้, แก้ไขช้า
+
+    8. "post to pre"
+        - Definition: Customer specifically requests to switch from Postpaid to Prepaid.
+        - Keywords: สาขาแนะนำให้กดย้ายค่ายเป็นเติมเงิน, ร้านให้กดย้ายค่ายเป็นเติมเงิน, ไม่อยากใช้รายเดือนแล้ว, ขอเปลี่ยนเป็นแบบเติมเงิน, อยากใช้แบบเติมเงิน, ไม่อยากผูกกับบิล, ไม่อยากจ่ายรายเดือน, ขอเลิกใช้รายเดือน, เติมเงินสะดวกกว่า, ต้องการเปลี่ยนเป็นเติมเงินเพราะถูกกว่า, อยากเปลี่ยนเป็นเติมเงินเพราะโปรดีกว่า, อยากเปลี่ยนเป็นเติมเงินเพราะโปรถูกกว่า, เติมเงินควบคุมง่ายกว่า, อยากเปลี่ยนเป็นเติมเงิน
+
+    9. "customer reason"
+        - Definition: Customer refuses to give a reason or states it is personal.
+        - Keywords: ไม่มีไรคะ เหตุผลส่วนตัว, อยากย้ายเฉยๆ, ไม่อยากบอก, อยากย้ายเฉยๆ ไม่บอกได้ไหม, ไม่มีอะไร ไม่อยากใช้แล้ว
+
+    10. "true point, dtac reward"
+        - Definition: Issues with redeeming points, rewards, or privileges.
+        - Keywords: กดใช้สิทธิ์ของทรูการ์ดไม่ได้เลย, สิทธิ์เต็ม, ถูกลดเกรด, ไม่มีร้านให้ใช้สิทธิ์, สิทธิ์แบล็คการ์ดหลุด, กดรับสิทธิ์ไม่ได้
+
+    11. "down sell not success"
+        - Definition: Customer asked to lower the price/change plan, but the agent refused or couldn't provide it.
+        - Keywords: ขอลดโปรโมชั่นแล้วแต่เจ้าหน้าที่ก็ลดให้ไม่ได้, ขอเปลี่ยนโปรโมชั่นลดลงเจ้าหน้าไม่ให้, ติดต่อขอลดโปรโมชั่นหลายรอบแล้วก็ทำไม่ได้, ต้องการโปรโมชั่นราคา XXX เจ้าหน้าที่บอกว่าไม่มี
+
+    12. "other"
+        - Definition: Reasons not covered above OR specific call situations like "Callback/Busy".
+        - Keywords: จะไปต่างประเทศ, ไม่ใช้เบอร์นี้แล้ว, เปลี่ยนงาน, ใช้เบอร์อื่นแทน, ย้ายตามครอบครัว, บริษัทให้ย้าย, ลูกให้ย้าย, เบอร์ไม่สวยเหมือนที่แจ้ง, ร้องเรียน กสทช, ฟ้องร้อง, คดีความ, เอาเปรียบผู้บริโภค, ไม่มีใครใช้งาน, เจ้าของเสียชีวิต, อยากลองเปลี่ยน, เกลียดทรู, เกลียดดีแทค, ไม่ชอบ CP, อีก 10 นาทีโทรมาใหม่, ขับรถอยู่, ติดประชุม, ไม่สะดวกคุย, เดี๋ยวโทรกลับมาใหม่นะ
+</reason_definitions_and_constraints>
+
+<result_definitions>
+    call_result: Determine the final decision of the customer regarding whether they decided to continue using the service or cancel it after retention efforts or alternative offers from the call center agent. (Focus on both customer saying and call center agent saying)
+        - Categories:
+            - `save` 
+                - Definition (Eng): Customer decides to continue using the service after receiving retention efforts or alternative offers from the call center agent based on the overall context, even if the customer initially requested to think about it but did not explicitly cancel, with acceptance when the call center agent asks to cancel the code or porting cancellation, including agreeing to continue using the existing service while considering or requesting a comparison without making a payment to close the balance for a porting code.
+                - Example keyword (Thai): โอเคครับ เดี๋ยวใช้ต่ออีกเดือน, ขอบคุณสำหรับโปรใหม่, จะลองใช้อีกครั้ง, พนักงานช่วยดีมาก, กดผิด, ใช้งานต่อ, ไม่ย้ายแล้ว, ลองดู, ขอยกเลิกรหัส, ขอยกเลิกการโอนย้าย, ให้โอกาส, ถ้าได้แบบนี้ก็ไม่ย้ายไปไหนหรอก, ขอบคุณมากที่ดูแล, ขอบคุณที่ให้โอกาสอีกครั้ง, ขอยกเลิกรหัสย้ายค่าย, ยังไม่ชำระเงินเผื่อขอรหัส, งั้นใช้กับทางทรูไปก่อน, ยกเลิก pin ไปก่อนนะคะ, ใช้งาน Dtac ต่อไป, ไม่ได้ย้ายค่าบเบอร์นี้
+            - `churn`
+                - Definition (Eng): Customer decides to cancel the service despite retention efforts or alternative offers from the call center agent, even changing to prepaid or directly refusing to continue the service.
+                - Example keyword (Thai): ขอยกเลิกครับ, ไม่ใช้บริการแล้ว, ไม่คุ้มที่จะจ่ายต่อ ,ขอลองย้ายไปก่อน, ให้โอกาสหลายรอบแล้ว ก็ไม่ดี, ทำไมพึ่งมาดูแล, เคยขอแล้วไม่ให้, ไม่ค่ะ ไม่รับ, พี่จะขอรหัส, ขอรหัสย้ายค้าย, ขอรหัส PIN, พี่แกะเครื่องไปแล้ว ซื้อเครื่องใหม่กับค่ายอื่นแล้ว, กำลังโอนย้ายข้อมูล, รูดบัตรไปแล้ว, ไม่เป็นไรคะ ขอรหัสโอนย้ายค่ะ, ไม่เอาคะ ไปรับ sim แล้ว, ไม่มีอะไร อยากย้ายเฉยๆ, ปล่อยพี่ไปเถอะ, ลูกทำให้ ลูกให้ย้าย, ไม่เอาค่ะ พี่อยากใช้เติมเงิน, ไม่มีประโยชน์อะไรแล้ว ไม่เป็นไร
+            - `unknown`
+                - Definition (Eng): Customer is undecided about whether to continue or cancel the service during the conversation or unable to make a decision on their own without explicit cancellation or porting cancellation when there is no response when the call center agent asks to cancel the code or porting cancellation, or unable to complete the conversation with the customer making it impossible to determine the final outcome of the customer, or due to call disconnection during the conversation, or the call center agent asked but never got back.
+                - Example keyword (Thai): อีก 10 นาทีโทรมาใหม่, ขับรถอยู่, ติดประชุม, ไม่สะดวกคุย, เดี๋ยวโทรกลับมาใหม่นะ
+            - `undefine`
+                - Definition (Eng): Identify that the conversation is not about requesting a porting code or porting out from the customer or call center agent never mentioned porting code or porting out during the call.
+        - Output (required): Provide the final decision as one of the above categories.
+</result_definitions>
+
+<event_detection_definitions>
+    call_event_detection: Determine what event may have influenced the customer's decision to cancel the service.
+    - Categories:
+        - `Market-Driven Events (เหตุการณ์ทางการตลาด)`
+            - Definition (Eng): Events caused by market competition or changes from other service providers.
+            - Example event (Thai): การเปิดตัวแพ็กเกจราคาถูกจากคู่แข่ง, การเปลี่ยนแปลงพฤติกรรมผู้บริโภค, การปรับลดราคาสมาร์ทโฟนหรืออุปกรณ์จากคู่แข่งที่มาพร้อมแพ็กเกจรายเดือนราคาพิเศษ, การเปิดตัวสินค้าใหม่
+        - `Crisis & Emergency Events (เหตุการณ์วิกฤตหรือภัยพิบัติ)`
+            - Definition (Eng): Events that impact the economy or daily life of customers.
+            - Example event (Thai): การระบาดของโรค, ภัยธรรมชาติ, เหตุการณ์ทางการเมือง, ภาวะเศรษฐกิจถดถอย
+        - `Campaign-Driven Events (เหตุการณ์ด้านเคมเปญต่างๆของบริษัท)`
+            - Definition (Eng): Events caused by the launch or end of campaigns by True.
+            - Example event (Thai): การสิ้นสุดโปรโมชั่นพิเศษ, การเปลี่ยนแปลงเงื่อนไขของแคมเปญ, การเปิดตัวแคมเปญใหม่ที่ลูกค้าไม่เข้าใจหรือรู้สึกว่าไม่คุ้มค่า
+        - `Technology & Service Events (เหตุการณ์ด้านเทคโนโลยี/บริการ)`
+            - Definition (Eng): Events related to changes in technology or services provided by True that affect customer experience.
+            - Example event (Thai): การปรับปรุงเครือข่าย, ปัญหาด้านช่องทางบริการลูกค้า, ปัญหาด้านช่องทางบริการลูกค้า
+        - `True-DTAC Merger (เหตุการณ์การรวมกิจการของ True และ Dtac)`
+            - Definition (Eng): Events related to the merger of True and Dtac.
+            - Example event (Thai): ความกังวลของลูกค้าเกี่ยวกับคุณภาพสัญญาณหลังการควบรวม, ความไม่แน่นอนเกี่ยวกับสิทธิประโยชน์เดิม, การเปลี่ยนแปลงระบบบริการหรือช่องทางติดต่อที่ทำให้ลูกค้ารู้สึกไม่สะดวก
+        - `Emerging or Undefined Events (เหตุการณ์ที่ยังไม่สามารถจัดกลุ่มได้)`
+            - Definition (Eng): Events that do not cover the above categories or are newly emerging trends affecting customer behavior.
+            - Definition (Thai): เหตุการณ์ที่ไม่ครอบคลุมหมวดหมู่ข้างต้นหรือเป็นแนวโน้มใหม่ที่ส่งผลต่อพฤติกรรมของลูกค้า
+    - Output (optional): Provide the detected event as one of the above categories.
+</event_detection_definitions>
+
+<additional_context>
+    <purpose>
+        This section extracts supplementary network issue analysis from the call.
+        These fields are CONDITIONAL — they are only populated when the customer raises a network-related problem during the conversation.
+        For calls with no network issue, set ALL fields in this section to null.
+    </purpose>
+
+    <activation_rule>
+        issue_type is the PRIMARY TRIGGER for this entire section:
+        - If a network issue IS detected → set issue_type to the matching category, then populate ALL other fields below with meaningful values.
+        - If NO network issue is detected → set issue_type to null, and ALL other fields must also be null.
+        - Do NOT set dependent fields to null just because the customer's sentiment is neutral or positive. As long as issue_type has a value, every field must be populated.
+    </activation_rule>
+
+    <issue_type>
+        Definition: Identify the primary network issue type based on the customer's statements during the call.
+        Output: One of the category values below, or null if no network issue is detected.
+
+        Categories:
+            - Speed
+                Definition: Network performance is slower than expected WITHOUT the customer having exceeded their data limit. Causes delays, buffering, or lag while the connection remains active.
+                Thai examples: เน็ตช้า, ค้าง, หลุดโหลด, โหลดช้า, เน็ตกระตุก, ดูวิดีโอแล้วกระตุก, เล่นเกมแล้วแลค, เน็ตไม่เร็วเหมือนเดิม, หมุนโหลด, บัฟเฟอร์ตลอด
+
+            - Outage
+                Definition: Complete loss of ALL network services — customer cannot make calls, send messages, or use data at all. The service is entirely non-functional for an extended period.
+                Thai examples: ใช้อะไรไม่ได้เลย, ไม่มีสัญญาณเลย, เน็ตล่ม, โทรไม่ได้เลย, สัญญาณหายหมด, ไม่มีคลื่นเลย, ดับหมด, เน็ตไม่มาเลย, ใช้ไม่ได้ทั้งวัน, ระบบล่ม
+
+            - Drop
+                Definition: An unexpected disconnection during an active session (call drops mid-conversation, data session cuts out suddenly). The connection was working but terminates abruptly before the user ends it.
+                Thai examples: สายหลุด, โทรแล้วหลุดบ่อย, เน็ตหลุดๆติดๆ, สัญญาณขาดๆหายๆ, เล่นเกมแล้วหลุด, คุยอยู่ดีๆก็ตัด, หลุดบ่อย, ตัดสายบ่อย, เน็ตหลุดตลอด, สัญญาณไม่เสถียร
+
+            - Coverage
+                Definition: Network signal is weak, poor, or unavailable in specific geographic areas due to insufficient infrastructure, physical obstacles, or distance from cell sites. The issue is location-dependent.
+                Thai examples: ไม่มีสัญญาณตรงบ้าน, ไปเที่ยวไม่มีสัญญาณ, ที่ทำงานสัญญาณไม่ดี, ไม่ค่อยมีสัญญาณ, สัญญาณแย่มากแถวนี้, ไม่มีคลื่นในตึก, ชั้นใต้ดินไม่มีสัญญาณ, ต่างจังหวัดไม่มีสัญญาณ, ในบ้านสัญญาณไม่เข้า, สัญญาณเข้าไม่ถึง
+
+            - FUP
+                Definition: Network speed is throttled AFTER the customer exceeds their data package limit (Fair Usage Policy). The customer explicitly mentions running out of data or speed reduction after heavy usage.
+                Thai examples: ความเร็วเน็ตลดลงหลังจากใช้ข้อมูลครบตามแพ็กเกจ, เน็ตหมดแล้วช้ามาก, ใช้เน็ตครบโควต้าแล้วช้า, เน็ตหมดเร็ว, ความเร็วลดหลังใช้ครบ, เน็ตถูกลดสปีด
+
+            - Installation
+                Definition: Problems with setting up or activating network services — technician appointments, hardware installation failures, or initial configuration issues that prevent service from starting.
+                Thai examples: การติดตั้งล้มเหลว, อุปกรณ์ไม่ทำงาน, ช่างไม่มา, ติดตั้งไม่เสร็จ, รอช่างนาน, เราเตอร์ใช้ไม่ได้, ต่อไฟเบอร์ไม่ได้, ติดตั้งแล้วใช้ไม่ได้
+
+            - Support
+                Definition: Customer needs help with a network-related problem but has not yet identified a specific performance issue (not clearly slow, drop, or outage). They need diagnosis, troubleshooting guidance, or general network assistance.
+                Thai examples: แก้ไม่ได้, ไม่มีใครช่วย, แจ้งปัญหาแล้วไม่แก้ให้, ช่วยเช็คสัญญาณให้หน่อย, ไม่รู้ปัญหาอะไร, ตั้งค่าไม่ถูก, ปัญหาเน็ตแต่ไม่รู้สาเหตุ
+
+            - Voice Quality
+                Definition: Audio quality during calls is poor — unclear, static, echoing, or cutting in and out — caused by the network's performance in transmitting voice signals.
+                Thai examples: เสียงไม่ชัด, มีเสียงรบกวน, สัญญาณขาดหาย, เสียงแตก, คุยไม่รู้เรื่อง, เสียงหาย, เสียงกระตุก, ได้ยินไม่ชัด, เสียงเบามาก, พูดแล้วอีกฝั่งไม่ได้ยิน
+
+        <disambiguation_rules>
+            Use these rules when the customer's complaint could match multiple categories:
+
+            Speed vs FUP:
+                - If customer mentions running out of data, exceeding quota, or speed drop after heavy usage → FUP
+                - If customer reports slow speed without any mention of data limits or quota → Speed
+                - Key signal: "เน็ตหมด" or "ใช้ครบแล้ว" → FUP. Just "เน็ตช้า" without data context → Speed
+
+            Drop vs Outage:
+                - If service works intermittently (connects then disconnects repeatedly) → Drop
+                - If service is completely non-functional for an extended period with zero connectivity → Outage
+                - Key signal: "หลุดบ่อย" or "ขาดๆหายๆ" → Drop. "ใช้ไม่ได้เลย" or "ไม่มีสัญญาณเลย" → Outage
+
+            Coverage vs Outage:
+                - If the issue is tied to a specific location (works elsewhere, fails here) → Coverage
+                - If service is down everywhere regardless of location → Outage
+                - Key signal: mentions a place name or "ตรงนี้/แถวนี้/ที่บ้าน" → Coverage
+
+            Speed vs Drop:
+                - If the connection stays active but is slow → Speed
+                - If the connection completely disconnects mid-use → Drop
+                - Key signal: "ค้าง/ช้า/แลค" → Speed. "หลุด/ตัด/ขาด" → Drop
+
+            Coverage vs Drop:
+                - If signal is consistently weak in a specific area → Coverage
+                - If signal fluctuates between working and not working → Drop
+        </disambiguation_rules>
+    </issue_type>
+
+    <sub_reason>
+        Definition: When issue_type is identified, provide a detailed English explanation of the specific network issue.
+        Cover these aspects in the explanation:
+            1. What is happening (the symptom)
+            2. When/how often it occurs (frequency, time of day, duration)
+            3. How it impacts the customer (what they cannot do)
+        Example: "Frequent disconnection during peak evening hours affecting video streaming, occurring daily for the past 2 weeks, making work-from-home impossible"
+        Output:
+            - Language: English
+            - Maximum 800 characters
+            - Data type: string (required when issue_type is not null)
+    </sub_reason>
+
+    <problem_statement_list>
+        Definition: When issue_type is identified, extract the exact Thai sentences or phrases from the customer's speech where they describe the network problem or its impact on them.
+        Rules:
+            - Extract ONLY from the customer's speech, NOT the agent's
+            - Include multiple statements if the customer describes the issue in different ways or at different points in the conversation
+            - Preserve the original Thai phrasing exactly as spoken
+        Example: ["เน็ตช้ามากจนดูวิดีโอไม่ได้เลย", "สัญญาณไม่เสถียรทำให้โทรออกบ่อยๆไม่ได้", "เน็ตกระตุกมากตอนเล่นเกมจนต้องเลิกเล่นไปเลย"]
+        Output:
+            - Data type: list of strings (required when issue_type is not null, minimum 1 statement)
+    </problem_statement_list>
+
+    <churn_probability>
+        Definition: When issue_type is identified, estimate the probability (0-100) that the customer will churn based on the severity of the network issue, the customer's sentiment, and their statements.
+        Output: Integer 0-100 (required when issue_type is not null)
+
+        Scoring Guide:
+            80-100 (Very High Risk):
+                - Customer explicitly plans to switch or has already taken action
+                - Signal phrases: ขอรหัสย้ายค่าย, ซื้อซิมค่ายอื่นแล้ว, ย้ายแน่นอน, ไม่ไหวแล้ว, ติดต่อค่ายอื่นแล้ว, ไม่ใช้แล้ว
+
+            60-79 (High Risk):
+                - Severe ongoing issue, multiple failed resolution attempts, strong frustration
+                - Signal phrases: แจ้งหลายรอบแล้วไม่แก้, ทนไม่ไหว, กำลังคิดจะย้าย, เคยแจ้งแล้วก็ไม่ดีขึ้น, เบื่อมาก, ถ้าไม่แก้ก็ย้าย
+
+            40-59 (Moderate Risk):
+                - Noticeable issue affecting daily activities, some frustration expressed
+                - Signal phrases: ใช้งานลำบาก, ไม่ค่อยดี, รำคาญ, มีปัญหาบ่อย, ไม่เหมือนเดิม, เริ่มไม่ไหว
+
+            20-39 (Low-Medium Risk):
+                - Minor inconvenience, first-time reporting, mild concern
+                - Signal phrases: อยากแจ้งให้ทราบ, ช่วยเช็คให้หน่อย, เพิ่งเริ่มมีปัญหา, ไม่แน่ใจว่าเป็นอะไร, บางทีช้า
+
+            0-19 (Low Risk):
+                - Issue mentioned casually, customer willing to wait, shows patience
+                - Signal phrases: ไม่เป็นไร, รอได้, ถ้าแก้ได้ก็ดี, แค่อยากถาม, ไม่ได้เร่งร้อน
+    </churn_probability>
+
+    <location_fields>
+        These four fields capture where the network issue occurs, based on the customer's explicit mentions during the call.
+        All location fields are DEPENDENT on issue_type — they are only populated when a network issue is detected.
+        However, each location level is INDEPENDENT OF EACH OTHER — populate only the levels the customer explicitly mentions. Do NOT infer one level from another (e.g., do not guess province from district).
+
+        For all location fields:
+            - Language: English (transliterate Thai place names to English)
+            - If the customer does not explicitly mention that level, return null
+            - Data type: string or null
+
+        Fields:
+            - area_tag_province: Province-level location (e.g., "Chiang Mai", "Nonthaburi", "Bangkok")
+            - area_tag_district: District-level location (e.g., "Mueang", "Bang Khen", "Lat Phrao")
+            - area_tag_sub_district: Sub-district/tambon-level location (e.g., "Suan Luang", "Khlong Toei")
+            - area_tag_landmark: Landmark or place name (e.g., "Central Westgate", "Siam Paragon", "MRT Lat Phrao")
+    </location_fields>
+
+    <product_type>
+        Definition: When issue_type is identified, determine the product/service type based on the customer's statements or context clues.
+        Categories:
+            - Postpaid: Mobile products/services billed monthly with a recurring billing cycle.
+            - Prepaid: Pay-as-you-go mobile products/services where customers top up in advance.
+            - TVS: True Vision — television, cable TV, set-top boxes, or streaming entertainment services.
+            - TOL: True Online — home internet, broadband, or fiber services for residential/office use.
+        Output:
+            - One of: Postpaid, Prepaid, TVS, TOL, or null
+            - Return null if the product type cannot be determined from the conversation
+            - Data type: string or null (required when issue_type is not null; null only if truly undetermined)
+    </product_type>
+
+    <validation_checklist>
+        Before finalizing the additional_fields output, verify:
+        1. If issue_type has a value → sub_reason, problem_statement_list, churn_probability, and product_type must ALL have values (not null)
+        2. If issue_type is null → ALL fields in additional_fields must be null (including location fields)
+        3. problem_statement_list must contain at least 1 Thai phrase extracted from the customer's speech when issue_type is not null
+        4. Location fields (area_tag_*) should only be populated if the customer explicitly mentions that location level
+        5. product_type must be one of: Postpaid, Prepaid, TVS, TOL, or null — no other values
+    </validation_checklist>
+</additional_context>

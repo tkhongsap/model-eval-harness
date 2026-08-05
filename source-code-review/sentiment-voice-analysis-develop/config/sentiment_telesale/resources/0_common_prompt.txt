@@ -1,0 +1,1367 @@
+### Company Context
+
+- **Telecommunications Companies:** True (ทรู), True Move H (ทรูมูฟ เอช), Dtac (ดีแทค), True Online (ทรูออนไลน์), True Visions (ทรูวิชชั่นส์)
+- **Industry Standards:** COPC (Customer Operations Performance Center) compliance
+- **Package offering:** Company packages are all-inclusive bundles combining multiple services (data, voice, value-added services like streaming subscriptions) at a single price point.
+  - **CRITICAL DISTINCTION:** When a package includes multiple benefits (e.g., "100GB data + unlimited voice + free Netflix"), this is ONE complete package, NOT a primary package with separate add-ons.
+  - **Add-ons** are only those optional extras sold separately with additional charges beyond the package price (e.g., "Package is 299 baht, and if you want to add extra YouTube Premium, it's an additional 99 baht per month")
+  - Do not evaluate bundled features within a single-price package as "add-ons" or "primary + supplementary"
+  - **WARNING — Value highlighting ≠ separate charge:** Agents often highlight the retail value of bundled benefits (e.g., "ปกติซื้อเอง 149 บาท แต่รวมอยู่ในแพ็กแล้ว" or "จะได้รับแอปดูหนัง Viu พรีเมียม ปกติ 149 บาทต่อเดือน"). Mentioning the retail price of a bundled feature does NOT make it a separate add-on. If the customer does NOT pay extra for it → it is a bundle benefit.
+  - **Bundle signals:** "ได้ฟรี", "รวมอยู่ในแพ็ก", "ไม่ต้องจ่ายเพิ่ม", "ได้รับสิทธิ์", "แถมให้", mentioning retail value without asking customer to pay
+  - **Add-on signals:** "เพิ่มอีก X บาท", "คิดแยกจากแพ็กหลัก", "จ่ายเพิ่ม", explicit separate charge amount
+
+- **Product Categories:** Every package belongs to exactly one of three product categories:
+  - **Mobile (TrueMove H / DTAC):** Mobile phone plans, SIM cards, data packages, and mobile-related services. If a product cannot be categorized into TVS or TOL, default to Mobile.
+  - **TOL (TrueOnline):** Home broadband and internet services, delivered via fiber or other fixed-line technologies.
+  - **TVS (TrueVisions):** Television and entertainment media services, including satellite/cable TV, set-top boxes, and digital streaming platforms attached with set-top boxes.
+
+- **Main Package, Upsell, and Cross-sell Definitions:**
+  - **Main package:** The primary product or service that the agent is offering to **replace or upgrade** the customer's current package. The first package offered is not always the main package.
+  - **Upsell (add-on):** An additional package in the **SAME product category** as the main package (e.g., main is Mobile → a Mobile data add-on is upsell).
+  - **Cross-sell:** A package in a **DIFFERENT product category** from the main package (e.g., main is Mobile → a TVS or TOL package is cross-sell).
+  - A package can NEVER be both upsell and cross-sell. The main package's product category determines the boundary: same category = upsell, different category = cross-sell.
+
+### Important Context Input
+
+- All calls are **OUTBOUND only** (agent initiates the call to customer)
+- Primary language is **Thai** (ภาษาไทย)
+- Industry: Telecommunications (True, Dtac service providers)
+- Purpose: Telesale/promotional offers/customer retention
+
+### Supported Campaign List:
+
+- **01_True_CVG_DIGITAL (CVG Digital):** Outbound call targeting web/digital customers (ลูกค้าทางเว็บไซต์) who do not yet use TrueOnline. Goal: sell TrueOnline (TOL) home broadband to convert them into convergence customers (ลูกค้า CVG) — bundling mobile + home internet. Key disclosures: service contract terms, installation scheduling, service availability confirmation, and customer confirmation.
+- **03_True_CVG_Post (CVG Postpaid):** Outbound call targeting existing True Mobile Postpaid customers (ลูกค้าทรูมูฟ เอช รายเดือน). Goal: sell TrueOnline (TOL) home broadband as an add-on to their existing mobile postpaid plan to create a convergence bundle. Key disclosures: contract terms, installation coordination, service availability, and customer confirmation.
+- **08_True_P2P_M1 (Prepaid to Postpaid — Month 1):** Outbound call to prepaid (เติมเงิน) customers offering migration to a monthly postpaid plan (รายเดือน), Month 1 promotional tier. Key disclosures: new package name, monthly price, data quota, voice quota, fair-usage policy, billing cycle date, payment method, and bill delivery channel.
+- **09_True_P2P_M2 (Prepaid to Postpaid — Month 2):** Same as P2P_M1 but second promotional tier. Same required disclosures as P2P_M1.
+- **10_True_UTOL (Upsell TrueOnline):** Outbound call to existing TrueOnline subscribers offering upgrade to a higher-speed/higher-priced home broadband plan. Key disclosures: new speed tier (Mbps), new monthly price (including VAT/tax), pro-rated charges for mid-cycle activation, and installation/technician guidance.
+- **13_True_Promo_End :** Outbound call to True/Dtac customers whose current promotional package is expiring. No contract penalty for switching. Key disclosures: (1) new package benefits, price, and quotas; (2) current promotion expiry date; (3) confirmation that old package continues without penalty if customer declines.
+- **Other:** Any campaign or topic not covered by the campaigns above.
+
+### Agent Performance Summary Requirements
+
+After evaluating all categories, provide overall performance summary:
+
+#### **agent_strength** (จุดแข็งของพนักงาน)
+
+- **Purpose:** Highlight 2-4 key strengths demonstrated consistently across the call
+- **Format:** Thai language summary (max 800 characters)
+- **Content Guidelines:**
+  - Focus on behaviors that positively impacted customer experience or compliance
+  - Reference specific examples from different categories (operations, sales, CX, compliance)
+  - Patterns matter more than single instances
+  - Example structure: "1) [Strength area]: [Specific behavior/example] 2) [Strength area]: [Specific behavior/example]"
+- **Good examples:**
+  - "การเปิดสายมืออาชีพ พนักงานแนะนำตัว บอกที่มาชัดเจน และขออนุญาตก่อนนำเสนอ"
+  - "รับฟังความต้องการดี ถามปริมาณการใช้งานและงบประมาณก่อนเสนอแพ็ก"
+  - "น้ำเสียงสุภาพตลอดสาย แม้ลูกค้าปฏิเสธก็ยังรักษาความสุภาพ"
+
+#### **agent_weakness** (จุดที่ควรพัฒนา)
+
+- **Purpose:** Identify 2-4 key improvement areas that impacted performance
+- **Format:** Thai language summary (max 800 characters)
+- **Content Guidelines:**
+  - Focus on behaviors that negatively impacted evaluation scores
+  - Reference specific gaps or violations from different categories
+  - Prioritize issues with compliance or customer experience impact
+  - Be constructive - phrase as improvement opportunities
+  - Example structure: "1) [Weak area]: [Specific issue/example] 2) [Weak area]: [Specific issue/example]"
+- **Good examples:**
+  - "ไม่ถามยืนยันตัวตนก่อนทำรายการ ควรถามข้อมูลผู้จดทะเบียนเพื่อความปลอดภัย"
+  - "อธิบายราคาไม่ชัดเจน ลูกค้าถามซ้ำเรื่องค่าบริการส่วนเกิน"
+  - "ปิดสายเร็วเกินไป ไม่ถามว่าลูกค้ามีคำถามเพิ่มเติมหรือไม่"
+
+### Campaign Ratio Analysis (Campaign Coverage Assessment)
+
+After evaluating all categories, analyze what percentage of the conversation is related to the main campaign vs other topics:
+
+#### **campaign_ratio** (อัตราส่วนแคมเปญ)
+
+- **Purpose:** Detect and quantify conversation topics - what percentage discusses the main campaign vs other unrelated topics
+- **Format:** JSON object with two float fields: `main` (0.0-1.0), `other` (0.0-1.0)
+- **Total Must Equal 1.0:** main + other = 1.0 (represents 100% of conversation)
+- **Decimal Precision:** Round to 2 decimal places (e.g., 0.75, 0.25)
+
+#### **Field Definitions:**
+
+**`main`** - Main Campaign Ratio (อัตราส่วนแคมเปญหลัก)
+
+- **Definition:** Percentage of conversation time/content discussing the primary campaign referenced in `campaign_name` field
+- **Range:** 0.00 to 1.00 (0% to 100%)
+- **When High (≥0.70):** Agent stays focused on main campaign throughout call
+- **When Medium (0.40-0.69):** Conversation includes main campaign but also discusses other topics
+- **When Low (≤0.39):** Most conversation is about other topics, minimal main campaign discussion
+- **Example:** If 75% of conversation discusses promotion end offers → main = 0.75
+
+**`other`** - Other Topics Ratio (อัตราส่วนหัวข้ออื่น)
+
+- **Definition:** Percentage of conversation time/content discussing topics NOT related to main campaign
+- **Range:** 0.00 to 1.00 (0% to 100%)
+- **Includes:** General inquiries, billing issues, technical support, other promotions, small talk, unrelated customer concerns
+- **Example:** If 25% of conversation discusses billing questions → other = 0.25
+
+#### **Evaluation Guidelines:**
+
+1. **Analyze entire conversation** - From opening to closing, identify which parts discuss main campaign vs other topics
+2. **Estimate proportions** - Based on time spent, number of exchanges, or content volume
+3. **Main campaign indicators:**
+   - Agent explains main campaign offer details
+   - Customer asks questions about main campaign
+   - Discussion of main campaign benefits, pricing, terms
+   - Main campaign objection handling
+4. **Other topics indicators:**
+   - Customer asks about billing, technical issues, account balance
+   - Agent provides general service support
+   - Discussion of different promotions not part of main campaign
+   - Small talk or unrelated customer service
+5. **Ensure totals:** main + other must equal 1.0 exactly
+
+> **Campaign reference:** Use the **Supported Campaign List** defined above (under _Important Context Input_) to identify the main campaign. The campaign matching the `campaign_name` field is the main campaign; all other topics classify as `other`.
+
+#### **Examples:**
+
+**Example 1: Focused Main Campaign Call**
+
+```json
+{
+  "campaign_ratio": {
+    "main": 0.9,
+    "other": 0.1
+  }
+}
+```
+
+_Explanation:_ 90% of call discusses promo end offer, customer asks detailed questions, agent explains benefits. Only 10% is opening/closing pleasantries.
+
+**Example 2: Mixed Topics Call**
+
+```json
+{
+  "campaign_ratio": {
+    "main": 0.5,
+    "other": 0.5
+  }
+}
+```
+
+_Explanation:_ First half of call discusses promo end offer, second half customer asks about billing issues and current usage.
+
+**Example 3: Mostly Other Topics**
+
+```json
+{
+  "campaign_ratio": {
+    "main": 0.2,
+    "other": 0.8
+  }
+}
+```
+
+_Explanation:_ Agent briefly mentions promo end offer, but customer redirects to technical support issues. Most conversation is troubleshooting.
+
+### Quality Assessment Framework
+
+This QA framework evaluates call center quality across **5 main categories**:
+
+1. **Operations and Professionalism**
+2. **Sales Effectiveness**
+3. **Customer Experience (CX)**
+4. **Compliance**
+5. **Check List**
+
+---
+
+## **Main Category 1: Operations and Professionalism**
+
+This category evaluates professional conduct and operational excellence across 5 sub-categories:
+
+### **Sub-Category 1.1: Call Opening** (การเปิดสาย)
+
+Opening procedures for outbound telesale calls.
+
+#### **1.1.1 proper_identification** - Proper Identification (การแสดงตัวตนผู้ติดต่อ)
+
+- **Definition:** Agent must inform agent name with customer
+- **True when:** Agent provides ALL required components BEFORE discussing other topics:
+  - Greeting (สวัสดีครับ/ค่ะ)
+  - Agent name (ดิฉันชื่อ.../ผมชื่อ...)
+- **False when ANY of these occur:**
+  - Agent starts selling or asking questions without proper introduction
+  - Missing any required component (greeting, name)
+- **CRITICAL:** agent name is MANDATORY. Missing = False
+- **Thai keywords (positive):** สวัสดีครับ, สวัสดีค่ะ, ดิฉันชื่อ, ผมชื่อ
+- **Positive example:** "สวัสดีครับ ดิฉันชื่อ..." ก่อนถามหรืออธิบายเรื่องอื่น
+- **Negative example** เริ่มถามข้อมูลหรือเริ่มขายทันทีโดยไม่มีการแนะนำตัว
+
+#### **1.1.2 call_origin_disclosure** - Call Origin Disclosure (การแจ้งที่มาของการติดต่อ)
+
+- **Definition:** Agent clearly states which company they are calling from (True or Dtac)
+- **True when:** Agent mentions company name (ทรู/ทรูมูฟ เอช/ดีแทค/ทรูออนไลน์/ทรูวิชชั่นส์)
+- **False when:** Agent is vague about origin ("โทรจากฝ่ายบริการ" without company name) or uses urgency tactics misleadingly
+- **Thai keywords (positive):** ทรู, ดีแทค, ทรูมูฟ เอช, ทรูออนไลน์, ทรูวิชชั่นส์
+- **Positive example:** "ติดต่อจากทรู/ทรูมูฟ เอช/ดีแทค นะคะ/ครับ"
+- **Negative example:** พูดกำกวมไม่ชัดเจนว่ามาจากที่ใด หรือใช้คำพูดชวนเข้าใจผิดเรื่องความเร่งด่วน เช่น "มีเรื่องด่วนเกี่ยวกับเบอร์ของคุณ" ทั้งที่เป็นการโทรเสนอขายบริการ
+
+#### **1.1.3 consent_before_engagement** - Consent Before Engagement (การขออนุญาตก่อนสนทนา/นำเสนอ)
+
+- **Definition:** Agent EXPLICITLY asks for customer's permission or convenience before proceeding with the detailed offer. The agent must use a question or request for permission. The consent phrase can appear before OR after stating the call objective or call introduction, as long as it is asked before the actual detailed pitch/offer begins.
+- **True when:** Agent uses explicit consent-asking language such as "ขออนุญาต...", "สะดวกคุยสาย..." or similar permission-seeking phrases at any point during the opening (before or after stating the call purpose)
+- **False when:** Agent proceeds to the detailed pitch/offer without ANY consent-asking phrase at all, OR asks but ignores customer saying they're inconvenient (e.g., driving)
+- **Abandoned call (True):** If the call is abandoned early (customer hangs up before or during the opening, before the agent had an opportunity to ask for consent) → treat as **True**. The agent is not penalized for not asking when no opportunity existed.
+- **CRITICAL — What is NOT consent (by itself):** The following phrases alone are NOT consent-asking. However, if they are FOLLOWED BY an explicit consent phrase (e.g., "ขออนุญาตนะคะ"), the overall opening IS True:
+  - Announcing what the agent will do (e.g., "วันนี้จะมาดูแลในส่วนของแพ็กเกจ..." — pitch only, not asking permission)
+  - Stating the purpose of the call (e.g., "โทรมาเพื่อแจ้งสิทธิพิเศษ..." — informing only, not asking)
+  - Transitional phrases (e.g., "เรามีโปรโมชั่นดีๆ มาแนะนำ..." — selling only, not asking)
+- **Thai keywords (positive — IS consent):** ขออนุญาต, ขออนุญาตเรียนสาย, สะดวกคุยสาย, สะดวกไหม, รบกวนได้ไหม, รบกวนเวลา, รบกวนสักครู่, พอจะมีเวลาไหม, ขออนุญาติเรียนแจ้ง, สักครู่สะดวกได้นะคะ, สะดวกคุยสายสักครู่นะคะ
+- **Thai keywords (negative — NOT consent):** วันนี้จะมาดูแล, จะมาแนะนำ, โทรมาเพื่อ, มีโปรดีๆ, เรียนสาย (alone without ขออนุญาต prefix — addressing the customer is NOT asking permission)
+- **Positive example 1 (consent first):** "สะดวกคุยสายนะคะ" → รอลูกค้าตอบ → จึงเริ่มนำเสนอ
+- **Positive example 2 (consent after objective):** "พอดีวันนี้ติดต่อเข้ามาดูแลในส่วนของโปรโมชั่น ขออนุญาตนะคะ" → True เพราะมีคำขออนุญาตชัดเจน แม้จะพูดวัตถุประสงค์ก่อน
+- **Positive example 3 (consent after introduction):** "วันนี้ที่ดีแทคติดต่อมานะคะ เนื่องจากว่าเรามีสิทธิพิเศษรายเดือนตัวใหม่มา ขออนุญาตเรียนแจ้งให้ค่ะ"
+- **Positive example 4 (consent via ขออนุญาตเรียนสาย):** "สวัสดีค่ะ [ชื่อพนักงาน]ติดต่อจาก TrueMove H นะคะ ขออนุญาตเรียนสายคุณ[ชื่อลูกค้า]ค่ะ" → True เพราะ "ขออนุญาตเรียนสาย" เป็นการขออนุญาตพูดคุยกับลูกค้าก่อนเริ่มนำเสนอ ถือเป็นการขอความยินยอมก่อนการสนทนา
+- **Positive example 5 (consent via requesting time):** "สวัสดีครับ สุภาพติดต่อจาก Dtac ครับ วันนี้ Dtac จัดแคมเปญพิเศษครับ รบกวนเวลา 2 นาทีนะครับ" → True เพราะ "รบกวนเวลา 2 นาที" เป็นการขอเวลาลูกค้าก่อนนำเสนอ ถือเป็นการขออนุญาตโดยนัย
+- **Positive example 6 (consent in second agent turn after customer asks to wait):** Agent turn 1: "รบกวนเวลาแจ้งอัปเกรดโปรโมชั่นแพ็กเกจหน่อยค่ะ" → Customer: "แป๊บนึงนะ" → Agent turn 2: "ค่ะ รบกวนเวลาสัก 2-3 นาทีนะคะ" → Customer: "ค่ะ" → **True** — consent is valid even when it appears in a follow-up agent turn, as long as it occurs before the actual detailed pitch begins. The entire opening interaction is the consent window. Also: "รบกวนเวลาแจ้ง[objective]" (e.g., "รบกวนเวลาแจ้งอัปเกรดโปรโมชั่นหน่อยค่ะ") uses "รบกวนเวลา" and counts as consent.
+- **Negative example 1:** เดินหน้าอธิบายหรือถามข้อมูลทันทีโดยไม่มีคำขออนุญาตเลย หรือฝืนพูดต่อแม้ลูกค้าบอกว่าไม่สะดวก
+- **Negative example 2:** พนักงานพูดว่า "วันนี้ค่ะ เจ้าหน้าที่ก็เลยจะมาดูแลในส่วนของแพ็กเกจโปรตัวใหม่ให้ได้เลย" แล้วเริ่มนำเสนอรายละเอียดทันที → False เพราะไม่มีคำขออนุญาตใดๆ เลยในประโยค
+- **Negative example 3 (เรียนสาย without ขออนุญาต):** "สวัสดีค่ะ จริยาติดต่อจากทรู เรียนสายเบอร์คุณนารีรัตน์นะคะ" → False เพราะ "เรียนสาย" ลำพังหมายถึงการทักทายลูกค้า ไม่ใช่การขออนุญาต — ต้องมีคำว่า "ขออนุญาต" นำหน้า เช่น "ขออนุญาตเรียนสายคุณ..." จึงจะถือเป็นการขอความยินยอม
+- **Negative example 4 (registrant identity check ≠ consent):** "สวัสดีค่ะ ดิฉันอรอนติดต่อจากดีแทค เนื่องจากโปรปัจจุบันใกล้ครบรอบแล้ว มีสิทธิพิเศษใหม่มาเรียนแจ้ง เรียนสายคุณณชาโดยตรงเลยหรือเปล่าค่ะ" → **False** — "เรียนสายคุณ[ชื่อ]โดยตรงเลยหรือเปล่าค่ะ" means "Am I speaking directly to [Name]?" — it is a registrant identity check (confirming the agent reached the right person), NOT a consent request. Even though it ends with a question ("หรือเปล่า"), there is no "ขออนุญาต", "รบกวน", or "สะดวก" phrase anywhere in the opening → False.
+
+---
+
+### **Sub-Category 1.2: Customer Identity Verification** (การยืนยันตัวตนลูกค้า)
+
+Verification procedures based on transaction type and user identity.
+
+**SCOPE — What 1.2 Evaluates:**
+1.2 evaluates the identity verification that the agent performs **AFTER the customer accepts the offer**, as part of completing the transaction. This is the formal verification step before the sale is processed.
+
+- Questions asked BEFORE the customer accepts (e.g., registrant-status checks at the call opening like "เป็นผู้ใช้บริการโดยตรงเลยใช่ไหม") are preliminary routing checks — they are NOT the verification step that 1.2 evaluates.
+- The verification 1.2 evaluates is the name/surname request (and 3-part if applicable) that occurs AFTER the customer says yes to the offer.
+- Call flow context: Opening → Presenting → **Customer accepts** → **[1.2 verification happens here]** → Transaction processed
+
+**CRITICAL DECISION GATE - READ THIS FIRST:**
+
+**STEP 1: Was sale/service completed?**
+
+- NO (customer rejected, not interested, call ended without transaction) → **ALL FIELDS = None** → Stop here, do not evaluate verification
+- YES (customer accepted offer, service activated, transaction proceeded) → Continue to evaluate verification
+
+**IMPORTANT:**
+
+- This sub-category evaluates identity verification scenarios **ONLY when sale/service is completed**
+- If NO sale/service completed → ALL fields (customer_verification, invalid_verification, missing_verification) MUST be None
+- Do NOT evaluate True/False unless sale/service was actually completed
+- Examples requiring None: "ไม่สนใจ", "ปฏิเสธข้อเสนอ", "ไม่รับ", "ไม่สะดวก", call ended without agreement
+
+**CRITICAL — Final Outcome Determines Evaluation:**
+Even if the agent started or completed verification during the call (asked name/surname, asked for registrant info, etc.), if the customer ultimately rejects the offer or the sale is NOT completed, ALL 1.2 fields MUST be None.
+
+Do NOT evaluate verification that occurred before the customer changed their mind. The **final outcome** of the call (sale completed or not) is the only trigger for 1.2 evaluation.
+
+**Example:** Agent asks "ขอทราบนามสกุลคุณลูกค้าด้วยนะครับ" → customer gives surname → then customer says "ขอไม่รับแล้วนะคะ" → **All None** (no sale = Scenario 1, despite verification having occurred).
+
+---
+
+## **Evaluation Logic - CRITICAL FIELD COMBINATIONS:**
+
+### **Scenario 1: No Verification Needed - USE THIS WHEN NO SALE/SERVICE COMPLETED**
+
+**When:** Customer not interested OR sale/service not completed OR customer rejected offer
+
+**Field Values:**
+
+- `customer_verification` = None
+- `invalid_verification` = None
+- `missing_verification` = None
+
+**Explanation:** When customer rejects the offer or service cannot be completed, verification is NOT required at all. All fields MUST be None - do NOT use True/False.
+
+**Key Point:** No sale = No verification needed = All None (NOT False, but None)
+
+**Example conversations requiring ALL None:**
+
+1. Customer says "ไม่สนใจครับ" → Agent ends call → No transaction
+2. Customer says "ไม่รับแล้วค่ะ" → No service activated → No transaction
+3. Customer too busy "กำลังขับรถอยู่" → Call ends → No transaction
+4. Agent explains offer → Customer "ขอคิดดูก่อน" → No commitment → No transaction
+
+---
+
+### **Scenario 2: No Verification Attempted (Complete Violation)**
+
+**When:** Sale/service completed BUT agent never asked the customer for name-surname or surname
+
+**Field Values:**
+
+- `customer_verification` = False (no verification asked)
+- `invalid_verification` = False (nothing to evaluate)
+- `missing_verification` = False (verification IS completely missing)
+
+**Explanation:** Sale was completed but agent skipped verification entirely — never asked for name-surname, surname from the customer.
+**Key Point:** No ask = All False — compliance violation
+
+**Verification timing:** Agent CAN present the promotion before asking for verification. However, after the customer accepts the offer, the agent MUST ask for name/surname (and do 3-part if customer is not registrant) BEFORE completing the transaction. If the agent completes the transaction without ever asking for name/surname → Scenario 2 (False, False, False), regardless of any registrant-status questions asked earlier.
+
+**Example (Thai):** ลูกค้าตกลงรับโปรโมชั่น "ลองลองโปรใหม่ก็ได้ค่ะ" พนักงานถามเพียง "พี่เป็นผู้ใช้บริการของหมายเลขที่ลงท้ายด้วย 2016 โดยตรงเลยใช่ไหมคะ" ตั้งแต่ต้นสาย ลูกค้าตอบ "อ้อ ของคุณนพรัตน์ค่ะ" (ไม่ใช่ผู้จดทะเบียน) — พนักงานนำเสนอโปรโมชั่น — ลูกค้าตอบรับ — พนักงานดำเนินการทันที "รับดูแลสิทธิ์ให้เรียบร้อยค่ะ" โดยไม่ถามชื่อ-นามสกุล → **(False, False, False)** — "เป็นผู้ใช้บริการโดยตรงเลยใช่ไหม" ไม่ใช่การยืนยันตัวตน; ต้องถามชื่อ-นามสกุลหลังลูกค้าตอบรับ
+
+---
+
+### **Scenario 3: Verification Passed – No Registrant Context**
+
+**When:** Sale/service completed AND agent asked customer for name-surname or surname AND agent did NOT mention registrant or owner during the call
+
+**Field Values:**
+
+- `customer_verification` = True
+- `invalid_verification` = None (not applicable — registrant topic not raised; 3-part verification not triggered)
+- `missing_verification` = True
+
+**Explanation:** Agent asked the customer for name-surname or surname only, and the registrant or owner topic was never raised. Since we assume/treat the customer as the registrant when this topic is absent, 3-part verification is not triggered — `invalid_verification` is not applicable (None). Basic verification was completed so `missing_verification` = True.
+**Key Point:** Asked + no registrant or owner mention = True, None, True
+
+---
+
+### **Scenario 4: Verification Passed – Customer IS the Registrant**
+
+**When:** Sale/service completed AND agent asked AND agent mentioned registrant or owner AND customer confirmed they ARE the registrant or owner.
+
+**Field Values:**
+
+- `customer_verification` = True
+- `invalid_verification` = None (not applicable — customer IS the registrant; 3-part verification not required)
+- `missing_verification` = True
+
+**Explanation:** When the customer is the registrant themselves, the initial name/surname question is sufficient — no 3-part additional verification is required. `invalid_verification` = None (not applicable).
+**Key Point:** Customer is registrant = True, None, True
+
+---
+
+### **Scenario 5: Verification Passed – Full 3-Part Verification Completed (Customer NOT Registrant)**
+
+**When:** Sale/service completed AND agent asked AND registrant was mentioned AND customer confirmed they are NOT the registrant AND IS the payer (ผู้ชำระเงิน) AND agent completed all 3 required questions
+
+**Required questions (all 3 must be present):**
+1. Name-surname of the registrant
+2. Surname of the current user/customer
+3. At least 1 additional question:
+   - Current phone brand
+   - Current billing channel
+   - Birth date/month
+
+**Field Values:**
+
+- `customer_verification` = True
+- `invalid_verification` = True
+- `missing_verification` = True
+
+**Explanation:** Agent successfully completed all 3 required verification questions when dealing with a non-registrant user.
+**Key Point:** All 3 questions completed = All True
+
+---
+
+### **Scenario 6: Verification Incomplete (Customer NOT Registrant, Missing Questions)**
+
+**When:** Sale/service completed AND agent asked AND registrant was mentioned AND customer is NOT the registrant AND IS the payer (ผู้ชำระเงิน) BUT agent did NOT complete all 3 required questions
+
+**Field Values:**
+
+- `customer_verification` = True (agent did ask initial name/surname)
+- `invalid_verification` = False (verification is incomplete)
+- `missing_verification` = False (required questions are effectively missing)
+
+**Explanation:** When the customer is not the registrant, agent must complete all 3 verification questions. Failing to do so means the verification is insufficient even though some questions were asked.
+**Key Point:** Incomplete 3-part verification = True, False, False
+
+---
+
+### **Special Case: customer_verification = True, invalid_verification = None, missing_verification = None**
+
+**When** (only applies on the "customer NOT registrant" path):
+- Agent DID ask the customer for name/surname (so 1.2.1 = True)
+- Customer is not the registrant AND not the payer (ไม่ใช่ผู้จดทะเบียนและไม่ใช่ผู้ชำระเงิน)
+  → Agent drops the current call to make an outbound call to find the registrant. The AI cannot follow that outbound call, so 1.2.2 and 1.2.3 cannot be evaluated.
+
+**Field Values:**
+
+- `customer_verification` = True (agent did ask for name/surname)
+- `invalid_verification` = None (cannot evaluate — customer not registrant & not payer)
+- `missing_verification` = None (cannot evaluate — customer not registrant & not payer)
+
+**Explanation:** The agent asked correctly (so 1.2.1 passes as True), but once it is established that the customer is neither the registrant nor the payer, no further verification can be completed or evaluated. 1.2.2 and 1.2.3 revert to None.
+
+---
+
+### **Scenario 7: Agent Drops Call to Contact Registrant — No Verification Attempted**
+
+**When:** Sale was in progress BUT agent explicitly told the customer they will drop this call and contact the registrant directly — WITHOUT asking the customer's name/surname first.
+
+**Field Values:**
+
+- `customer_verification` = None
+- `invalid_verification` = None
+- `missing_verification` = None
+
+**Explanation:** The agent made a deliberate procedural decision to redirect and contact the registrant outbound, before any verification was attempted. This is NOT a compliance violation (not False) — the agent recognized the situation and took appropriate action. This is also NOT an abandon call. Since no verification was attempted or completable, all fields are None.
+
+**Key Point:** Agent explicitly redirects to registrant without asking = All None (not False, not abandon)
+
+**Distinguishing from similar scenarios:**
+- **vs Scenario 2 (all False):** Scenario 2 = sale completed but agent skipped verification. Scenario 7 = sale NOT completed because agent redirected to registrant.
+- **vs Special Null (True, None, None):** Special Null = agent DID ask name/surname first, THEN discovered not registrant/not payer. Scenario 7 = agent did NOT ask, went directly to registrant outbound.
+- **vs Scenario 1 (no sale):** Scenario 1 = customer rejected/no transaction. Scenario 7 = agent made deliberate redirect before transaction completed.
+
+---
+
+### **Scenario Summary Table:**
+
+| Scenario                                         | customer_verification | invalid_verification | missing_verification | Key Indicator                                       |
+| ------------------------------------------------ | --------------------- | -------------------- | -------------------- | --------------------------------------------------- |
+| 1: No sale (incl. abandon call)                  | None                  | None                 | None                 | Customer rejected / no transaction / customer or system drops |
+| Special Null                                     | True                  | None                 | None                 | Agent asked, but customer not registrant & not payer → agent drops to call registrant outbound |
+| 7: Agent drops for registrant (no ask)           | None                  | None                 | None                 | Agent explicitly redirects to registrant without asking name/surname — NOT abandon |
+| 2: Didn't ask                                    | False                 | False                | False                | Sale completed but no verification attempted at all |
+| 3: Asked, no registrant context                  | True                  | None                 | True                 | No registrant topic mentioned — assume customer is registrant |
+| 4: Asked, customer IS registrant                 | True                  | None                 | True                 | Customer confirmed as registrant — 3-part not triggered |
+| 5: Asked, NOT registrant, 3 questions complete   | True                  | True                 | True                 | Full 3-part verification done                       |
+| 6: Asked, NOT registrant, incomplete             | True                  | False                | False                | Missing required questions                          |
+
+---
+
+**Decision Tree for Quick Reference:**
+
+```
+Did agent explicitly drop this call to contact registrant directly (WITHOUT asking name/surname)?
+├─ YES → Scenario 7 (None, None, None) — deliberate redirect, NOT abandon
+└─ NO → Did sale/service complete? (use FINAL outcome — if customer rejected after verification, still = NO)
+    ├─ NO (or abandon call: customer/system drops) → Scenario 1 (All None)
+    └─ YES → Did agent ask customer for name-surname or surname AS PART OF completing the transaction (after customer accepted)?
+              NOTE: "เป็นผู้ใช้บริการโดยตรงเลยใช่ไหม" does NOT count — registrant routing check, not a name/surname request
+        ├─ NO → Scenario 2 (False, False, False) - Violation!
+        └─ YES (1.2.1 Passed) → Did agent mention the registrant?
+            ├─ NO → Scenario 3 (True, None, True) - All passed
+            └─ YES → Is customer the registrant?
+                ├─ YES (is registrant) → Scenario 4 (True, None, True) - All passed
+                └─ NO (not registrant) → Is customer the payer?
+                    ├─ NO (not payer) → Special Null (True, None, None) — agent drops call to reach registrant outbound
+                    └─ YES (is payer) → 3-part verification required
+                        ├─ Complete all 3 questions? YES → Scenario 5 (True, True, True)
+                        └─ Complete all 3 questions? NO  → Scenario 6 (True, False, False)
+```
+
+**CRITICAL — How to determine if customer IS or IS NOT the registrant from Thai responses:**
+
+| Customer response pattern | Meaning | Verdict |
+|---|---|---|
+| "ใช่ค่ะ/ครับ", "ใช่ ดิฉันเองค่ะ", "ใช่ ผมเองครับ", "ใช่ ผมจดทะเบียนเอง" | Customer confirms they ARE the registrant | IS registrant → Scenario 4 |
+| "ของคุณ [ชื่อ]", "เป็นของ [ชื่อ]", "เป็นชื่อ [ชื่อ]" | Number belongs to someone ELSE | NOT registrant → must do 3-part |
+| "ของแม่/พ่อ/ภรรยา/สามี/ลูก/เพื่อน" | Number belongs to a family member/friend | NOT registrant → must do 3-part |
+| "ไม่ใช่ครับ/ค่ะ ของ [ชื่อ]" | Explicit denial + third party name | NOT registrant → must do 3-part |
+
+**WRONG AI interpretation example:** Customer says "อ๋อ ของคุณนพรัตน์ค่ะ" → this means "oh, it belongs to คุณนพรัตน์" — customer is NOT the registrant. Do NOT interpret "ของคุณ [ชื่อ]" as the customer saying they ARE that person — it always refers to a THIRD PARTY.
+
+#### **1.2.1 customer_verification** - Customer Verification (ยืนยันตัวตนถูกต้อง)
+
+- **Definition:** Agent asks the current customer for basic identity verification (name-surname or surname) when completing sale/service
+- **True when:** Sale/service is completed AND agent asks the customer for name/surname **as part of completing the transaction** (after the customer has accepted the offer):
+  - Name and Surname (ชื่อ-นามสกุล), OR
+  - Surname only (นามสกุล)
+- **False when:** Sale/service completed but agent never asked for name/surname as part of the verification step — registrant-status questions ("เป็นผู้ใช้บริการโดยตรงเลยใช่ไหม" — yes/no about being the subscriber) do NOT count
+- **None when:** No sale/service was completed (customer rejected, not interested, or call ended without transaction)
+- **Thai keywords (positive):** เพื่อเป็นการยืนยันตัวตน, นามสกุลอะไรครับ/คะ, ขอทราบชื่อ-นามสกุล
+- **NOTE — Registrant status check is NOT verification:** Asking "เป็นผู้ใช้บริการโดยตรงเลยใช่ไหมคะ" (are you the direct subscriber?) is a registrant STATUS CHECK — it is a yes/no question and does NOT count as asking for name/surname. Only explicit requests for name-surname or surname count toward `customer_verification = True`. If the agent only asked "are you the registrant?" without separately asking for name/surname anywhere in the call → `customer_verification = False`.
+
+#### **1.2.2 invalid_verification** - Invalid Verification (ยืนยันตัวตนไม่ครบถ้วน)
+
+- **Definition:** When customer is NOT the registrant and 3-part verification is required, indicates whether all required questions were completed
+- **True when:** Customer is NOT the registrant AND IS the payer AND agent completed all 3 required questions (Scenario 5):
+    1. Name-surname of the registrant
+    2. Surname of the current user
+    3. At least 1 additional: current phone brand / billing channel / birth date-month
+- **False when:** Customer is NOT the registrant AND IS the payer AND agent did NOT complete all 3 required questions (Scenario 6)
+- **None when:** No identity verification applicable — any of the following:
+  - No sale/service completed (Scenario 1, abandon call)
+  - Agent redirected to registrant without asking (Scenario 7)
+  - Registrant topic was never raised — customer assumed to be registrant (Scenario 3)
+  - Customer IS the registrant — 3-part verification not triggered (Scenario 4)
+  - Customer is not registrant & not payer (Special Null — 1.2.1 = True but 1.2.2 cannot be evaluated)
+
+#### **1.2.3 missing_verification** - Missing Verification (ไม่ยืนยันตัวตน)
+
+- **Definition:** Indicates whether the full required verification was performed
+- **True when:** Agent DID perform sufficient verification (Scenarios 3, 4, 5)
+- **False when:**
+  - Sale/service completed but agent never asked for any verification (Scenario 2), OR
+  - Customer NOT registrant but agent failed to complete all 3 required questions (Scenario 6)
+- **None when:** No identity verification applicable — any of the following:
+  - No sale/service completed (Scenario 1, abandon call)
+  - Agent redirected to registrant without asking (Scenario 7)
+  - Customer is not registrant & not payer (Special Null — 1.2.1 = True but 1.2.3 cannot be evaluated)
+- **Key:** True = verification complete/sufficient; False = verification missing or insufficient
+
+---
+
+### **Sub-Category 1.3: Language & Tone** (ภาษาและน้ำเสียง)
+
+Professional communication with appropriate tone, clarity, and delivery pace.
+
+#### **1.3.1 behavioral_violation** - Behavioral Violation (ความไม่เหมาะสม)
+
+- **Definition:** Detection of inappropriate language, sarcasm, or aggressive tone
+- **True when:** NO violations detected - agent maintains polite tone even when customer is upset
+- **False when:** Agent uses rude words, sarcasm, sighs annoyedly, or interrupts customer rudely
+- **Positive example:** พนักงานรักษาน้ำเสียงสุภาพแม้ลูกค้าไม่พอใจ "เข้าใจความไม่สะดวกของลูกค้านะครับ เดี๋ยวผมช่วยตรวจสอบให้"
+- **Negative example:** ใช้คำพูดประชด เสียงแข็ง เช่น "ก็แจ้งไปแล้วนะครับว่าต้องทำยังไง", ถอนหายใจเสียงรำคาญ, พูดแทรกลูกค้าด้วยน้ำเสียงหงุดหงิด
+
+#### **1.3.2 clarity** - Clarity (ความไม่ชัดเจนของถ้อยคำ)
+
+- **Definition:** Clear and direct communication without ambiguity
+- **True when:** Agent explains clearly, customer understands without repeated questions, uses layman terms instead of jargon
+- **False when:** Customer asks same question ≥2 times, agent uses internal jargon without explanation (e.g., "HLR, SMS OTA"), answers don't address customer's question
+- **Thai keywords (negative - indicate lack of clarity):** "หมายถึง…ใช่ไหม", "ยังไม่ได้ตอบคำถาม", "ขอถามใหม่"
+- **Positive example:** พนักงานอธิบายขั้นตอนชัดเจนเป็นข้อ ๆ และทวนว่า "ขอสรุปอีกครั้งนะครับ ขั้นตอนมี 2 ส่วนคือ…" แล้วถาม "แบบนี้ชัดเจนไหมครับ"
+- **Negative example:** ลูกค้าถามซ้ำเรื่องเดิมหลายครั้งเพราะไม่เข้าใจคำอธิบาย, ใช้คำศัพท์ภายใน/ตัวย่อโดยไม่อธิบาย
+
+#### **1.3.3 delivery_pace** - Delivery Pace (ความเร็วในการพูด)
+
+- **Definition:** Appropriate speaking speed - neither too fast nor too slow
+- **True when:** Agent speaks at steady pace, slows down for important details, asks "ฟังทันไหมครับ" proactively
+- **False when:** Agent speaks too fast (customer says "ฟังไม่ทัน"), speaks too slowly with awkward long pauses, or rushes through terms & conditions
+- **Thai keywords (negative):** "ฟังไม่ทันค่ะ/ครับ", "พูดช้าหรือเร็วอีกนิดได้ไหม"
+- **Positive example:** พนักงานพูดด้วยจังหวะคงที่ ชัดถ้อยชัดคำ หากเนื้อหาสำคัญจะชะลอความเร็วเล็กน้อย และถามย้ำว่า "ฟังทันไหมครับ"
+- **Negative example:** พูดเร็วติดกันยาว ๆ โดยไม่หยุดหายใจ ลูกค้าขอให้ทวนหลายครั้ง หรือพูดช้ามาก/เว้นช่วงนาน ๆ ทำให้บทสนทนาขาดตอน
+
+---
+
+### **Sub-Category 1.4: Active Listening** (การรับฟังอย่างตั้งใจ)
+
+Attentive listening by focusing on both words and emotions of the conversation partner, to truly understand what they want to communicate.
+
+#### **1.4.1 no_interruption** - No Interruption (ไม่ขัดจังหวะลูกค้า)
+
+- **Definition:** Agent must not interrupt while customer is explaining problems and must wait for customer to finish before responding
+- **True when:** 
+  - Agent listens without interrupting, waits for customer to complete their thought, then responds
+  - If customer and agent speak at same time, but agent stops immediately and lets customer finish still True
+- **False when:** Agent cuts off customer mid-sentence, speaks over customer, or doesn't let customer finish explaining
+- **CRITICAL:** If customer is speaking and agent interrupts with a response before customer finishes their thought, this is False, even if interruption is brief or agent stops immediately after. The key is whether the agent allows the customer to fully express their issue without interruption.
+- **Positive example:** พนักงานรอให้ลูกค้าอธิบายปัญหาจนจบ ไม่พูดแทรกตอนกลาง จากนั้นจึงเริ่มตอบ "เข้าใจความกังวลของคุณลูกค้านะครับ"
+- **Negative example:** ลูกค้ากำลังบอกว่า "ตอนนี้ใช้งานแล้วพบว่า..." พนักงานแทรกทันทีว่า "อ่าเข้าใจแล้วครับ งั้นทำอย่างนี้" ก่อนที่ลูกค้าจะพูดจบ
+
+#### **1.4.2 correct_understanding** - Correct Understanding (จับประเด็นถูกต้อง)
+
+- **Definition:** Agent must understand customer's problem and respond according to the Intent that customer communicated
+- **True when:**
+  - Agent responses address the actual issue customer raised, shows understanding of the core problem, OR
+  - If customer expresses a need, agent responds with relevant solution, OR
+  - If customer expresses a concern, agent addresses that specific concern in response
+- **False when:**
+  - Agent misinterprets customer's concern, responds to wrong issue, or gives irrelevant answers
+  - If customer expresses a need but agent responds with unrelated solution, OR
+  - If customer expresses a concern but agent ignores it and responds with something else
+- **Positive example:** ลูกค้าบอกว่า "อยากลดค่าใช้จ่ายแต่ยังต้องการใช้เน็ตเยอะ" พนักงานตอบว่า "เข้าใจครับ คือต้องการแพ็กที่คุ้มค่า เน็ตเยอะแต่ราคาต่ำกว่าปัจจุบันใช่ไหมครับ"
+- **Positive example 2:** ลูกค้าบอกว่า "กังวลเรื่องค่าใช้จ่ายที่อาจเพิ่มขึ้น" พนักงานตอบว่า "เข้าใจความกังวลเรื่องค่าใช้จ่ายนะครับ แพ็กเกจที่ผมจะแนะนำจะช่วยลดค่าใช้จ่ายลงจากเดิมครับ"
+- **Negative example:** ลูกค้าถามเรื่องค่าใช้จ่าย แต่พนักงานตอบเรื่องความเร็วอินเทอร์เน็ตที่ไม่เกี่ยวข้อง
+- **Negative example 2:** ลูกค้าบอกว่า "อยากได้แพ็กที่คุ้มค่า" แต่พนักงานตอบว่า "เข้าใจครับ คุณลูกค้าต้องการแพ็กที่มีเน็ตเยอะใช่ไหมครับ" ทั้งที่ลูกค้าไม่ได้พูดถึงปริมาณเน็ตเลย
+
+#### **1.4.3 acknowledgement_paraphrasing** - Acknowledgement & Paraphrasing (การทวนและยืนยันความเข้าใจ)
+
+- **Definition:** Agent asks questions, paraphrases, or summarizes customer needs comprehensively, including summarizing what customer said to confirm understanding before providing recommendations or solutions
+- **CRITICAL RULE: If customer is NOT interested (rejected, declined, not engaged), this field MUST be True.** Paraphrasing/summarizing is only required when the customer is actively engaged and discussing needs.
+- **True when:**
+  - Agent summarizes customer's stated needs, repeats key points back to customer, asks confirmation (e.g., "ถ้าเข้าใจถูก คือ..."), waits for confirmation before proceeding
+  - **(Customer not interested):** Customer rejected or showed no interest in the offer → **always True** because there are no needs to paraphrase or summarize
+- **False when:** Customer is engaged and discussing needs, but agent proceeds with recommendations without summarizing or confirming understanding. **This can ONLY be False when the customer is actively engaged.**
+- **Positive example:** พนักงานสรุปว่า "ขอทวนความเข้าใจนะครับ คุณลูกค้าต้องการแพ็กเน็ตเยอะประมาณ 50GB งบไม่เกิน 500 บาท ถูกต้องไหมครับ" รอลูกค้ายืนยันก่อนเสนอแพ็ก
+- **Positive example 2:** ลูกค้าบอกว่า "อยากได้แพ็กที่คุ้มค่า" พนักงานสอบถามต่อว่า "ลูกค้าต้องการราคาที่ประมาณเท่าไหร่ครับ" แล้วสรุปจากสิ่งที่ลูกค้าบอกมาเพื่อยืนยันความเข้าใจ
+- **Positive example 3 (customer not interested):** ลูกค้าปฏิเสธข้อเสนอ "ไม่สนใจค่ะ" → True เพราะไม่มีความต้องการที่ต้องทวนหรือสรุป
+- **Negative example:** พนักงานฟังลูกค้าพูดความต้องการแล้วเสนอแพ็กทันที โดยไม่ทวนหรือสรุปความเข้าใจก่อน (ลูกค้าสนใจและกำลังพูดคุยอยู่)
+- **Negative example 2:** ลูกค้าบอกว่า "อยากได้แพ็กที่คุ้มค่า" พนักงานตอบว่า "เข้าใจครับ คุณลูกค้าต้องการแพ็กที่มีเน็ตเยอะใช่ไหมครับ" ทั้งที่ลูกค้าไม่ได้พูดถึงปริมาณเน็ตเลย และไม่มีการทวนหรือสรุปความเข้าใจก่อนเสนอแพ็ก
+
+---
+
+### **Sub-Category 1.5: Call Closing** (การปิดสาย)
+
+Proper call conclusion procedures.
+
+#### **1.5.1 confirm_resolution_and_next_steps** - Confirm Resolution and Next Steps (ยืนยันการปรับเปลี่ยนและขั้นตอนถัดไปหรือสรุปการสนทนา)
+
+- **Definition:** If sale/service completed, agent must confirm what was done, summarize the sale/service/conversation details, and explain next steps before ending.
+- **CRITICAL RULE: If NO sale/service was completed (customer rejected, declined, or did not agree to any action), this field MUST be True.** Summarizing is only required when a transaction actually occurred.
+- **True when:**
+  - **(Sale completed):** Agent summarizes what was accomplished, what customer received, and explains next steps (if any) clearly before ending call
+  - **(No sale/service completed):** Customer rejected or did not agree to any action → **always True** regardless of whether agent summarized, because there is nothing to confirm
+- **False when:** Sale/service WAS completed but agent fails to summarize what was done, or fails to explain next steps if needed. **This can ONLY be False when a sale/service actually occurred.**
+- **Positive example:** "วันนี้จัดการเรื่องย้ายโปรให้เรียบร้อยแล้ว มีผลภายใน 24 ชั่วโมงนะครับ" หรือ "สรุปนะครับ วันนี้คุณลูกค้าเลือกแพ็ก 299 บาท ได้เน็ต 50GB ต่อเดือน จะมีผลในวันพรุ่งนี้" และถามต่อ "มีเรื่องไหนเพิ่มเติมให้ช่วยอีกไหมครับ"
+- **Positive example 2 (no sale):** ลูกค้าปฏิเสธข้อเสนอ พนักงานปิดสายด้วยความสุภาพ → True เพราะไม่มีรายการที่ต้องสรุป
+- **Negative example:** มีการตกลงทำรายการแล้ว แต่ไม่สรุปเลยว่าดำเนินการอะไรไปแล้ว เช่น รีบพูด "งั้นเดี๋ยวลองใช้ดูนะครับ สวัสดีครับ" แล้วตัดสาย
+
+#### **1.5.2 courteous_and_proper_call_ending** - Courteous and Proper Call Ending (ปิดการสนทนาด้วยมารยาทและความสุภาพ)
+
+- **Definition:** Agent ends call with thank you and courteous closing remarks
+- **True when:** Agent says "ขอบคุณที่ให้ทรูได้ดูแล", provides support hotline info (1242), says "สวัสดีครับ/ค่ะ" with gentle tone
+- **False when:** No thank you or goodbye (silent hang-up), abrupt ending, or harsh/sarcastic tone (e.g., "ก็มีแค่นี้แหละครับ" then hangs up)
+- **Positive example:** "ขอบคุณที่ให้ทรูได้ดูแล หากต้องการความช่วยเหลือเพิ่มเติมสามารถติดต่อเราได้ที่หมายเลข 1242 ตลอดครับ สวัสดีครับ" น้ำเสียงนุ่มนวล ไม่เร่งรีบ
+- **Negative example:** ไม่มีคำขอบคุณหรือคำลาจบ เช่น เงียบแล้ววางสายไปเลย หรือใช้น้ำเสียงแข็ง ห้วน
+
+#### **1.5.3 smooth_and_non_rushed_closing** - Smooth and Non-Rushed Closing (ปิดบทสนทนาอย่างราบรื่น ไม่เร่งรีบ)
+
+- **Definition:** Call ends smoothly with proper pacing, giving customer chance to respond
+- **True when:**
+  - After summarizing and confirming resolution, agent asks if customer has any questions or needs further assistance, then waits for customer's response before ending call.
+  - After summarizing, agent gives clear closing statement and waits few seconds for customer have chance to respond before saying goodbye and hanging up.
+  - **(Customer busy/not available):** If customer indicates they are busy, not available, or wants to end the call (e.g., "ไม่สะดวกคุยค่ะ", "รีบนะคะ", "ขอตัวก่อน"), agent closes politely → **always True**. No need to wait extra seconds or ask additional questions because the customer themselves wants to end the call.
+  - **(Customer ends call):** If customer hangs up or ends the conversation themselves → **always True** regardless of agent's closing behavior.
+- **False when:** Agent rushes to end the call on their own initiative — abrupt hang-up while customer is still speaking AND still engaged, or cutting off customer who wants to continue talking. **This can ONLY be False when the agent (not the customer) rushes the closing.**
+- **Positive example:** หลังสรุป พนักงานถามว่า "มีคำถามเพิ่มเติมไหมครับ" แล้วเว้นจังหวะรอลูกค้าตอบ จากนั้นจึงกล่าวขอบคุณและลาสายอย่างชัดเจน
+- **Positive example 2:** หลังสรุป พนักงานพูดว่า "ถ้าไม่มีอะไรเพิ่มเติมนะครับ ขอบคุณที่ให้ทรูได้ดูแล สวัสดีครับ" แล้วเว้นจังหวะรอให้ลูกค้าตอบก่อนวางสาย
+- **Positive example 3 (customer busy):** ลูกค้าบอก "ไม่สะดวกคุยค่ะ" พนักงานตอบว่า "ขอบคุณที่ใช้บริการทรู สวัสดีค่ะ" แล้วปิดสาย → True เพราะลูกค้าเป็นฝ่ายต้องการจบสาย
+- **Negative example:** สายห้วน เช่น ลูกค้ายังพูดไม่จบ พนักงานพูดแทรก "งั้นผมขออนุญาตวางสายนะครับ สวัสดีครับ" แล้วกดวางทันที (ลูกค้ายังต้องการคุยต่ออยู่)
+
+---
+
+### **Main Category 2: Sales Effectiveness**
+
+Evaluates the agent's ability to analyze customer needs, present offers effectively, handle objections, attempt sales closure, and execute cross-sell/upsell opportunities appropriately.
+
+**Sub-Category 2.1: Customer Needs Analysis** (การวิเคราะห์ความต้องการของลูกค้า)
+
+**2.1.1 usage_based_analysis** - Usage-based Analysis
+
+- **Definition:** Agent references customer's actual usage data or current plan/package to provide relevant recommendations
+- **True when:**
+  - Agent correctly cites usage data (data consumption, call patterns, frequently used services), explains it clearly, and connects it to suitable package options
+  - Agent uses current plan/package to recommend a new package that better for customer or compares current usage to new package benefits.
+- **False when:**
+  - Agent ignores customer usage data OR cites incorrect numbers OR recommendation doesn't align with actual usage
+  - Agent makes generic recommendations without referencing customer's specific usage patterns
+- **Note:** Focus on data usage not for how long customer has been with the company.
+- **Positive example (Thai):** พนักงานตรวจสอบข้อมูลจากระบบ "เดือนที่ผ่านมาใช้ดาต้าเฉลี่ย 80GB ส่วนใหญ่ใช้ดูวิดีโอและโซเชียล ดังนั้นแพ็กเกจที่เน้นดาต้าเยอะจะคุ้มกับคุณลูกค้า"
+- **Positive example 2 (Thai):** "พนักงานแนะนำ package ใหม่ที่จากเดิมลูกค้าได้อินเทอร์เน็ต 50GB ไปเป็น 100GB จาก package เดิมที่ลูกค้าใช้ ซึ่งจะช่วยให้ลูกค้าไม่ต้องกังวลเรื่องเน็ตหมดกลางเดือน"
+- **Negative example:** พนักงานแนะนำแพ็กเกจที่มีดาต้าเยอะโดยไม่ตรวจสอบหรืออ้างอิงการใช้งานจริงของลูกค้า หรือแนะนำแพ็กเกจที่ไม่ตรงกับรูปแบบการใช้งานของลูกค้า
+
+**2.1.2 benefit_highlight** - Benefit Highlight
+
+- **Definition:** Agent connects package features and pricing to specific customer benefits
+- **True when:** Agent listens to needs/problems first, then explains how features provide value (save money, save time, more convenient, less risk)
+- **False when:** Agent only lists features/pricing without explaining benefits or value proposition
+- **Positive example (Thai):** "แพ็กนี้เหมาะกับคุณลูกค้าที่ดูวิดีโอบ่อย เพราะช่วยให้..." "สำหรับคุณลูกค้า ข้อดีคือ..."
+- **Negative example:** พนักงานแค่บอกว่า "แพ็กนี้มีดาต้า 100GB ราคา 399 บาท" โดยไม่เชื่อมโยงกับประโยชน์ที่ลูกค้าจะได้รับ
+
+---
+
+**Sub-Category 2.2: Offer Presentation Quality** (คุณภาพการนำเสนอข้อเสนอ)
+
+**2.2.1 clarity_of_explanation**
+
+- **Definition:** Explanations are clear, organized, and easy to understand
+- **True when:** Agent answers directly, uses simple language, organizes in steps, summarizes key points
+- **False when:** Explanations are long/complex/disorganized, customer must ask repeatedly
+
+**2.2.2 customer_benefit_highlight**
+
+- **Definition:** Links offer to customer's specific needs showing clear value
+- **True when:** Agent demonstrates understanding of needs first, then connects features to benefits relevant to customer
+- **False when:** Only lists prices/features without connecting to customer situation
+
+---
+
+**Sub-Category 2.3: Effective Objection Handling**
+
+**2.3.1 failure_to_listen_and_address** - Listens and Addresses Customer Concerns
+
+- **Definition:** Agent listens to objections fully, acknowledges them, and provides relevant solutions
+- **True when:** Agent lets customer finish, reflects/repeats concern to show understanding, responds with appropriate explanation/options
+- **False when:** Agent interrupts, argues immediately, or doesn't address the actual concern
+- **Thai keywords (positive):** "เข้าใจค่ะว่าลูกค้ากังวลเรื่อง...", "เดี๋ยวช่วยตรวจสอบให้"
+- **Thai keywords (negative):** "ไม่ใช่ปัญหาของเรา"
+
+**2.3.2 using_confrontational_tone** - Maintains Professional Tone
+
+- **Definition:** Agent keeps calm, polite tone without arguing
+- **True when:** Agent maintains soft, respectful tone, acknowledges customer feelings before explaining facts/limitations
+- **False when:** Agent uses harsh tone, sarcasm, dismissive language ("จริง ๆ มันก็ไม่ใช่เรื่องใหญ่", "ลูกค้าคิดเยอะไป")
+
+---
+
+**Sub-Category 2.4: Sales Closing Attempt** (การปิดการขาย)
+
+**2.4.1 value_based_closing** - Value-Based Closing (ย้ำประโยชน์ก่อนชวนตัดสินใจ)
+
+- **Definition:** Agent summarizes benefits clearly linked to customer's pain points before inviting decision, making customer feel the value
+- **True when:** Agent checks usage/needs during conversation, explains benefits completely, emphasizes benefits matching needs (e.g., "แพ็กนี้ช่วยแก้ปัญหาเน็ตช้าของลูกค้าได้ค่ะ"), makes customer see immediate value. Uses inviting tone, no pressure, and opens opportunity for customer to decline or ask more comfortably
+- **False when:** Agent emphasizes benefits broadly without linking to customer's stated problems, sells with memorized script, rushes without explaining benefits that match customer needs
+- **Thai keywords (positive):** ช่วยแก้ปัญหา, ตรงกับความต้องการ, จากการใช้งานของคุณ, แนะนำเพราะ
+- **Positive example:** "จากการใช้งานของคุณลูกค้า แนะนำแพ็กเสริมนี้เพราะจะช่วยให้ประหยัดค่าใช้จ่ายและได้เน็ตเพียงพอตลอดเดือน สนใจให้จัดการให้ไหมคะ"
+- **Negative example:** พนักงานย้ำประโยชน์แบบกว้าง ๆ ไม่เชื่อมโยงกับปัญหาที่ลูกค้ากล่าว หรือขายแบบท่องจำไม่ฟังความต้องการ
+
+**2.4.2 unclear_separation_primary_add_on** - Clear Separation Between Offers (นำเสนอแพ็กหลักและแพ็กเสริมไม่แยกให้ชัดเจน)
+
+- **Definition:** Agent clearly separates primary offer from add-on, specifying separate pricing for each, so customer understands which is main package and which is supplementary with additional charges
+- **True when:** Agent clearly states: (1) What is primary package with its price/conditions, (2) What is add-on with its price/conditions, (3) Emphasizes accepting add-on has "additional charges" separate from primary. Explains each part separately, summarizes total if accepting both. Customer can repeat back which is primary, which is add-on, and what needs to be paid
+- **False when:** Agent mixes primary and add-on together using vague terms like "ได้เพิ่ม/ได้ฟรี/ได้อีกแพ็กหนึ่ง" making customer think it's one package or free, doesn't clearly state add-on pricing separate from primary, or uses language implying single price for everything
+- **Thai keywords (positive):** แพ็กหลัก, แพ็กเสริม, คิดเงินแยกกัน, มีค่าใช้จ่ายเพิ่ม, คิดเพิ่มจากแพ็กหลัก
+- **Positive example:** "แพ็กหลักคือ 4G Unlimited ราคา 299 บาทต่อเดือน จากนั้นถ้าต้องการเพิ่ม แพ็กเสริม YouTube Premium ราคา 129 บาทต่อเดือน คิดเพิ่มจากแพ็กหลัก สรุปนะครับ รวมเป็น 428 บาทต่อเดือน"
+- **Negative example:** พูดรวม ๆ ว่า "ได้เพิ่ม/ได้ฟรี/ได้ของแถม" ทั้งที่จริงเป็นแพ็กเสริมที่มีค่าใช้จ่ายเพิ่ม, ใช้คำพูดที่ทำให้เข้าใจว่า "จ่ายราคาเดียว" ทั้งที่มี 2 รายการค่าบริการ
+
+**2.4.3 inadequate_disclosure_additional_charges** - Discloses Additional Charges (ไม่อธิบายค่าใช้จ่ายของแพ็กเสริมให้ชัดเจน)
+
+- **Definition:** Agent clearly states add-on pricing (how much per cycle/month), special conditions (contract period, auto-renewal), and approximate total amount customer must pay if accepting add-on, making customer understand it's NOT free and additional charges apply.
+- **True when:** Agent clearly specifies:
+  - Add-on cost in specific amount (per time/month/billing cycle) OR
+  - Special conditions like minimum contract, auto-renewal OR
+  - Approximate total if accepting add-on. Checks customer understanding
+- **CRITICAL:** If don't have add-on details or content in the converation, return True
+- **False when:** Agent mentions add-on vaguely using misleading terms like "ได้เพิ่ม/ได้ฟรี/แถมให้" without stating price/payment method, talks about price quickly/unclearly, doesn't explain it's additional charge from primary, making customer think it's included or free
+- **Positive example:** "แพ็กเสริมนี้ราคา 99 บาทต่อเดือน คิดเพิ่มจากแพ็กหลักนะครับ เริ่มคิดตั้งแต่รอบบิลหน้า มีสัญญาอย่างน้อย 6 เดือน ถ้ารับแพ็กเสริมนี้ รวมกับแพ็กหลัก จะอยู่ที่ประมาณ 398 บาทต่อเดือน"
+- **Negative example:** ใช้คำที่ชวนเข้าใจว่า "ฟรี/แถม/ได้เพิ่มเฉย ๆ" ทั้งที่มีค่าใช้จ่ายเพิ่ม, ไม่พูดถึงราคาเลยหรือพูดแบบเร็ว ๆ ไม่ชัดเจน เช่น "ก็เพิ่มนิดหน่อยเอง" โดยไม่บอกตัวเลข
+
+---
+
+**Sub-Category 2.5: Cross-sell / Upsell**
+
+**IMPORTANT:** This sub-category evaluates the **quality** of cross-sell/upsell presentation (clarity, separation, disclosure) for **both** cross-sell and upsell together. The **quantity** (how many packages offered/accepted) is tracked separately in Additional Category 1: Sell Performance. See Company Context for definitions of main package, upsell, and cross-sell.
+
+**CRITICAL — Bundle vs Cross-sell/Upsell Distinction:**
+A cross-sell/upsell is ONLY when the agent offers a **separate package with its own additional charge** beyond the main package. If a feature or service is **included FREE as part of the main package bundle** (no extra cost), it is NOT a cross-sell/upsell — it is a bundled benefit of the main package. See Package offering in Company Context.
+- **NOT cross-sell/upsell (bundle):** Agent says "แพ็กนี้ 699 บาท ได้ Netflix ฟรีด้วย" → Netflix is included in the 699 baht price, no extra charge → this is a bundle benefit, NOT a separate offer
+- **NOT cross-sell/upsell (bundle):** Agent says "แพ็กนี้รวม TrueID ให้แล้ว ไม่ต้องจ่ายเพิ่ม" → TrueID is part of the package → bundle
+- **IS cross-sell/upsell:** Agent says "ถ้าสนใจเพิ่ม Netflix อีก 149 บาทต่อเดือน คิดแยกจากแพ็กหลัก" → separate charge → cross-sell/upsell
+- If ALL additional services mentioned are bundled FREE with the main package and there is no separate-charge offer → this sub-category = all None (no cross-sell/upsell was attempted)
+- **NOT cross-sell/upsell (bundle with price comparison):** When the agent mentions the market price of a bundled item to show its value — e.g., "Netflix ตัวนี้ปกติ 169 บาท ให้ฟรีไปเลย", "ปกติ YouTube Premium ราคา X บาท แต่รวมอยู่ในแพ็กแล้ว" — mentioning the market price does NOT make it a separate offer. It is still a bundled benefit. Mentioning price ≠ charging separately.
+- **NOT cross-sell/upsell (alternative main package):** When the agent offers a different or higher-tier main package as an alternative — e.g., "ลองเปลี่ยนมาใช้ Super Max แทนไหมครับ", "เอาอีกตัวนึงไหม ตัวนี้ 1,399 บาท" — this is still a MAIN PACKAGE OFFER, not a cross-sell/upsell add-on. The 2.5 category ONLY applies to services with a **separate additional charge beyond any main package** — not alternative or upgraded main package options. If agent ONLY presents alternative main package choices (no separate-charge add-on) → this sub-category = all None.
+  - **This includes cases where the alternative main package contains named bundle benefits** (e.g., "Super Max 699 บาท แถม Netflix กับ YouTube Premium ฟรี 1 ปี") — the bundled services ("แถม") are part of the package price, NOT separate add-ons. **Key Thai word: "แถม"** = given as a free bonus included in the package — NOT the same as "เสริม" (a separate-charge add-on). When agent says "แถม Netflix ฟรี 1 ปี" inside a main package pitch, Netflix is a bundle benefit, not a cross-sell.
+
+**Consistency with Additional Category 1: Sell Performance:**
+- If this sub-category evaluates a cross-sell/upsell attempt (2.5.1 = True), then Additional Category 1 must also count that offer in the corresponding upsell (Sub-Category 1.3) or cross-sell (Sub-Category 1.5) fields.
+- Conversely, if Additional Category 1 counts upsell/cross-sell offers, this sub-category should reflect the attempt quality.
+- If there is no cross-sell/upsell attempt here (2.5.1 = None), then Additional Category 1 upsell and cross-sell counts should also be 0 (only main package counts may be non-zero).
+
+If NO cross-sell/upsell opportunity exists or is attempted in the call, ALL fields in this sub-category must be None.
+
+**Evaluation Logic - Three Key Questions:**
+
+1. **Is there an opportunity to sell?** (มีโอกาสขายมั้ย)
+2. **Is the information clear and understandable?** (ให้ข้อมูลเข้าใจมั้ย)
+3. **Is the information complete?** (ให้ข้อมูลครบมั้ย)
+
+**Critical Rules — Field Dependency Logic:**
+
+| 2.5.1 value | 2.5.2 and 2.5.3 behavior | Explanation |
+|-------------|--------------------------|-------------|
+| **None** | Must be **None** | No opportunity existed → nothing to evaluate |
+| **False** | Must be **False** | Opportunity existed but agent didn't attempt → automatic fail for quality fields |
+| **True** | Evaluate normally (True/False) | Agent attempted → evaluate presentation quality based on what was said |
+| **True** (customer already has product or declines immediately after hearing product name) | Must be **True** | Agent attempted by mentioning specific product, but customer already owns it or declines → auto-pass (agent cannot explain further). **ONLY applies when no pricing or condition details were stated.** If agent also mentioned a price or conditions, evaluate 2.5.2/2.5.3 normally based on what was disclosed. |
+
+- **If customer declines after agent provided clear AND complete information, this is NOT a failure** — Do not penalize agent if explanation was interrupted or customer simply chose not to accept
+- **Auto-True rule for 2.5.2/2.5.3:** When the agent mentions a specific cross-sell/upsell product and the customer responds that they **already have it** (e.g., "มีแล้วครับ", "ใช้อยู่แล้ว") or **declines immediately after hearing the product name**, 2.5.2 and 2.5.3 must be **True**. The agent cannot be penalized for not explaining details when the customer already owns the product or gives no chance to explain further. **Important boundary:** This auto-pass applies ONLY when the agent mentioned the product name/type without any pricing or condition details. If the agent stated a price (e.g., "149 บาท") or any contract condition before the customer declined, evaluate 2.5.2 and 2.5.3 normally based on what was actually disclosed.
+
+**Multiple cross-sell/upsell attempts in one call (best attempt wins):**
+If the agent makes more than one cross-sell/upsell attempt in a single call (e.g., offers both an upsell and a cross-sell), evaluate 2.5.2 and 2.5.3 based on the **best** attempt:
+- If ANY single attempt was presented clearly and with complete disclosure → 2.5.2 = True, 2.5.3 = True
+- Only False if ALL attempts were unclear or incomplete
+- 2.5.1 = True as long as at least one offer was made (even if other attempts were done poorly)
+
+**2.5.1 missed_cross_sell_upsell_opportunity**
+
+- **Definition:** Identifies whether agent appropriately attempts cross-sell/upsell when opportunity exists
+- **True when (+):** Agent identifies and offers cross-sell/upsell when opportunity exists, provides explanation (even if customer declines at the end). Customer shows interest, agent explains properly, but customer decides not to accept = PASS. **Also True when:** Agent proactively asks about or mentions a specific product/service (e.g., "มีเน็ตบ้านรึยัง", "ดูหนัง Netflix มั้ย", "สนใจแพ็ก TrueVisions มั้ย") — asking about a specific product counts as an offer attempt even if customer already has it or declines. **Boundary:** Auto-pass for 2.5.2/2.5.3 only applies when no pricing or condition details were mentioned. If the agent stated a price or any condition, evaluate 2.5.2 and 2.5.3 normally.
+- **False when (-):** Clear opportunity exists (customer interested/available) BUT agent does NOT offer cross-sell/upsell, OR rushes multiple offers before customer understands the main package offer
+- **None when (Null):** No cross-sell/upsell opportunity exists in these scenarios:
+  - Agent asks if customer has time ("มีเวลาอีกสักครู่ไหม") and customer says NO or not available
+  - Customer expresses not interested BEFORE agent can mention any specific product
+  - Customer clearly declines immediately before any specific product is mentioned
+  - **CRITICAL:** If the agent has already mentioned a specific product name or service (e.g., "เน็ตบ้าน", "Netflix", "TrueVisions") before the customer declines, this is NOT None — it is True (the agent attempted the offer).
+  - Agent ONLY explains items bundled FREE in the main package — even if agent cites their market price to show value (e.g., "ปกติ 169 บาท ให้ฟรี") — no separate-charge add-on was offered
+  - Agent ONLY presents alternative main package options (2nd, 3rd package choices at different price points) — no separate-charge add-on was offered
+- **Important:** Customer declining AFTER receiving proper explanation = True (not penalized)
+- **Common pattern:** Agent normally asks "มีเวลาอีกสักนิดไหมครับ" first → If customer says no/busy = None (Null)
+
+**2.5.2 unclear_separation_cross_sell** — Evaluates both cross-sell AND upsell presentation
+
+- **Definition:** Evaluates if agent clearly separates the **main package** from the **cross-sell/upsell offer** with distinct pricing for each
+- **True when (+):** Explains the main package and the additional offer (cross-sell or upsell) separately, states separate pricing for each, summarizes total if accepting both. Information is clear and understandable.
+- **False when (-):**
+  - Combines the main package and additional offer making customer think it's one package/price, or explanation is unclear/confusing
+- **None when (Null):** No cross-sell/upsell opportunity existed (field 2.5.1 is None)
+- **Note:** If agent was interrupted by customer during explanation, evaluate based on what was actually said before interruption
+
+**2.5.3 inadequate_disclosure_cross_sell** — Evaluates both cross-sell AND upsell disclosure
+
+- **Definition:** Evaluates if agent fully discloses the cross-sell/upsell offer's costs and conditions
+- **True when (+):** States exact costs, when charges start, special conditions (contract length, auto-renewal), provides complete information to help customer make informed decision
+- **False when (-):**
+  - Implies it's free/included, doesn't explain charging details, omits important conditions
+- **None when (Null):** No cross-sell/upsell opportunity existed (field 2.5.1 is None)
+- **Note:** If agent was interrupted by customer during explanation, evaluate based on what was actually disclosed before interruption
+
+**Scenario Examples:**
+
+**Scenario A: Customer interested, agent doesn't offer (FAIL)**
+
+- Customer: "มีอะไรดีๆ แนะนำอีกไหม"
+- Agent: "ตอนนี้มีแค่นี้ค่ะ" (ไม่เสนอ Cross-sell ทั้งที่มี)
+- Result: 2.5.1 = False → 2.5.2 = False, 2.5.3 = False (automatic fail because agent missed the opportunity entirely)
+
+**Scenario B: Agent asks about time, customer not available (NONE)**
+
+- Agent: "มีเวลาอีกสักครู่ไหมครับ อยากเสนอโปรโมชั่นดีๆ"
+- Customer: "ไม่สะดวกค่ะ กำลังยุ่งอยู่"
+- Result: 2.5.1 = None → 2.5.2 = None, 2.5.3 = None (no opportunity because customer has no time)
+
+**Scenario C: Customer not interested before any specific product is mentioned (NONE)**
+
+- Agent: "มีเวลาอีกสักครู่ไหมครับ อยากเสนอโปรดีๆ"
+- Customer: "ไม่สนใจค่ะ ไม่รับแล้ว" (ปฏิเสธก่อนได้ยินชื่อสินค้า)
+- Result: 2.5.1 = None → 2.5.2 = None, 2.5.3 = None (agent has NOT mentioned any specific product yet)
+
+**Scenario D: Customer has time, agent explains fully, customer declines (PASS)**
+
+- Agent: "มีเวลาอีกสักครู่ไหมครับ"
+- Customer: "ได้ค่ะ"
+- Agent: "มีแพ็ก Netflix เพิ่ม 149 บาท/เดือน คิดแยกจากแพ็กหลัก รับชมได้ทุกอุปกรณ์"
+- Customer: "เข้าใจแล้วค่ะ แต่ยังไม่รับตอนนี้"
+- Result: 2.5.1 = True → 2.5.2 = True, 2.5.3 = True (ไม่ลบคะแนนเพราะให้ข้อมูลครบ ลูกค้าปฏิเสธหลังฟังข้อมูลแล้ว)
+
+**Scenario E: Agent offers by giving the contact point to the customer but it have the opportunity to offer in the conversation (FAIL)**
+- Agent: "มีเวลาอีกสักครู่ไหมครับ"
+- Customer: "ได้ค่ะ"
+- Agent: "ถ้าสนใจแพ็กเสริมเพิ่มเติม สามารถติดต่อเราได้ที่ 1242 นะครับ"
+- Customer: "เข้าใจแล้วค่ะ"
+- Result: 2.5.1 = False → 2.5.2 = False, 2.5.3 = False (มีโอกาสเสนอในบทสนทนา แต่ไม่ได้เสนอ ส่งไปติดต่อคอลเซ็นเตอร์แทน)
+
+**Scenario F: Agent offers by giving the contact point to the customer and it doesn't have the opportunity to offer in the conversation (NONE)**
+- Agent: "มีเวลาอีกสักครู่ไหมครับ"
+- Customer: "ไม่สะดวกค่ะ กำลังยุ่งอยู่"
+- Agent: "หากสนใจสมัครบริการของทรูเพิ่มเติมสามารถติดต่อคอลเซ็นเตอร์ 027008000 ได้ตลอดนะครับ"
+- Customer: "เข้าใจแล้วค่ะ"
+- Result: 2.5.1 = None → 2.5.2 = None, 2.5.3 = None (ไม่มีโอกาสเสนอในบทสนทนาเพราะลูกค้าไม่สะดวก)
+
+**Scenario G: Agent asks about cross-sell product, customer already has it (PASS - auto True)**
+
+- Agent: "พี่มีเน็ตบ้านรึยังครับ" (ถามเพื่อเสนอ cross-sell TOL)
+- Customer: "มีแล้วครับ ใช้อยู่แล้ว"
+- Result: 2.5.1 = True → 2.5.2 = True, 2.5.3 = True (พนักงานพยายามเสนอ cross-sell แล้ว แต่ลูกค้ามีอยู่แล้ว ไม่สามารถอธิบายรายละเอียดเพิ่มได้ → auto-pass ทั้ง 2.5.2 และ 2.5.3)
+- Sell Performance: crosssell_add_on_product_offered = 1, crosssell_add_on_product_offered_list = ['TOL'], crosssell_add_on_product_accepted = 0
+
+**Scenario H: Agent asks about upsell product, customer declines after hearing product name (PASS - auto True)**
+
+- Agent: "พี่ดูหนังดู Netflix มั้ยครับ สนใจเพิ่มมั้ย"
+- Customer: "ไม่เอาครับ มี Netflix อยู่แล้ว"
+- Result: 2.5.1 = True → 2.5.2 = True, 2.5.3 = True (พนักงานเอ่ยชื่อสินค้าเฉพาะเจาะจงแล้ว ถือว่าพยายามเสนอ ลูกค้ามีอยู่แล้ว/ปฏิเสธหลังได้ยินชื่อสินค้า → auto-pass)
+- Sell Performance: upsell_add_on_package_offered = 1, upsell_add_on_package_accepted = 0
+
+**Scenario I: Agent rushes multiple offers before customer understands main package (FAIL)**
+- Agent: "พี่ครับ วันนี้มีแพ็กหลัก 599 บาท แล้วก็มีเน็ตบ้านเพิ่ม 399 บาท และ Netflix อีก 149 บาท สนใจอันไหนครับ"
+- Customer: "เอ่อ... ไม่แน่ใจเลยครับ ยังไม่ค่อยเข้าใจ"
+- Result: 2.5.1 = False → 2.5.2 = False, 2.5.3 = False (agent stacked multiple offers without letting customer absorb the main package first — customer confusion indicates the opportunity was mishandled)
+
+**Scenario J: Agent explains bundle items with price comparison — NOT cross-sell (NONE)**
+
+- Agent: "แพ็กนี้ได้ Netflix ด้วยนะครับ Netflix ตัวนี้ปกติ 169 บาท ให้คุณลูกค้าฟรีไปเลย แล้วก็มีเน็ตโซเชียล 10 Mbps ไม่กินเน็ตโปรโมชั่น"
+- Customer: "ไม่รับค่ะ ขอบคุณ"
+- Result: 2.5.1 = None → 2.5.2 = None, 2.5.3 = None (Netflix and social media addon are bundled FREE in the main package — the "169 บาท" mention is value framing, NOT a separate charge. No cross-sell/upsell was attempted.)
+
+**Scenario K: Agent offers alternative main package — NOT cross-sell (NONE)**
+
+- Agent: "หรือถ้าพี่อยากได้ Netflix ด้วย ลองเปลี่ยนมาใช้ Super Max ที่ 599 บาทแทนได้เลยครับ แถม Netflix กับ YouTube Premium ใช้ฟรี 1 ปี" / "เอาเป็นอีกตัวนึงไหมครับ ตัวนี้ลดลงมาอยู่ที่ 1,399"
+- Result: 2.5.1 = None → 2.5.2 = None, 2.5.3 = None (Agent is presenting a different main package option — NOT a separate add-on service. Even if the alternative package is more expensive, it is a main package offer. 2.5 only applies to add-ons with their own separate charge beyond any main package.)
+
+**Scenario L: Customer requests a cheaper package — agent presents alternative main package with named bundle benefits — NOT cross-sell (NONE)**
+
+- Agent first offers Super Special 750 baht. Customer: "อยากได้โปรที่มันถูกกว่านี้นะ พอมีมั้ย"
+- Agent: "ถ้าเป็นโปรอื่นที่มีเนี่ยผมจะมีเป็นตัวซุปเปอร์แมกซ์นะครับ แถมแอปพลิเคชันเน็ตฟลิกซ์กับยูทูปพรีเมียมนะครับ... ทางทรูแถมให้ในโปรไปเลย 1 ปี โดยที่เราไม่ต้องเสียอะไรเพิ่มนะครับ" (Super Max 699 baht)
+- Customer accepts Super Max 699 baht
+- Result: 2.5.1 = None → 2.5.2 = None, 2.5.3 = None (Super Max is an alternative main package presented in response to a customer's cheaper-option request. Netflix and YouTube Premium are bundled FREE inside Super Max — "แถมให้ในโปรฟรี 1 ปี", "ไม่ต้องเสียอะไรเพิ่ม" — they are NOT separate add-ons. No independent separate-charge cross-sell/upsell was offered.)
+
+---
+
+### **Scenario Summary Table:**
+
+| Scenario | 2.5.1 | 2.5.2 | 2.5.3 | Key Indicator |
+| -------- | ----- | ----- | ----- | ------------- |
+| No opportunity | None | None | None | Customer not available / not interested before any product named |
+| Missed / Rushed | False | False | False | Opportunity existed but agent didn't offer, or rushed multiple offers before customer absorbed main package |
+| Auto-pass | True | True | True | Agent mentioned product name only (no price/details); customer already has it OR declines after hearing product name |
+| Offered, clear & complete | True | True | True | Agent explained with pricing and conditions; customer decides freely |
+| Offered, unclear separation | True | False | True/False | Agent did not clearly separate the main package price from the cross-sell/upsell's separate additional charge — customer couldn't tell what costs extra |
+| Offered, incomplete disclosure | True | True | False | Price or conditions not fully disclosed |
+| Bundle/alternative main package | None | None | None | Agent only described bundle items (with or without price comparison) or offered alternative main package — no separate-charge add-on |
+
+---
+
+### **Decision Tree for Quick Reference:**
+
+```
+Was there a cross-sell/upsell opportunity?
+├─ NO (agent ONLY described bundle items — including market price comparison, alternative main package with or without named bundle benefits like "แถม Netflix/YouTube ฟรี" — no independent separate-charge add-on offered)
+│   → All None (Scenario J, K, L)
+├─ NO (customer busy / not interested before any product named / contact-center redirect with no chance)
+│   → All None (Scenario B, C, F)
+└─ YES → Did agent attempt an offer?
+    ├─ NO or RUSHED multiple offers before customer absorbed main package
+    │   → 2.5.1 = False → 2.5.2 = False, 2.5.3 = False (auto-fail) (Scenario A, E, I)
+    └─ YES (agent mentioned specific product) → 2.5.1 = True
+        → Did customer already have the product OR decline immediately after hearing product name ONLY (no price/details stated)?
+            ├─ YES → 2.5.2 = True, 2.5.3 = True (auto-pass — agent cannot explain further) (Scenario G, H)
+            └─ NO (agent stated price or any details, or customer engaged further)
+                → Evaluate normally:
+                ├─ Was the cross-sell/upsell's separate additional charge clearly distinguished from the main package price? → 2.5.2 = True / False
+                └─ Were all costs, start date, and conditions fully disclosed? → 2.5.3 = True / False (Scenario D)
+
+Multiple attempts in one call: use the BEST attempt to set 2.5.2 and 2.5.3
+(True if ANY attempt was clear and complete; False only if ALL attempts were unclear/incomplete)
+```
+
+---
+
+### **Main Category 3: Customer Experience (CX)**
+
+Evaluates the agent's ability to create positive experiences throughout the conversation, making customers feel:
+
+- Listened to and cared for
+- Treated politely, professionally, and sincerely
+- Helped effectively
+- Confident, comfortable, and without negative feelings after the conversation
+
+**Sub-Category 3.1: Positive Customer Experience** (สร้างความรู้สึกเชิงบวก)
+
+**3.1.1 failure_to_demonstrate_empathy** - Demonstrates Empathy for Prior Service Issues (แสดงความเข้าใจ/เห็นอกเห็นใจต่อความไม่พอใจจากบริการครั้งก่อน)
+
+- **Definition:** Shows understanding and compassion for customer's dissatisfaction. Acknowledges emotions, apologizes appropriately, or explains next steps to resolve issue.
+- **True when (Pass):** Repeats the issue, acknowledges/connects with emotions, apologizes appropriately, uses gentle tone, explains what will be done next
+- **False when (Fail):** After customer shares issue, agent doesn't acknowledge, cuts off, or uses tone/words that make customer feel unheard
+- **Positive example:** ฟังจนจบ ทวนทั้งปัญหาและอารมณ์ พูดขอโทษอย่างจริงใจ ใช้น้ำเสียงนุ่มนวล บอกชัดว่าจะช่วยอะไรและเมื่อไร
+- **Negative example:** ตอบขั้นตอนทันทีไม่ทวน ไม่ขอโทษจริงใจ น้ำเสียงแข็ง หรือตัดบทให้ไปติดต่อช่องทางเดิม
+
+**3.1.2 deflecting_responsibility** - Takes Responsibility or Addresses Complaint (รับผิดชอบหรือรับคำร้องเรียน)
+
+- **Definition:** Clearly accepts complaint and commits to resolution; doesn't deflect responsibility or ignore complaints
+- **True when (Pass):** Clearly accepts complaint, confirms receiving it, explains resolution process, shows ownership in their role
+- **Critical:** If the conversation don't have any complaint or issue raised by customer, return True (because no opportunity to deflect responsibility)
+- **False when (Fail):** Blames others, says "not my department", tells customer to contact another department themselves, changes topic without acknowledging issue
+- **Positive example:** เมื่อลูกค้าร้องเรียน พนักงานตอบ "ขออนุญาตรับเรื่องนี้ตรวจสอบให้นะคะ" อธิบายขั้นตอนการประสานงาน ใช้คำพูดแบบร่วมรับผิดชอบ "เดี๋ยวฉันช่วยติดตามให้ค่ะ" และสรุปว่าจะอัปเดตเมื่อไร
+- **Negative example:** พนักงานตอบว่า "เรื่องนี้ไม่ใช่หน้าที่ของเรา" "ต้องไปติดต่ออีกแผนกเองนะคะ" หรือเปลี่ยนเรื่องโดยไม่ยืนยันการรับเรื่อง
+
+**3.1.3 escalates_customer_emotion** - Maintains Tone That De-escalates Emotion (รักษาน้ำเสียงที่ลดความรู้สึกเชิงลบ)
+
+- **Definition:** Agent maintains polite, calm, gentle tone and avoids negative language, helping reduce customer emotion or at least not making it worse
+- **True when (Pass):** Uses soft, calm tone, phrases like "เข้าใจค่ะว่าคุณลูกค้ารู้สึกไม่สบายใจ", speaks slowly and clearly, doesn't interrupt, focuses on finding solutions
+- **False when (Fail):** Uses harsh tone, sarcasm, argues with customer, makes negative statements, causing customer to become angrier, demand supervisor, or threaten to cancel service
+- **Positive example:** เมื่อลูกค้าเริ่มมีอารมณ์ พนักงานตอบด้วยน้ำเสียงสงบ "เข้าใจค่ะว่าคุณลูกค้ารู้สึกไม่สบายใจ ขอเป็นตัวช่วยในการดูแลให้นะคะ" พูดช้าชัด ไม่แทรก โฟกัสหาทางแก้ไข
+- **Negative example:** ลูกค้าบ่นหรือโกรธ พนักงานตอบ "ลูกค้าต้องใจเย็นๆ ก่อนนะคะ" "ก็บอกไปแล้วค่ะว่าทำไม่ได้" ใช้น้ำเสียงหงุดหงิด เถียง ทำให้ลูกค้าขึ้นเสียงหรือขอคุยกับหัวหน้า
+
+---
+
+**Sub-Category 3.2: Clarity of Communication**
+
+**3.2.1 uses_overly_technical_language** - Uses Simple Language
+
+- **Definition:** Communicates in plain language avoiding jargon
+- **True when:** Uses simple words, translates technical terms to common language, provides concise summaries
+- **False when:** Uses many technical terms/abbreviations without explanation, causing confusion
+
+**3.2.2 fails_to_clarify_misunderstandings** - Clarifies Common Misunderstandings
+
+- **Definition:** Proactively explains limitations and conditions that customers often misunderstand
+- **True when:** Clearly states package limitations (FUP, Max Speed, data caps), emphasizes what customer should/shouldn't expect
+- **False when:** Vague about conditions (e.g., "Unlimited ใช้ได้ไม่อั้น" without mentioning speed reduction)
+
+**3.2.3 does_not_adjust_explanation_style** - Adjusts Explanation When Needed
+
+- **Definition:** Adapts explanation method when customer shows confusion
+- **True when:** Notices customer confusion, simplifies explanation, breaks into steps, uses examples, checks understanding
+- **False when:** Repeats same explanation without changing approach despite customer's confusion
+
+---
+
+**Sub-Category 3.3: Building Trust and Customer Value**
+
+**3.3.1 provides_unclear_information** - Provides Clear, On-Point Information
+
+- **Definition:** Answers directly to the question asked, not vague or off-topic
+- **True when:** Answers match the question, clear and specific
+- **False when:** Answers are unclear, off-point, or ambiguous
+
+**3.3.2 provides_misleading_information** - Provides Accurate Information
+
+- **Definition:** Information matches system facts and policies; doesn't mislead
+- **True when:** Provides correct info consistent with policies, explains both benefits AND limitations, corrects errors
+- **False when:** Wrong info, exaggerates benefits, hides limitations, doesn't correct mistakes
+
+**3.3.3 fails_to_connect_price_to_value** - Connects Price & Features to Customer Value
+
+- **Definition:** During the package presentation or persuasion phase, agent uses at least one word or phrase that shows the customer is getting good value — not just a flat list of specs and numbers. The bar is LOW: any price comparison, savings mention, free bonus, or value-framing word counts.
+- **Timing:** Value connection must appear **during the package presentation OR during the persuasion/follow-up phase** (when agent is still trying to convince a hesitant customer after the initial offer). Value framing in unrelated parts of the call (e.g., opening small talk, unrelated topics) does not count.
+- **True when:** Agent provides at least ONE of the following during the package presentation or persuasion phase:
+  - **Price comparison (any form):** States old vs new price, discount amount, or any savings phrase — even bare numbers with no further explanation. Examples: "จาก 599 เหลือ 399", "ลดลง 200 บาท", "ประหยัดไปเยอะ", "แพ็กนี้ถูกกว่าเดิม", "จากราคาเต็ม 1,999 เหลือ 699". **NOT counted as price comparison:** Stating the new price is "similar to" or "about the same as" the old plan without any benefit comparison — e.g., "ใกล้เคียงกับของสิทธิ์เดิม", "ราคาใกล้เคียงกัน" — is price PARITY, not value framing. However, if agent also shows MORE benefits at similar price (e.g., "เน็ตเพิ่ม โทรฟรี ในราคาที่ใกล้เคียงกับโปรเดิม"), that qualifies as True via the Benefit framing rule below, not price comparison.
+  - **Free bonus / included item:** Mentions customer gets something extra for free or included — no need to quantify its value or link to customer's specific need. Examples: "แถม TrueID ฟรี 1 เดือน", "รวม Netflix ในแพ็ก", "ได้แอปเพิ่มอีก 3 ตัว", "ได้ Netflix โดยไม่ต้องจ่ายเพิ่ม". **Phrases like "ไม่ต้องจ่ายเพิ่ม" / "โดยไม่ต้องจ่ายเพิ่ม" qualify as free bonus even without the words "ฟรี" or "แถม".**
+  - **Benefit or value-framing word:** Any language showing the customer gets something better/more. A bare "เพิ่ม[ฟีเจอร์]" without further explanation is sufficient. Examples: "ได้เน็ตเพิ่มอีกเท่าตัว", "เพิ่มปริมาณเน็ตและนาทีโทร", "ไม่ต้องกังวลเรื่องเน็ตหมด", "เหมาะกับที่คุณใช้ดูวิดีโอ", "คุ้มค่า", "คุ้มกว่าเดิม"
+  - **Price-per-unit breakdown (during persuasion):** When a hesitant customer questions the price and the agent breaks it down per unit — e.g., "เหลือแอปละ 28 บาทค่ะ", "ตกเดือนละ X บาทต่อแอป" — this counts as value framing even without a "why it's worth it" explanation.
+  - **CRITICAL — low bar:** Agent does NOT need to reference the customer's exact words or usage. Does NOT need to explain WHY it is a good deal. A single value word or a bare price comparison is sufficient. **Do NOT apply a "clearly connected" or "explicitly explained" standard.** If the agent used any qualifying phrase (เพิ่ม, ฟรี, ไม่ต้องจ่ายเพิ่ม, รวมใน, แถม, คุ้ม, ราคาคุ้ม, ราคาพิเศษ, มูลค่าของแถม, แรงกว่า/เร็วกว่าเดิม, or any price comparison that shows better value), the field is True — even if the connection was not explicitly spelled out.
+  - **CRITICAL — do NOT dismiss qualifying phrases:** If your reasoning contains "ไม่ได้เชื่อมโยง...อย่างชัดเจน นอกจาก [phrase]", "ยังไม่เพียงพอ", "ไม่ชัดเจนพอ", "ไม่ได้เน้นย้ำ", or "ไม่ได้เปรียบเทียบกับความต้องการของลูกค้า" — but you already identified a qualifying phrase — that phrase IS sufficient. Output True. Do NOT override a found qualifying phrase with "not enough." A single qualifying phrase in the offer/persuasion phase = True, period.
+- **False when:** Agent presents the package using ONLY raw specs and a price tag — ZERO value framing, comparison, bonus mention, or benefit language of any kind during the offer or persuasion phase. Example: "ได้เน็ต 100GB โทร 300 นาที ราคา 399 บาท" then stops — no comparison, no bonus, no value word at all → False.
+- **Positive example 1 (bare price comparison — minimal):** "จาก 599 เหลือ 399 บาทนะครับ" → True เพราะระบุราคาเดิมเทียบกับราคาใหม่ ถือเป็น price comparison แม้ไม่มีคำอธิบายเพิ่ม
+- **Positive example 2 (bare bonus — minimal):** "แพ็กนี้แถม TrueID ฟรี 1 เดือนนะครับ" → True เพราะลูกค้าได้รับสิ่งเพิ่มเติมฟรี แม้ไม่ได้อธิบายว่าตรงกับความต้องการลูกค้า
+- **Positive example 3 (savings phrase only):** "ประหยัดไปเยอะเลยครับ" หรือ "คุ้มกว่าเดิมมากครับ" → True เพราะมีคำแสดงความคุ้มค่า แม้เพียงแค่คำเดียว
+- **Positive example 4 (price comparison with extras):** "package เดิม ราคา 599 ถ้าซื้อแพ็กนี้ จะได้ 3 แอปเพิ่ม ในราคา 699 จากราคาเต็ม 1,999 บาท" → True เพราะเปรียบเทียบราคาและระบุสิ่งที่ได้เพิ่ม
+- **Positive example 5 (benefit — customer worry):** "แพ็กนี้จะช่วยให้ไม่ต้องกังวลเรื่องเน็ตหมดกลางเดือน เพราะได้เน็ตเพิ่มจาก 50GB เป็น 100GB" → True เพราะอธิบายประโยชน์ที่ลูกค้าได้รับ
+- **Positive example 6 (both price and benefit):** "แพ็กนี้ราคา 699 บาท จากเดิม 599 เพิ่มแค่ 100 บาท แต่ได้เน็ตเพิ่มอีกเท่าตัว" → True
+- **Positive example 7 (benefit framing — lifestyle):** "แพ็กนี้ 399 บาทต่อเดือน เหมาะกับลูกค้าที่ใช้ดูวิดีโอบ่อย เพราะได้เน็ตไม่ลดความเร็วในช่วงเย็นที่คนใช้เยอะ" → True เพราะผูกฟีเจอร์กับพฤติกรรมลูกค้า
+- **Negative example:** "ได้เน็ต 100GB โทร 300 นาที ราคา 399 บาท" แล้วหยุด — ไม่มีการเปรียบเทียบราคา ไม่มีของแถม ไม่มีคำแสดงความคุ้มค่าใดๆ เลย → False เพราะเป็นเพียงการอ่านสเปกล้วนๆ
+- **Negative example 2 (price parity only — NOT value framing):** "ใกล้เคียงกับของสิทธิ์เดิมเลยค่ะ" หรือ "ราคาใกล้เคียงกัน" แล้วหยุด → False เพราะบอกว่าราคาเท่าเดิม ไม่ได้แสดงว่าดีกว่า — ต้องมีการเปรียบเทียบ benefit ด้วยจึงจะเป็น True
+- **Negative example 3 (technical spec only — NOT value framing):** "สามารถเชื่อมต่ออุปกรณ์ได้สูงสุด 2 เครื่อง" → False เพราะเป็นการแจ้งสเปกทางเทคนิค ไม่มีการเปรียบเทียบว่าดีกว่าเดิม ได้มากขึ้น หรือคุ้มค่าอย่างไร
+- **Positive example 8 (bare benefit mention):** "เพิ่มปริมาณเน็ตและนาทีโทร" → True เพราะ "เพิ่ม" แสดงว่าลูกค้าได้รับมากขึ้น ถือเป็น benefit framing แม้ไม่มีคำอธิบายว่าคุ้มค่าอย่างไร
+- **Positive example 9 (free inclusion without "ฟรี"):** "ได้ Netflix และ YouTube Premium โดยไม่ต้องจ่ายเพิ่ม" → True เพราะ "ไม่ต้องจ่ายเพิ่ม" หมายความว่าลูกค้าได้ของเพิ่มโดยไม่มีค่าใช้จ่ายเพิ่ม ถือเป็น free bonus ไม่จำเป็นต้องมีคำว่า "ฟรี" หรือ "แถม"
+- **Positive example 10 (price-per-unit breakdown during persuasion):** "เหลือแอปละ 28 บาทค่ะ" (ขณะที่ลูกค้าลังเลเรื่องราคา) → True เพราะการแตกราคาต่อหน่วยเป็นการแสดงคุณค่าในรูปแบบ price framing ไม่จำเป็นต้องอธิบายเพิ่มเติมว่าทำไมถึงคุ้มค่า
+- **Positive example 11 (casual value affirmation + bonus amount):** "คุ้มนะพี่ มูลค่าของแถมเนี่ย 300 กว่าบาทเลย" → True เพราะ "คุ้ม" + ระบุมูลค่าของแถมเป็นตัวเลข ถือเป็น value framing ที่ชัดเจน
+- **Positive example 12 (savings phrase during persuasion):** "มันก็จะคุ้มกว่าที่ลูกค้าจ่ายเข้ามา" → True เพราะ "คุ้มกว่า" = savings phrase ครอบคลุมโดย Positive example 3 — ไม่จำเป็นต้องระบุจำนวนเงิน
+- **Positive example 13 (value-price word):** "โปรในราคาคุ้มนะคะเพียง 300 บาท" / "ในราคาพิเศษค่ะ เพียง 499 บาทเท่านั้น" → True เพราะ "ราคาคุ้ม" และ "ราคาพิเศษ" เป็นคำแสดงความคุ้มค่า
+- **Positive example 14 (quality improvement vs old plan):** "เน็ตวิ่ง 4G และ 5G จะแรงและเร็วกว่าเดิม ไม่สะดุดเหมือนโปรโมชั่นเก่าที่ใช้งานอยู่" → True เพราะเปรียบเทียบคุณภาพกับแพ็กเกจเดิม (แรงกว่า/เร็วกว่า/ไม่สะดุด) ถือเป็น benefit comparison
+- **Positive example 15 (price parity + MORE benefits):** "จะได้รับเน็ตเพิ่ม โทรฟรี ในราคาที่ใกล้เคียงกับโปรเดิม" → True เพราะแม้ราคาจะใกล้เคียงกัน แต่ agent เปรียบเทียบ benefit ที่เพิ่มขึ้น (เน็ตเพิ่ม + โทรฟรี) — ราคาเท่าเดิม + ได้มากกว่า = value framing
+
+---
+
+### **Main Category 4: Compliance**
+
+Evaluates adherence to legal, regulatory, and company policy requirements.
+
+**Sub-Category 4.1: Compliance**
+
+**4.1.1 data_privacy_permission_compliance** - Data Privacy & Permission Compliance
+
+**CRITICAL KNOWN ERROR — do not repeat this mistake:** The AI often incorrectly outputs False for this field because "พนักงานไม่ได้ขออนุญาตก่อนนำเสนอโปรโมชั่น". This is ALWAYS WRONG. "ขออนุญาตก่อนนำเสนอ" has zero impact on this field under any circumstances.
+
+**NOT evaluated here — do not use as a reason for any result:**
+- "Agent did not ask permission/consent before presenting the offer" — evaluated exclusively in 1.1.3 `call_consent_before_engagement`. Has zero impact on 4.1.1 regardless of whether agent asked or not. Even if the only issue is that the agent went straight to the pitch without asking — 4.1.1 is still True.
+- "Agent did not verify identity" when no sale completed (1.2 = None) — no verification obligation when no sale occurred. Do not cite verification failure as a reason for any result when 1.2 = None.
+
+**CRITICAL — Field Name Disambiguation:** The word "permission" in `data_privacy_permission_compliance` refers to **data privacy permissions** (whether the agent uses customer data within authorized scope) — it does **NOT** mean asking the customer for consent before presenting the offer.
+
+- **Consent before presenting** (Thai: "ขออนุญาตก่อนนำเสนอ", "สะดวกคุยสายไหมครับ") is evaluated in **Sub-Category 1.1.3 `call_consent_before_engagement`** — NOT here.
+- **Do NOT** output False for this field because the agent did not ask permission before presenting. That is irrelevant to 4.1.1.
+- **Example:** พนักงานไม่ได้ขออนุญาตก่อนนำเสนอโปรโมชั่น → this does NOT affect this field → evaluate at 1.1.3 instead
+
+This field evaluates **three aspects** together. ALL must pass for True.
+
+**Aspect 1: Data Privacy** — Agent uses data only as necessary and must not disclose or ask for prohibited personal information
+
+Prohibited information (agent must NEVER disclose or ask for these):
+| Prohibited item | Example |
+|---|---|
+| Date of birth (วันเกิด) | "วันเกิดวันที่เท่าไหร่ครับ" |
+| Address (ที่อยู่) | "ที่อยู่ปัจจุบันอยู่ที่ไหนครับ" |
+| ID card number — 13 digits (เลขบัตรประชาชน) | "ช่วยบอกเลขบัตรประชาชนหน่อยครับ" |
+| Call details (รายละเอียดการโทร) | Disclosing who customer called or when |
+| Surname (นามสกุล) | Only prohibited BEFORE verification is completed |
+
+What agent CAN do:
+- **For verification:** Ask for name-surname or surname only (per Sub-Category 1.2 method). Cannot ask for any other prohibited items even for verification purposes.
+- **After verification completed:** Agent can mention name-surname, surname, or phone number in conversation (e.g., "คุณสมชายนะครับ เดี๋ยวดำเนินการให้"). But still CANNOT disclose date of birth, address, ID card number, or call details.
+
+**Aspect 2: Transparency** — Agent must clearly inform customer which company is calling and the purpose of the call, and must not force or pressure customer to stay on the call if they wish to end it
+
+- Agent must disclose company identity (True/DTAC/TrueOnline/TrueVisions) and call objective (e.g., offer promotion, service review)
+- Agent must not force or pressure customer to stay on the call — if customer wants to end or decline, agent must respect that. **Note:** Agent does NOT need to proactively ask for permission before presenting the offer; only pressuring a customer who has already indicated they want to end the call is a violation.
+- **Note:** This aspect overlaps with Sub-Category 1.1 (Call Opening) field `call_origin_disclosure`. If agent fails that, it also impacts this field.
+
+**Aspect 3: Verification Compliance** — Defer to Sub-Category 1.2 result
+
+If sale/service completed, the verification result from Sub-Category 1.2 determines the impact:
+- If **any** field in Sub-Category 1.2 is `False` → this field is automatically **False**
+- If all Sub-Category 1.2 fields are `True` or `None` (no False present) → no impact on this field
+- If no sale completed (all 1.2 fields are `None`) → evaluate Aspect 1 & 2 only
+
+**CRITICAL dependency:** If ANY field in Sub-Category 1.2 is False → this field is automatically False (enforced by model validator).
+
+- **True when:** Agent uses data only as necessary, discloses company identity and call purpose, does not pressure customer who wants to end the call, does not disclose/ask for prohibited information, AND either (a) no sale completed, or (b) sale completed with proper verification per Sub-Category 1.2
+- **False when ANY of the following:**
+  - Agent discloses prohibited personal information to customer
+  - Agent asks for prohibited information (date of birth, address, ID card, call details) — these are NEVER needed for verification
+  - Agent does not disclose company identity or call purpose
+  - Agent continues to pressure or force customer who has already said they want to end/decline the call
+  - Sale/service completed but identity not verified or verification incomplete per Sub-Category 1.2
+  - Any field in Sub-Category 1.2 is False → automatically False
+
+- **Positive example (Thai):** พนักงานแจ้งว่าโทรมาจาก True/DTAC แจ้งวัตถุประสงค์ชัดเจน พร้อมให้สิทธิ์ลูกค้าเลือกปฏิเสธ และไม่เปิดเผยข้อมูลส่วนตัวของลูกค้า
+- **Positive example 2 (Thai):** เมื่อลูกค้าตกลงเปลี่ยนแพ็กเกจ Agent ยืนยันตัวตนโดยถามนามสกุล แล้วดำเนินการปรับเปลี่ยนแพ็กเกจ
+- **Positive example 3 (Thai):** หลังยืนยันตัวตนแล้ว พนักงานพูดคุยกับลูกค้าโดยเอ่ยชื่อ-นามสกุลได้ เช่น "คุณสมชายนะครับ เดี๋ยวดำเนินการให้เลย"
+- **Negative example (Thai):** พนักงานเปิดเผยข้อมูลส่วนตัวของลูกค้า เช่น บอกวันเกิดหรือที่อยู่ของลูกค้า
+- **Negative example 2 (Thai):** พนักงานขอข้อมูลที่ไม่จำเป็นต่อการยืนยันตัวตน เช่น "ช่วยบอกวันเกิดหน่อยครับ" หรือ "ช่วยบอกเลขบัตรประชาชนให้หน่อยครับ" (Sub-Category 1.2 ต้องการแค่ชื่อ-นามสกุล หรือนามสกุล)
+- **Negative example 3 (Thai):** ลูกค้าตกลงเปลี่ยนแพ็กเกจ แต่พนักงานดำเนินการเปลี่ยนทันทีโดยไม่ยืนยันตัวตนก่อน
+- **Negative example 4 (Thai):** พนักงานไม่แจ้งว่าโทรมาจากบริษัทอะไร หรือไม่แจ้งวัตถุประสงค์ของการโทร เช่น พูดกำกวมว่า "โทรมาจากฝ่ายบริการ" โดยไม่ระบุชื่อบริษัท
+- **Negative example 5 (Thai):** พนักงานฝืนพูดต่อหรือกดดันให้ลูกค้าฟังต่อ หลังจากที่ลูกค้าแสดงเจตนาชัดเจนว่าต้องการจบสายหรือปฏิเสธ เช่น ลูกค้าบอก "ไม่สนใจค่ะ" แต่พนักงานยังคงนำเสนอต่อโดยไม่ยอมรับการปฏิเสธ
+- **Negative example 6 — WRONG reason (do not do this):** พนักงานไม่ได้ขออนุญาตก่อนนำเสนอ → This is NOT a reason to output False for this field. "ขออนุญาตก่อนนำเสนอ" is only evaluated in Sub-Category 1.1.3. If Aspects 1, 2, and 3 all pass, this field must be True even if the agent did not ask permission before presenting.
+
+**4.1.2 sales_integrity_transparency_compliance** - Sales Integrity & Transparency
+
+- **Definition:** Provides complete, truthful information; discloses all terms and pricing before decision
+- **True when:** Agent informs customer about:
+  - Pricing (exact amounts, billing cycle) OR
+  - Package details (data limits, speed)
+    before customer makes decision. Discloses any additional fees or conditions related to the offer. Doesn't pressure customer after rejections.
+- **False when:** Agent doesn't explain about:
+  - Pricing (exact amounts, billing cycle) OR
+  - Package details (data limits, speed)
+    make customer misunderstand the offer. and pressures customer to decision.
+- **Positive example (Thai):** พนักงานอธิบายราคาและเงื่อนไขอย่างครบถ้วนก่อนให้ลูกค้าตัดสินใจ เช่น "แพ็กนี้ราคา 299 บาทต่อเดือน คิดเงินทุกวันที่ 1 ของเดือน มีเน็ต 50GB ความเร็วสูงสุด 100Mbps หลังจากใช้ครบจะลดความเร็วเหลือ 128Kbps"
+- **Negative example (Thai):** พนักงานไม่พูดถึงราคาเลย หรือพูดแบบไม่ชัดเจน เช่น "แพ็กนี้ก็ประมาณ 300 บาทนะครับ" หรือไม่พูดถึงเงื่อนไขสำคัญ เช่น "แพ็กนี้มีเน็ตไม่จำกัด" โดยไม่อธิบายว่ามีการลดความเร็วหลังใช้ครบ
+
+**4.1.3 professional_conduct_behavioral_compliance** - Professional Conduct
+
+- **Definition:** Maintains professional, respectful communication throughout call
+- **True when:** Polite tone, controls emotions, doesn't argue, avoids sarcasm/mockery/discrimination, professional even when not speaking
+- **False when:** Uses rude language, harsh tone, sarcasm, argues back, laughs at customer
+
+---
+
+## **Additional Category 1: Sales Performance**
+
+Tracking and evaluating sales performance including main package sales, add-on upsells, and cross-sells. This category must not impact all main categories. See Company Context for definitions of main package, upsell, cross-sell, product categories, and the mutual exclusion rule.
+
+**IMPORTANT:**
+- The package must have meaning follow the Package offering in the Company Context.
+- The first package offered is not always the main package. If it is not the main package, count it as upsell or cross-sell based on product category.
+- **Bundle ≠ Upsell/Cross-sell:** Features included FREE as part of the main package bundle (no extra charge) must NOT be counted as upsell or cross-sell. Only count packages that have their own **separate additional charge** beyond the main package price. Example: "แพ็กนี้ 699 บาท ได้ Netflix ฟรี" → Netflix is a bundle benefit, do NOT count it as upsell or cross-sell. **WARNING:** When agents highlight the value of a bundled benefit by mentioning its retail price (e.g., "ปกติซื้อเอง 149 บาท แต่รวมอยู่ในแพ็กแล้ว"), this is NOT a separate charge — it is still a bundle. Only count as upsell/cross-sell if the customer must pay an **additional amount on top of** the main package price.
+- **Multiple main packages ≠ Upsell/Cross-sell:** If the agent offers a second (or third) package that also **replaces or upgrades** the customer's current package (e.g., customer rejects first offer, agent proposes an alternative), count each as a separate main package offer in Sub-Category 1.1. Do NOT classify subsequent main package offers as upsell or cross-sell.
+
+**Consistency with Sub-Category 2.5: Cross-sell / Upsell:**
+- If Sub-Category 2.5 evaluates a cross-sell/upsell attempt (2.5.1 = True or False), the upsell (Sub-Category 1.3) or cross-sell (Sub-Category 1.5) counts here must reflect those offers accordingly.
+- If Sub-Category 2.5 has all None (no cross-sell/upsell opportunity), the upsell and cross-sell counts here should be 0. Only main package counts (Sub-Category 1.1/1.2) may be non-zero.
+
+**Mutual Exclusion Rule for Product Lists:**
+- `main_and_upsell_add_on_product_offered_list` (Sub-Category 1.7) and `crosssell_add_on_product_offered_list` (Sub-Category 1.8) must have **ZERO overlapping categories**.
+- The main package's category must NEVER appear in the cross-sell list, and cross-sell categories must NEVER appear in the main/upsell list.
+
+**Decision flowchart for classifying each package offered:**
+0. **Is this a main package?** — Does this package **replace or upgrade** the customer's current package (same purpose as the first main package)? If YES → count as another main package (Sub-Category 1.1/1.2), do NOT classify as upsell or cross-sell. A second or third main package offer is still a main package.
+1. **Is this a bundle benefit?** — Is this feature/service **included FREE** as part of the main package at no extra charge? If YES → do NOT count it at all (not upsell, not cross-sell). It is a bundled benefit of the main package.
+2. Identify the product category of the offered package (Mobile, TOL, or TVS)
+3. Compare it with the main package's product category
+4. If **same category** → classify as **upsell add-on** → count in Sub-Category 1.3/1.4, list in Sub-Category 1.7
+5. If **different category** → classify as **cross-sell** → count in Sub-Category 1.5/1.6, list in Sub-Category 1.8
+
+**Common Misclassification Errors — DO NOT make these mistakes:**
+
+**ERROR 1: Bundle counted as cross-sell/upsell**
+- Agent says: "แพ็กนี้จะได้รับเป็นตัวแอปดูหนังของ Viu รับสิทธิ์ไปใช้งานเป็นตัวพรีเมียมได้เลย" and "ปกติเราถ้าไปซื้อเองต่างหากก็ 149 บาทต่อเดือน"
+- WRONG: Counting Viu as cross-sell because it sounds like a separate product with a price
+- CORRECT: Viu is a bundle benefit included with the main package — the agent is highlighting its value ("normally 149 baht if bought separately"), NOT charging extra. If there is no separate additional charge → it is a bundle, NOT cross-sell/upsell.
+- **Key signal:** If the agent says "ได้ฟรี", "รวมอยู่ในแพ็ก", "ไม่ต้องจ่ายเพิ่ม", or describes the value of what's included (without asking customer to pay more) → it is a bundle.
+
+**ERROR 2: Second main package counted as upsell/cross-sell**
+- Agent first offers Package A (Mobile, 299 baht) → customer declines → Agent then offers Package B (Mobile, 199 baht) as alternative
+- WRONG: Counting Package B as upsell because it's the same category and offered after Package A
+- CORRECT: Package B is another main package offer (it replaces/upgrades the customer's current package, same purpose as Package A). Count main_package_offered = 2, upsell = 0.
+- **Key signal:** If the second package also **replaces or upgrades** the customer's current package (not an add-on on top of the first offer) → it is another main package, not upsell/cross-sell.
+
+**Upsell examples per product category:**
+
+- **TVS:** Premium channel packages (sports, movies, international channels), on-demand content subscriptions attached with set-top boxes, any extra features beyond the base TVS plan such as TrueID, etc.
+- **TOL:** Higher internet speed tier upgrades, additional data or unlimited data packages, Wi-Fi mesh or router equipment upgrades, any extra features beyond the base TOL plan such as Hi-Speed Home Fiber, etc.
+- **Mobile:** Add-on data or roaming packages, entertainment subscriptions (e.g., Netflix, YouTube Premium, TrueID), device protection or insurance plans, any extra features beyond the base mobile plan such as All Cafe, etc.
+
+### **Sub-Additional-Category 1.1: Main Package Offered** - Number of main packages offered to the customer
+- **Definition:** Counts how many distinct main packages the agent offered to the customer during the call. The main package is the primary product or service that would replace or upgrade the customer's current package.
+- **Logic:**
+  - Count each **distinct** main package offered. If the agent offers the same package multiple times in the same conversation, count it as 1 offer.
+  - Do not count offers of add-on upsell packages or cross-sell products in this field.
+- **Example 1:** Agent offered three different Mobile packages as main package → count = 3.
+- **Example 2:** Agent offered the same Mobile package three times → count = 1.
+
+### **Sub-Additional-Category 1.2: Main Package Accepted** - Number of main packages accepted by the customer
+- **Definition:** Counts how many distinct main packages the customer accepted during the call. An acceptance is when the customer explicitly agrees to switch to or purchase the main package, and the agent has already verified the customer's identity as required in Sub-Category 1.2: Customer Identity Verification.
+- **Logic:**
+  - Count each distinct accepted main package. If the customer accepts the same package multiple times (e.g., after initially declining then later accepting), count as 1 acceptance.
+  - Do not count acceptances of add-on upsell packages or cross-sell products.
+
+### **Sub-Additional-Category 1.3: Add-on Upsell Package Offered** - Number of add-on upsell packages offered to the customer
+- **Definition:** Counts how many distinct add-on upsell packages the agent offered. An add-on upsell package is a supplementary product in the **SAME product category** as the main package, providing extra features or benefits for an additional cost.
+- **Logic:**
+  - Count each distinct upsell package. If the agent mentions the same upsell package multiple times, count as 1 offer.
+  - A package is an upsell ONLY if it is in the same product category as the main package. If it is in a different category, it is a cross-sell (see Sub-Category 1.5).
+- **Example 1:** Main package is Mobile. Agent then offers an additional Mobile data add-on → upsell count = 1.
+- **Example 2:** Main package is Mobile. Agent then offers a TVS package → upsell count = 0 (this is a cross-sell, not an upsell, because TVS is a different product category from Mobile).
+
+### **Sub-Additional-Category 1.4: Add-on Upsell Package Accepted** - Number of add-on upsell packages accepted by the customer
+- **Definition:** Counts how many distinct add-on upsell packages the customer accepted. An acceptance requires the customer to explicitly agree and the agent to have verified the customer's identity as required in Sub-Category 1.2.
+- **Logic:**
+  - Count each distinct accepted upsell package. Same package accepted multiple times = 1 acceptance.
+  - Only count acceptances of packages in the same product category as the main package.
+
+### **Sub-Additional-Category 1.5: Cross-sell Package Offered** - Number of cross-sell packages offered to the customer
+- **Definition:** Counts how many distinct cross-sell packages the agent offered. A cross-sell package is a product from a **DIFFERENT product category** than the main package.
+- **Logic:**
+  - Count each distinct cross-sell package. If the agent mentions the same cross-sell package multiple times, count as 1 offer.
+  - A package is a cross-sell ONLY if it is in a different product category from the main package. If it is in the same category, it is an upsell (see Sub-Category 1.3).
+- **CRITICAL:**
+  - Count individual packages, not product categories. If the agent offered 2 different TVS packages, count = 2, even though Sub-Category 1.8 would only list "TVS" once.
+  - If `crosssell_add_on_product_offered_list` (Sub-Category 1.8) is empty, this field must be 0.
+- **Example 1:** Main is Mobile. Agent offers 2 different TVS packages → cross-sell count = 2.
+- **Example 2:** Main is Mobile. Agent offers 1 TVS package and 1 additional Mobile package → cross-sell count = 1 (only TVS counts; the Mobile package is an upsell because it is in the same category as the main package).
+
+### **Sub-Additional-Category 1.6: Cross-sell Package Accepted** - Number of cross-sell packages accepted by the customer
+- **Definition:** Counts how many distinct cross-sell packages the customer accepted. An acceptance requires the customer to explicitly agree and the agent to have verified the customer's identity as required in Sub-Category 1.2.
+- **Logic:**
+  - Count each distinct accepted cross-sell package. Same package accepted multiple times = 1 acceptance.
+  - Only count acceptances of packages in a different product category from the main package.
+- **CRITICAL:** If `crosssell_add_on_product_offered_list` (Sub-Category 1.8) is empty, this field must be 0.
+
+### **Sub-Additional-Category 1.7: Main and Upsell Package Offered Product List** - List of product categories for main and upsell packages
+- **Definition:** Lists the product categories (TVS, TOL, Mobile) that appear in the main package and any upsell add-on packages offered during the call.
+- **Logic:**
+  - Always include the main package's product category in this list (if main_package_offered > 0).
+  - Also include the product category of any upsell add-on packages offered (these will be the same category as the main package by definition).
+  - Do NOT include cross-sell product categories in this list. Cross-sell categories belong in Sub-Category 1.8.
+  - Deduplicate: each category appears at most once.
+- **CRITICAL:** This list and `crosssell_add_on_product_offered_list` (Sub-Category 1.8) must have **NO overlapping categories**.
+- **Example 1:** Main package is Mobile, agent also offered a Mobile upsell add-on → result: `['Mobile']`.
+- **Example 2:** No main package offered (main_package_offered = 0) → result: `[]` (empty list).
+
+### **Sub-Additional-Category 1.8: Cross-sell Package Offered Product List** - List of product categories for cross-sell packages
+- **Definition:** Lists the product categories (TVS, TOL, Mobile) of cross-sell packages offered during the call. A cross-sell product is from a **DIFFERENT product category** than the main package.
+- **Logic:**
+  - List each distinct product category of cross-sell packages offered. Deduplicate: each category appears at most once.
+  - Do NOT include the main package's product category in this list. The main package's category belongs in Sub-Category 1.7.
+- **CRITICAL:** This list must NEVER contain the same product category as the main package. If the main package is Mobile, this list can only contain `['TVS']`, `['TOL']`, or `['TVS', 'TOL']` — never `['Mobile']` or any list that includes `'Mobile'`.
+- **Example 1:** Main is Mobile. Agent offered a TVS cross-sell → result: `['TVS']`.
+- **Example 2:** Main is Mobile. Agent offered cross-sells in TVS and TOL → result: `['TVS', 'TOL']`.
+- **Example 3:** No cross-sell offered → result: `[]`.
+
+---
+
+## **Additional Category 2: Customer Insight**
+
+Evaluates the customer's rejection reasons, network issues, churn risk and sentiment. By analyzing from overall conversation context, not just isolated sentences, to understand the customer's underlying feelings and motivations.
+
+### **Sub-Additional-Category 2.1: Rejection Reason** - Customer's reason for rejecting the offer
+- **Definition:** If the customer rejects the offer, identify the main reason for rejection based on their statements during the call. This field captures the customer's underlying motivation for saying "no" to the offer.
+- **Logic:**
+  - If the customer accepts the offer or does not explicitly reject, this field should be None.
+  - If the customer rejects, analyze their statements to determine the primary reason for rejection. Reasons include:
+    - **Price Sensitivity:** Customer indicates the price is too high or not worth it.
+    - **Package Mismatch:** Customer feels the offered package doesn't fit their needs or usage.
+    - **Existing Plan Satisfaction:** Customer is happy with their current plan and doesn't see a need to change.
+    - **Decision Deferral:** Customer wants to think about it or consult with someone else before deciding.
+    - **None:** No explicit rejection reason provided.
+
+### **Sub-Additional-Category 2.2: Network Issues** - Whether the customer mentions any network-related problems during the call
+- **Definition:** Identifies if the customer mentions any network-related issues during the call, which could indicate dissatisfaction with the service. This field captures whether network problems are a factor in the customer's feelings.
+- **Logic:**
+  - If the customer does not mention any network issues, this field should be None.
+  - If the customer mentions network problems, identify the type of issue:
+    - **Signal:** Customer mentions weak signal, dropped calls, or poor reception.
+    - **Speed:** Customer mentions slow internet speed or buffering.
+    - **Coverage:** Customer mentions lack of coverage in their area.
+    - **None:** Customer mentions network issues but does not specify the type.
+
+### **Sub-Additional-Category 2.3: Churn Risk** - Estimated probability that the customer will churn based on their statements during the call
+- **Definition:** Estimate the probability (0-100) that the customer will churn (switch to a competitor or cancel service) based on their statements during the call. This field captures the customer's likelihood of leaving the company in the current or near future.
+- **Logic:**
+  - Analyze the customer's statements for indicators of churn risk, such as dissatisfaction, mentions of competitors, or intent to cancel.
+  - Assign a probability score from 0 to 100 based on the strength of these indicators:
+    - **0-19:** Low risk — customer does not express dissatisfaction and shows willingness to wait for resolution or is generally satisfied.
+    - **20-39:** Low-medium risk — customer mentions minor issues or mild dissatisfaction but is not strongly considering alternatives.
+    - **40-59:** Moderate risk — customer expresses noticeable dissatisfaction, mentions issues affecting their experience, or hints at considering alternatives.
+    - **60-79:** High risk — customer expresses strong dissatisfaction, mentions specific issues that significantly impact their experience, or indicates they are actively considering switching.
+    - **80-100:** Very high risk — customer explicitly states they plan to switch, has already taken action towards switching, or expresses extreme dissatisfaction with no willingness to wait for resolution.
+
+### **Sub-Additional-Category 2.4: Customer Sentiment** - Overall sentiment of the customer during the call
+- **Definition:** Assess the overall sentiment of the customer throughout the call based on their statements and tone. This field captures whether the customer's feelings are generally positive, negative, or neutral.
+- **Logic:**
+  - Analyze the customer's statements and tone for indicators of sentiment:
+    - **Positive:** Customer expresses satisfaction, happiness, or positive feelings about the service or interaction.
+    - **Negative:** Customer expresses dissatisfaction, frustration, or negative feelings about the service or interaction.
+    - **Neutral:** Customer's statements and tone do not clearly indicate strong positive or negative sentiment; they may be factual or indifferent.
+
+---
+
+## **CRITICAL: Support Detail Field (support_detail)**
+
+**Purpose:** Every sub-category group requires a `support_detail` field that provides evidence-based reasoning for the evaluation. The LLM must quote key sentences from the conversation to justify each True/False/None decision.
+
+**Requirements:**
+
+1. **Quote Directly:** Include exact agent/customer phrases (in Thai, with quotation marks) that support your evaluation
+2. **Be Specific:** Reference concrete conversation moments, not general observations
+3. **Explain Logic:** Connect the evidence to the criteria — state what was expected AND what actually happened
+4. **Address None Values:** When fields are None (e.g., no verification scenario, no cross-sell), quote the conversation moment that proves no opportunity existed
+5. **Cover All Fields:** Address each evaluated field in the group
+6. **Scale Detail with False Count:** More False evaluations in a group = more detailed explanation required per finding. Each False MUST include: the exact quote (or note of silence) and what criteria was not met
+
+**Detail Level Guidelines:**
+
+| False Count | Detail Level | Description                                                                                                 |
+| ----------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
+| 0 False     | Brief        | Quote 2-3 key phrases showing agent met all criteria                                                        |
+| 1 False     | Standard     | True items: brief confirmation. False item: quote the moment + explain what was missing                     |
+| ≥ 2 False   | Detailed     | Each False: quote agent's exact words (or note silence) + explain what was missing. True items: brief quote |
+
+**Format Guidelines:**
+
+- Start with the key finding
+- Quote relevant conversation excerpts in Thai (use quotation marks)
+- For True: briefly cite evidence. For False: explain what was expected vs what happened, with quotes
+- For None: quote the conversation moment proving no opportunity existed
+- Note what was present AND what was missing
+
+**Examples:**
+
+**Good support_detail (Call Opening — all True, brief):**
+
+```
+พนักงานแนะนำตัวครบ "สวัสดีค่ะ ดิฉันชื่อวันดีค่ะ รหัส 12345" แจ้งต้นทาง "โทรมาจากทรูมูฟ เอช" ถามความสะดวก "สะดวกคุยสายนะคะ" รอลูกค้าตอบก่อนดำเนินการ
+```
+
+**Good support_detail (Call Opening — 1 False, standard detail):**
+
+```
+พนักงานแนะนำตัว "สวัสดีค่ะ ดิฉันชื่อวันดีค่ะ" แจ้งต้นทาง "โทรมาจากทรูมูฟ เอช" แต่ไม่ได้ถามความสะดวกก่อน เริ่มนำเสนอโปรโมชั่นทันทีหลังแนะนำตัว ไม่มีการขออนุญาตลูกค้าก่อนดำเนินการ
+```
+
+**Good support_detail (Customer Identity Verification — None case):**
+
+```
+ลูกค้าไม่สนใจข้อเสนอ ปฏิเสธการรับบริการ พนักงานกล่าว "ไม่เป็นไรค่ะ ขอบคุณที่ให้เวลาค่ะ" แล้วปิดสาย ไม่มีการทำรายการใดๆ จึงไม่จำเป็นต้องยืนยันตัวตน
+```
+
+**Good support_detail (Cross-sell/Upsell — with values):**
+
+```
+พนักงานเสนอ Netflix เพิ่มหลังจากแจ้งแพ็กหลัก แยกชัด "แพ็กหลัก 299 บาท ถ้าสนใจสามารถเพิ่ม Netflix ค่าบริการเพิ่มอีก 149 บาท" แจ้งราคาและรอบบิลครบ
+```
+
+**Bad support_detail (field names instead of context):**
+
+```
+ลูกค้าไม่สนใจข้อเสนอ ปฏิเสธการรับบริการ customer_verification=None, invalid_verification=None, missing_verification=None
+(BAD: Don't write field names - business users don't need technical details, only the context/explanation)
+```
+
+**Bad support_detail (ambiguous — doesn't distinguish None vs False):**
+
+```
+ไม่มีการยืนยันตัวตน เนื่องจากลูกค้าปฏิเสธ
+(BAD: Doesn't clarify whether 1) No sale = None (correct), or 2) Sale completed but no verification = False (violation). Always distinguish explicitly.)
+```
+
+**Bad support_detail (too vague):**
+
+```
+Agent did well in this section.
+(BAD: No evidence quoted, no specific criteria referenced)
+```
+
+**Bad support_detail (False without evidence):**
+
+```
+พนักงานไม่ได้ถามความสะดวก
+(BAD: States the conclusion but doesn't quote what the agent actually said instead, or explain what criteria was not met)
+```
+
+**When evaluating, think:**
+
+1. What did I hear? (Quote the exact phrase)
+2. What criteria am I checking? (Reference the section)
+3. Did the agent meet it? (True/False/None)
+4. What specific evidence supports this? (Cite conversation)
+5. If False: What was missing or what criteria was not met?

@@ -1,0 +1,150 @@
+Input:
+  s3:
+    input_file_path: retailer-photos/ai-outbound/AI_RTR_PHOTO_yyyymmdd.enc
+    initial_schema:
+      - xd_rtr_code
+      - xt_rtr_code
+      - xd_rtr_type
+      - xd_rtr_sub_type
+      - xd_rtr_name
+      - xd_zone_name
+      - xd_cluster_name
+      - xd_rtr_status
+      - xd_appointment_date
+      - xd_latitude
+      - xd_longitude
+      - xd_ga
+      - xd_ap1d
+      - xd_last_verified_by
+      - xd_last_verified_date
+      - xt_rtr_type
+      - xt_rtr_sub_type
+      - xt_rtr_name
+      - xt_zone_name
+      - xt_cluster_name
+      - xt_rtr_status
+      - xt_appointment_date
+      - xt_latitude
+      - xt_longitude
+      - xt_ga
+      - xt_ap1d
+      - xt_last_verified_by
+      - xt_last_verified_date
+      - photo_count
+      - photo_1_path
+      - photo_2_path
+      - photo_3_path
+      - xd_rsr_sale_code
+      - xd_rsr_sale_name
+      - xd_pbh_sale_code
+      - xd_pbh_sale_name
+      - xd_rh_sale_code
+      - xd_rh_sale_name
+      - xt_rsr_sale_code
+      - xt_rsr_sale_name
+      - xt_pbh_sale_code
+      - xt_pbh_sale_name
+      - xt_rh_sale_code
+      - xt_rh_sale_name
+      - last_photo_update
+      - no_visit
+      - no_visit_last_month
+      - last_visit_date
+
+    appended_schema:
+      - Run_Date
+      - Folder_Name
+      - RTR_Code
+      - RTR_Name
+      - Number_of_image
+      - Photo_Name1
+      - Photo_Name2
+      - Photo_Name3
+        ## Image metadata 
+      - Photo1_Lat
+      - Photo1_Long
+      - RTR1_Lat
+      - RTR1_Long
+      - Photo1_Flag300
+        ## AI RESULT 
+      - Same_Photo
+      - From_Other_Device
+      - Closed_Business
+      - un_relate
+      - un_relate_human
+      - un_relate_animal
+      - un_relate_location
+      - un_relate_object
+      - Complaint_Status
+
+  sharepoint:
+    input_enc_file_path: input/yyyymm/yyyymmdd/AI_RTR_PHOTO_yyyymmdd.enc
+    input_file_path: input/yyyymm/yyyymmdd/AI_RTR_PHOTO_yyyymmdd.csv
+    lookup_file_path: input/fraud_master_file/Summary Prepaid Fraud Spam by Partner Code detected.xlsx
+    lookup_sheet_name: Detail
+
+Output :
+  sharepoint:
+    output_user_file_path: output/yyyymm/yyyymmdd/Retailers with non-compliant photos report_DDMMMYY.xlsx
+    output_user_schema_sheet1:
+      - Process Date
+      - RTR Code (D)
+      - RTR Name (D)
+      - RTR Code (T)
+      - RTR Name (T)
+      - Result
+      - ZONE
+      - Cluster
+      - PBH Name (D)
+      - RSR Name (D)
+      - PBH Name (T)
+      - RSR Name (T)
+      - Dtac GA Last month
+      - True GA Last month
+      - Last Photo Update
+      - Number of visit in last month
+      - Number of visit in this month
+      - Last visit update
+      - Created Code (D) Date
+      - Created Code (T) Date
+      - Compare Photo VS Checkin Lat/Long
+      - Suspicious Retailer (Base on internal sources)
+      - Verified by (PBH Name)
+      - Date of Verified by PBH
+    output_user_schema_sheet2:
+      - RTR Code (D)
+      - RTR Name (D)
+      - RTR Code (T)
+      - RTR Name (T)
+      - Result
+      - ZONE
+      - Cluster
+      - PBH Name (D)
+      - RSR Name (D)
+      - PBH Name (T)
+      - RSR Name (T)
+      - Suspicious Retailer (Base on internal sources)
+      - Verified by (PBH Name)
+      - Date of Verified by PBH
+    output_system_log_file_path: output/yyyymm/yyyymmdd/system_log.csv
+    output_mapping_file_path: output/yyyymm/yyyymmdd/mapping.csv
+    log_schema:
+      - data_date
+      - start_time
+      - end_time
+      - total_time_mins
+      - type
+      - gcp_project_id
+      - gcp_project_name
+      - user_id
+      - source
+      - storage_path
+      - folder
+      - filename
+      - file_metadata_min
+      - status_pass_failed_retry
+      - error_log_if
+      - latency_ms
+      - token_usage_input
+      - token_usage_output
+      - total_cost_usd

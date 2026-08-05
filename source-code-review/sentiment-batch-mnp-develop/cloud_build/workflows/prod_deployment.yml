@@ -1,0 +1,219 @@
+substitutions:
+  _REGION: asia-southeast1
+  _NONPROD_REPOSITORY: pre-release-sentiment-mnp-retention-artifact-repo
+  _NONPROD_PROJECT_ID: gcp-noexp-wl-nprd-sentimentmnp
+  _PROD_REPOSITORY: prod-sentiment-mnp-retention-artifact-repo
+  _IMAGE_NAME: voice-sentiment-analysis
+  _SERVICE_ACCOUNT: 425672969234-compute@developer.gserviceaccount.com
+  _SCHEDULER_JOB_NAME: voice-sentiment-analysis-scheduler-trigger
+  _SCHEDULE: "0 9 * * *"
+  _TIMEZONE: "Asia/Jakarta"
+  _FACT_CHECKER_NM: fact-checker-sentiment-analysis
+  _FACT_CHECKER_SCHEDULER_JOB_NAME: fact-checker-sentiment-analysis-scheduler-trigger
+  _FACT_CHECKER_SCHEDULE: "0 21 1,2 * *"
+
+steps:
+# Step 1: Pull image from Non-Prod
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker pull ${_REGION}-docker.pkg.dev/${_NONPROD_PROJECT_ID}/${_NONPROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest}
+
+# Step 2: Tag image for Prod
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker tag \
+      ${_REGION}-docker.pkg.dev/${_NONPROD_PROJECT_ID}/${_NONPROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
+      ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest}
+
+# Step 3: Push image to Prod
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest}
+
+# Step 4: Deploy to Cloud Run Job
+# Step 4.1: Deploy Cloud Run Job (Sentiment Analysis MNP Retention)
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud run jobs deploy ${_IMAGE_NAME} \
+      --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
+      --region ${_REGION} \
+      --task-timeout=86400s \
+      --max-retries=0 \
+      --cpu=2 \
+      --memory=4Gi \
+      --set-secrets=GOOGLE_CLOUD_PROJECT=GOOGLE_CLOUD_PROJECT:latest,\
+    GOOGLE_CLOUD_LOCATION=GOOGLE_CLOUD_LOCATION:latest,\
+    GOOGLE_GENAI_USE_VERTEXAI=GOOGLE_GENAI_USE_VERTEXAI:latest,\
+    PROCESSING_BUCKET=PROCESSING_BUCKET:latest,\
+    INPUT_GCP_PREFIX=INPUT_GCP_PREFIX:latest,\
+    PROCESSING_PREFIX=PROCESSING_PREFIX:latest,\
+    ARCHIVE_PREFIX=ARCHIVE_PREFIX:latest,\
+    BATCH_PREFIX=BATCH_PREFIX:latest,\
+    MODEL_NAME=MODEL_NAME:latest,\
+    INPUT_PREFIX=INPUT_PREFIX:latest,\
+    INPUT_PRODUCT=INPUT_PRODUCT:latest,\
+    OUTPUT_EXCEL_PREFIX=OUTPUT_EXCEL_PREFIX:latest,\
+    OUTPUT_PRODUCT=OUTPUT_PRODUCT:latest,\
+    OUTPUT_EXCEL_DAILY_PREFIX_FILENAME=OUTPUT_EXCEL_DAILY_PREFIX_FILENAME:latest,\
+    VERINT_SITE_CLIENT_ID=VERINT_SITE_CLIENT_ID:latest,\
+    VERINT_SITE_CLIENT_SECRET=VERINT_SITE_CLIENT_SECRET:latest,\
+    VERINT_SITE_TENANT_ID=VERINT_SITE_TENANT_ID:latest,\
+    VERINT_SITE_SITE_DOMAIN=VERINT_SITE_SITE_DOMAIN:latest,\
+    VERINT_SITE_SITE_PATH=VERINT_SITE_SITE_PATH:latest,\
+    VERINT_SITE_BASE_ROOT=VERINT_SITE_BASE_ROOT:latest,\
+    CONTROL_SITE_CLIENT_ID=CONTROL_SITE_CLIENT_ID:latest,\
+    CONTROL_SITE_CLIENT_SECRET=CONTROL_SITE_CLIENT_SECRET:latest,\
+    CONTROL_SITE_TENANT_ID=CONTROL_SITE_TENANT_ID:latest,\
+    CONTROL_SITE_SITE_DOMAIN=CONTROL_SITE_SITE_DOMAIN:latest,\
+    CONTROL_SITE_SITE_PATH=CONTROL_SITE_SITE_PATH:latest,\
+    CONTROL_SITE_BASE_ROOT=CONTROL_SITE_BASE_ROOT:latest,\
+    CONTROL_SITE_PROMPTS_ROOT=CONTROL_SITE_PROMPTS_ROOT:latest,\
+    CONTROL_SITE_CONTROL_PATH=CONTROL_SITE_CONTROL_PATH:latest,\
+    CONTROL_SITE_TRANSACTION_LOG_PATH=CONTROL_SITE_TRANSACTION_LOG_PATH:latest,\
+    CONTROL_SITE_PERFORMANCE_LOG_PATH=CONTROL_SITE_PERFORMANCE_LOG_PATH:latest,\
+    CONTROL_SITE_COST_PATH=CONTROL_SITE_COST_PATH:latest,\
+    BATCH_SIZE=BATCH_SIZE:latest,\
+    LOG_NAME=LOG_NAME:latest,\
+    LOOKBACK_DAYS=LOOKBACK_DAYS:latest,\
+    MAX_CONCURRENT_UPLOADS=MAX_CONCURRENT_UPLOADS:latest,\
+    LOG_ENVIRONMENT=LOG_ENVIRONMENT:latest,\
+    PLAYGROUND_SITE_CLIENT_ID=PLAYGROUND_SITE_CLIENT_ID:latest,\
+    PLAYGROUND_SITE_CLIENT_SECRET=PLAYGROUND_SITE_CLIENT_SECRET:latest,\
+    PLAYGROUND_SITE_TENANT_ID=PLAYGROUND_SITE_TENANT_ID:latest,\
+    PLAYGROUND_SITE_SITE_DOMAIN=PLAYGROUND_SITE_SITE_DOMAIN:latest,\
+    PLAYGROUND_SITE_SITE_PATH=PLAYGROUND_SITE_SITE_PATH:latest,\
+    PLAYGROUND_SITE_BASE_ROOT=PLAYGROUND_SITE_BASE_ROOT:latest,\
+    PLAYGROUND_NETWORK_PATH=PLAYGROUND_NETWORK_PATH:latest,\
+    ENVIRONMENT=ENVIRONMENT:latest
+
+# Step 4.2: Run Cloud Run Job (Fact-checker MNP Retention)
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud run jobs deploy ${_FACT_CHECKER_NM} \
+      --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
+      --region ${_REGION} \
+      --command python \
+      --args src/modules/fact_checker.py,--config_path,config/fact_checker/mnp_retention.yml \
+      --task-timeout=86400s \
+      --max-retries=0 \
+      --cpu=2 \
+      --memory=4Gi \
+      --set-secrets=GOOGLE_CLOUD_PROJECT=GOOGLE_CLOUD_PROJECT:latest,\
+    GOOGLE_CLOUD_LOCATION=GOOGLE_CLOUD_LOCATION:latest,\
+    GOOGLE_GENAI_USE_VERTEXAI=GOOGLE_GENAI_USE_VERTEXAI:latest,\
+    PROCESSING_BUCKET=PROCESSING_BUCKET:latest,\
+    INPUT_GCP_PREFIX=INPUT_GCP_PREFIX:latest,\
+    PROCESSING_PREFIX=PROCESSING_PREFIX:latest,\
+    ARCHIVE_PREFIX=ARCHIVE_PREFIX:latest,\
+    BATCH_PREFIX=BATCH_PREFIX:latest,\
+    MODEL_NAME=MODEL_NAME:latest,\
+    INPUT_PREFIX=INPUT_PREFIX:latest,\
+    INPUT_PRODUCT=INPUT_PRODUCT:latest,\
+    OUTPUT_EXCEL_PREFIX=OUTPUT_EXCEL_PREFIX:latest,\
+    OUTPUT_PRODUCT=OUTPUT_PRODUCT:latest,\
+    OUTPUT_EXCEL_DAILY_PREFIX_FILENAME=OUTPUT_EXCEL_DAILY_PREFIX_FILENAME:latest,\
+    VERINT_SITE_CLIENT_ID=VERINT_SITE_CLIENT_ID:latest,\
+    VERINT_SITE_CLIENT_SECRET=VERINT_SITE_CLIENT_SECRET:latest,\
+    VERINT_SITE_TENANT_ID=VERINT_SITE_TENANT_ID:latest,\
+    VERINT_SITE_SITE_DOMAIN=VERINT_SITE_SITE_DOMAIN:latest,\
+    VERINT_SITE_SITE_PATH=VERINT_SITE_SITE_PATH:latest,\
+    VERINT_SITE_BASE_ROOT=VERINT_SITE_BASE_ROOT:latest,\
+    CONTROL_SITE_CLIENT_ID=CONTROL_SITE_CLIENT_ID:latest,\
+    CONTROL_SITE_CLIENT_SECRET=CONTROL_SITE_CLIENT_SECRET:latest,\
+    CONTROL_SITE_TENANT_ID=CONTROL_SITE_TENANT_ID:latest,\
+    CONTROL_SITE_SITE_DOMAIN=CONTROL_SITE_SITE_DOMAIN:latest,\
+    CONTROL_SITE_SITE_PATH=CONTROL_SITE_SITE_PATH:latest,\
+    CONTROL_SITE_BASE_ROOT=CONTROL_SITE_BASE_ROOT:latest,\
+    CONTROL_SITE_PROMPTS_ROOT=CONTROL_SITE_PROMPTS_ROOT:latest,\
+    CONTROL_SITE_CONTROL_PATH=CONTROL_SITE_CONTROL_PATH:latest,\
+    CONTROL_SITE_TRANSACTION_LOG_PATH=CONTROL_SITE_TRANSACTION_LOG_PATH:latest,\
+    CONTROL_SITE_PERFORMANCE_LOG_PATH=CONTROL_SITE_PERFORMANCE_LOG_PATH:latest,\
+    CONTROL_SITE_COST_PATH=CONTROL_SITE_COST_PATH:latest,\
+    BATCH_SIZE=BATCH_SIZE:latest,\
+    LOG_NAME=LOG_NAME:latest,\
+    LOOKBACK_DAYS=LOOKBACK_DAYS:latest,\
+    MAX_CONCURRENT_UPLOADS=MAX_CONCURRENT_UPLOADS:latest,\
+    LOG_ENVIRONMENT=LOG_ENVIRONMENT:latest,\
+    PLAYGROUND_SITE_CLIENT_ID=PLAYGROUND_SITE_CLIENT_ID:latest,\
+    PLAYGROUND_SITE_CLIENT_SECRET=PLAYGROUND_SITE_CLIENT_SECRET:latest,\
+    PLAYGROUND_SITE_TENANT_ID=PLAYGROUND_SITE_TENANT_ID:latest,\
+    PLAYGROUND_SITE_SITE_DOMAIN=PLAYGROUND_SITE_SITE_DOMAIN:latest,\
+    PLAYGROUND_SITE_SITE_PATH=PLAYGROUND_SITE_SITE_PATH:latest,\
+    PLAYGROUND_SITE_BASE_ROOT=PLAYGROUND_SITE_BASE_ROOT:latest,\
+    PLAYGROUND_NETWORK_PATH=PLAYGROUND_NETWORK_PATH:latest,\
+    ENVIRONMENT=ENVIRONMENT:latest
+
+# Step 5: Deploy cloud scheduler trigger
+# Step 5.1: Deploy Cloud Scheduler for Sentiment Analysis MNP Retention
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    if gcloud scheduler jobs describe ${_SCHEDULER_JOB_NAME} --location=${_REGION} &>/dev/null; then
+      echo "Updating Cloud Scheduler job '${_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs update http ${_SCHEDULER_JOB_NAME} \
+        --schedule="${_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_IMAGE_NAME}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    else
+      echo "Creating Cloud Scheduler job '${_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs create http ${_SCHEDULER_JOB_NAME} \
+        --schedule="${_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_IMAGE_NAME}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    fi
+
+# Step 5.2: Deploy Cloud Scheduler for Fact-checker MNP Retention
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    if gcloud scheduler jobs describe ${_FACT_CHECKER_SCHEDULER_JOB_NAME} --location=${_REGION} &>/dev/null; then
+      echo "Updating Cloud Scheduler job '${_FACT_CHECKER_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs update http ${_FACT_CHECKER_SCHEDULER_JOB_NAME} \
+        --schedule="${_FACT_CHECKER_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_FACT_CHECKER_NM}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    else
+      echo "Creating Cloud Scheduler job '${_FACT_CHECKER_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs create http ${_FACT_CHECKER_SCHEDULER_JOB_NAME} \
+        --schedule="${_FACT_CHECKER_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_FACT_CHECKER_NM}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    fi
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET

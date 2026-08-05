@@ -1,0 +1,150 @@
+name: Dependabot Vulnerability Email Report
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 8:00 AM UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Dependabot Alerts
+        id: fetch_alerts
+        run: |
+          ALERTS=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GH_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "https://api.github.com/repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100")
+
+          echo "$ALERTS" > alerts.json
+
+          # Debug: print raw response
+          echo "=== RAW RESPONSE ==="
+          cat alerts.json
+
+          # Check if response is an array or error
+          TYPE=$(echo "$ALERTS" | jq 'type')
+          echo "Response type: $TYPE"
+
+          COUNT=$(echo "$ALERTS" | jq 'if type == "array" then length else 0 end')
+          echo "alert_count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Total alerts found: $COUNT"
+
+      - name: Build and Send Email via Microsoft Graph
+        if: steps.fetch_alerts.outputs.alert_count > 0
+        run: |
+          python3 - <<'EOF'
+          import json, os, urllib.request, urllib.parse
+
+          with open("alerts.json") as f:
+              raw = json.load(f)
+
+          # Debug: print structure
+          print("Type:", type(raw))
+          print("First item keys:", raw[0].keys() if isinstance(raw, list) and raw else raw)
+
+          # Handle if response is not a list
+          if not isinstance(raw, list):
+              print("ERROR: Expected a list but got:", raw)
+              exit(1)
+
+          alerts = raw
+
+          # ── 1. Get access token ──────────────────────────────────────────
+          tenant_id     = os.environ["AZURE_TENANT_ID"]
+          client_id     = os.environ["AZURE_CLIENT_ID"]
+          client_secret = os.environ["AZURE_CLIENT_SECRET"]
+
+          token_url  = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+          token_data = urllib.parse.urlencode({
+              "grant_type":    "client_credentials",
+              "client_id":     client_id,
+              "client_secret": client_secret,
+              "scope":         "https://graph.microsoft.com/.default"
+          }).encode()
+
+          req = urllib.request.Request(token_url, data=token_data)
+          with urllib.request.urlopen(req) as res:
+              access_token = json.loads(res.read())["access_token"]
+
+          # ── 2. Build email content ───────────────────────────────────────
+          repo = os.environ["REPO"]
+
+          html_rows = ""
+          for a in alerts:
+              pkg   = a["dependency"]["package"]["name"]
+              sev   = a["security_advisory"]["severity"].upper()
+              cve   = a["security_advisory"].get("cve_id") or a["security_advisory"]["ghsa_id"]
+              fix   = (a["security_vulnerability"].get("first_patched_version") or {}).get("identifier", "No fix yet")
+              color = "red" if sev in ["CRITICAL", "HIGH"] else "orange"
+              html_rows += f"""
+                <tr>
+                  <td>{pkg}</td>
+                  <td style="color:{color};font-weight:bold">{sev}</td>
+                  <td>{cve}</td>
+                  <td>{fix}</td>
+                </tr>"""
+
+          html_body = f"""
+          <h2>⚠️ {len(alerts)} Dependabot Vulnerabilities Found</h2>
+          <p>Repository: <strong>{repo}</strong></p>
+          <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:Arial">
+            <thead style="background:#f0f0f0">
+              <tr>
+                <th>Package</th><th>Severity</th><th>CVE</th><th>Fix Version</th>
+              </tr>
+            </thead>
+            <tbody>{html_rows}</tbody>
+          </table>
+          <br>
+          <a href="https://github.com/{repo}/security/dependabot">View all alerts on GitHub →</a>
+          """
+
+          # ── 3. Send email ────────────────────────────────────────────────
+          mail_from = os.environ["MAIL_FROM"]
+          mail_to   = os.environ["MAIL_TO"]
+
+          payload = json.dumps({
+              "message": {
+                  "subject": f"⚠️ Dependabot: {len(alerts)} vulnerabilities found in {repo}",
+                  "body": {
+                      "contentType": "HTML",
+                      "content": html_body
+                  },
+                  "toRecipients": [
+                      {"emailAddress": {"address": mail_to}}
+                  ],
+                  "from": {
+                      "emailAddress": {"address": mail_from}
+                  }
+              },
+              "saveToSentItems": "false"
+          }).encode()
+
+          send_url = f"https://graph.microsoft.com/v1.0/users/{mail_from}/sendMail"
+          req = urllib.request.Request(
+              send_url,
+              data=payload,
+              headers={
+                  "Authorization": f"Bearer {access_token}",
+                  "Content-Type":  "application/json"
+              }
+          )
+
+          with urllib.request.urlopen(req) as res:
+              print(f"✅ Email sent! Status: {res.status}")
+          EOF
+        env:
+          REPO:                ${{ github.repository }}
+          AZURE_TENANT_ID:     ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID:     ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          MAIL_FROM:           ${{ secrets.MAIL_FROM }}
+          MAIL_TO:             ${{ secrets.MAIL_TO }}
+
+      - name: No vulnerabilities found
+        if: steps.fetch_alerts.outputs.alert_count == 0
+        run: echo "✅ No open alerts. No email sent."

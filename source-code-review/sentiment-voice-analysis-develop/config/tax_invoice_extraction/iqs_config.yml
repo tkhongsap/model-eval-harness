@@ -1,0 +1,40 @@
+# IQS (Image Quality Score) configuration for OCR tax-invoice pipeline.
+#
+# Formula: IQS = wV*VQ + wS*SQ + wC*CT
+#   - VQ (Visual Quality):    blur / sharpness
+#   - SQ (Structural Quality): skew / orientation
+#   - CT (Content Type):       text-density / foreground contrast
+#
+# Each sub-score is normalised to [0.0, 1.0] in src/utils/image_utils.py.
+# Pages with IQS < `threshold` are NOT sent to Gemini and are recorded
+# in the page manifest with status `REJECTED`.
+#
+# IQS is mandatory for this pipeline — all pages are always scored.
+
+weights:
+  # Must sum to 1.0 — image_utils.compute_iqs raises if they don't.
+  vq: 0.40
+  sq: 0.30
+  ct: 0.30
+
+threshold: 0.60
+
+# Sub-thresholds (optional). Set any to null to disable a sub-floor.
+sub_thresholds:
+  vq: 0.30
+  sq: null
+  ct: null
+
+# Visual-quality tuning
+visual_quality:
+  blur_min: 50.0
+  blur_max: 500.0
+
+# Structural-quality tuning
+structural_quality:
+  max_skew_degrees: 8.0
+
+# Content-type tuning
+content_type:
+  min_density: 0.02
+  max_density: 0.60

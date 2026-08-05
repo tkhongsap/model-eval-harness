@@ -1,0 +1,103 @@
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+QAGetBatchResultTask:
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+    output_folder: "sentiment_qa/output/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+  framework:
+    batch_size_per_job: "${QA_BATCH_SIZE}" # Number of records per batch job # Future use
+    concurrency_upload: "${QA_MAX_CONCURRENT_UPLOADS}"
+    lookback_days: "${QA_LOOKBACK_DAYS}" # Number of days to look back for input files in sharepoint
+
+QAExportOutputResultTask:
+  gcp:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    project_name: "${QA_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+    input_folder: "sentiment_qa/input/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/{PRODUCT}"
+    processing_voice_folder: "sentiment_qa/processing/voice/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/{PRODUCT}"
+    archive_voice_folder: "sentiment_qa/archive/voice/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/{PRODUCT}"
+    processing_batch_folder: "sentiment_qa/processing/batch/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    output_folder: "sentiment_qa/output/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    archive_batch_folder: "sentiment_qa/archive/batch"
+  sharepoint:
+    verint:
+      master_output_file: "${QA_VERINT_ROOT}/${QA_VERINT_OUTPUT}/%{DATA_DATE_YYYYMM}/master.xlsx"
+      daily_output_file: "${QA_VERINT_ROOT}/${QA_VERINT_OUTPUT}/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/Service Quality Report by Call_Department_%{DATA_DATE_YYYYMMDD}.xlsx"
+      input_folder_list_inbound: "${QA_VERINT_PRODUCTS_INBOUND}"
+      input_folder_list_outbound: "${QA_VERINT_PRODUCTS_OUTBOUND}"
+    control:
+      transaction_log_file: "${QA_CONTROL_ROOT}/${QA_TRANSACTION_LOG_PATH}/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      performance_log_file: "${QA_CONTROL_ROOT}/${QA_PERFORMANCE_LOG_PATH}/performance_log_%{DATA_DATE_YYYYMM}.csv"
+      batch_processing_log_file: "${QA_CONTROL_ROOT}/${QA_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"
+      user_config_path: "${QA_CONTROL_ROOT}/${QA_USER_PROMPT_PATH}/user_config.xlsx"
+    sandbox:
+      daily_output_file: "sentiment_reason_addon_network/Output/QA/%{DATA_DATE_YYYYMM}/Result_Sentiment_Analysis_QA_%{DATA_DATE_YYYYMMDD}.xlsx"
+  framework:
+    user_config_path: "config/sentiment_qa/system_prompt/user_config.xlsx"
+
+QAUploadVoiceTask:
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+    input_folder: "sentiment_qa/input/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+  sharepoint:
+    verint:
+      source_folder: "${QA_VERINT_ROOT}/Input/${QA_VERINT_PRODUCTS}/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+      input_folder_list_inbound: "${QA_VERINT_PRODUCTS_INBOUND}"
+      input_folder_list_outbound: "${QA_VERINT_PRODUCTS_OUTBOUND}"
+    control:
+      control_file: "${QA_CONTROL_ROOT}/${QA_CONTROL_FILE_PATH}/control_file.xlsx"
+  framework:
+    concurrency_upload: "${QA_MAX_CONCURRENT_UPLOADS}" # Number of concurrent uploads to sharepoint to gcs
+    lookback_days: "${QA_LOOKBACK_DAYS}" # Number of days to look back for input files in sharepoint
+    sender_email: "${BOT_EMAIL}"
+    receiver_email: "${USER_EMAIL}"
+    cc_email: "${OPER_EMAIL}, ${DEV_EMAIL}"
+
+QAPrepPayloadTask:
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+    input_folder: "sentiment_qa/input/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    processing_voice_folder: "sentiment_qa/processing/voice/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    processing_batch_folder: "sentiment_qa/processing/batch/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    output_folder: "sentiment_qa/output/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    backup_excel_prompt_path: "sentiment_qa/archive/prompt/%{DATA_DATE_YYYYMMDD}/user_config.xlsx"
+  vertexai:
+    generation_config:
+      temperature: 1
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: -1
+      responseMimeType: application/json
+  sharepoint:
+    verint:
+      input_folder_list_inbound: "${QA_VERINT_PRODUCTS_INBOUND}"
+      input_folder_list_outbound: "${QA_VERINT_PRODUCTS_OUTBOUND}"
+    control:
+      batch_processing_log_file: "${QA_CONTROL_ROOT}/${QA_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"
+      user_config_path: "${QA_CONTROL_ROOT}/${QA_USER_PROMPT_PATH}/user_config.xlsx"
+  framework:
+    batch_size_per_job: "${QA_BATCH_SIZE}" # Number of records per batch job # Future use
+    concurrency_upload: "${QA_MAX_CONCURRENT_UPLOADS}"
+    lookback_days: "${QA_LOOKBACK_DAYS}" # Number of days to look back for input files in sharepoint
+    system_prompt_file: "config/sentiment_qa/system_prompt/system_prompt.txt"
+    user_config_path: "config/sentiment_qa/system_prompt/user_config.xlsx"
+
+QAExecuteBatchJobTask:
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+  vertexai:
+    batch_job_name: "sentiment-qa-batch-job-%{DATA_DATE_YYYYMMDDHHMMSS}"
+    project_id: "${QA_GCP_PROJECT_ID}"
+    location: "${QA_VERTEX_AI_LOCATION}"
+    model: "${QA_VERTEX_AI_MODEL_NAME}"
+  sharepoint:
+    control:
+      batch_processing_log_file: "${QA_CONTROL_ROOT}/${QA_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"

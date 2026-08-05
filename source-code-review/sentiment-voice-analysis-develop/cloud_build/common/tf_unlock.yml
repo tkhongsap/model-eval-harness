@@ -1,0 +1,120 @@
+substitutions:
+  # ===== REQUIRED: must be provided when triggering =====
+  _LOCK_ID: ''                  # Lock ID from the error message (e.g., 1771558201700864)
+  _TERRAFORM_PROJECT_PATH: ''   # Path to the Terraform project (e.g., terraform/projects/my_project)
+  _STATE_BUCKET: ''             # GCS bucket for Terraform state (e.g., my-project-terraform-state)
+  _STATE_PREFIX: ''             # State prefix in the bucket (e.g., terraform-state/nprd-my-project)
+
+  # ===== OPTIONAL =====
+  _TERRAFORM_VERSION: '1.13.3'
+
+steps:
+# ========================================
+# Step 0: Validate inputs
+# ========================================
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'validate'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+
+    ERRORS=0
+
+    if [ -z "${_LOCK_ID}" ]; then
+      echo "❌ _LOCK_ID is required — copy it from the failed pipeline error:"
+      echo "   │   ID: 1771558201700864"
+      ERRORS=1
+    fi
+    if [ -z "${_TERRAFORM_PROJECT_PATH}" ]; then
+      echo "❌ _TERRAFORM_PROJECT_PATH is required (e.g., terraform/projects/my_project)"
+      ERRORS=1
+    fi
+    if [ -z "${_STATE_BUCKET}" ]; then
+      echo "❌ _STATE_BUCKET is required (e.g., my-project-terraform-state)"
+      ERRORS=1
+    fi
+    if [ -z "${_STATE_PREFIX}" ]; then
+      echo "❌ _STATE_PREFIX is required (e.g., terraform-state/nprd-my-project)"
+      ERRORS=1
+    fi
+
+    if [ "$$ERRORS" -ne 0 ]; then
+      echo ""
+      echo "Usage:"
+      echo "  gcloud builds submit --no-source \\"
+      echo "    --config=cloud_build/common/tf_unlock.yml \\"
+      echo "    --region=REGION \\"
+      echo "    --substitutions=\\"
+      echo "      _LOCK_ID=<ID>,\\"
+      echo "      _TERRAFORM_PROJECT_PATH=terraform/projects/my_project,\\"
+      echo "      _STATE_BUCKET=my-project-terraform-state,\\"
+      echo "      _STATE_PREFIX=terraform-state/nprd-my-project"
+      exit 1
+    fi
+
+    echo "================================================"
+    echo "Terraform State Unlock"
+    echo "================================================"
+    echo "Project:      $PROJECT_ID"
+    echo "TF Path:      ${_TERRAFORM_PROJECT_PATH}"
+    echo "State Bucket: ${_STATE_BUCKET}"
+    echo "State Prefix: ${_STATE_PREFIX}"
+    echo "Lock ID:      ${_LOCK_ID}"
+    echo "================================================"
+    echo "⚠️  This forcibly releases the state lock."
+    echo "   Only run this if you are certain no other"
+    echo "   Terraform operation is currently in progress."
+    echo "================================================"
+
+# ========================================
+# Step 1: Terraform Init
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-init'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    terraform init \
+      -backend-config="bucket=${_STATE_BUCKET}" \
+      -backend-config="prefix=${_STATE_PREFIX}"
+    echo "✅ Terraform initialized!"
+
+# ========================================
+# Step 2: Force-unlock
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-force-unlock'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    echo "🔓 Releasing state lock: ${_LOCK_ID}"
+    terraform force-unlock -force ${_LOCK_ID}
+    echo "✅ State lock released!"
+
+# ========================================
+# Step 3: Verify state is accessible
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'verify'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    echo "🔍 Verifying state is accessible..."
+    terraform state list -lock=false 2>/dev/null | head -20 || true
+    echo "✅ State is accessible — safe to re-run the deployment pipeline."
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+
+timeout: 300s  # 5 minutes

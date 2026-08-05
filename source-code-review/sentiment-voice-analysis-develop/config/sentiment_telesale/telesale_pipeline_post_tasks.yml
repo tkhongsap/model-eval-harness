@@ -1,0 +1,39 @@
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: telesale-v1.2.0
+TelesaleGetBatchResultTask:
+  gcs:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${TELESALE_PROCESSING_BUCKET}"
+    output_folder: "sentiment_telesale/output/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+  framework:
+    batch_size_per_job: "${TELESALE_BATCH_SIZE}" # Number of records per batch job # Future use
+    concurrency_upload: "${TELESALE_MAX_CONCURRENT_UPLOADS}"
+    lookback_days: "${TELESALE_LOOKBACK_DAYS}" # Number of days to look back for input files in sharepoint
+    prompt_mapping_file: "config/sentiment_telesale/system_prompt/prompt_mapping.yml"
+    telesale_scoring_file: "config/sentiment_telesale/telesale_scoring.yml"
+
+TelesalePrepResultTask:
+  framework:
+    telesale_scoring_file: "config/sentiment_telesale/telesale_scoring.yml"
+
+TelesaleExportOutputResultTask:
+  gcp:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    project_name: "${TELESALE_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${TELESALE_PROCESSING_BUCKET}"
+    input_folder: "sentiment_telesale/input/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    processing_voice_folder: "sentiment_telesale/processing/voice/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    archive_voice_folder: "sentiment_telesale/archive/voice/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    processing_batch_folder: "sentiment_telesale/processing/batch/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    output_folder: "sentiment_telesale/output/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    archive_batch_folder: "sentiment_telesale/archive/batch"
+  sharepoint:
+    verint:
+      output_file: "${TELESALE_VERINT_ROOT}/${TELESALE_VERINT_OUTPUT}/%{DATA_DATE_YYYYMM}/telesale_prediction_result_%{DATA_DATE_YYYYMMDD}.txt"
+    control:
+      transaction_log_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_TRANSACTION_LOG_PATH}/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      performance_log_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_PERFORMANCE_LOG_PATH}/performance_log_%{DATA_DATE_YYYYMM}.csv"
+      batch_processing_log_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"
+      raw_prediction_folder: "${TELESALE_CONTROL_ROOT}/${TELESALE_RAW_PREDICTION_PATH}/%{DATA_DATE_YYYYMM}"

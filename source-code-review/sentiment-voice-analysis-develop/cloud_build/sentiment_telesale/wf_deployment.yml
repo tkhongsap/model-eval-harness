@@ -1,0 +1,483 @@
+substitutions:
+  # ===== REQUIRED: Set via trigger or command line =====
+  _ENVIRONMENT: nprd  # Options: nprd, release, prod
+  _IMAGE_TAG: latest  # Override this to deploy specific version (e.g., v1.0.0, v1.0.0-rc1)
+  
+  # ===== COMMON CONFIGURATION =====
+  _REGION: asia-southeast1
+  _IMAGE_NAME: voice-sentiment-telesale-analysis
+  _TIMEZONE: Asia/Bangkok
+  
+  # ===== ENVIRONMENT-SPECIFIC (auto-configured based on _ENVIRONMENT) =====
+  # These are dynamically set in the steps, but can be overridden
+  _REPOSITORY: ${_ENVIRONMENT}-sentiment-telesale-artifact-repo
+  
+  # ===== PROD-SPECIFIC (only for prod environment) =====
+  _SOURCE_PROJECT_ID: ''  # Source project for image promotion (nprd/release project)
+  _SOURCE_REPOSITORY: release-sentiment-telesale-artifact-repo
+  _SOURCE_IMAGE_TAG: ''   # Source image tag for prod promotion (e.g., telesale-v1.0.0-rc1)
+
+  # ===== TERRAFORM CONFIGURATION =====
+  _TERRAFORM_VERSION: 1.13.3
+  _TERRAFORM_PROJECT_PATH: terraform/projects/sentiment_telesale
+  _STATE_BUCKET: ${PROJECT_ID}-terraform-state
+  _TERRAFORM_ACTION: apply  # Options: plan, apply
+  _AUTO_APPROVE: 'true'
+
+steps:
+# ========================================
+# Step 0: Environment Configuration & Tag Validation
+# ========================================
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'configure-environment'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+    echo "================================================"
+    echo "Deployment Configuration"
+    echo "================================================"
+    echo "Environment:       ${_ENVIRONMENT}"
+    echo "Project ID:        $PROJECT_ID"
+    echo "Region:            ${_REGION}"
+    echo "Repository:        ${_REPOSITORY}"
+    echo "Image:             ${_IMAGE_NAME}"
+    echo "================================================"
+    
+    # Validate environment
+    if [[ ! "${_ENVIRONMENT}" =~ ^(nprd|release|prod)$ ]]; then
+      echo "❌ ERROR: Invalid environment '${_ENVIRONMENT}'"
+      echo "Valid options: nprd, release, prod"
+      exit 1
+    fi
+    
+    # Determine image tag
+    IMAGE_TAG="${_IMAGE_TAG}"
+    
+    # If TAG_NAME is set (git tag trigger), use it
+    if [ -n "$TAG_NAME" ]; then
+      IMAGE_TAG="$TAG_NAME"
+      echo "📌 Tag-based deployment: $TAG_NAME"
+      
+      # Validate tag format for release environment
+      if [ "${_ENVIRONMENT}" = "release" ]; then
+        if [[ ! "$TAG_NAME" =~ ^telesale-v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$ ]]; then
+          echo "❌ ERROR: Release environment requires tag format telesale-vX.X.X-rcX (e.g., telesale-v1.0.0-rc1)"
+          echo "   Got: $TAG_NAME"
+          exit 1
+        fi
+        echo "✅ Valid release candidate tag: $TAG_NAME"
+      fi
+      
+      # Validate tag format for prod environment
+      if [ "${_ENVIRONMENT}" = "prod" ]; then
+        if [[ ! "$TAG_NAME" =~ ^telesale-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ ERROR: Production environment requires stable tag format telesale-vX.X.X (e.g., telesale-v1.0.0)"
+          echo "   Got: $TAG_NAME"
+          echo "   Note: Release candidate tags (telesale-vX.X.X-rcX) are not allowed in prod"
+          exit 1
+        fi
+        echo "✅ Valid production tag: $TAG_NAME"
+      fi
+    elif [ -n "$COMMIT_SHA" ]; then
+      IMAGE_TAG="$COMMIT_SHA"
+      echo "📝 Commit-based deployment: $COMMIT_SHA"
+    else
+      IMAGE_TAG="latest"
+      echo "⚠️  Using latest tag"
+    fi
+    
+    # Save IMAGE_TAG for subsequent steps
+    echo "$$IMAGE_TAG" > /workspace/image_tag.txt
+    
+    echo "Image Tag:         $$IMAGE_TAG"
+    echo "================================================"
+
+# ========================================
+# Step 1: Build Docker Image (nprd/release only)
+# ========================================
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-image'
+  entrypoint: 'bash'
+  env: 
+  - 'REGION=${_REGION}'
+  - 'DEFAULT_BUCKETS_BEHAVIOR=regional-user-owned-bucket'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+    IMAGE_TAG=$(cat /workspace/image_tag.txt)
+    
+    if [ "${_ENVIRONMENT}" != "prod" ]; then
+      echo "🔨 Building Docker image for ${_ENVIRONMENT}..."
+      echo "   Tag: $$IMAGE_TAG"
+      echo "   Note: Image will be held locally until Artifact Registry is created"
+      
+      # Build with specific tag
+      docker build -f cloud_build/sentiment_telesale/Dockerfile -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$IMAGE_TAG .
+      
+      # Also tag as latest for convenience
+      docker tag \
+        ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$IMAGE_TAG \
+        ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest
+      
+      echo "✅ Image built and ready to push after infrastructure deployment"
+    else
+      echo "⏭️  Skipping build for ${_ENVIRONMENT} (will promote from release)"
+    fi
+
+# ========================================
+# Step 2: Terraform Init
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-init'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    echo "================================================"
+    echo "Initializing Terraform"
+    echo "================================================"
+    echo "Environment: ${_ENVIRONMENT}"
+    echo "State Bucket: ${_STATE_BUCKET}"
+    terraform init \
+      -backend-config="bucket=${_STATE_BUCKET}" \
+      -backend-config="prefix=terraform-state/${_ENVIRONMENT}-sentiment-telesale"
+    echo "✅ Terraform initialized successfully!"
+
+# ========================================
+# Step 3: Terraform Validate
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-validate'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    echo "================================================"
+    echo "Validating Terraform Configuration"
+    echo "================================================"
+    terraform validate
+    echo "✅ Terraform configuration is valid!"
+
+# ========================================
+# Step 4: Import existing Secret Manager secrets into Terraform state
+# Secrets created outside Terraform (manually, or from a previous run) cause
+# Error 409 on create. This step imports them so Terraform manages them instead.
+# Idempotent: already-managed secrets are skipped silently.
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-import-secrets'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+
+    echo "================================================"
+    echo "Importing existing secrets into Terraform state"
+    echo "================================================"
+
+    SECRETS=$(gcloud secrets list \
+      --project=$PROJECT_ID \
+      --format="value(name)" 2>/dev/null || true)
+
+    if [ -z "$$SECRETS" ]; then
+      echo "No secrets found in project — nothing to import."
+    else
+      for SECRET_RESOURCE in $$SECRETS; do
+        SECRET_NAME=$$(basename "$$SECRET_RESOURCE")
+
+        # Check if already in state
+        ADDR="module.voice_sentiment_telesale_secrets[\"$$SECRET_NAME\"].google_secret_manager_secret.default"
+        if terraform state show "$$ADDR" > /dev/null 2>&1; then
+          echo "  ✅ Already in state: $$SECRET_NAME"
+        else
+          echo "  📥 Importing: $$SECRET_NAME"
+          terraform import \
+            "$$ADDR" \
+            "projects/$PROJECT_ID/secrets/$$SECRET_NAME" \
+            -var-file=${_ENVIRONMENT}_config.tfvars \
+            -var="image_tag=placeholder" \
+            -var="image_name=${_IMAGE_NAME}" \
+            2>&1 && echo "     Imported." || echo "  ⚠️  Skipped (not managed by this module)"
+        fi
+      done
+    fi
+
+    echo "================================================"
+    echo "✅ Secret import pass complete."
+    echo "================================================"
+
+# ========================================
+# Step 5: Terraform Plan
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-plan'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    IMAGE_TAG=$(cat /workspace/image_tag.txt)
+    echo "================================================"
+    echo "Planning Terraform Changes"
+    echo "================================================"
+    echo "Image Tag: $$IMAGE_TAG"
+    terraform get -update
+    terraform plan \
+      -var-file=${_ENVIRONMENT}_config.tfvars \
+      -var="image_tag=$$IMAGE_TAG" \
+      -var="image_name=${_IMAGE_NAME}"
+    echo "✅ Terraform plan completed!"
+
+# ========================================
+# Step 6: Terraform Apply — Pre-requisite infrastructure
+# Creates Artifact Registry, GCS bucket, and Secret shells
+# before the image is pushed and Cloud Run is provisioned.
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-apply-prereqs'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    if [ "${_TERRAFORM_ACTION}" = "apply" ]; then
+      IMAGE_TAG=$(cat /workspace/image_tag.txt)
+      echo "================================================"
+      echo "Applying Terraform — Pre-requisite Infrastructure"
+      echo "  • Artifact Registry"
+      echo "  • GCS Bucket"
+      echo "  • Secret Manager secrets (shells only, no values)"
+      echo "================================================"
+      terraform apply \
+        -target=module.voice_sentiment_telesale_artifact_registry \
+        -target=module.voice_sentiment_telesale_bucket \
+        -target=module.voice_sentiment_telesale_secrets \
+        -var-file=${_ENVIRONMENT}_config.tfvars \
+        -var="image_tag=$$IMAGE_TAG" \
+        -var="image_name=${_IMAGE_NAME}" \
+        -auto-approve
+      echo "✅ Pre-requisite infrastructure created/confirmed!"
+    else
+      echo "⏭️  Plan-only mode. Skipping prereqs apply."
+    fi
+
+# ========================================
+# Step 7: Bootstrap secret versions
+# Adds an __UNSET__ initial version to any secret that has zero versions,
+# so Cloud Run can be provisioned. Real values must be set manually by humans.
+# Idempotent: secrets that already have versions are untouched.
+# ========================================
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'init-secret-versions'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+    echo "================================================"
+    echo "Bootstrapping secret initial versions"
+    echo "================================================"
+
+    SECRETS=$(gcloud secrets list \
+      --project=$PROJECT_ID \
+      --format="value(name)" 2>/dev/null || true)
+
+    if [ -z "$$SECRETS" ]; then
+      echo "No secrets found — nothing to bootstrap."
+    else
+      for SECRET_RESOURCE in $$SECRETS; do
+        SECRET_NAME=$$(basename "$$SECRET_RESOURCE")
+        VERSION_COUNT=$$(gcloud secrets versions list "$$SECRET_NAME" \
+          --project=$PROJECT_ID \
+          --filter="state=ENABLED" \
+          --format="value(name)" 2>/dev/null | wc -l | tr -d ' ')
+
+        if [ "$$VERSION_COUNT" -eq "0" ]; then
+          echo "  📝 Adding initial version: $$SECRET_NAME"
+          echo -n "__UNSET__" | gcloud secrets versions add "$$SECRET_NAME" \
+            --data-file=- --project=$PROJECT_ID
+        else
+          echo "  ✅ Already has version(s): $$SECRET_NAME"
+        fi
+      done
+    fi
+
+    echo "================================================"
+    echo "✅ Secret version bootstrap complete."
+    echo "================================================"
+
+# ========================================
+# Step 8: Push Docker Image (nprd/release only)
+# Registry now exists — safe to push.
+# ========================================
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-image'
+  entrypoint: 'bash'
+  env: 
+  - 'REGION=${_REGION}'
+  - 'DEFAULT_BUCKETS_BEHAVIOR=regional-user-owned-bucket'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+    IMAGE_TAG=$(cat /workspace/image_tag.txt)
+    
+    if [ "${_ENVIRONMENT}" != "prod" ]; then
+      echo "📤 Pushing image to Artifact Registry..."
+      echo "   Repository: ${_REPOSITORY}"
+      echo "   Tag: $$IMAGE_TAG"
+      
+      # Push with specific tag
+      docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$IMAGE_TAG
+      
+      # Also push latest
+      docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest
+      
+      echo "✅ Image pushed successfully to Artifact Registry: $$IMAGE_TAG"
+    else
+      echo "⏭️  Skipping push for ${_ENVIRONMENT} (promotion flow)"
+    fi
+
+# ========================================
+# Step 9: Pull and Promote Image (prod only)
+# Registry now exists — safe to push promoted image.
+# ========================================
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'promote-image'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+    IMAGE_TAG=$(cat /workspace/image_tag.txt)
+    
+    if [ "${_ENVIRONMENT}" = "prod" ]; then
+      if [ -z "${_SOURCE_PROJECT_ID}" ]; then
+        echo "❌ ERROR: _SOURCE_PROJECT_ID is required for prod promotion"
+        exit 1
+      fi
+      
+      # Determine source image tag (use _SOURCE_IMAGE_TAG if set, otherwise IMAGE_TAG)
+      SOURCE_TAG="$$IMAGE_TAG"
+      if [ -n "${_SOURCE_IMAGE_TAG}" ]; then
+        SOURCE_TAG="${_SOURCE_IMAGE_TAG}"
+      fi
+      
+      # For production, we promote from release repository
+      SOURCE_IMAGE="${_REGION}-docker.pkg.dev/${_SOURCE_PROJECT_ID}/${_SOURCE_REPOSITORY}/${_IMAGE_NAME}:$$SOURCE_TAG"
+      TARGET_IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$IMAGE_TAG"
+      
+      echo "🔄 Promoting image to production..."
+      echo "Source: $$SOURCE_IMAGE"
+      echo "Target: $$TARGET_IMAGE"
+      echo "Source Tag: $$SOURCE_TAG"
+      echo "Target Tag: $$IMAGE_TAG"
+      
+      # Validate target tag is stable (no -rc)
+      if [[ "$$IMAGE_TAG" =~ -rc ]]; then
+        echo "❌ ERROR: Cannot promote release candidate to production"
+        echo "   Tag: $$IMAGE_TAG"
+        echo "   Production requires stable tags (e.g., telesale-v1.0.0, not telesale-v1.0.0-rc1)"
+        exit 1
+      fi
+      
+      # Pull from source (release)
+      echo "📥 Pulling from release repository..."
+      docker pull $$SOURCE_IMAGE
+      
+      # Tag for prod
+      docker tag $$SOURCE_IMAGE $$TARGET_IMAGE
+      docker tag $$SOURCE_IMAGE ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest
+      
+      # Push to prod
+      echo "📤 Pushing to production Artifact Registry..."
+      docker push $$TARGET_IMAGE
+      docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:latest
+      
+      echo "✅ Image promoted successfully to production: $$IMAGE_TAG (from source: $$SOURCE_TAG)"
+    else
+      echo "⏭️  Skipping image promotion (not prod environment)"
+    fi
+
+# ========================================
+# Step 10: Terraform Apply — Full infrastructure
+# Image now exists in registry, every secret has ≥1 version — Cloud Run job can be created.
+# ========================================
+- name: 'hashicorp/terraform:${_TERRAFORM_VERSION}'
+  id: 'terraform-apply-full'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    set -e
+    cd ${_TERRAFORM_PROJECT_PATH}
+    if [ "${_TERRAFORM_ACTION}" = "apply" ]; then
+      IMAGE_TAG=$(cat /workspace/image_tag.txt)
+      echo "================================================"
+      echo "Applying Terraform — Full Infrastructure"
+      echo "================================================"
+      echo "Image Tag: $$IMAGE_TAG"
+      terraform apply \
+        -var-file=${_ENVIRONMENT}_config.tfvars \
+        -var="image_tag=$$IMAGE_TAG" \
+        -var="image_name=${_IMAGE_NAME}" \
+        -auto-approve
+      echo ""
+      echo "✅ Terraform apply completed!"
+      echo "================================================"
+      echo "Terraform Outputs"
+      echo "================================================"
+      terraform output
+    else
+      echo "⏭️  Plan-only mode. Skipping apply."
+    fi
+
+# ========================================
+# Step 11: Deployment Summary
+# ========================================
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'summary'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    set -eo pipefail
+    IMAGE_TAG=$(cat /workspace/image_tag.txt)
+    
+    echo ""
+    echo "================================================"
+    echo "✅ Deployment Complete!"
+    echo "================================================"
+    echo "Environment:        ${_ENVIRONMENT}"
+    echo "Project:            $PROJECT_ID"
+    echo "Region:             ${_REGION}"
+    echo "Image Tag:          $$IMAGE_TAG"
+    echo "================================================"
+    echo "Resources:"
+    echo "  • Cloud Run Job:  ${_ENVIRONMENT}-sentiment-telesale-job"
+    echo "  • Scheduler:      ${_ENVIRONMENT}-sentiment-telesale-scheduler"
+    echo "  • Image:          ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:$$IMAGE_TAG"
+    echo "  • Timezone:       ${_TIMEZONE}"
+    echo "================================================"
+    echo ""
+    echo "🔗 Quick Links:"
+    echo "Cloud Run: https://console.cloud.google.com/run/jobs/details/${_REGION}/${_ENVIRONMENT}-sentiment-telesale-job?project=$PROJECT_ID"
+    echo "Scheduler: https://console.cloud.google.com/cloudscheduler?project=$PROJECT_ID"
+    echo "Artifact Registry: https://console.cloud.google.com/artifacts/docker/$PROJECT_ID/${_REGION}/${_REPOSITORY}/${_IMAGE_NAME}?project=$PROJECT_ID"
+    echo "================================================"
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+
+timeout: 3600s  # 60 minutes

@@ -1,0 +1,42 @@
+name: Prisma Cloud Container Image Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t rtr-image:ci .
+
+      - name: Prisma Cloud Image Scan
+        uses: PaloAltoNetworks/prisma-cloud-scan@v1.5
+        with:
+          pcc_console_url: ${{ secrets.PCC_CONSOLE_URL }}
+          pcc_user: ${{ secrets.PCC_USER }}
+          pcc_pass: ${{ secrets.PCC_PASS }}
+          image_name: rtr-image:ci
+
+      # Step 3: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Step 4: Configure Docker for Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
+
+      # Step 5: Tag and push image to Google Cloud
+      - name: Push image to Google Cloud
+        run: |
+          docker tag rtr-image:ci asia-southeast1-docker.pkg.dev/gcp-noexp-wl-nprd-rtr-fraud/nprd-rtr-fraud-validation-app-repo/rtr-fraud-validation-app:latest
+          docker push asia-southeast1-docker.pkg.dev/gcp-noexp-wl-nprd-rtr-fraud/nprd-rtr-fraud-validation-app-repo/rtr-fraud-validation-app:latest

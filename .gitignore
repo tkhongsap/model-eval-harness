@@ -130,14 +130,26 @@ Untitled.*
 ~$*
 
 # ===================================================================
-# True's production source must NEVER live in this repository.
+# True's production source: TRACKED, by deliberate reversal.
 #
-# A workflow agent copied 635 files / 15MB of it here on 2026-08-04 to
-# satisfy the differential test. It did not even work: production_ref.py
-# resolves TRUE_SOURCE_ROOT to <parent>/source-code-review, not to a copy
-# inside the repo, so the test skipped anyway. The copy was pure liability.
+# Until 2026-08-05 this repository blocked source-code-review/ outright
+# ("must NEVER live in this repository"), after a workflow agent copied
+# 635 files / 15MB of it here by accident on 2026-08-04 -- a copy that
+# didn't even work, since production_ref.py resolved TRUE_SOURCE_ROOT to
+# a directory outside the repo and the test skipped regardless.
 #
-# The canonical copy lives in life-os. Point TRUE_SOURCE_ROOT at it:
-#   TRUE_SOURCE_ROOT=.../life-os/work-work/projects/.../source-code-review/sentiment-batch-retention-main
+# Decision, 2026-08-05, by the owner: keep it, on purpose this time. It is
+# True's Gemini-calling production source across four apps (Retention,
+# MNP, RTR fraud, sentiment-voice-analysis) and is the thing every
+# `rule_*` citation in tests/fixtures/testsets/ and every file:line
+# reference across src/evalgen/ resolves against -- committing it turns
+# those citations from "trust me" into something a reviewer can open.
+# Scanned before commit: no .env/.pem/.key/credentials files and no
+# live-API-key-shaped strings found in the tree.
+#
+# This repository stays private BECAUSE it now holds this (AGENTS.md,
+# "Open items"). The exception below exists because the blanket workbook
+# rule above would otherwise strip legitimate config files out of a tree
+# that is meant to be a complete, checkable reference copy.
 # ===================================================================
-source-code-review/
+!source-code-review/**/*.xlsx

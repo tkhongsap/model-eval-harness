@@ -1,0 +1,103 @@
+# OCR pipeline v2 — submit (pre-processing) config.
+# Wires tasks/ocr_tax_invoice_pipeline/OCRSubmitTask. The Gemini system prompt is downloaded at
+# submit time from the control site (sharepoint.control_site.system_prompt_path); a missing or
+# blank file fails the run. tasks/ocr_tax_invoice_pipeline/prompt/system_prompt.md is the
+# versioned master copy uploaded there — it is never read at runtime.
+#
+# Date-window ingestion (optional): to replay a single date or backfill a range, point
+# src_path at the date-partitioned folder layout, e.g.
+#   src_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_INPUT}/%{DATA_DATE_YYYYMMDD}"
+# then pass --rerun_data_dt YYYY-MM-DD or --start_data_dt/--end_data_dt. Without a
+# %{DATA_DATE} placeholder the single configured path is listed (today's behavior).
+
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: tax-invoice-v1.0.0
+pipeline_name: "tax_invoice_extraction"
+
+OCRSubmitTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    project_name: "${TAX_INVOICE_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    landing_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_landing/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    processing_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_processing/docs/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    payload_landing_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_processing/payloads/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    output_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_output/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/pre_processing_log.csv"
+    page_manifest_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/page_manifest_log.csv"
+  vertexai:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    location: "${TAX_INVOICE_VERTEX_AI_LOCATION}"
+    model: "${TAX_INVOICE_VERTEX_AI_MODEL_NAME}"
+    generation_config:
+      temperature: 0.0
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: 0
+  sharepoint:
+    source_site:
+      site_name: "${TAX_INVOICE_SITE_NAME}"
+      site_domain: "${TAX_INVOICE_SITE_SITE_DOMAIN}"
+      site_path: "${TAX_INVOICE_SITE_SITE_PATH}"
+      client_id: "${TAX_INVOICE_SITE_CLIENT_ID}"
+      client_secret: "${TAX_INVOICE_SITE_CLIENT_SECRET}"
+      tenant_id: "${TAX_INVOICE_SITE_TENANT_ID}"
+      src_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_INPUT}"
+    control_site:
+      pre_processing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_OCR_PREP_LOG_PATH}/ocr_pre_processing_log.csv"
+      page_manifest_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_PAGE_MANIFEST_LOG_PATH}/page_manifest_log.csv"
+      system_prompt_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_SYSTEM_PROMPT_PATH}/system_prompt.md"
+  framework:
+    concurrency_upload: "${TAX_INVOICE_MAX_CONCURRENT_UPLOADS}"
+    iqs_config_path: "config/tax_invoice_extraction/iqs_config.yml"
+    ext_filter: [".pdf", ".jpg", ".jpeg"]
+    # Retention window (days) for every tax-invoice log. Rows/month-files older than this are pruned
+    # on write, REGARDLESS of status — an aged in-flight (PENDING/PARTIAL) row is a stuck file and
+    # pruning it makes the file re-processable. Keep the window well above batch-job runtime (days):
+    # a very short window can prune a still-running job's rows and double-submit its file.
+    # A negative value (-1) disables retention entirely. Unset -> defaults to 90 days.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    # Optional system-error email (on_error). Set enabled: false to mute without removing the block.
+    # Body is either an inline `body:` string or a `body_path:` to a .txt file (body_path wins).
+    # Subject/body support {task}, {pipeline}, {date}, {error} placeholders.
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${OPER_EMAIL}"
+        cc_email: "${USER_EMAIL}, ${DEVELOPER_EMAIL}"
+        subject: "[AI-Tax Invoice][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"
+        # body: "OCR task {task} failed on {date}.\n\nError:\n{error}"
+
+TaxInvoiceRejectTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/pre_processing_log.csv"
+    page_manifest_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/ocr_log/page_manifest_log.csv"
+  sharepoint:
+    source_site:
+      site_name: "${TAX_INVOICE_SITE_NAME}"
+      site_domain: "${TAX_INVOICE_SITE_SITE_DOMAIN}"
+      site_path: "${TAX_INVOICE_SITE_SITE_PATH}"
+      client_id: "${TAX_INVOICE_SITE_CLIENT_ID}"
+      client_secret: "${TAX_INVOICE_SITE_CLIENT_SECRET}"
+      tenant_id: "${TAX_INVOICE_SITE_TENANT_ID}"
+      # Reject root (date-less): IqsRejecter appends /{YYYYMMDD}/[E-TAX company-user subfolder]/{name}.
+      reject_path: "${TAX_INVOICE_TAX_INVOICE_ROOT}/${TAX_INVOICE_TAX_INVOICE_REJECTED}"
+  framework:
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${OPER_EMAIL}"
+        cc_email: "${USER_EMAIL}, ${DEVELOPER_EMAIL}"
+        subject: "[AI-Tax Invoice][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"

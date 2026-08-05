@@ -1,0 +1,10 @@
+from tasks.sentiment_telesale.output_validation.common.campaign_ratio import CampaignRatio
+from tasks.sentiment_telesale.output_validation.common.common import Common
+from tasks.sentiment_telesale.output_validation.common.compliance import Compliance
+from tasks.sentiment_telesale.output_validation.common.customer_experience import CustomerExperience
+from tasks.sentiment_telesale.output_validation.common.customer_insight import CustomerInsight
+from tasks.sentiment_telesale.output_validation.common.operations_and_professionalism import (
+    OperationsAndProfessionalism,
+)
+from tasks.sentiment_telesale.output_validation.common.sales_effectiveness import SalesEffectiveness
+from tasks.sentiment_telesale.output_validation.common.sales_performance import SalesPerformance

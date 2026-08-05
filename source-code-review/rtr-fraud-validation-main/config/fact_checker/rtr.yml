@@ -1,0 +1,71 @@
+Project_id: ${GOOGLE_CLOUD_PROJECT}
+Project_name: ${GOOGLE_CLOUD_PROJECT}
+GroundTruth:
+  input:
+    type: sharepoint
+    site_name: AIandAutomationTeamControlManagement
+    path: /Control Management/Check in app/RTR Fraud Validation/fact_check/ground_truth/input/ground_truth_ai.xlsx
+    sheet_name: ground_truth
+
+Prediction:
+  gemini_stream:
+    model_config:
+      input:
+        type: source_code
+        path: /config/model_setting/rtr.yml
+    input:
+      type: sharepoint
+      site_name: AIandAutomationTeamControlManagement
+      path: /Control Management/Check in app/RTR Fraud Validation/fact_check/prediction/input/images_fact_check
+    prompt:
+      system_prompt_path:
+        input:  
+          type: source_code
+          path: /config/system_prompt/rtr.yml
+Report:
+  output: 
+    type: sharepoint
+    site_name: AIandAutomationTeamControlManagement
+    path:  /Control Management/Check in app/RTR Fraud Validation/fact_check/prediction/output/fact_check_rtr_log.csv
+    transaction_path : /Control Management/Check in app/RTR Fraud Validation/log/transaction
+  schema:
+    - created_datetime
+    - processed_datetime
+    - gcp_project_id
+    - gcp_project_name
+    - model_version
+    - system_prompt
+    - ground_truth_count
+    - prediction_count
+    - dimension
+    - label
+    - accuracy
+    - accuracy_status
+    - precision
+    - precision_status
+    - recall
+    - recall_status
+    - f1_score
+    - f1_score_status
+    - TP
+    - FP
+    - FN
+    - TN
+    - weight
+  metric_thresholds:
+    accuracy: 
+      acceptable: 85
+      good: 90
+      excellent: 95
+    precision:
+      acceptable: 70
+      good: 80
+      excellent: 90
+    recall:
+      acceptable: 70
+      good: 75
+      excellent: 85
+    f1_score:
+      acceptable: 70
+      good: 80
+      excellent: 90

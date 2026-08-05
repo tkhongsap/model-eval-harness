@@ -1,0 +1,197 @@
+substitutions:
+  _REGION: asia-southeast1
+  _NONPROD_REPOSITORY: nprd-rtr-fraud-validation-app-repo
+  _NONPROD_PROJECT_ID: gcp-noexp-wl-nprd-rtr-fraud
+  _PROD_REPOSITORY: prod-rtr-fraud-validation-app-repo
+  _IMAGE_NAME: rtr-fraud-validation-app
+  _SERVICE_ACCOUNT: 354003410560-compute@developer.gserviceaccount.com
+  _SCHEDULER_JOB_NAME: rtr-fraud-validation-scheduler-trigger
+  _SCHEDULE: "0 10 1,16 * *"
+  _TIMEZONE: "Asia/Jakarta"
+  _FACT_CHECKER_NM: fact-checker-rtr-fraud-validation
+  _FACT_CHECKER_SCHEDULER_JOB_NAME: fact-checker-rtr-fraud-validation-scheduler-trigger
+  _FACT_CHECKER_SCHEDULE: "0 21 1 * *"
+
+steps:
+# Step 1: Pull image from Non-Prod
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker pull ${_REGION}-docker.pkg.dev/${_NONPROD_PROJECT_ID}/${_NONPROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest}
+
+# Step 2: Tag image for Prod
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker tag \
+      ${_REGION}-docker.pkg.dev/${_NONPROD_PROJECT_ID}/${_NONPROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
+      ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest}
+
+# Step 3: Push image to Prod
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest}
+
+# Step 4: Deploy to Cloud Run Job
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud run jobs deploy ${_IMAGE_NAME} \
+      --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
+      --region ${_REGION} \
+      --task-timeout=86400s \
+      --max-retries=0 \
+      --cpu=4 \
+      --memory=8Gi \
+      --set-secrets=FRAUD_SITE_CLIENT_ID=FRAUD_SITE_CLIENT_ID:latest,\
+    FRAUD_SITE_CLIENT_SECRET=FRAUD_SITE_CLIENT_SECRET:latest,\
+    FRAUD_SITE_TENANT_ID=FRAUD_SITE_TENANT_ID:latest,\
+    FRAUD_SITE_SITE_DOMAIN=FRAUD_SITE_SITE_DOMAIN:latest,\
+    FRAUD_SITE_SITE_PATH=FRAUD_SITE_SITE_PATH:latest,\
+    FRAUD_SITE_BASE_ROOT=FRAUD_SITE_BASE_ROOT:latest,\
+    INPUT_FOLDER=INPUT_FOLDER:latest,\
+    OUTPUT_FOLDER=OUTPUT_FOLDER:latest,\
+    BACKUP_FOLDER=BACKUP_FOLDER:latest,\
+    ARCHIVE_FOLDER=ARCHIVE_FOLDER:latest,\
+    CONTROL_SITE_CLIENT_ID=CONTROL_SITE_CLIENT_ID:latest,\
+    CONTROL_SITE_CLIENT_SECRET=CONTROL_SITE_CLIENT_SECRET:latest,\
+    CONTROL_SITE_TENANT_ID=CONTROL_SITE_TENANT_ID:latest,\
+    CONTROL_SITE_SITE_DOMAIN=CONTROL_SITE_SITE_DOMAIN:latest,\
+    CONTROL_SITE_SITE_PATH=CONTROL_SITE_SITE_PATH:latest,\
+    CONTROL_SITE_BASE_ROOT=CONTROL_SITE_BASE_ROOT:latest,\
+    CONTROL_SITE_PROMPTS_ROOT=CONTROL_SITE_PROMPTS_ROOT:latest,\
+    CONTROL_SITE_CONTROL_PATH=CONTROL_SITE_CONTROL_PATH:latest,\
+    CONTROL_SITE_TRANSACTION_LOG_PATH=CONTROL_SITE_TRANSACTION_LOG_PATH:latest,\
+    CONTROL_SITE_PERFORMANCE_LOG_PATH=CONTROL_SITE_PERFORMANCE_LOG_PATH:latest,\
+    CONTROL_SITE_COST_PATH=CONTROL_SITE_COST_PATH:latest,\
+    BATCH_SIZE=BATCH_SIZE:latest,\
+    RECIPIENT_EMAIL=RECIPIENT_EMAIL:latest,\
+    TEAM_EMAIL=TEAM_EMAIL:latest,\
+    CC_EMAIL=CC_EMAIL:latest,\
+    SENDER_EMAIL=SENDER_EMAIL:latest,\
+    GCS_BUCKET_NAME=GCS_BUCKET_NAME:latest,\
+    PROJECT_NAME=PROJECT_NAME:latest,\
+    S3_AWS_ACCESS_KEY=S3_AWS_ACCESS_KEY:latest,\
+    S3_AWS_SECRET_KEY=S3_AWS_SECRET_KEY:latest,\
+    S3_BUCKET_NAME=S3_BUCKET_NAME:latest,\
+    GOOGLE_GENAI_USE_VERTEXAI=GOOGLE_GENAI_USE_VERTEXAI:latest,\
+    RSA_PRIVATE_KEY=RSA_PRIVATE_KEY:latest
+
+
+# Step 5: Deploy cloud scheduler trigger
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    if gcloud scheduler jobs describe ${_SCHEDULER_JOB_NAME} --location=${_REGION} &>/dev/null; then
+      echo "Updating Cloud Scheduler job '${_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs update http ${_SCHEDULER_JOB_NAME} \
+        --schedule="${_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_IMAGE_NAME}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    else
+      echo "Creating Cloud Scheduler job '${_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs create http ${_SCHEDULER_JOB_NAME} \
+        --schedule="${_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_IMAGE_NAME}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    fi
+
+  # Step 3.2: Run Cloud Run Job (Fact-checker Downsell Reason)
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud run jobs deploy ${_FACT_CHECKER_NM} \
+      --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_PROD_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
+      --region ${_REGION} \
+      --command python \
+      --args="-m,app.modules.fact_checker,--config_path,config/fact_checker/rtr.yml" \
+      --task-timeout=86400s \
+      --max-retries=0 \
+      --cpu=2 \
+      --memory=4Gi \
+      --set-secrets=FRAUD_SITE_CLIENT_ID=FRAUD_SITE_CLIENT_ID:latest,\
+    FRAUD_SITE_CLIENT_SECRET=FRAUD_SITE_CLIENT_SECRET:latest,\
+    FRAUD_SITE_TENANT_ID=FRAUD_SITE_TENANT_ID:latest,\
+    FRAUD_SITE_SITE_DOMAIN=FRAUD_SITE_SITE_DOMAIN:latest,\
+    FRAUD_SITE_SITE_PATH=FRAUD_SITE_SITE_PATH:latest,\
+    FRAUD_SITE_BASE_ROOT=FRAUD_SITE_BASE_ROOT:latest,\
+    INPUT_FOLDER=INPUT_FOLDER:latest,\
+    OUTPUT_FOLDER=OUTPUT_FOLDER:latest,\
+    BACKUP_FOLDER=BACKUP_FOLDER:latest,\
+    ARCHIVE_FOLDER=ARCHIVE_FOLDER:latest,\
+    CONTROL_SITE_CLIENT_ID=CONTROL_SITE_CLIENT_ID:latest,\
+    CONTROL_SITE_CLIENT_SECRET=CONTROL_SITE_CLIENT_SECRET:latest,\
+    CONTROL_SITE_TENANT_ID=CONTROL_SITE_TENANT_ID:latest,\
+    CONTROL_SITE_SITE_DOMAIN=CONTROL_SITE_SITE_DOMAIN:latest,\
+    CONTROL_SITE_SITE_PATH=CONTROL_SITE_SITE_PATH:latest,\
+    CONTROL_SITE_BASE_ROOT=CONTROL_SITE_BASE_ROOT:latest,\
+    CONTROL_SITE_PROMPTS_ROOT=CONTROL_SITE_PROMPTS_ROOT:latest,\
+    CONTROL_SITE_CONTROL_PATH=CONTROL_SITE_CONTROL_PATH:latest,\
+    CONTROL_SITE_TRANSACTION_LOG_PATH=CONTROL_SITE_TRANSACTION_LOG_PATH:latest,\
+    CONTROL_SITE_PERFORMANCE_LOG_PATH=CONTROL_SITE_PERFORMANCE_LOG_PATH:latest,\
+    CONTROL_SITE_COST_PATH=CONTROL_SITE_COST_PATH:latest,\
+    BATCH_SIZE=BATCH_SIZE:latest,\
+    RECIPIENT_EMAIL=RECIPIENT_EMAIL:latest,\
+    TEAM_EMAIL=TEAM_EMAIL:latest,\
+    CC_EMAIL=CC_EMAIL:latest,\
+    SENDER_EMAIL=SENDER_EMAIL:latest,\
+    GCS_BUCKET_NAME=GCS_BUCKET_NAME:latest,\
+    PROJECT_NAME=PROJECT_NAME:latest,\
+    S3_AWS_ACCESS_KEY=S3_AWS_ACCESS_KEY:latest,\
+    S3_AWS_SECRET_KEY=S3_AWS_SECRET_KEY:latest,\
+    S3_BUCKET_NAME=S3_BUCKET_NAME:latest,\
+    GOOGLE_GENAI_USE_VERTEXAI=GOOGLE_GENAI_USE_VERTEXAI:latest,\
+    RSA_PRIVATE_KEY=RSA_PRIVATE_KEY:latest
+  
+# Step 4.2: Deploy Cloud Scheduler for Fact-checker MNP Retention
+- name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    if gcloud scheduler jobs describe ${_FACT_CHECKER_SCHEDULER_JOB_NAME} --location=${_REGION} &>/dev/null; then
+      echo "Updating Cloud Scheduler job '${_FACT_CHECKER_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs update http ${_FACT_CHECKER_SCHEDULER_JOB_NAME} \
+        --schedule="${_FACT_CHECKER_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_FACT_CHECKER_NM}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    else
+      echo "Creating Cloud Scheduler job '${_FACT_CHECKER_SCHEDULER_JOB_NAME}'..."
+      gcloud scheduler jobs create http ${_FACT_CHECKER_SCHEDULER_JOB_NAME} \
+        --schedule="${_FACT_CHECKER_SCHEDULE}" \
+        --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/${_REGION}/jobs/${_FACT_CHECKER_NM}:run" \
+        --http-method=POST \
+        --location=${_REGION} \
+        --time-zone="${_TIMEZONE}" \
+        --oauth-service-account-email=${_SERVICE_ACCOUNT} \
+        --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+    fi
+
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET

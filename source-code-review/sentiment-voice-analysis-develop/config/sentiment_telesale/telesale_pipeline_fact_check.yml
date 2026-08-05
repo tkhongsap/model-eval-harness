@@ -1,0 +1,57 @@
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: telesale-v1.0.0
+TelesaleFactCheckTask:
+  gcp:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    project_name: "${TELESALE_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${TELESALE_PROCESSING_BUCKET}"
+    input_folder: "sentiment_telesale/fact_check/input"
+    processing_voice_folder: "sentiment_telesale/fact_check/processing/voice/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    processing_batch_folder: "sentiment_telesale/fact_check/processing/batch/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    archive_batch_folder: "sentiment_telesale/fact_check/archive/batch"
+    output_folder: "sentiment_telesale/fact_check/output/%{DATA_DATE_YYYYMMDDHHMMSS}"
+  vertexai:
+    batch_job_name: "sentiment-fc-telesale-batch-job-%{DATA_DATE_YYYYMMDDHHMMSS}"
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    location: "${TELESALE_VERTEX_AI_LOCATION}"
+    model: "${TELESALE_VERTEX_AI_MODEL_NAME}"
+    generation_config:
+      temperature: 0.0
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: 0
+      responseMimeType: application/json
+  sharepoint:
+    control:
+      ground_truth_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_FACT_CHECK_PATH}/ground_truth/ground_truth_telesale_sentiment.xlsx"
+      filename_list_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_FACT_CHECK_PATH}/ground_truth/filename_list_fact_check.xlsx"
+      source_folder: "${TELESALE_CONTROL_ROOT}/${TELESALE_FACT_CHECK_PATH}/prediction/input"
+      evaluation_folder: "${TELESALE_CONTROL_ROOT}/${TELESALE_FACT_CHECK_PATH}/prediction/output/%{DATA_DATE_YYYYMM}/fact_check_telesale_log_%{DATA_DATE_YYYYMMDD}.xlsx"
+      transaction_log_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_TRANSACTION_LOG_PATH}/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      common_prompt_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_USER_PROMPT_PATH}/0_common_prompt.txt"
+      check_list_prompt_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_USER_PROMPT_PATH}/check_list_prompt.xlsx"
+  framework:
+    concurrency_upload: "${TELESALE_MAX_CONCURRENT_UPLOADS}"
+    system_prompt_file: "config/sentiment_telesale/system_prompt/system_prompt.txt"
+    prompt_mapping_file: "config/sentiment_telesale/system_prompt/prompt_mapping.yml"
+  metric_thresholds:
+    accuracy: 
+      acceptable: 80
+      good: 85
+      excellent: 90
+    precision:
+      acceptable: 75
+      good: 80
+      excellent: 90
+    recall:
+      acceptable: 75
+      good: 80
+      excellent: 90
+    f1_score:
+      acceptable: 75
+      good: 80
+      excellent: 90

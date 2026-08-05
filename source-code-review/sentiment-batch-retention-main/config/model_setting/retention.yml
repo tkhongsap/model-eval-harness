@@ -1,0 +1,9 @@
+model: gemini-2.5-flash
+location: global
+generation_config:
+  temperature: 0.0
+  topP: 0
+  maxOutputTokens: 65535
+  seed: 0
+  thinkingConfig :
+    thinkingBudget: 0

@@ -1,0 +1,252 @@
+name: Sentiment MNP Retention Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - nonprod
+          - prod
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'develop'
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: asia-southeast1
+  NONPROD_ARTIFACT_REPO: nprd-sentiment-mnp-retention-artifact-repo
+  PROD_ARTIFACT_REPO: prd-sentiment-mnp-retention-artifact-repo
+  IMAGE_NAME: voice-sentiment-analysis
+  JOB_NAME: voice-sentiment-analysis
+  SCHEDULER_NAME: voice-sentiment-analysis-scheduler-trigger
+  TIMEZONE: Asia/Jakarta
+  SCHEDULE: '0 9 * * *'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.branch }}
+
+    - name: Set environment variables
+      id: env-setup
+      run: |
+        if [[ "${{ github.event.inputs.environment }}" == "nonprod" ]]; then
+          echo "PROJECT_ID=${{ secrets.NONPROD_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "SA_RUNNER=${{ secrets.NONPROD_SA_RUNNER }}" >> $GITHUB_ENV
+          echo "SA_DEPLOYER=${{ secrets.NONPROD_SA_DEPLOYER }}" >> $GITHUB_ENV
+          echo "SA_CLOUD_BUILDER=${{ secrets.NONPROD_SA_CLOUD_BUILDER }}" >> $GITHUB_ENV
+          echo "WORKLOAD_IDENTITY_PROVIDER=${{ secrets.NONPROD_WORKLOAD_IDENTITY_PROVIDER }}" >> $GITHUB_ENV
+          echo "CLOUDBUILD_GCS_LOG_DIR=${{ secrets.NONPROD_CLOUDBUILD_GCS_LOG_DIR }}" >> $GITHUB_ENV
+          echo "CLOUDBUILD_GCS_SOURCE_STG=${{ secrets.NONPROD_CLOUDBUILD_GCS_SOURCE_STG }}" >> $GITHUB_ENV
+        else
+          echo "PROJECT_ID=${{ secrets.PROD_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "SA_RUNNER=${{ secrets.PROD_SA_RUNNER }}" >> $GITHUB_ENV
+          echo "SA_DEPLOYER=${{ secrets.PROD_SA_DEPLOYER }}" >> $GITHUB_ENV
+          echo "SA_CLOUD_BUILDER=${{ secrets.PROD_SA_CLOUD_BUILDER }}" >> $GITHUB_ENV
+          echo "WORKLOAD_IDENTITY_PROVIDER=${{ secrets.PROD_WORKLOAD_IDENTITY_PROVIDER }}" >> $GITHUB_ENV
+          echo "CLOUDBUILD_GCS_LOG_DIR=${{ secrets.PROD_CLOUDBUILD_GCS_LOG_DIR }}" >> $GITHUB_ENV
+        fi
+        echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "::notice title=🚀 Deployment Started::Deploying to ${{ github.event.inputs.environment }} from branch ${{ github.event.inputs.branch }}"
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v3
+      with:
+        workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ env.SA_DEPLOYER }}
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v3'
+
+    - name: Build and Push with Cloud Build
+      if: github.event.inputs.environment == 'nonprod'
+      run: |
+        gcloud builds submit \
+          --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NONPROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }} \
+          --project=${{ env.PROJECT_ID }} \
+          --region=${{ env.REGION }} \
+          --service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/${{ env.SA_CLOUD_BUILDER }} \
+          --gcs-log-dir=${{ env.CLOUDBUILD_GCS_LOG_DIR }} \
+          --gcs-source-staging-dir=${{ env.CLOUDBUILD_GCS_SOURCE_STG }} \
+          --suppress-logs
+        echo "::notice title=✅ Build & Push Complete::Image built and pushed via Cloud Build"
+    
+    - name: Deploy to Cloud Run Job (nonprod)
+      if: github.event.inputs.environment == 'nonprod'
+      run: |
+        gcloud run jobs deploy ${{ env.JOB_NAME }} \
+          --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NONPROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }} \
+          --region ${{ env.REGION }} \
+          --task-timeout=86400s \
+          --max-retries=0 \
+          --cpu=2 \
+          --memory=4Gi \
+          --service-account=${{ env.SA_RUNNER }} \
+          --quiet \
+          --set-secrets=GOOGLE_CLOUD_PROJECT=GOOGLE_CLOUD_PROJECT:latest,\
+        GOOGLE_CLOUD_LOCATION=GOOGLE_CLOUD_LOCATION:latest,\
+        GOOGLE_GENAI_USE_VERTEXAI=GOOGLE_GENAI_USE_VERTEXAI:latest,\
+        PROCESSING_BUCKET=PROCESSING_BUCKET:latest,\
+        INPUT_GCP_PREFIX=INPUT_GCP_PREFIX:latest,\
+        PROCESSING_PREFIX=PROCESSING_PREFIX:latest,\
+        ARCHIVE_PREFIX=ARCHIVE_PREFIX:latest,\
+        BATCH_PREFIX=BATCH_PREFIX:latest,\
+        MODEL_NAME=MODEL_NAME:latest,\
+        INPUT_PREFIX=INPUT_PREFIX:latest,\
+        INPUT_PRODUCT=INPUT_PRODUCT:latest,\
+        OUTPUT_EXCEL_PREFIX=OUTPUT_EXCEL_PREFIX:latest,\
+        OUTPUT_PRODUCT=OUTPUT_PRODUCT:latest,\
+        OUTPUT_EXCEL_DAILY_PREFIX_FILENAME=OUTPUT_EXCEL_DAILY_PREFIX_FILENAME:latest,\
+        VERINT_SITE_CLIENT_ID=VERINT_SITE_CLIENT_ID:latest,\
+        VERINT_SITE_CLIENT_SECRET=VERINT_SITE_CLIENT_SECRET:latest,\
+        VERINT_SITE_TENANT_ID=VERINT_SITE_TENANT_ID:latest,\
+        VERINT_SITE_SITE_DOMAIN=VERINT_SITE_SITE_DOMAIN:latest,\
+        VERINT_SITE_SITE_PATH=VERINT_SITE_SITE_PATH:latest,\
+        VERINT_SITE_BASE_ROOT=VERINT_SITE_BASE_ROOT:latest,\
+        CONTROL_SITE_CLIENT_ID=CONTROL_SITE_CLIENT_ID:latest,\
+        CONTROL_SITE_CLIENT_SECRET=CONTROL_SITE_CLIENT_SECRET:latest,\
+        CONTROL_SITE_TENANT_ID=CONTROL_SITE_TENANT_ID:latest,\
+        CONTROL_SITE_SITE_DOMAIN=CONTROL_SITE_SITE_DOMAIN:latest,\
+        CONTROL_SITE_SITE_PATH=CONTROL_SITE_SITE_PATH:latest,\
+        CONTROL_SITE_BASE_ROOT=CONTROL_SITE_BASE_ROOT:latest,\
+        CONTROL_SITE_PROMPTS_ROOT=CONTROL_SITE_PROMPTS_ROOT:latest,\
+        CONTROL_SITE_CONTROL_PATH=CONTROL_SITE_CONTROL_PATH:latest,\
+        BATCH_SIZE=BATCH_SIZE:latest,\
+        LOG_NAME=LOG_NAME:latest,\
+        LOOKBACK_DAYS=LOOKBACK_DAYS:latest,\
+        MAX_CONCURRENT_UPLOADS=MAX_CONCURRENT_UPLOADS:latest,\
+        LOG_ENVIRONMENT=LOG_ENVIRONMENT:latest
+        echo "::notice title=✅ Deploy Complete::Cloud Run Job deployed to nonprod"
+
+    - name: Promote image from nonprod to prod
+      if: github.event.inputs.environment == 'prod'
+      run: |
+        NONPROD_PROJECT_ID="${{ secrets.NONPROD_PROJECT_ID }}"
+        NONPROD_IMAGE="${{ env.REGION }}-docker.pkg.dev/${NONPROD_PROJECT_ID}/${{ env.NONPROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}"
+        PROD_IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.PROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}"
+        
+        echo "::notice title=📦 Promoting Image::Copying image from nonprod to prod via Cloud Build"
+
+        gcloud builds submit \
+          --project=${{ env.PROJECT_ID }} \
+          --region=${{ env.REGION }} \
+          --service-account=projects/${{ env.PROJECT_ID }}/serviceAccounts/${{ env.SA_CLOUD_BUILDER }} \
+          --gcs-log-dir=${{ env.CLOUDBUILD_GCS_LOG_DIR }} \
+          --no-source \
+          --suppress-logs \
+          --config=<(echo "
+            steps:
+            - name: 'gcr.io/cloud-builders/docker'
+              entrypoint: 'bash'
+              args:
+              - '-c'
+              - |
+                docker pull $NONPROD_IMAGE
+                docker tag $NONPROD_IMAGE $PROD_IMAGE
+                docker push $PROD_IMAGE
+            ")
+        echo "::notice title=✅ Promotion Complete::Image promoted to prod via Cloud Build"
+
+    - name: Deploy to Cloud Run Job (prod)
+      if: github.event.inputs.environment == 'prod'
+      run: |
+        gcloud run jobs deploy ${{ env.JOB_NAME }} \
+          --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.PROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }} \
+          --region ${{ env.REGION }} \
+          --task-timeout=86400s \
+          --max-retries=0 \
+          --cpu=2 \
+          --memory=4Gi \
+          --service-account=${{ env.SA_RUNNER }} \
+          --quiet \
+          --set-secrets=GOOGLE_CLOUD_PROJECT=GOOGLE_CLOUD_PROJECT:latest,\
+        GOOGLE_CLOUD_LOCATION=GOOGLE_CLOUD_LOCATION:latest,\
+        GOOGLE_GENAI_USE_VERTEXAI=GOOGLE_GENAI_USE_VERTEXAI:latest,\
+        PROCESSING_BUCKET=PROCESSING_BUCKET:latest,\
+        INPUT_GCP_PREFIX=INPUT_GCP_PREFIX:latest,\
+        PROCESSING_PREFIX=PROCESSING_PREFIX:latest,\
+        ARCHIVE_PREFIX=ARCHIVE_PREFIX:latest,\
+        BATCH_PREFIX=BATCH_PREFIX:latest,\
+        MODEL_NAME=MODEL_NAME:latest,\
+        INPUT_PREFIX=INPUT_PREFIX:latest,\
+        INPUT_PRODUCT=INPUT_PRODUCT:latest,\
+        OUTPUT_EXCEL_PREFIX=OUTPUT_EXCEL_PREFIX:latest,\
+        OUTPUT_PRODUCT=OUTPUT_PRODUCT:latest,\
+        OUTPUT_EXCEL_DAILY_PREFIX_FILENAME=OUTPUT_EXCEL_DAILY_PREFIX_FILENAME:latest,\
+        VERINT_SITE_CLIENT_ID=VERINT_SITE_CLIENT_ID:latest,\
+        VERINT_SITE_CLIENT_SECRET=VERINT_SITE_CLIENT_SECRET:latest,\
+        VERINT_SITE_TENANT_ID=VERINT_SITE_TENANT_ID:latest,\
+        VERINT_SITE_SITE_DOMAIN=VERINT_SITE_SITE_DOMAIN:latest,\
+        VERINT_SITE_SITE_PATH=VERINT_SITE_SITE_PATH:latest,\
+        VERINT_SITE_BASE_ROOT=VERINT_SITE_BASE_ROOT:latest,\
+        CONTROL_SITE_CLIENT_ID=CONTROL_SITE_CLIENT_ID:latest,\
+        CONTROL_SITE_CLIENT_SECRET=CONTROL_SITE_CLIENT_SECRET:latest,\
+        CONTROL_SITE_TENANT_ID=CONTROL_SITE_TENANT_ID:latest,\
+        CONTROL_SITE_SITE_DOMAIN=CONTROL_SITE_SITE_DOMAIN:latest,\
+        CONTROL_SITE_SITE_PATH=CONTROL_SITE_SITE_PATH:latest,\
+        CONTROL_SITE_BASE_ROOT=CONTROL_SITE_BASE_ROOT:latest,\
+        CONTROL_SITE_PROMPTS_ROOT=CONTROL_SITE_PROMPTS_ROOT:latest,\
+        CONTROL_SITE_CONTROL_PATH=CONTROL_SITE_CONTROL_PATH:latest,\
+        BATCH_SIZE=BATCH_SIZE:latest,\
+        LOG_NAME=LOG_NAME:latest,\
+        LOOKBACK_DAYS=LOOKBACK_DAYS:latest,\
+        MAX_CONCURRENT_UPLOADS=MAX_CONCURRENT_UPLOADS:latest,\
+        LOG_ENVIRONMENT=LOG_ENVIRONMENT:latest
+        echo "::notice title=✅ Deploy Complete::Cloud Run Job deployed to prod"
+
+    - name: Deploy Cloud Scheduler
+      run: |
+        if gcloud scheduler jobs describe ${{ env.SCHEDULER_NAME }} --location=${{ env.REGION }} &>/dev/null; then
+          echo "::notice title=📅 Updating Scheduler::Updating Cloud Scheduler job"
+          gcloud scheduler jobs update http ${{ env.SCHEDULER_NAME }} \
+            --schedule="${{ env.SCHEDULE }}" \
+            --uri="https://run.googleapis.com/v2/projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/jobs/${{ env.JOB_NAME }}:run" \
+            --http-method=POST \
+            --location=${{ env.REGION }} \
+            --time-zone="${{ env.TIMEZONE }}" \
+            --oauth-service-account-email=${{ env.SA_RUNNER }} \
+            --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+          echo "::notice title=✅ Scheduler Updated::Cloud Scheduler job updated successfully"
+        else
+          echo "::notice title=📅 Creating Scheduler::Creating Cloud Scheduler job"
+          gcloud scheduler jobs create http ${{ env.SCHEDULER_NAME }} \
+            --schedule="${{ env.SCHEDULE }}" \
+            --uri="https://run.googleapis.com/v2/projects/${{ env.PROJECT_ID }}/locations/${{ env.REGION }}/jobs/${{ env.JOB_NAME }}:run" \
+            --http-method=POST \
+            --location=${{ env.REGION }} \
+            --time-zone="${{ env.TIMEZONE }}" \
+            --oauth-service-account-email=${{ env.SA_RUNNER }} \
+            --oauth-token-scope="https://www.googleapis.com/auth/cloud-platform"
+          echo "::notice title=✅ Scheduler Created::Cloud Scheduler job created successfully"
+        fi
+
+    - name: Deployment Summary
+      run: |
+        echo "::notice title=🎉 Deployment Complete::Successfully deployed to ${{ github.event.inputs.environment }}"
+        echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch:** ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit:** ${{ env.COMMIT_SHA }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region:** ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ github.event.inputs.environment }}" == "nonprod" ]]; then
+          echo "- **Image:** ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NONPROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Image:** ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.PROD_ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Cloud Run Job deployed successfully" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Cloud Scheduler configured" >> $GITHUB_STEP_SUMMARY

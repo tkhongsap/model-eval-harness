@@ -1,0 +1,99 @@
+# OCR pipeline v2 — fact-check retrieve + score + finalize (post-processing) config.
+# Triggered by Eventarc after the fact-check batch job completes. Engine runs top-level keys in
+# insertion order; the chain threads the typed OCRResult:
+#
+#   OCRRetrieveTask          → collects predictions into an OCRResult (final_df + pre_processing_log
+#                              snapshot); stamps NO terminal status.
+#   TaxInvoiceFactCheckTask  → builds the extraction report (Master-Buyer enrichment), scores it
+#                              field-by-field vs ground_truth.xlsx, emits per-field + overall
+#                              "AI-Operation Fact Check log" JSON lines, writes the transaction +
+#                              performance logs, and RETURNS the OCRResult unchanged.
+#   OCRFinalizeTask          → MUST stay last; stamps SUCCESS/SUCCESS_WITH_FAILURE/FAILED into the
+#                              fact-check pre-processing log only after scoring succeeds.
+#
+# All fact-check sources (ground truth, Master Buyer) and logs live on the CONTROL site under
+# ${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}; the control-site connection is credentialed
+# from config/common.yml's control: block (CONTROL_SITE_*).
+
+pipeline_name: "tax_invoice_fact_check"
+
+OCRRetrieveTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    project_name: "${TAX_INVOICE_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_log/pre_processing_log.csv"
+    page_manifest_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_log/page_manifest_log.csv"
+  vertexai:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    location: "${TAX_INVOICE_VERTEX_AI_LOCATION}"
+  sharepoint:
+    control_site:
+      pre_processing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/fact_check_log/ocr_pre_processing_log.csv"
+      page_manifest_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/fact_check_log/page_manifest_log.csv"
+      tracing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/fact_check_log/tracing_log_%{DATA_DATE_YYYYMM}.csv"
+  framework:
+    # Retention window (days) for every tax-invoice log; -1 disables. Unset -> 90 days.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${DEVELOPER_EMAIL}"
+        cc_email: "${OPER_EMAIL}"
+        subject: "[AI-Tax Invoice][Fact Check][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"
+
+TaxInvoiceFactCheckTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    project_name: "${TAX_INVOICE_GCP_PROJECT_NAME}"
+  sharepoint:
+    # Control-site connection is credentialed from common.yml's control: block; only the per-file
+    # paths live here. Master Buyer is matched by regex under master_file/ (reuses ReportSourceLoader).
+    control_site:
+      ground_truth_file: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/ground_truth_file/ground_truth.xlsx"
+      master_buyer_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/master_file/Master Buyer Company_20260429.xlsx"
+      transaction_log_file: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_TRANSACTION_LOG_PATH}/fact_check_log/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      performance_log_file: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_PERFORMANCE_LOG_PATH}/fact_check_log/performance_log_%{DATA_DATE_YYYYMM}.csv"
+  framework:
+    email_template_dir: "config/tax_invoice_extraction/email_template"
+    # Retention window (days) for every tax-invoice log; -1 disables. Unset -> 90 days.
+    # Here it governs the transaction + performance month-file sweep and row prune.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    # Recipients only — subject + template filename are code constants in the task
+    # (reconcile-package convention). system_exception: on_error alert; fact_check_result:
+    # the accuracy-table result email sent after a successful scoring run (best-effort).
+    notifications:
+      system_exception:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${DEVELOPER_EMAIL}"
+        cc_email: "${OPER_EMAIL}"
+      fact_check_result:
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${USER_EMAIL}"
+        cc_email: "${DEVELOPER_EMAIL}, ${OPER_EMAIL}"
+        baseline_path: "config/tax_invoice_extraction/fact_check_uat_baseline.yml"
+
+OCRFinalizeTask:            # MUST stay the last key
+  domain: treasury
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_log/pre_processing_log.csv"
+  sharepoint:
+    control_site:
+      pre_processing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/fact_check_log/ocr_pre_processing_log.csv"
+  framework:
+    # Retention window (days) for every tax-invoice log; -1 disables. Unset -> 90 days.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${DEVELOPER_EMAIL}"
+        cc_email: "${OPER_EMAIL}"
+        subject: "[AI-Tax Invoice][Fact Check][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"

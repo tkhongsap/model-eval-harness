@@ -1,0 +1,44 @@
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: telesale-v1.0.0
+QAUserPlaygroundTask:
+  gcp:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    project_name: "${QA_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+    input_folder: "sentiment_qa/user_playground/input"
+    processing_voice_folder: "sentiment_qa/user_playground/processing/voice/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    processing_batch_folder: "sentiment_qa/user_playground/processing/batch/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    archive_batch_folder: "sentiment_qa/user_playground/archive/batch/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    output_folder: "sentiment_qa/user_playground/output/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    backup_excel_prompt_path: "sentiment_qa/user_playground/archive/prompt/%{DATA_DATE_YYYYMMDD}/user_config.xlsx"
+  vertexai:
+    batch_job_name: "sentiment-user-playground-qa-batch-job-%{DATA_DATE_YYYYMMDDHHMMSS}"
+    project_id: "${QA_GCP_PROJECT_ID}"
+    location: "${QA_VERTEX_AI_LOCATION}"
+    model: "${QA_VERTEX_AI_MODEL_NAME}"
+    generation_config:
+      temperature: 1
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: -1
+      responseMimeType: application/json
+  sharepoint:
+    control:
+      source_folder: "${QA_CONTROL_ROOT}/${QA_USER_PLAYGROUND_PATH}/input"
+      transaction_log_file: "${QA_CONTROL_ROOT}/${QA_TRANSACTION_LOG_PATH}/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      user_config_path: "${QA_CONTROL_ROOT}/${QA_USER_PLAYGROUND_PATH}/user_config.xlsx"
+      weight_score_file: "${QA_CONTROL_ROOT}/${QA_USER_PLAYGROUND_PATH}/user_config.xlsx"
+      batch_processing_log_file: "${QA_CONTROL_ROOT}/${QA_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"
+      daily_output_file: "${QA_CONTROL_ROOT}/${QA_USER_PLAYGROUND_PATH}/output/result_%{DATA_DATE_YYYYMMDD}_%{DATA_DATE_HHMMSS}.xlsx"
+      archive_folder: "${QA_CONTROL_ROOT}/${QA_USER_PLAYGROUND_PATH}/archive/%{DATA_DATE_YYYYMMDDHHMMSS}"
+  framework:
+    concurrency_upload: "${QA_MAX_CONCURRENT_UPLOADS}"
+    system_prompt_file: "config/sentiment_qa/system_prompt/system_prompt.txt"
+    user_config_path: "config/sentiment_qa/system_prompt/user_config.xlsx"
+    sender_email: "${BOT_EMAIL}"
+    receiver_email: "${USER_EMAIL}"
+    cc_email: "${OPER_EMAIL}, ${DEV_EMAIL}"

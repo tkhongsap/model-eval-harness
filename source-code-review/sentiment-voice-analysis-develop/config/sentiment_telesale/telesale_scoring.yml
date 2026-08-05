@@ -1,0 +1,74 @@
+operations_and_professionalism: 
+  call_opening: 
+    proper_identification: -3
+    call_origin_disclosure: -3
+    call_consent_before_engagement: -1
+    max: 6
+  customer_identity_verification: 
+    customer_verification: 0
+    invalid_verification: -3
+    missing_verification: -6
+    max: 6
+  language_and_tone: 
+    behavioral_violation: -5
+    clarity: -3
+    delivery_pace: -2
+    max: 6
+  active_listening: 
+    no_interruption: -3
+    correct_understanding: -3
+    acknowledgement_paraphrasing: -3 
+    max: 6
+  call_closing: 
+    confirm_resolution: -4
+    courteous_ending: -2
+    smooth_closing: -2
+    max: 6
+
+sales_effectiveness: 
+  customer_needs_analysis: 
+    usage_based_analysis: -8
+    benefit_highlight: -4
+    max: 8
+  offer_presentation_quality: 
+    clarity_of_explanation: -4
+    customer_benefit_highlight: -6
+    max: 8
+  effective_objection_handling: 
+    failure_to_listen: -5
+    confrontational_tone: -7
+    max: 7
+  sales_closing_attempt: 
+    value_based_closing: -5
+    unclear_separation: -7
+    inadequate_addon_disclosure: -5
+    max: 7
+  cross_sell_upsell: 
+    missed_crosssell_upsell: -3
+    unclear_addon_separation_crosssell: -5
+    inadequate_addon_disclosure_crosssell: -4
+    max: 5
+  
+customer_experience: 
+  positive_customer_experience: 
+    failure_to_demonstrate_empathy: -2
+    deflecting_responsibility: -3
+    escalates_customer_emotion: -3
+    max: 7
+  clarity_of_communication: 
+    overly_technical_language: -3
+    fails_to_clarify_limitations: -3
+    no_adjustment_for_complexity: -1
+    max: 7
+  building_trust: 
+    provides_unclear_information: -3
+    provides_misleading_information: -4
+    fails_to_connect_value: -2
+    max: 6
+  
+compliance: 
+  compliance: 
+    data_privacy_compliance: -15
+    sales_integrity_compliance: -10
+    professional_conduct_compliance: -15
+    max: 15

@@ -1,0 +1,63 @@
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: telesale-v1.2.0
+TelesaleUploadVoiceTask:
+  gcs:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${TELESALE_PROCESSING_BUCKET}"
+    input_folder: "sentiment_telesale/input/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+  sharepoint:
+    verint:
+      source_folder: "${TELESALE_VERINT_ROOT}/${TELESALE_VERINT_INPUT}/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+      master_folder: "${TELESALE_VERINT_ROOT}/${TELESALE_MASTER_PATH}/%{DATA_DATE_YYYYMM}"
+      master_pattern: "agentlist_\\d{8}.xlsx"
+    control:
+      control_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_CONTROL_FILE_PATH}/control_file.xlsx"
+  framework:
+    concurrency_upload: "${TELESALE_MAX_CONCURRENT_UPLOADS}" # Number of concurrent uploads to sharepoint to gcs
+    lookback_days: "${TELESALE_LOOKBACK_DAYS}" # Number of days to look back for input files in sharepoint
+    upload_cond: ["1/_OUT", "3/_OUT", "8/_OUT", "9/_OUT", "10/_OUT", "13/_OUT", "18/_OUT"] # Skill codes: 1=CVG Digital, 3=CVG Post, 8=P2P M1, 9=P2P M2, 10=UTOL, 13=Promo End, 18=Postpaid Upsell. _OUT = outbound calls. Example: ["13/_OUT", "14/_IN", "15/_OUT/_IN"]
+
+TelesalePrepPayloadTask:
+  gcs:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${TELESALE_PROCESSING_BUCKET}"
+    input_folder: "sentiment_telesale/input/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    processing_voice_folder: "sentiment_telesale/processing/voice/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    processing_batch_folder: "sentiment_telesale/processing/batch/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    output_folder: "sentiment_telesale/output/%{DATA_DATE_YYYYMM}/%{DATA_DATE_YYYYMMDD}"
+    backup_prompt_file: "sentiment_telesale/backup/prompt/%{DATA_DATE_YYYYMM}/prompt_backup_%{DATA_DATE_YYYY-MM-DD_HH-MM-SS}.zip"
+  vertexai:
+    generation_config:
+      temperature: 0.0
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: 0
+      responseMimeType: application/json
+  sharepoint:
+    verint:
+      master_folder: "${TELESALE_VERINT_ROOT}/${TELESALE_MASTER_PATH}/%{DATA_DATE_YYYYMM}"
+      master_pattern: "agentlist_\\d{8}.xlsx"
+    control:
+      batch_processing_log_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"
+      common_prompt_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_USER_PROMPT_PATH}/0_common_prompt.txt"
+      check_list_prompt_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_USER_PROMPT_PATH}/check_list_prompt.xlsx"
+  framework:
+    batch_size_per_job: "${TELESALE_BATCH_SIZE}" # Number of records per batch job # Future use
+    concurrency_upload: "${TELESALE_MAX_CONCURRENT_UPLOADS}"
+    lookback_days: "${TELESALE_LOOKBACK_DAYS}" # Number of days to look back for input files in sharepoint
+    system_prompt_file: "config/sentiment_telesale/system_prompt/system_prompt.txt"
+
+TelesaleExecuteBatchJobTask:
+  gcs:
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${TELESALE_PROCESSING_BUCKET}"
+  vertexai:
+    batch_job_name: "sentiment-telesale-batch-job-%{DATA_DATE_YYYYMMDDHHMMSS}"
+    project_id: "${TELESALE_GCP_PROJECT_ID}"
+    location: "${TELESALE_VERTEX_AI_LOCATION}"
+    model: "${TELESALE_VERTEX_AI_MODEL_NAME}"
+  sharepoint:
+    control:
+      batch_processing_log_file: "${TELESALE_CONTROL_ROOT}/${TELESALE_BATCH_PROCESSING_LOG_PATH}/batch_processing_log.csv"

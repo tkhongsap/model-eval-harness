@@ -1,0 +1,91 @@
+Project_id: ${GOOGLE_CLOUD_PROJECT}
+Project_name: ${GOOGLE_CLOUD_PROJECT}
+GroundTruth:
+  input:
+    type: sharepoint
+    site_name: AIandAutomationTeamControlManagement
+    path: /Control Management/Call Center/Sentiment Analysis Retention Reason/fact_check/ground_truth/input/Post Evaluate Sentiment Analysis Retention.xlsm
+    sheet_name: Raw Data with User
+
+Prediction:
+  gemini_batch:
+    model_config:
+      input:
+        type: source_code
+        path: /config/model_setting/retention.yml
+    input:
+      type: sharepoint
+      site_name: AIandAutomationTeamControlManagement
+      path: /Control Management/Call Center/Sentiment Analysis Retention Reason/fact_check/prediction/input
+    processing:
+      type: gcs
+      gcp_project_id: ${GOOGLE_CLOUD_PROJECT}
+      bucket_name: ${PROCESSING_BUCKET}
+      path: /fact_check/%{DATA_DATE_YYYYMMDD}/predictions/input
+    output:
+      type: gcs
+      gcp_project_id: ${GOOGLE_CLOUD_PROJECT}
+      bucket_name: ${PROCESSING_BUCKET}
+      path: /fact_check/%{DATA_DATE_YYYYMMDD}/predictions/output
+    prompt:
+      system_prompt_path:
+        input:  
+          type: source_code
+          path: /config/system_prompt/retention.yml
+      user_prompt_path:
+        input: 
+          type: sharepoint
+          site_name: AIandAutomationTeamControlManagement
+          path: /Control Management/Call Center/Sentiment Analysis Retention Reason/prompt_control/sentiment/prompt.txt
+  output_prompt_log:
+    type: gcs
+    gcp_project_id: ${GOOGLE_CLOUD_PROJECT}
+    bucket_name: ${PROCESSING_BUCKET}
+    path: /fact_check/%{DATA_DATE_YYYYMMDD}/predictions/prompt/%{DATA_DATE_YYYYMMDDHHMMSS}/system_prompt.txt
+
+Report:
+  output: 
+    type: sharepoint
+    site_name: AIandAutomationTeamControlManagement
+    path: /Control Management/Call Center/Sentiment Analysis Retention Reason/fact_check/prediction/output/fact_check_retention_log.xlsx
+  schema:
+    - created_datetime
+    - processed_datetime
+    - gcp_project_id
+    - gcp_project_name
+    - model_version
+    - system_prompt
+    - ground_truth_count
+    - prediction_count
+    - dimension
+    - label
+    - accuracy
+    - accuracy_status
+    - precision
+    - precision_status
+    - recall
+    - recall_status
+    - f1_score
+    - f1_score_status
+    - TP
+    - FP
+    - FN
+    - TN
+    - weight
+  metric_thresholds:
+    accuracy: 
+      acceptable: 85
+      good: 90
+      excellent: 95
+    precision:
+      acceptable: 70
+      good: 80
+      excellent: 90
+    recall:
+      acceptable: 70
+      good: 75
+      excellent: 85
+    f1_score:
+      acceptable: 70
+      good: 80
+      excellent: 90

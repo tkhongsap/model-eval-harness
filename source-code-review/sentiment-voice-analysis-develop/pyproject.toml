@@ -1,0 +1,238 @@
+[project]
+name = "sentiment-voice-analysis"
+version = "1.0.0"
+description = "Sentiment Voice Analysis"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "aiohappyeyeballs==2.6.1",
+    "aiosignal==1.4.0",
+    "annotated-types==0.7.0",
+    "anyio==4.11.0",
+    "attrs==25.4.0",
+    "certifi==2025.11.12",
+    "cffi==2.0.0",
+    "charset-normalizer==3.4.4",
+    "contourpy==1.3.2",
+    "cycler==0.12.1",
+    "et-xmlfile==2.0.0",
+    "fonttools==4.61.0",
+    "frozenlist==1.8.0",
+    "google-api-core==2.28.1",
+    "google-auth==2.43.0",
+    "google-cloud-core==2.5.0",
+    "google-cloud-storage==3.5.0",
+    "google-crc32c==1.7.1",
+    "google-genai==1.49.0",
+    "google-resumable-media==2.7.2",
+    "googleapis-common-protos==1.72.0",
+    "h11==0.16.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "idna==3.15",
+    "kiwisolver==1.4.9",
+    "matplotlib==3.9.4",
+    "msal==1.37.0",
+    "multidict==6.7.0",
+    "numpy==2.2.6",
+    "openpyxl==3.1.5",
+    "packaging==25.0",
+    "pandas==2.2.3",
+    "propcache==0.4.1",
+    "proto-plus==1.26.1",
+    "pypdf==6.13.3",
+    "protobuf==6.33.5",
+    "pyasn1==0.6.3",
+    "pyasn1-modules==0.4.2",
+    "pycparser==2.23",
+    "pydantic==2.12.5",
+    "pydantic-core==2.41.5",
+    "PyJWT==2.13.0",
+    "pyparsing==3.2.5",
+    "python-dateutil==2.9.0.post0",
+    "python-dotenv==1.2.2",
+    "pytz==2025.2",
+    "requests==2.33.0",
+    "rsa==4.9.1",
+    "six==1.17.0",
+    "sniffio==1.3.1",
+    "soupsieve==2.8.4",
+    "tabulate==0.9.0",
+    "typing-inspection==0.4.2",
+    "typing-extensions==4.15.0",
+    "tzdata==2025.2",
+    "urllib3==2.7.0",
+    "yarl==1.22.0",
+    "python-json-logger==4.0.0",
+    "PyYAML==6.0.3",
+    "pytest==9.0.3",
+    "pytest-asyncio==1.3.0",
+    "pytest-cov==7.0.0",
+    "pytest-mock==3.15.1",
+    "pandera==0.30.1",
+    "azure-identity>=1.25.3",
+    "msgraph-sdk>=1.58.0",
+    "pypdfium2>=4.30.0",
+    "opencv-python-headless>=4.13.0.92",
+    "pillow>=12.2.0",
+    "duckdb>=1.5.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+required-version = ">=0.9.21"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = ["*.txt"]
+force-exclude = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort (import ordering)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade (modern Python syntax)
+    "B",    # flake8-bugbear (common pitfalls)
+    "A",    # flake8-builtins (shadowing built-ins)
+    "C4",   # flake8-comprehensions (simplify comprehensions)
+    "SIM",  # flake8-simplify
+    "RET",  # flake8-return (return statement consistency)
+    "ARG",  # flake8-unused-arguments
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Package __init__ re-exports and task-registration imports are load-bearing
+# side effects — removing them would break the registry pattern.
+"**/__init__.py" = ["F401", "F403"]
+# Tests: unused mock/fixture arguments, nested `with patch(...)` blocks, blind
+# `pytest.raises(Exception)` against source that raises bare Exception, and
+# conftest sys.path bootstrap imports are all deliberate test idioms.
+"tests/**" = ["ARG", "SIM117", "B017", "E402"]
+# W291 in these files is trailing whitespace INSIDE string literals (email HTML
+# templates / SQL); stripping it would change the runtime string bytes.
+"tasks/sentiment_qa/execute_batch_job_task.py" = ["W291"]
+"tasks/sentiment_qa/export_output_result_task.py" = ["W291"]
+"tasks/sentiment_qa/fact_check_task.py" = ["W291"]
+"tasks/sentiment_qa/get_batch_result_task.py" = ["W291"]
+"tasks/sentiment_qa/prep_payload_task.py" = ["W291"]
+"tasks/sentiment_qa/upload_voice_task.py" = ["W291"]
+"tasks/tax_invoice_reconcile/module/extraction_report_builder.py" = ["W291"]
+# E501 in these telesale files is confined to string literals — pandera
+# `Field(description=...)` scoring-criteria text under output_validation/, and
+# long log f-strings in the task files (the custom logger has no lazy `%s`
+# formatting, so these must stay f-strings). Wrapping would only split string
+# bytes for no readability gain; the surrounding code is already ≤120 cols.
+"tasks/sentiment_telesale/output_validation/**/*.py" = ["E501"]
+"tasks/sentiment_telesale/evaluation_output_task.py" = ["E501"]
+"tasks/sentiment_telesale/export_output_result_task.py" = ["E501"]
+"tasks/sentiment_telesale/fact_check_task.py" = ["E501"]
+"tasks/sentiment_telesale/prep_payload_task.py" = ["E501"]
+"tasks/sentiment_telesale/prep_result_task.py" = ["E501"]
+"tasks/sentiment_telesale/get_batch_result_task.py" = ["E501"]
+"tasks/sentiment_telesale/execute_batch_job_task.py" = ["E501"]
+
+[tool.ruff.lint.pep8-naming]
+# pandera parsers behave like classmethods; keeps `cls` first-arg convention valid.
+classmethod-decorators = ["pandera.dataframe_parser", "pandera.pandas.dataframe_parser"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "tasks"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src", "tasks"]
+
+[tool.pytest.ini_options]
+# Test discovery patterns
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Test paths
+testpaths = ["tests"]
+
+# Add project root to Python path
+pythonpath = ["."]
+
+# Console output options
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--disable-warnings",
+    "--cov",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=0",
+]
+
+# Markers for categorizing tests
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "asyncio: marks tests as async tests",
+]
+
+# Asyncio mode (for async tests)
+asyncio_mode = "auto"
+
+# Minimum Python version
+minversion = "3.11"
+
+# Ignore paths
+norecursedirs = [
+    ".git",
+    ".tox",
+    "dist",
+    "build",
+    "*.egg",
+    "__pycache__",
+    ".venv",
+    "venv",
+]
+
+# Log settings
+log_cli = false
+log_cli_level = "INFO"
+log_file = "tests/test.log"
+log_file_level = "DEBUG"
+
+[tool.coverage.run]
+source = ["."]
+
+# Exclude one-time use task files from coverage calculation
+omit = [
+    ".venv/*",  # uv sync creates a venv inside the workspace on CI
+    "tests/*",
+    ".claude/*",  # dev-only hooks, not shipped code
+    "*/evaluation_output_task.py",
+]
+
+[tool.coverage.report]
+# Coverage report settings
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "pass",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.11",
+    "pre-commit>=4.0.0",
+]

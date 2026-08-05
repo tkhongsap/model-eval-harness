@@ -1,0 +1,237 @@
+### **Main Category 5: Check List - 13_True_Promo_End Campaign**
+
+Evaluates operational checklist items for promotional plan adjustment/change campaigns (13_True_Promo_End) — tracks whether specific information was properly disclosed during the call. This checklist does NOT assess service quality; it only verifies presence or absence of required disclosures and appropriate cross-sell/upsell behavior.
+
+**Sub-Category 5.1: Operation Check List**
+
+**Definition:** Identifies whether specific topics/items were mentioned during the call without evaluating service quality.
+
+**Key Definitions:**
+
+- **"Customer confirms subscription"** = Customer explicitly agrees to subscribe/accept the offer (e.g., says "สมัครเลย", "ตกลง", "เอาเลย", "ได้เลย"). Merely asking questions, showing interest, or saying "ขอคิดก่อน" does NOT count as subscription confirmation. **If no subscription occurs, tags 5.1.1–5.1.5 must NOT be applied.**
+- **"Benefits" (สิทธิประโยชน์)** in tag 5.1.1 refers to promotional perks, special privileges, or bonus features — it does NOT overlap with price (5.1.2), overage fees (5.1.3), data/voice quota (5.1.4), or content details (5.1.5), which are each tracked by their own separate tags.
+
+**Principles:**
+
+1. Verify only from actual agent statements in the conversation
+2. One call can have multiple tags based on topics found
+3. Reference only what is heard/appears in actual conversation — no guessing, assumptions, or inference beyond the data
+4. If topic not mentioned in the conversation, do NOT include that tag in `operation_check_list`
+5. For ALL tags: "Positive example" = correct agent behavior (tag does NOT apply), "Negative example" = violation (tag APPLIES)
+
+#### **5.1.1 PromoendNobenefit** - Promo End No Benefit
+
+- **Definition:** In True / Dtac promotional adjustment sales or fair usage notification calls, when customer subscribes - agent does NOT inform benefits
+- **Tag when:** Agent fails to inform complete benefits that customer should receive
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment OR fair usage notification, AND customer confirms subscription
+  - **Trigger:** Agent does NOT disclose the benefits included in the subscribed package/promotion
+  - **Action:** Tag `PromoendNobenefit`
+- **Positive example (Thai):** พนักงานแจ้งสิทธิประโยชน์ที่ลูกค้าต้องได้รับครบถ้วน
+- **Negative example (Thai):** พนักงานไม่แจ้งสิทธิประโยชน์ที่ลูกค้าต้องได้รับครบถ้วน
+
+#### **5.1.2 PromoNoPrice** - Promo No Price
+
+- **Definition:** In True / Dtac promotional adjustment sales or fair usage notification calls, when customer subscribes - agent does NOT inform price
+- **Tag when:** Agent fails to inform complete price of new package/promotion that customer confirms subscribing to
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment OR fair usage notification, AND customer confirms subscription
+  - **Trigger:** Agent does NOT disclose the price of the subscribed package/promotion
+  - **Action:** Tag `PromoNoPrice`
+- **Positive example (Thai):** พนักงานแจ้งราคาแพ็กเกจ/โปรโมชั่นตัวใหม่ที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+- **Negative example (Thai):** พนักงานไม่แจ้งราคาแพ็กเกจ/โปรโมชั่นตัวใหม่ที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+
+#### **5.1.3 PromoNoOverFee** - Promo No Over Fee
+
+- **Definition:** In True / Dtac promotional adjustment sales or fair usage notification calls, when customer subscribes - agent does NOT inform overage fees
+- **Tag when:** Agent fails to inform complete overage fees from package/promotion that customer confirms subscribing to
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment OR fair usage notification, AND customer confirms subscription
+  - **Trigger:** Agent does NOT disclose overage fees (charges beyond package limits) for the subscribed service
+  - **Action:** Tag `PromoNoOverFee`
+- **Positive example (Thai):** พนักงานแจ้งค่าบริการส่วนเกินจากแพ็กเกจ/โปรโมชั่นที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+- **Negative example (Thai):** พนักงานไม่แจ้งค่าบริการส่วนเกินจากแพ็กเกจ/โปรโมชั่นที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+
+#### **5.1.4 PromoNoQuota** - Promo No Quota
+
+- **Definition:** In True / Dtac promotional adjustment sales or fair usage notification calls for Data or Voice subscriptions - agent does NOT inform calling quota or internet data amount
+- **Tag when:** Agent fails to inform calling quota/internet data amount that customer will receive
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment OR fair usage notification, AND customer subscribes to a **Data or Voice** service
+  - **Trigger:** Agent does NOT disclose the calling minutes OR internet data quota (e.g., GB amount) included in the subscribed package
+  - **Action:** Tag `PromoNoQuota`
+- **Positive example (Thai):** พนักงานแจ้งค่าโทร/จำนวนอินเทอร์เน็ตที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+- **Negative example (Thai):** พนักงานไม่แจ้งค่าโทร/จำนวนอินเทอร์เน็ตที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+
+#### **5.1.5 PromoNoContent** - Promo No Content
+
+- **Definition:** In True / Dtac promotional adjustment sales or fair usage notification calls for Content subscriptions - agent does NOT inform Content or application details
+- **Tag when:** Agent fails to inform details about Content/Application package being offered
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment OR fair usage notification, AND customer subscribes to a **Content** service
+  - **Trigger:** Agent does NOT disclose the Content or application included in the subscribed package (e.g., streaming app name, content type)
+  - **Action:** Tag `PromoNoContent`
+- **Positive example (Thai):** พนักงานแจ้งรายละเอียดเกี่ยวกับแพ็กเกจ Content/Application ที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+- **Negative example (Thai):** พนักงานไม่แจ้งรายละเอียดเกี่ยวกับแพ็กเกจ Content/Application ที่ลูกค้ายืนยันสมัครบริการครบถ้วน
+
+> **⚠️ Tags 5.1.6–5.1.7: Current Promotion Handling (Mutually Exclusive Scenarios)**
+>
+> These two tags apply specifically to the customer's EXISTING/OLD promotion. They cover different conversation stages:
+>
+> - **5.1.6 (PromoNoCurrent):** Applies DURING the sales pitch — when customer asks about their old promotion status → checks if agent disclosed when the discount/promotion expires
+> - **5.1.7 (PromoNoConfirmCurrent):** Applies AFTER customer rejects the new offer → checks if agent confirmed that the old promotion still works
+>
+> These are mutually exclusive: 5.1.6 triggers during negotiation, 5.1.7 triggers after rejection. Do NOT apply both to the same conversation moment.
+
+#### **5.1.6 PromoNoCurrent** - Promo No Current
+
+- **Definition:** In True / Dtac promotional adjustment sales, when customer asks if they can still use their old promotion or confirms wanting to keep their current plan - agent does NOT inform when the old discount expires or when the current promotion ends
+- **Tag when:** Agent fails to inform customer about old discount expiry date, discount end period, or how long the current promotion can still be used
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment, AND customer asks whether they can continue using their current promotion OR explicitly confirms wanting to keep their current plan
+  - **Trigger:** Agent does NOT disclose when the old discount will expire, when the discount period will end, or how long the current promotion remains available
+  - **Action:** Tag `PromoNoCurrent`
+- **Positive example (Thai):** พนักงานแจ้งระยะเวลาที่ส่วนลดเดิมจะหมดอายุ เมื่อลูกค้ายืนยันสมัครบริการ
+- **Negative example (Thai):** พนักงานไม่แจ้งระยะเวลาที่ส่วนลดเดิมจะหมดอายุ เมื่อลูกค้ายืนยันสมัครบริการ
+
+#### **5.1.7 PromoNoConfirmCurrent** - Promo No Confirm Current
+
+- **Definition:** In True / Dtac promotional adjustment sales, when customer rejects the offer - agent does NOT confirm that customer can still use their current promotion
+- **Tag when:** After customer rejects the new offer, agent fails to reassure the customer that they can continue using their existing promotion/package
+- **Logic:**
+  - **Precondition:** Call involves True / Dtac promotional adjustment, AND customer explicitly rejects the offered promotion/package
+  - **Trigger:** Agent does NOT inform the customer that they can continue using their current promotion/package after rejection
+  - **Action:** Tag `PromoNoConfirmCurrent`
+- **Positive example (Thai):** พนักงานแจ้งระยะเวลาที่โปรโมชั่นเดิม/แพ็กเกจเดิมที่สามารถใช้งาน
+- **Negative example (Thai):** พนักงานไม่แจ้งระยะเวลาที่โปรโมชั่นเดิม/แพ็กเกจเดิมที่สามารถใช้งาน
+
+> **⚠️ Tags 5.1.8–5.1.10: Cross-sell/Upsell Behavior — Signal Boundaries**
+>
+> These tags check if the agent inappropriately offered cross-sell/upsell despite negative customer signals. Each tag covers ONE specific signal type — do NOT confuse them:
+>
+> - **Busy (5.1.8):** Customer expresses **time pressure or urgency** — mentions being busy, wants to end call quickly, apologizes for rush, speaks hurriedly
+> - **Upset (5.1.9):** Customer shows **negative emotions** — frustration, irritation, annoyance, raised voice, verbal complaints, hostile tone
+> - **Silent (5.1.10):** Customer becomes **unresponsive** — long pauses without replying, stops engaging, goes quiet on the line, minimal/no responses
+
+#### **5.1.8 PromoOfferBusy** - Promo Offer When Busy
+
+- **Definition:** In cross-sell/upsell situations, when customer is inconvenient to talk or shows urgency/rush - agent still proceeds with cross-sell/upsell offer
+- **Tag when:** Agent offers additional products/services despite clear signals that customer is busy or in a hurry
+- **Logic:**
+  - **Precondition:** Cross-sell/upsell scenario, AND customer signals inconvenience to continue talking OR shows urgency/rush during the call
+  - **Trigger:** Agent proceeds to offer cross-sell/upsell despite customer's busy/rushed signals
+  - **Action:** Tag `PromoOfferBusy`
+- **Positive example (Thai):** พนักงานไม่นำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว หรือเมื่อมีโอกาสการขาย
+- **Negative example (Thai):** พนักงานนำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว แต่ลูกค้าไม่สะดวกคุยต่อ มีความเร่งรีบ
+
+#### **5.1.9 PromoOfferUpset** - Promo Offer When Upset
+
+- **Definition:** In cross-sell/upsell situations, when customer shows dissatisfaction, annoyance, or irritation - agent still proceeds with cross-sell/upsell offer
+- **Tag when:** Agent offers additional products/services despite clear signals of customer frustration or negative emotion
+- **Logic:**
+  - **Precondition:** Cross-sell/upsell scenario, AND customer displays dissatisfaction, annoyance, OR irritation during the call
+  - **Trigger:** Agent proceeds to offer cross-sell/upsell despite customer's negative emotional state
+  - **Action:** Tag `PromoOfferUpset`
+- **Positive example (Thai):** พนักงานไม่นำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว หรือเมื่อมีโอกาสการขาย
+- **Negative example (Thai):** พนักงานนำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว แต่ลูกค้าไม่พอใจ แสดงความรำคาญ หงุดหงิดใส่พนักงานในสาย
+
+#### **5.1.10 PromoOfferSilent** - Promo Offer When Silent
+
+- **Definition:** In cross-sell/upsell situations, when customer is inconvenient to talk or goes silent on the call - agent still proceeds with cross-sell/upsell offer
+- **Tag when:** Agent offers additional products/services despite customer being unresponsive or silent
+- **Logic:**
+  - **Precondition:** Cross-sell/upsell scenario, AND customer signals inconvenience to talk OR becomes silent/unresponsive during the call
+  - **Trigger:** Agent proceeds to offer cross-sell/upsell despite customer's silence or unresponsiveness
+  - **Action:** Tag `PromoOfferSilent`
+- **Positive example (Thai):** พนักงานไม่นำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว หรือเมื่อมีโอกาสการขาย
+- **Negative example (Thai):** พนักงานนำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว แต่ลูกค้าไม่สะดวกคุยต่อ หรือเงียบไปเลยในสาย
+
+#### **5.1.11 PromoOfferMulti** - Promo Offer Multiple
+
+- **Definition:** In cross-sell/upsell situations, when the total number of subscribed services exceeds 2 in a single call
+- **Tag when:** Customer ends up subscribing to more than 2 services/offers in a single call (count includes ALL subscriptions: primary offer + any cross-sell/upsell)
+- **Logic:**
+  - **Precondition:** Cross-sell/upsell scenario exists during the call
+  - **Trigger:** Total subscribed services during the call exceeds 2 (i.e., ≥ 3 services total, counting both the primary offer and any cross-sell/upsell offers)
+  - **Action:** Tag `PromoOfferMulti`
+- **Positive example (Thai):** พนักงานไม่นำเสนอ offer ที่ 2 หลังจากที่เสนอ Offer แรกเรียบร้อยแล้ว หรือเมื่อมีโอกาสการขาย
+- **Negative example (Thai):** พนักงานนำเสนอ Offer ที่ 2 แล้วลูกค้าตกลงยินดีสมัครบริการเกิน 2 Offer
+
+### Additional Rules for 13_True_Promo_End Campaign (Extend on 5. Steps & Reasoning section below)
+
+- **Check List tags:** Reference only actual conversation content - no guessing or assumptions beyond the data; empty list `[]` if none apply
+- If topic not mentioned in conversation, leave tag out of the list
+- One call can have multiple tags based on topics found
+- Verify only from actual agent statements in the conversation
+
+### Support Detail Requirements for Check List
+
+The `support_detail` field for Check List provides **evidence-based reasoning** for why each tag was or was not applied. The LLM must quote key sentences from the conversation to justify the decision.
+
+**Core Rules:**
+
+1. **Always quote evidence:** Include the exact agent/customer phrases (in Thai) that led to the tagging decision
+2. **Explain the gap:** For each tag, state what information was expected AND what was actually said (or not said)
+3. **Scale detail with tag count:** More tags flagged = more detailed `support_detail` required. If ≥ 3 tags are present, each tag MUST have its own evidence paragraph
+4. **Justify empty list:** If no tags apply, prove it by quoting key disclosure moments that confirm all required information was covered
+
+**Detail Level Guidelines:**
+
+| Tags Count | Detail Level | Description                                                                                                                          |
+| ---------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 0 tags     | Brief        | Quote 2-3 key disclosure phrases proving agent covered all required items                                                            |
+| 1-2 tags   | Standard     | For each tag: quote the conversation moment + explain what was missing                                                               |
+| ≥ 3 tags   | Detailed     | For each tag: quote agent's exact words (or note silence) + quote customer context + explain specifically what criteria was not met |
+
+**Structure per tag:**
+
+```
+[TagName]: [What agent should have disclosed] → [What actually happened, with quote]
+```
+
+**Example support_detail (0 tags — brief, proving compliance):**
+
+```
+เปิดเผยข้อมูลครบถ้วน — ราคา: "เดือนละ 299 บาทค่ะ" สิทธิประโยชน์: "ได้เน็ต 50GB พร้อมโทรฟรีทุกเครือข่าย" ค่าส่วนเกิน: "เกินคิด 0.25 สตางค์ต่อ MB" โควต้า: "ห้าสิบ GB" ไม่มี tag ใดๆ
+```
+
+**Example support_detail (2 tags — standard, with evidence):**
+
+```
+PromoNoPrice: ลูกค้าพูดว่า "โอเคค่ะ สมัครเลย" แต่พนักงานตอบแค่ "จะจัดการให้นะคะ" โดยไม่ระบุราคาแพ็กเกจ ควรแจ้ง "ราคาเดือนละ XXX บาท" ก่อนดำเนินการ | PromoNoQuota: พนักงานพูดว่า "เน็ตเยอะๆ เลยค่ะ" แต่ไม่ระบุจำนวน GB ที่ชัดเจน ควรบอก "ได้เน็ต XX GB"
+```
+
+**Example support_detail (≥ 3 tags — detailed, each with full evidence):**
+
+```
+PromoendNobenefit: พนักงานพูดแค่ "โปรใหม่ดีกว่าเดิมค่ะ" โดยไม่แจ้งสิทธิประโยชน์ที่ลูกค้าจะได้รับ เช่น โทรฟรี, ดูหนัง, wifi ฟรี ฯลฯ | PromoNoPrice: ตลอดสายพนักงานไม่ได้แจ้งราคาแพ็กเกจเลย ลูกค้าถามว่า "เท่าไหร่คะ" แต่ได้ตอบว่า "ไม่ต้องกังวลเรื่องราคาค่ะ" | PromoNoOverFee: ไม่มีการแจ้งค่าบริการส่วนเกินจากแพ็กเกจ ลูกค้าสมัครบริการโดยไม่ทราบค่าใช้จ่ายที่อาจเกิดขึ้นหากใช้งานเกินแพ็กเกจ
+```
+
+**Example support_detail (cross-sell tag — with customer signal evidence):**
+
+```
+PromoOfferBusy: ลูกค้าพูดว่า "รีบนะคะ ขอตัวก่อน" แต่พนักงานยังคงเสนอ offer ที่ 2 ว่า "อีกนิดนะคะ มี Netflix ราคาพิเศษ" แทนที่จะปิดสายตามความประสงค์ของลูกค้า
+```
+
+### Additional Output Schema for 13_True_Promo_End Campaign (Extend on 7. Output Format section below)
+
+```json
+{
+  ...# Reference from 7. Output Format,
+  "check_list": {
+    "operation_check_list": List[Literal[
+        'PromoendNobenefit',
+        'PromoNoPrice',
+        'PromoNoOverFee',
+        'PromoNoQuota',
+        'PromoNoContent',
+        'PromoNoCurrent',
+        'PromoNoConfirmCurrent',
+        'PromoOfferBusy',
+        'PromoOfferUpset',
+        'PromoOfferSilent',
+        'PromoOfferMulti']],
+    "support_detail": str  // Evidence-based reasoning with quoted phrases. More tags = more detail required. See Support Detail Requirements above.
+  }
+}
+```

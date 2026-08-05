@@ -1,0 +1,63 @@
+# OCR pipeline v2 — fact-check submit (pre-processing) config.
+# Triggered by Cloud Scheduler. Reuses tasks/ocr_tax_invoice_pipeline/OCRSubmitTask unchanged,
+# pointed at the fact-check reference PDFs on the CONTROL site (${TAX_INVOICE_CONTROL_ROOT}/
+# ${TAX_INVOICE_FACT_CHECK_PATH}) and a dedicated fact_check/ GCS + log namespace so it never collides
+# with the production tax-invoice run. No TaxInvoiceRejectTask here — the fixed reference set is
+# never moved. The retrieve + fact-check + finalize chain lives in
+# ocr_pipeline_fact_check_post_tasks.yml (triggered by Eventarc).
+
+pipeline_name: "tax_invoice_fact_check"
+
+OCRSubmitTask:
+  domain: treasury
+  gcp:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    project_name: "${TAX_INVOICE_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    landing_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_landing/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    processing_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_processing/docs/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    payload_landing_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_processing/payloads/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    output_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_output/%{DATA_DATE_YYYYMM}/${JOB_ID}"
+    pre_processing_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_log/pre_processing_log.csv"
+    page_manifest_log_path: "gs://${ENVIRONMENT}-${TAX_INVOICE_PROCESSING_BUCKET}/ocr_tax_invoice_workflow/fact_check/ocr_log/page_manifest_log.csv"
+  vertexai:
+    project_id: "${TAX_INVOICE_GCP_PROJECT_ID}"
+    location: "${TAX_INVOICE_VERTEX_AI_LOCATION}"
+    model: "${TAX_INVOICE_VERTEX_AI_MODEL_NAME}"
+    generation_config:
+      temperature: 0.0
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: 0
+  sharepoint:
+    # Reference PDFs live on the CONTROL site under the fact-check root, so the source-site
+    # credentials here are the CONTROL_SITE_* set (not the tax-invoice source site).
+    source_site:
+      site_name: "${CONTROL_SITE_NAME}"
+      site_domain: "${CONTROL_SITE_SITE_DOMAIN}"
+      site_path: "${CONTROL_SITE_SITE_PATH}"
+      client_id: "${CONTROL_SITE_CLIENT_ID}"
+      client_secret: "${CONTROL_SITE_CLIENT_SECRET}"
+      tenant_id: "${CONTROL_SITE_TENANT_ID}"
+      src_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/source_file"
+    control_site:
+      pre_processing_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/fact_check_log/ocr_pre_processing_log.csv"
+      page_manifest_log_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_FACT_CHECK_PATH}/fact_check_log/page_manifest_log.csv"
+      system_prompt_path: "${TAX_INVOICE_CONTROL_ROOT}/${TAX_INVOICE_SYSTEM_PROMPT_PATH}/system_prompt.md"
+  framework:
+    concurrency_upload: "${TAX_INVOICE_MAX_CONCURRENT_UPLOADS}"
+    iqs_config_path: "config/tax_invoice_extraction/iqs_config.yml"
+    # Retention window (days) for every tax-invoice log; aged rows are pruned regardless of status
+    # (a stuck in-flight file becomes re-processable). -1 disables. Unset -> 90 days.
+    log_retention_days: "${TAX_INVOICE_LOG_RETENTION_DAYS}"
+    notifications:
+      system_exception:
+        enabled: true
+        sender_email: "${BOT_EMAIL}"
+        receiver_email: "${DEVELOPER_EMAIL}"
+        cc_email: "${OPER_EMAIL}"
+        subject: "[AI-Tax Invoice][Fact Check][System Exception] on {date}"
+        body_path: "config/tax_invoice_extraction/email_template/processing_failed.txt"

@@ -1,0 +1,31 @@
+Input:
+  sharepoint:
+    input_file_path: input/yyyymm/yyyymmdd/input_pulse_survey.xlsx
+    input_file_name: input_pulse_survey.xlsx
+    input_schema:
+      - emp_id
+      - comment_id
+      - comment
+      - sentiment
+      - category
+      - sub_category
+      - confidence
+      - intent_count
+
+
+Output:
+  sharepoint:
+    output_file_path: output/yyyymm/yyyymmdd/Pulse_sentiment_report.xlsx
+    output_file_name: Pulse_sentiment_report.xlsx
+    output_schema:
+      - emp_id
+      - comment_id
+      - comment
+      - intent
+      - cluster
+      - category
+      - sub_category
+      - sentiment
+      - confidence
+      - remark
+      - error

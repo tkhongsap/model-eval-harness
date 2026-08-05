@@ -1,0 +1,44 @@
+framework:
+  timezone: "Asia/Bangkok"
+  project_id: ${QA_GCP_PROJECT_ID}
+
+msgraph:
+  client_id: "${SANDBOX_SITE_CLIENT_ID}"
+  client_secret: "${SANDBOX_SITE_CLIENT_SECRET}"
+  tenant_id: "${SANDBOX_SITE_TENANT_ID}"
+  sender_email: "${BOT_EMAIL}"
+  receiver_email: "${OPER_EMAIL}"
+  cc_email: "${DEV_EMAIL}"
+
+verint:
+  site_name: "${VERINT_SITE_NAME}"
+  site_domain: "${VERINT_SITE_SITE_DOMAIN}"
+  site_path: "${VERINT_SITE_SITE_PATH}"
+  client_id: "${VERINT_SITE_CLIENT_ID}"
+  client_secret: "${VERINT_SITE_CLIENT_SECRET}"
+  tenant_id: "${VERINT_SITE_TENANT_ID}"
+
+control:
+  site_name: "${CONTROL_SITE_NAME}"
+  site_domain: "${CONTROL_SITE_SITE_DOMAIN}"
+  site_path: "${CONTROL_SITE_SITE_PATH}"
+  client_id: "${CONTROL_SITE_CLIENT_ID}"
+  client_secret: "${CONTROL_SITE_CLIENT_SECRET}"
+  tenant_id: "${CONTROL_SITE_TENANT_ID}"
+  gemini_cost_path: "${GEMINI_COST_PATH}"
+
+sandbox:
+  site_name: "${SANDBOX_SITE_NAME}"
+  site_domain: "${SANDBOX_SITE_SITE_DOMAIN}"
+  site_path: "${SANDBOX_SITE_SITE_PATH}"
+  client_id: "${SANDBOX_SITE_CLIENT_ID}"
+  client_secret: "${SANDBOX_SITE_CLIENT_SECRET}"
+  tenant_id: "${SANDBOX_SITE_TENANT_ID}"
+
+tax_invoice:
+  site_name: "${TAX_INVOICE_SITE_NAME}"
+  site_domain: "${TAX_INVOICE_SITE_SITE_DOMAIN}"
+  site_path: "${TAX_INVOICE_SITE_SITE_PATH}"
+  client_id: "${TAX_INVOICE_SITE_CLIENT_ID}"
+  client_secret: "${TAX_INVOICE_SITE_CLIENT_SECRET}"
+  tenant_id: "${TAX_INVOICE_SITE_TENANT_ID}"

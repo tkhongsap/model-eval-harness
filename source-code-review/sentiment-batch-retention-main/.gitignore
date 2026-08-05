@@ -1,0 +1,17 @@
+.venv
+documents/
+.env
+*.env
+test_agent/
+b2b/
+temp_modified_file.docx
+multi_tool_agent/__pycache__
+deployment/__pycache__
+**/__pycache__/
+/test_lock
+function.zip
+.terraform
+.terraform.lock.hcl
+app/utils/__pycache__
+control_file/
+prompt**.txt

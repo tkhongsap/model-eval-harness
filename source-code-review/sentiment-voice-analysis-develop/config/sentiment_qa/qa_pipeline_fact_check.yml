@@ -1,0 +1,60 @@
+# Release tag for Cloud Build Tracking change for deployments only project (on develop branch)
+# Latest release: telesale-v1.0.0
+QAFactCheckTask:
+  gcp:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    project_name: "${QA_GCP_PROJECT_NAME}"
+  gcs:
+    project_id: "${QA_GCP_PROJECT_ID}"
+    bucket_name: "${ENVIRONMENT}-${QA_PROCESSING_BUCKET}"
+    input_folder: "sentiment_qa/fact_check/input"
+    processing_voice_folder: "sentiment_qa/fact_check/processing/voice/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    processing_batch_folder: "sentiment_qa/fact_check/processing/batch/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    archive_batch_folder: "sentiment_qa/fact_check/archive/batch"
+    output_folder: "sentiment_qa/fact_check/output/%{DATA_DATE_YYYYMMDDHHMMSS}"
+    backup_excel_prompt_path: "sentiment_qa/fact_check/archive/prompt/%{DATA_DATE_YYYYMMDD}/user_config.xlsx"
+  vertexai:
+    batch_job_name: "sentiment-fc-qa-batch-job-%{DATA_DATE_YYYYMMDDHHMMSS}"
+    project_id: "${QA_GCP_PROJECT_ID}"
+    location: "${QA_VERTEX_AI_LOCATION}"
+    model: "${QA_VERTEX_AI_MODEL_NAME}"
+    generation_config:
+      temperature: 1
+      topP: 1
+      maxOutputTokens: 65535
+      seed: 0
+      thinkingConfig:
+        thinkingBudget: -1
+      responseMimeType: application/json
+  sharepoint:
+    control:
+      ground_truth_file: "${QA_CONTROL_ROOT}/${QA_FACT_CHECK_PATH}/ground_truth/ground_truth_qa_sentiment.xlsx"
+      source_folder: "${QA_CONTROL_ROOT}/${QA_FACT_CHECK_PATH}/prediction/input"
+      input_folder_list: "${QA_FACT_CHECK_PRODUCTS}"
+      evaluation_folder: "${QA_CONTROL_ROOT}/${QA_FACT_CHECK_PATH}/prediction/output/%{DATA_DATE_YYYYMM}/fact_check_qa_log_%{DATA_DATE_YYYYMMDD}.xlsx"
+      transaction_log_file: "${QA_CONTROL_ROOT}/${QA_TRANSACTION_LOG_PATH}/transaction_log_%{DATA_DATE_YYYYMM}.csv"
+      user_config_path: "${QA_CONTROL_ROOT}/${QA_USER_PROMPT_PATH}/user_config.xlsx"
+  framework:
+    concurrency_upload: "${QA_MAX_CONCURRENT_UPLOADS}"
+    system_prompt_file: "config/sentiment_qa/system_prompt/system_prompt.txt"
+    user_config_path: "config/sentiment_qa/system_prompt/user_config.xlsx"
+    sender_email: "${BOT_EMAIL}"
+    receiver_email: "${USER_EMAIL}"
+    cc_email: "${OPER_EMAIL}, ${DEV_EMAIL}"
+  metric_thresholds:
+    accuracy: 
+      acceptable: 80
+      good: 85
+      excellent: 90
+    precision:
+      acceptable: 75
+      good: 80
+      excellent: 90
+    recall:
+      acceptable: 75
+      good: 80
+      excellent: 90
+    f1_score:
+      acceptable: 80
+      good: 85
+      excellent: 90

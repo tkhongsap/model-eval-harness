@@ -1,0 +1,205 @@
+name: Unit Testing
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+      - '!.github/workflows/unit_testing.yml'
+
+# Prevent concurrent runs on the same PR
+concurrency:
+  group: tests-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  ACCEPTANCE_THRESHOLD: 0
+
+jobs:
+  unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+      
+      - name: Run unit tests
+        id: pytest
+        run: |
+          uv run --frozen pytest tests/ \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=html \
+            --cov-report=xml \
+            --cov-fail-under=${{ env.ACCEPTANCE_THRESHOLD }} \
+            --tb=short \
+            --verbose \
+            -o junit_family=xunit2 \
+            --junitxml=pytest-report.xml
+        continue-on-error: true
+      
+      - name: Generate test results summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse pytest results
+          if [ -f pytest-report.xml ]; then
+            TOTAL=$(grep -oP 'tests="\K[^"]+' pytest-report.xml | head -1)
+            FAILURES=$(grep -oP 'failures="\K[^"]+' pytest-report.xml | head -1)
+            ERRORS=$(grep -oP 'errors="\K[^"]+' pytest-report.xml | head -1)
+            SKIPPED=$(grep -oP 'skipped="\K[^"]+' pytest-report.xml | head -1)
+            
+            PASSED=$((TOTAL - FAILURES - ERRORS - SKIPPED))
+            
+            echo "**Total Tests:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Passed: $PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "- ❌ Failed: $FAILURES" >> $GITHUB_STEP_SUMMARY
+            echo "- ⚠️ Errors: $ERRORS" >> $GITHUB_STEP_SUMMARY
+            echo "- ⏭️ Skipped: $SKIPPED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          uv run --frozen coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+      
+      - name: Post test results to PR
+        uses: actions/github-script@v7
+        if: always() && github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            // Parse pytest XML report
+            let testStats = {
+              total: 0,
+              passed: 0,
+              failed: 0,
+              errors: 0,
+              skipped: 0
+            };
+            
+            try {
+              const xmlReport = fs.readFileSync('pytest-report.xml', 'utf8');
+              testStats.total = parseInt(xmlReport.match(/tests="(\d+)"/)?.[1] || 0);
+              testStats.failed = parseInt(xmlReport.match(/failures="(\d+)"/)?.[1] || 0);
+              testStats.errors = parseInt(xmlReport.match(/errors="(\d+)"/)?.[1] || 0);
+              testStats.skipped = parseInt(xmlReport.match(/skipped="(\d+)"/)?.[1] || 0);
+              testStats.passed = testStats.total - testStats.failed - testStats.errors - testStats.skipped;
+            } catch (e) {
+              console.log('Could not parse test results:', e.message);
+            }
+            
+            // Get coverage data
+            let coverageData = '';
+            try {
+              const { execSync } = require('child_process');
+              coverageData = execSync('uv run --frozen coverage report', { encoding: 'utf8' });
+            } catch (e) {
+              coverageData = 'Coverage report not available';
+            }
+            
+            const testStatus = testStats.failed === 0 && testStats.errors === 0 ? '✅' : '❌';
+            const statusText = testStats.failed === 0 && testStats.errors === 0 
+              ? '✅ **All tests passed!**' 
+              : '❌ **Some tests failed!** Please review and fix before merging.';
+            
+            const output = `### 🧪 Unit Test Results
+            
+            **Status:** ${testStatus} | **Total Tests:** ${testStats.total}
+            
+            | Result | Count |
+            |--------|-------|
+            | ✅ Passed | ${testStats.passed} |
+            | ❌ Failed | ${testStats.failed} |
+            | ⚠️ Errors | ${testStats.errors} |
+            | ⏭️ Skipped | ${testStats.skipped} |
+            
+            <details>
+            <summary>📊 Coverage Report</summary>
+            
+            \`\`\`
+            ${coverageData}
+            \`\`\`
+            
+            </details>
+            
+            ---
+            
+            ${statusText}
+            
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('🧪 Unit Test Results')
+            });
+            
+            // Update or create comment
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
+      
+      - name: Check test status
+        if: steps.pytest.outcome == 'failure'
+        run: |
+          echo "❌ Tests failed! Please review the test output above."
+          exit 1
+      
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            htmlcov/
+            coverage.xml
+            pytest-report.xml
+          retention-days: 7

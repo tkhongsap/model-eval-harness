@@ -1,0 +1,223 @@
+name: Terraform Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths:
+      - 'terraform/projects/**'
+      - 'terraform/modules/**'
+      - 'cloud_build/**'
+      - '.github/workflows/terraform_pr_validation.yml'
+
+# Prevent concurrent runs on the same PR
+concurrency:
+  group: terraform-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TERRAFORM_VERSION: '1.13.3'
+
+jobs:
+  determine-environment:
+    name: Determine Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      description: ${{ steps.set-env.outputs.description }}
+    steps:
+      - name: Determine environment from target branch
+        id: set-env
+        run: |
+          TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+          echo "Target branch: $TARGET_BRANCH"
+
+          if [[ "$TARGET_BRANCH" == "develop" ]]; then
+            echo "environment=nprd" >> $GITHUB_OUTPUT
+            echo "description=Non-Production (NPRD)" >> $GITHUB_OUTPUT
+          elif [[ "$TARGET_BRANCH" =~ ^release/.* ]]; then
+            echo "environment=release" >> $GITHUB_OUTPUT
+            echo "description=Release (Pre-Production)" >> $GITHUB_OUTPUT
+          elif [[ "$TARGET_BRANCH" == "main" ]]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "description=Production (PROD)" >> $GITHUB_OUTPUT
+          else
+            echo "❌ ERROR: Unknown target branch: $TARGET_BRANCH"
+            exit 1
+          fi
+
+  # Format check is global (recursive over terraform/, incl. shared modules),
+  # so it runs once rather than per-project.
+  terraform-fmt:
+    name: Terraform Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Format Check
+        working-directory: terraform
+        run: |
+          echo "## 📝 Terraform Format Check" >> $GITHUB_STEP_SUMMARY
+          if terraform fmt -check -recursive; then
+            echo "✅ All files are properly formatted" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some files need formatting" >> $GITHUB_STEP_SUMMARY
+            echo "Run \`terraform fmt -recursive\` from terraform/ directory to fix" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  terraform-validation:
+    name: Terraform Validation - ${{ needs.determine-environment.outputs.description }} (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    needs: determine-environment
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - sentiment_telesale
+          - sentiment_qa
+          - tax_invoice_extraction
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      ENVIRONMENT: ${{ needs.determine-environment.outputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init (Local Backend)
+        id: init
+        working-directory: terraform/projects/${{ matrix.project }}
+        run: |
+          echo "## 🔧 Terraform Init (${{ matrix.project }})" >> $GITHUB_STEP_SUMMARY
+          # Initialize with local backend for validation only
+          terraform init -backend=false -input=false
+          echo "✅ Terraform initialized successfully (validation mode)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Terraform Validate
+        id: validate
+        working-directory: terraform/projects/${{ matrix.project }}
+        run: |
+          echo "## ✔️ Terraform Validate (${{ matrix.project }})" >> $GITHUB_STEP_SUMMARY
+          terraform validate -no-color | tee validate_output.txt
+          echo "✅ Configuration is valid" >> $GITHUB_STEP_SUMMARY
+
+      - name: Post Validation Results to PR
+        uses: actions/github-script@v7
+        if: always() && github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const project = '${{ matrix.project }}';
+
+            // Read validate output if exists
+            let validateOutput = '';
+            try {
+              validateOutput = fs.readFileSync(`terraform/projects/${project}/validate_output.txt`, 'utf8');
+            } catch (e) {
+              validateOutput = 'No validation output available';
+            }
+
+            const output = `### 🔍 Terraform Validation — \`${project}\` - ${{ needs.determine-environment.outputs.description }}
+
+            **Project:** \`${project}\`
+            **Environment:** \`${{ env.ENVIRONMENT }}\`
+            **Target Branch:** \`${{ github.event.pull_request.base.ref }}\`
+            **PR:** #${{ github.event.pull_request.number }}
+
+            #### Validation Results
+
+            | Step | Status |
+            |------|--------|
+            | 🔧 Init | ${{ steps.init.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |
+            | ✔️ Validate | ${{ steps.validate.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |
+
+            <details>
+            <summary>📋 Show Validation Output</summary>
+
+            \`\`\`terraform
+            ${validateOutput}
+            \`\`\`
+
+            </details>
+
+            ---
+
+            ${{ steps.validate.outcome == 'success' && '✅ **Validation checks passed!**' || '❌ **Validation failed!** Please review and fix the issues before merging.' }}
+
+            > ℹ️ **Note:** Formatting is checked once in the separate \`Terraform Format Check\` job; this comment covers per-project validation. Full Terraform plan will run during deployment.
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            // Find existing comment for THIS project (per-project marker avoids
+            // the three matrix legs clobbering one shared comment)
+            const marker = `🔍 Terraform Validation — \`${project}\``;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes(marker)
+            });
+
+            // Update or create comment
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
+
+      - name: Check Validation Status
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "❌ Terraform validation failed for ${{ matrix.project }}!"
+          echo "Please review the validation output above and fix any issues."
+          exit 1
+
+      - name: Generate validation summary
+        if: always()
+        run: |
+          echo "## Terraform Validation Summary (${{ matrix.project }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Project:** ${{ matrix.project }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ env.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Validation: ${{ steps.validate.outcome == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.validate.outcome }}" == "success" ]; then
+            echo "✅ Validation passed for ${{ matrix.project }}." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Validation failed for ${{ matrix.project }}. Please fix the issues before merging." >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+env/
+
+# Environment & secrets
+*.env
+.env*
+
+# Databases & logs
+*.db
+*.sqlite3
+*.log
+logs/
+
+# Archives
+*.zip
+*.tar.gz
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# IDE & OS
+.vscode/
+.DS_Store
+
+# Infrastructure (not needed in image)
+terraform/
+cloud_build/
+
+# CI/CD
+.github/
+
+# Tests
+tests/
+
+# Docs
+*.md
+docs/
+
+# Misc
+*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
