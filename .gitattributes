@@ -1,0 +1,34 @@
+# ===================================================================
+# Line endings: LF everywhere for text, no conversion at all for
+# binaries. Set explicitly rather than left to each developer's
+# core.autocrlf, because that default is exactly what silently
+# corrupted tests/fixtures/testsets/retention_v1.jsonl on 2026-08-05:
+# a Windows checkout with autocrlf=true rewrote every LF to CRLF in
+# the working tree during an ordinary `gh pr merge`, and
+# testsets.load_testset refuses any file carrying a CR by design --
+# so the suite broke on a checkout that changed no committed content
+# at all, and no diff was visible because git's own autocrlf-aware
+# diffing treated the two as equivalent.
+#
+# This is not just a style preference for two categories in this
+# repo: tests/fixtures/testsets/*.jsonl evidence spans are matched as
+# verbatim substrings of transcript_th, and every Prompt.sha in
+# src/evalgen/prompts.py is a sha256 over exactly these bytes. A
+# silently reflowed line ending changes both without changing
+# anything visible on screen.
+# ===================================================================
+* text=auto eol=lf
+
+# Binaries: explicitly exempted from any text handling. Matters now
+# that source-code-review/ carries real images and .xlsx workbooks.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.xlsm binary
+*.docx binary
+*.pptx binary
+*.zip binary
