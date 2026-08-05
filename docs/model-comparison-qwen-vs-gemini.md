@@ -62,24 +62,101 @@ saturation, where strong models cluster near the ceiling and the benchmark stops
 separating them. Plain MMLU was retired earlier still. **SWE-bench is also absent**;
 Terminal-Bench is AA's agentic-coding proxy.
 
-### Per-benchmark scores could not be obtained
+---
 
-AA renders its per-model benchmark breakdown in interactive charts that do not survive
-text extraction. The figures below are therefore **vendor-reported, from different
-publishers, at different model configurations**, and are recorded only to show what is
-publicly claimed. They are not comparable to each other.
+## 2b. Benchmark-by-benchmark comparison
 
-| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash | Provenance |
+**Read the provenance warning below before using this table.**
+
+### Composite
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash | Source |
 |---|---|---|---|
-| GPQA Diamond | 87.8% | 79.0% | Both vendor-reported |
-| MMLU-Pro | not reported | 83.2% | Vendor |
-| Terminal-Bench 2.0 | 59.3% | not reported | Vendor |
-| SWE-bench | not reported | 48.9% (60.3% verified) | Vendor |
-| HLE / SciCode / CritPt | not published | not published | — |
+| **AA Intelligence Index v4.1** | **37** | **14** | AA, independent — *the only like-for-like row* |
 
-Do **not** read the GPQA row as "Qwen leads by 8.8 points". Google's published Flash
-figures are generally for the thinking-enabled variant, whereas production runs
-`thinkingBudget: 0`. Those are effectively different models.
+### Knowledge and reasoning
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash | Note |
+|---|---|---|---|
+| MMLU-Pro | **86.2** | 83.2 | |
+| MMLU-Redux | 93.5 | — | |
+| GPQA Diamond | **87.8** | 79.0 *(82.8 elsewhere)* | Sources conflict for Gemini |
+| SuperGPQA | 66.0 | — | |
+| Humanity's Last Exam | **24.0** | 12.1 | |
+| C-Eval | 91.4 | — | Chinese |
+| SimpleBench | — | 41.2 | |
+| ARC-AGI / ARC-AGI-2 | — | 33.3 / 22.5 | |
+
+### Coding and software engineering
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash | Note |
+|---|---|---|---|
+| **SWE-bench Verified** | **77.2** | 60.3 *(48.9 single-attempt)* | |
+| SWE-bench Pro | 53.5 | — | |
+| SWE-bench Multilingual | 71.3 | — | |
+| Terminal-Bench | **59.3** (v2.0) | 17.1 (version unstated) | ⚠️ likely different versions |
+| LiveCodeBench | **83.9** (v6) | 69.5 (version unstated) | ⚠️ likely different versions |
+| SciCode | — | 39.4 | |
+| NL2Repo | 36.2 | — | |
+
+### Mathematics
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash | Note |
+|---|---|---|---|
+| AIME | **94.1** (AIME26) | 73.1 (2024/25) *(88.0 for 2024 elsewhere)* | ⚠️ different years |
+| HMMT | 93.8 / 90.7 / 84.3 | — | Feb25 / Nov25 / Feb26 |
+| IMOAnswerBench | 80.8 | — | |
+| FrontierMath | — | 4.8 | |
+
+### Agentic and tool use
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash | Note |
+|---|---|---|---|
+| τ²-bench | — | 31.6 | |
+| QwenWebBench | 1487 | — | Qwen-authored |
+| SkillsBench Avg5 | 48.2 | — | |
+| AndroidWorld | 70.3 | — | |
+| APEX | — | 1.8 | |
+
+### Multilingual — the closest thing to relevant, and it is not close
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash |
+|---|---|---|
+| SWE-bench Multilingual | 71.3 | — |
+| Global-MMLU-Lite | — | 88.4 |
+| C-Eval (Chinese) | 91.4 | — |
+| **Any Thai benchmark** | **none published** | **none published** |
+
+### Vision (not used by this workload, listed for completeness)
+
+| Benchmark | Qwen3.6 27B | Gemini 2.5 Flash |
+|---|---|---|
+| MMMU | **82.9** | 79.7 |
+| MMMU-Pro | 75.8 | — |
+| MathVista mini | 87.4 | — |
+| OCRBench | 89.4 | — |
+
+### ⚠️ Provenance warning — why most of this table is weak evidence
+
+Only the **AA Intelligence Index** row is measured by one party under one methodology.
+Everything else is **vendor-reported or third-party aggregated**, and three specific
+problems apply:
+
+1. **Different modes.** Most published Gemini 2.5 Flash figures are for the
+   **thinking-enabled** variant. Production runs `thinkingBudget: 0`. The Gemini column
+   therefore **overstates** what production actually gets — AA's non-reasoning score of
+   14 is the production-representative figure, and it is far below what these
+   vendor rows imply.
+2. **Different benchmark versions.** Terminal-Bench 2.0 (Qwen) against an unstated
+   Terminal-Bench version (Gemini) is not a comparison. Same for LiveCodeBench v6, and
+   for AIME 2026 against AIME 2024/2025.
+3. **Sources disagree with each other.** Gemini's GPQA Diamond appears as both 79.0 and
+   82.8, and AIME as both 73.1 and 88.0, depending on which aggregator is consulted.
+   Both readings are recorded above rather than one being silently chosen.
+
+Qwen genuinely does lead on most rows where both models have a number — but the margins
+are inflated by items 1 and 2, and **not one row in this table tests Thai-language
+classification**, which is the only capability this migration depends on.
 
 ---
 
@@ -179,8 +256,10 @@ The Thai in the test pack was drafted by an LLM and has no native-speaker sign-o
 - [Gemini 2.5 Flash — model page](https://artificialanalysis.ai/models/gemini-2-5-flash)
 - [Qwen3.6 27B vs Gemini 2.5 Flash — comparison page](https://artificialanalysis.ai/models/comparisons/qwen3-6-27b-vs-gemini-2-5-flash)
 - [Artificial Analysis on X — Qwen3.6 launch figures](https://x.com/ArtificialAnlys/status/2049881951260283097)
+- [Qwen/Qwen3.6-27B — official model card, full benchmark table](https://huggingface.co/Qwen/Qwen3.6-27B)
 - [Qwen3.6-27B release coverage — vendor benchmarks](https://the-decoder.com/qwen3-6-27b-beats-much-larger-predecessor-on-most-coding-benchmarks/)
 - [Gemini 2.5 Flash — benchmarks and specs](https://themodelbeat.com/models/gemini-2-5-flash)
+- [llm-stats.com — Qwen3.6-27B vs Gemini 2.5 Flash](https://llm-stats.com/models/compare/qwen3.6-27b-vs-gemini-2.5-flash)
 
 Internal: `EXPERIMENTS.md`, `DEVLOG.md`, `src/evalgen/fabrication.py`,
 `production-reference/sentiment-batch-retention-main/config/model_setting/retention.yml`.
