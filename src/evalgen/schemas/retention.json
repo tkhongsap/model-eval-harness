@@ -1,0 +1,531 @@
+{
+  "title": "analyze_call",
+  "description": "Performs a comprehensive analysis of the client's call based on cancellation reasons, emotional state, agent's response, and retention outcome, strictly adhering to the defined structure.",
+  "type": "object",
+  "properties": {
+    "product": {
+      "type": "object",
+      "description": "Analysis of the specific products (Postpaid, TOL, TVS, unknown) mentioned in the call. Only include product keys that were mentioned.",
+      "properties": {
+        "Postpaid": {
+          "type": "object",
+          "properties": {
+            "main": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "secondary": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "third": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "retention_outcome": {
+              "type": "string",
+              "enum": ["churn", "save", "unknown", "undefined"],
+              "description": "Determine the final decision of the client: churn, save, unknown or undefined."
+            },
+            "network_issue": {
+              "type": ["object", "null"],
+              "properties": {
+                "issue_type": {
+                  "type": "string",
+                  "enum": [
+                    "Speed",
+                    "Outage",
+                    "Drop",
+                    "Coverage",
+                    "FUP",
+                    "Installation",
+                    "Support",
+                    "Voice Quality"
+                  ]
+                },
+                "sub_reason": { "type": "string" },
+                "problem_statement_list": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "churn_probability": { "type": "integer" },
+                "area": {
+                  "type": "object",
+                  "properties": {
+                    "area_tag_province": { "type": ["string", "null"] },
+                    "area_tag_district": { "type": ["string", "null"] },
+                    "area_tag_sub_district": { "type": ["string", "null"] },
+                    "area_tag_landmark": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["main", "retention_outcome"]
+        },
+        "TOL": {
+          "type": "object",
+          "properties": {
+            "main": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "secondary": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "third": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "retention_outcome": {
+              "type": "string",
+              "enum": ["churn", "save", "unknown", "undefined"],
+              "description": "Determine the final decision of the client: churn, save, unknown or undefined."
+            },
+            "network_issue": {
+              "type": ["object", "null"],
+              "properties": {
+                "issue_type": {
+                  "type": "string",
+                  "enum": [
+                    "Speed",
+                    "Outage",
+                    "Drop",
+                    "Coverage",
+                    "FUP",
+                    "Installation",
+                    "Support",
+                    "Voice Quality"
+                  ]
+                },
+                "sub_reason": { "type": "string" },
+                "problem_statement_list": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "churn_probability": { "type": "integer" },
+                "area": {
+                  "type": "object",
+                  "properties": {
+                    "area_tag_province": { "type": ["string", "null"] },
+                    "area_tag_district": { "type": ["string", "null"] },
+                    "area_tag_sub_district": { "type": ["string", "null"] },
+                    "area_tag_landmark": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["main", "retention_outcome"]
+        },
+        "TVS": {
+          "type": "object",
+          "properties": {
+            "main": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "secondary": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "third": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "retention_outcome": {
+              "type": "string",
+              "enum": ["churn", "save", "unknown", "undefined"],
+              "description": "Determine the final decision of the client: churn, save, unknown or undefined."
+            },
+            "network_issue": {
+              "type": ["object", "null"],
+              "properties": {
+                "issue_type": {
+                  "type": "string",
+                  "enum": [
+                    "Speed",
+                    "Outage",
+                    "Drop",
+                    "Coverage",
+                    "FUP",
+                    "Installation",
+                    "Support",
+                    "Voice Quality"
+                  ]
+                },
+                "sub_reason": { "type": "string" },
+                "problem_statement_list": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "churn_probability": { "type": "integer" },
+                "area": {
+                  "type": "object",
+                  "properties": {
+                    "area_tag_province": { "type": ["string", "null"] },
+                    "area_tag_district": { "type": ["string", "null"] },
+                    "area_tag_sub_district": { "type": ["string", "null"] },
+                    "area_tag_landmark": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["main", "retention_outcome"]
+        },
+        "unknown": {
+          "type": "object",
+          "properties": {
+            "main": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "secondary": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "third": {
+              "type": "object",
+              "properties": {
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "network",
+                    "promotion related",
+                    "device promotion related",
+                    "save cost",
+                    "contract end",
+                    "sale upsell problem",
+                    "dissatisfied service",
+                    "post to pre",
+                    "customer reason",
+                    "down sell not success",
+                    "other"
+                  ],
+                  "description": "Select reason from: network, promotion related, device promotion related, save cost, contract end, sale upsell problem, dissatisfied service, other, post to pre, customer reason, down sell not success. Use empty string if not applicable."
+                },
+                "keyword": {
+                  "type": "string",
+                  "description": "List keywords or short phrases directly from the audio that explicitly indicate or support the reason. Use comma separation. Use empty string if not applicable."
+                }
+              },
+              "required": ["reason", "keyword"]
+            },
+            "retention_outcome": {
+              "type": "string",
+              "enum": ["churn", "save", "unknown", "undefined"],
+              "description": "Determine the final decision of the client: churn, save, unknown or undefined."
+            },
+            "network_issue": {
+              "type": ["object", "null"],
+              "properties": {
+                "issue_type": {
+                  "type": "string",
+                  "enum": [
+                    "Speed",
+                    "Outage",
+                    "Drop",
+                    "Coverage",
+                    "FUP",
+                    "Installation",
+                    "Support",
+                    "Voice Quality"
+                  ]
+                },
+                "sub_reason": { "type": "string" },
+                "problem_statement_list": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "churn_probability": { "type": "integer" },
+                "area": {
+                  "type": "object",
+                  "properties": {
+                    "area_tag_province": { "type": ["string", "null"] },
+                    "area_tag_district": { "type": ["string", "null"] },
+                    "area_tag_sub_district": { "type": ["string", "null"] },
+                    "area_tag_landmark": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["main", "retention_outcome"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "call_event_detection": {
+      "type": "string",
+      "enum": [
+        "Market-Driven Events (เหตุการณ์ทางการตลาด)",
+        "Crisis & Emergency Events (เหตุการณ์วิกฤตหรือภัยพิบัติ)",
+        "Campaign-Drvien Events (เหตุการณ์ด้านเคมเปญต่างๆของบริษัท)",
+        "Technology & Service Events (เหตุการณ์ด้านเทคโนโลยี/บริการ)",
+        "True-DTAC Merger(การรวมกิจการของ True และ ดีแทค)",
+        "Emerging or Undefined Events (เหตุผลที่ยังไม่สามารถจัดกลุ่มได้)"
+      ],
+      "description": "Determine what caused the client to call: Market-Driven Events (เหตุการณ์ทางการตลาด), Crisis & Emergency Events (เหตุการณ์วิกฤตหรือภัยพิบัติ), Campaign-Drvien Events (เหตุการณ์ด้านเคมเปญต่างๆของบริษัท), Technology & Service Events (เหตุการณ์ด้านเทคโนโลยี/บริการ), True-DTAC Merger(การรวมกิจการของ True และ ดีแทค), or Emerging or Undefined Events (เหตุผลที่ยังไม่สามารถจัดกลุ่มได้)."
+    },
+    "recommendation": {
+      "type": "string",
+      "description": "Suggestion on how to keep the client loyal to the brand. Use empty string if unable to provide a recommendation."
+    }
+  },
+  "required": ["product", "call_event_detection", "recommendation"]
+}

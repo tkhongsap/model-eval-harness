@@ -1,0 +1,16 @@
+# Deliberately separate from the repo's root requirements.txt.
+#
+# The root file is pinned to True's EXACT production versions (pandas==2.3.3,
+# numpy==2.3.4, openpyxl==3.1.5) because tests/test_differential.py imports
+# production's real FactCheckerModule and compares it class by class. Those pins are
+# load-bearing: under pandas 3.x the dtype=='object' guard in pre_process (:734,:738)
+# is False, normalisation never fires, and call_result accuracy collapses from 0.75 to
+# 0.25. Adding an unrelated dependency there widens the resolver's search space and
+# risks it moving a pin to satisfy `openai`, which would silently change what the
+# differential test compares against.
+#
+# Generation and scoring are also installed at different times by different people:
+# scoring runs wherever the differential test runs, generation only where a key exists.
+#
+# Same reasoning, and the same file, as scripts/openrouter-smoketest/requirements.txt.
+openai>=1.0

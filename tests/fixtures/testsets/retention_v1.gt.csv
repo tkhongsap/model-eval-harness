@@ -1,0 +1,23 @@
+call_id,phone_number,product,call_result,main,secondary,third
+5001,0810000001,postpaid,save,network,,
+5002,0810000002,tol,churn,promotion related,,
+5003,0810000003,postpaid,save,save cost,,
+5004,0810000004,tvs,churn,dissatisfied service,,
+5005,0810000005,postpaid,churn,contract end,device promotion related,
+5006,0810000006,postpaid,churn,post to pre,,
+5007,0810000007,postpaid,save,promotion related,,
+5008,0810000008,postpaid,save,promotion related,,
+5009,0810000009,postpaid,churn,promotion related,,
+5010,0810000010,postpaid,churn,other,,
+5011,0810000011,postpaid,churn,network,,
+5012,0810000012,tvs,churn,save cost,,
+5013,0810000013,postpaid,churn,down sell not success,promotion related,
+5014,0810000014,postpaid,save,network,promotion related,
+5015,0810000015,postpaid,save,sale upsell problem,dissatisfied service,
+5016,0810000016,postpaid,save,save cost,,
+5016,0810000016,tol,churn,save cost,,
+5016,0810000016,tvs,unknown,,,
+5017,0810000017,postpaid,churn,"network, promotion related",,dissatisfied service
+5018,0810000018,unknown,churn,customer reason,,
+5019,0810000019,postpaid,undefined,,,
+5020,0810000020,postpaid,unknown,network,promotion related,contract end
