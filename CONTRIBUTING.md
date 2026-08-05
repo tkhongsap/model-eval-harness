@@ -24,8 +24,8 @@ left standing is the code checking itself. When a test fails:
 ## Before you open a PR
 
 ```bash
-.venv/Scripts/python -m pytest tests/ -q                      # 82 passed, 11 skipped
-TRUE_SOURCE_ROOT=<path> .venv/Scripts/python -m pytest tests/ -q   # 93 passed, 0 skipped
+.venv/Scripts/python -m pytest tests/ -q                      # 451 passed, 11 skipped
+TRUE_SOURCE_ROOT=<path> .venv/Scripts/python -m pytest tests/ -q   # 462 passed, 0 skipped
 ```
 
 **Both modes.** A green standalone run does not prove the differential still agrees,

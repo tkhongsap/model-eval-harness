@@ -3,10 +3,17 @@
 Synthetic Thai call transcripts for comparing two LLMs on True Corp's **Retention**
 call-analysis app. Twenty items, twenty-two scored rows, no real customer data.
 
+**Everything below describes `retention_v1` unless it says otherwise.** A second pack,
+`retention_v2` — 100 items, 108 scored rows — now sits in this directory and has its own
+section at the end. `retention_v1` is **frozen**: Experiments 1 and 2 cite it, so nothing
+this document says about it moves.
+
 | File | What it is |
 |---|---|
 | `retention_v1.jsonl` | The testset. One JSON object per line, `RET-01` … `RET-20`. UTF-8, **no BOM**, LF only. |
 | `retention_v1.gt.csv` | Ground truth flattened to the scorer's grain — one row per `(call_id, phone_number, product)`. 22 rows. |
+| `retention_v2.jsonl` | The 100-item pack, `RET-01` … `RET-100`. Same contract, same encoding rules. Its first 20 items are byte-identical to `retention_v1.jsonl`. See [The v2 pack](#the-v2-pack--retention_v2). |
+| `retention_v2.gt.csv` | v2 ground truth at the same grain. 108 rows. |
 | `VOCABULARIES.md` | Label vocabularies, provenance and the D1–D14 divergence register. The authority for what a label means. |
 | `block_a_clear.jsonl`, `block_b_thai.jsonl`, `block_c_tiebreak.jsonl`, `block_d_escape.jsonl` | The pre-merge drafts. Superseded by `retention_v1.jsonl`; kept only for diff history. **Do not score against them** — they were never run through the loader and fail `validate()` in 155 places. |
 
@@ -231,3 +238,98 @@ no duplicates; **0** reason spans that occur only on `เจ้าหน้า�
 `retention_v1.jsonl` sha256 `c367a478d89bb047acc1ea5806fc36b75b0b9f561b62a264aa0c2188493b2b0f`
 — editing a transcript is the one operation that can silently break the substring check, so
 re-run the validator after any edit.
+
+---
+
+## The v2 pack — `retention_v2`
+
+**100 items, 108 ground-truth rows.** Built 2026-08-05. The plan, the arguments made
+*against* building it, and the as-built audit are in `docs/testset-v2-plan.md`.
+
+`RET-01` … `RET-20` are the v1 items **copied verbatim**: the first 20 lines of
+`retention_v2.jsonl` hash to `c367a478…`, which is the sha256 of the whole of
+`retention_v1.jsonl` above. `RET-21` … `RET-100` are new. `retention_v1.*` itself is
+untouched, so Experiments 1 and 2 stay reproducible against it.
+
+Same contract, enforced by the same `validate()`: every label owes a byte-exact
+`ev_<dim>:<label>` span from its own transcript and a `file:line` `rule_<dim>:<label>`
+citation; a reason span must be customer speech; UTF-8, no BOM, LF only.
+
+| | v1 | v2 |
+|---|---:|---:|
+| items | 20 | 100 |
+| scored rows | 22 | 108 |
+| `call_id` | 5001–5020 | 5001–5099, 5100 |
+| `phone_number` | `0810000001`–`0810000020` | `0810000000`–`0810000099` |
+
+**The `08100000xx` block is fully consumed at 100 items.** A 101st item requires widening
+`PHONE_PATTERN`, which is one of the three controls keeping customer identifiers out of
+git — a deliberate, reviewed change, never a convenience.
+
+### What it buys: the support-1 classes are gone
+
+The six reason classes sitting at **support 1** in v1 — the ones the Limitation section
+above warns cannot separate two models — are gone. Same 11 classes, minimum support **6**:
+
+| Class | v1 | v2 | | Class | v1 | v2 |
+|---|---:|---:|---|---|---:|---:|
+| `promotion related` | 8 | 16 | | `post to pre` | **1** | 10 |
+| `network` | 5 | 14 | | `other` | **1** | 10 |
+| `save cost` | 4 | 13 | | `sale upsell problem` | **1** | 10 |
+| `dissatisfied service` | 4 | 12 | | `contract end` | 2 | 9 |
+| `device promotion related` | **1** | 10 | | `customer reason` | **1** | 8 |
+| | | | | `down sell not success` | **1** | 6 |
+
+Counted from `retention_v2.gt.csv` directly, comma-splitting `main`/`secondary`/`third`,
+not copied from the build plan.
+
+### Known limitation — the `other` class can be passed by keyword
+
+**Eight of the ten items asserting `other` are flood calls** (`น้ำท่วม`); the remaining two
+are the TruePoint/dtac-reward pair. The transcripts are not near-duplicates (max pairwise
+6-gram Jaccard 0.19) and their products and outcomes vary, but **a model can score the
+entire class by learning "flood → `other`" without learning the class** — the same
+lookup-not-comprehension over-crediting the 18%-literal-span note above records for v1,
+and this pack exists to avoid it. `prompt.py:4380` enumerates two further `other` cases
+(`ลูกค้าอยู่ๆเปลี่ยนใจ ไม่ยกเลิกแล้ว`, and the rewards case) that are untested or barely tested.
+**Fix before this class is quoted:** re-voice 2–3 flood items as changed-mind or rewards
+variants.
+
+Two further as-built defects are recorded rather than fixed, both in
+`docs/testset-v2-plan.md`: one near-duplicate pair (RET-36 / RET-65, 6-gram Jaccard 0.243
+against a mean of 0.080) and 55 of 100 transcripts converging on the same closing.
+
+### What v2 does not change
+
+Everything in "The Thai was DRAFTED BY AN LLM" and "Limitation — what this measures, and
+what it does not" applies unchanged. Native-speaker sign-off is still outstanding, the
+Thai is still an LLM's idea of a Thai call, production is still handed **audio** while
+this pack is handed clean pre-tagged text, and `RECONCILED` is still `NO`. Five times the
+items does not touch any of those.
+
+### Verification
+
+```bash
+# structural + label contract
+python -c "import sys; sys.path.insert(0,'src'); \
+from evalgen.testsets import load_testset, validate; \
+print(validate(load_testset('tests/fixtures/testsets/retention_v2.jsonl', app='retention')))"
+
+# pack-level check: testset, ground truth and prompt together. No key, no network, no cost.
+python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_v2.jsonl \
+    --gt tests/fixtures/testsets/retention_v2.gt.csv
+```
+
+Expected: `[]`, then `OK. No problem found.` over **100 items / 108 rows** and families
+`clear=30, thai_linguistic=30, tiebreak=17, multislot=10, escape=13`. Both were run at
+the time this section was written.
+
+Recorded in `docs/testset-v2-plan.md` and verified independently of the authoring agents:
+100 unique ids, `call_id`s and `phone_number`s; **369 evidence spans all byte-exact, every
+reason span on a `ลูกค้า:` line**; 0 of 1,807 turns over the 120-character limit;
+`retention_v1.*` byte-identical to HEAD.
+
+`retention_v2.jsonl` sha256 `9c91b036b7b4f102bc3683ea1a73050597a62677d40294b12bad32da844cc039`.
+The same warning applies as to v1: editing a transcript is the one operation that can
+silently break the substring check, so re-run the validator after any edit.

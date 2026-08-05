@@ -43,10 +43,22 @@ write the answer down in `WORKED-COMPUTATION.md`.
 - **The differential test skips without `TRUE_SOURCE_ROOT`.** Correct: it refuses to
   compare against a production whose normalisation has silently stopped firing.
 
+## Two packages, not one
+
+`src/evalharness/` scores. `src/evalgen/` is the generation half that produces what it
+scores: the OpenRouter call loop, the single decision point for `parse_ok`, the flatten
+that changes the grain to one row per product, the decoding deviations, and the report.
+Entry point is `scripts/evalgen.py`; each module is listed with the reason it matters in
+[AGENTS.md](./AGENTS.md), "Key Files".
+
+The boundary between the two is what to be careful with. `evalharness` imports no model
+client, and `tests/test_boundary.py` fails if that changes, so an `import openai` added
+to the scoring path "just for a moment" breaks a build rather than a rule.
+
 ## Running things
 
 ```bash
-.venv/Scripts/python -m pytest tests/ -q          # 82 passed, 11 skipped
+.venv/Scripts/python -m pytest tests/ -q          # 451 passed, 11 skipped
 ```
 
 Full detail, including how to make the differential test actually run, is in

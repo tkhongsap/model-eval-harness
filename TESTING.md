@@ -9,7 +9,7 @@ python -m venv .venv
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected: **431 passed, 11 skipped**.
+Expected: **451 passed, 11 skipped**.
 
 The 11 skips are correct and expected standalone. See "Two modes" below.
 
@@ -20,8 +20,8 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Expected |
 |---|---|---|
-| **Standalone** | `pytest tests/ -q` | **431 passed, 11 skipped** |
-| **With production source** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | **442 passed, 0 skipped** |
+| **Standalone** | `pytest tests/ -q` | **451 passed, 11 skipped** |
+| **With production source** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | **462 passed, 0 skipped** |
 
 ```bash
 # Windows, pointing at the vendored archive in life-os
@@ -36,7 +36,7 @@ identically; `tests/production_ref.py`'s own default still resolves to a directo
 *outside* the repo, so standalone `pytest tests/ -q` keeps skipping the differential
 tests unless `TRUE_SOURCE_ROOT` is set explicitly -- that default was left alone
 deliberately rather than widened to auto-discover the in-repo copy, so the documented
-"431 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
+"451 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
 
 The skipped tests are the differential check against production's real scorer, and the
 cross-check of our pins against production's `requirements.txt`. **The version pin gate
@@ -191,12 +191,19 @@ a clean sheet.
 
 ```bash
 .venv/Scripts/python scripts/evalgen.py stability --arm pin-proof \
-    --model qwen/qwen3.6-27b --provider Alibaba \
+    --model qwen/qwen3.6-27b --provider Morph \
     --items RET-01,RET-11,RET-16 --repeats 3
 ```
 
 Read the line `prompt_tokens fingerprint  N/N items returned exactly one value`. It
 must be `3/3`.
+
+**CORRECTED 2026-08-05: this command used to pin `Alibaba`, and copying it was a trap.**
+Alibaba is the endpoint whose constrained decoder is broken (EXPERIMENTS.md run 1.2, and
+below), so a reader running the old line got 20 of 20 `schema_violation` and would have
+concluded the *model* was broken. `Morph` is what every run since 1.4 has used for
+`qwen/qwen3.6-27b`. The Alibaba result is not deleted, because it is what this section
+teaches — it is the worked example at the end.
 
 **Why that line and not the provider histogram.** MEASURED 2026-08-04: a 60-call
 `qwen/qwen3.6-27b` run was served by two backends under one model id. One answered
@@ -221,6 +228,16 @@ that would read as evidence.
 being quietly served by a second build. Measured against `qwen/qwen3.6-27b`: of nine
 listed endpoints, four are refused outright by `require_parameters` because they cannot
 honour both `structured_outputs` and `seed`.
+
+**The worked example: Alibaba.** Unpinned (EXPERIMENTS.md run 1.1), `qwen/qwen3.6-27b`
+returned 50/60 ok with its schema violations spread across two backends, and nothing on
+disk could say which backend produced them. Pinned to Alibaba (run 1.2) the same request
+returned **20 of 20 `schema_violation`**, every one a bare JSON *number* literal where
+the schema root is `object`, `finish_reason: stop`, no truncation. Pinned to Morph
+(run 1.4), 60/60 ok — as it also is from Chutes and CoreWeave. The defect did not change
+between those runs; the pin made it **attributable**, which is the whole argument for
+pinning. An arm that cannot name its backend cannot tell an endpoint defect from a model
+defect, and will file the first as the second.
 
 ### 8. `v9_16_e1` changes exactly one thing, and the thing it changes is measurable
 
@@ -248,11 +265,27 @@ Reproduced against the two 2026-08-04 runs:
 
 | Run | Model | Invented | Example-derived | Rate |
 |---|---|---|---|---|
-| `20260804-222943Z-incumbent` | gemini-2.5-flash | 42 | 18 | 0.429 |
-| `20260804-224050Z-candidate` | qwen3.6-27b | 30 | 19 | 0.633 |
+| `20260804-222943Z-incumbent` | gemini-2.5-flash | 39 | 15 | 0.385 |
+| `20260804-224050Z-candidate` | qwen3.6-27b | 29 | 18 | 0.621 |
 
-`save cost` alone is 13 of Qwen's 30. Those two rows are asserted as literals: if either
-moves, the helper changed and the baseline did not.
+**CORRECTED 2026-08-05: this table read 42 / 18 / 0.429 and 30 / 19 / 0.633.** Neither
+run log moved, and neither can — they are frozen artifacts. What moved is what they are
+measured *against*. RET-11's ground truth gained `secondary = dissatisfied service`
+(licensed by `prompt.py:4361`, evidence span `ไม่มีใครตามเรื่องเลย`), and a slot counts as
+invented into only while the ground truth leaves it **blank** (`fabrication.py:149-151`),
+so call 5011's `secondary` stopped being a blank slot. Gemini put `dissatisfied service`
+there in all three replicates and so lost 3 from both counters (42-3, 18-3); Qwen has
+only one `parse_ok` replicate at 5011 and lost 1 (30-1, 19-1). Both figures were
+re-derived from the logs, not back-fitted until the suite went green.
+
+`save cost` alone is 13 of Qwen's 29 — **unmoved** by that correction, which matters more
+than the headline: what changed was the denominator, not the finding this variant was
+built to test.
+
+Those two rows are asserted as literals in `tests/test_fabrication.py`. If either moves,
+**either** the helper changed **or** the ground truth did, and the two are told apart by
+which artifact has a diff. The ground-truth exception is spent above; a move with no
+ground-truth change is the helper.
 
 **`v9_16_e1` depends on `decoding.decoding_schema` deviation 2.** The committed port
 `schemas/retention.json` does not allow `""` in a `reason` enum, although every
@@ -263,6 +296,61 @@ that deviation every copying model would land in `schema_violation` and an e1 ru
 be measuring the grammar rather than the example. Both facts are pinned:
 `test_e1_example_is_legal_under_the_grammar_that_is_actually_sent` and
 `test_e1_example_fails_the_committed_port_schema_at_exactly_the_blanked_slots`.
+
+### 9. The pack is an argument, and there are two of them
+
+```bash
+.venv/Scripts/python scripts/evalgen.py check          # retention_v1, the default
+.venv/Scripts/python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_v2.jsonl \
+    --gt tests/fixtures/testsets/retention_v2.gt.csv
+```
+
+`--testset` / `--gt` default to `retention_v1.*` (`cli.py:131-132`), so a command with
+neither flag scores the 20-item pack. The same pair is accepted by `baseline` and
+`stability`, and by `compare` to override the paths a run recorded.
+
+| Pack | Items | Scored rows | Status |
+|---|---:|---:|---|
+| `retention_v1` | 20 | 22 | **Frozen.** Experiments 1 and 2 cite it, so it does not move. |
+| `retention_v2` | 100 | 108 | Current. `RET-01`…`RET-20` byte-identical to v1; `RET-21`…`RET-100` new. |
+
+Verified above by running `check` against each: 100 items, 108 rows, `OK. No problem
+found.` The scored row is `(call_id, phone_number, product)` in both packs, which is why
+neither row count equals its item count.
+
+What v2 buys: the six reason classes sitting at **support 1** in v1 are gone — v2's
+minimum reason-class support is **6**, across the same 11 classes, so a single miss no
+longer swings a class's recall from 1.00 to 0.00. What it does not buy is independence.
+It is not a holdout (same author, same procedure), and its `other` class is 80% flood
+scenarios, so that class can be passed by keyword. Both are recorded in
+`tests/fixtures/testsets/README.md` and `docs/testset-v2-plan.md`; read them before
+quoting a v2 per-class number.
+
+### 10. Every run is indexed, because `out/` is not
+
+```bash
+.venv/Scripts/python scripts/run_index.py                   # writes RUNS.md
+.venv/Scripts/python scripts/run_index.py --check           # exit 1 if RUNS.md is stale
+.venv/Scripts/python -m pytest tests/test_run_index.py -q   # 20 passed
+```
+
+`out/` is gitignored deliberately — run artifacts carry model output verbatim
+(`cli.py:135-137`) — and the consequence is that every `run_id` quoted in
+`EXPERIMENTS.md` points into a directory a reader who clones this repository does not
+have. `RUNS.md` is the **only committed record that those runs existed**: one row per
+run with arm, model requested, provider, prompt id, outcome counts, pin proof, cost, and
+the testset and scorer shas.
+
+It carries provenance and no payload, which is precisely why it can be committed while
+`out/` stays ignored: the generator reads `run.json` only and never `run.jsonl`, where
+the model's text lives. It also recomputes nothing — every column is copied out of what
+a run recorded at the time, because a second computation is a second answer to reconcile.
+
+`--check` regenerates and diffs instead of trusting. A committed index nothing verifies
+is a claim about the past that quietly stops being true. Dry-run directories have no
+`run.json` and are listed as a footnote rather than dropped, so the index agrees with the
+directory listing for a reason the reader can see.
 
 ## Continuous Integration
 
