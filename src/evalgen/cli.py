@@ -58,8 +58,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -99,10 +100,16 @@ from evalharness.compare import (
 )
 from evalharness.keys import hmac_key
 from evalharness.labelspaces import RETENTION
-from evalharness.metrics import score_call_result, score_product, score_reason
+from evalharness.metrics import (
+    DimensionResult,
+    score_call_result,
+    score_product,
+    score_reason,
+)
 from evalharness.records import Record, from_row
 
 __all__ = [
+    "COST_PER_CORRECT_DIMENSION",
     "EXIT_OK",
     "EXIT_PROBLEMS",
     "EXIT_REFUSED",
@@ -146,6 +153,27 @@ _SCORERS = (
 # line, the transcript/audio repair and the opening of the product rules, which is the
 # part a reviewer can actually check against production.
 DRY_RUN_PROMPT_LINES = 40
+
+# Which scored dimension defines "a correct answer" for the cost-per-correct figure.
+#
+# `call_result` and NOT a new notion of correctness invented for a cost table. It is the
+# label the Retention app acts on, it is first in `_SCORERS`, and its one-vs-rest
+# true-positive count is already the arithmetic section 5's weighted recall is built
+# from -- so the ratio divides a number the report prints two sections earlier rather
+# than one only this line knows about.
+#
+# Named as a constant so `report._performance_section` can print WHICH dimension it
+# divided by. A cost-per-correct whose definition of correct is not stated is a ratio
+# nobody can reproduce, and the three dimensions here would give three different answers
+# (`metrics.py:11-13`: three dimensions, three denominators).
+#
+# It must stay a SINGLE-LABEL dimension. `_correct_answers` counts true positives, and
+# that count is a count of correct ROWS only while a row can produce at most one -- which
+# holds for `call_result` and `product` and does NOT hold for `reason`, where one row
+# carries up to three labels and a row half right would contribute a true positive
+# anyway. Pointed at `reason` this constant would silently start counting something
+# else and the ratio would keep printing.
+COST_PER_CORRECT_DIMENSION = "call_result"
 
 
 # ======================================================================== errors
@@ -545,6 +573,100 @@ def _score(gt: Sequence[Record], pred: Sequence[Record]) -> dict[str, object]:
     }
 
 
+# ================================================================== the cost accounting
+#
+# `run.jsonl` has carried tokens, cost and latency per call since the runner was
+# written, and the xlsx export prints them on its "Per call" sheet -- but the TEXT
+# report showed none of it, so a reader of `out/reports/compare-*.txt` could see which
+# mechanisms an arm passed and nothing at all about what asking it cost. These four
+# helpers are the whole of the addition; `report.py` renders them and computes none of
+# them, which is the same division of labour every other number in that file follows.
+
+
+def _token_totals(rows: Sequence[ItemResult]) -> tuple[int, int, int]:
+    """(prompt, completion, reasoning) summed over every row, a missing count as zero.
+
+    Zero for a missing value is safe HERE and is not safe for the cost, and the
+    difference is worth stating because the two lines look identical. These are sums
+    with no denominator attached: a row that reported no usage contributes nothing
+    whether it is skipped or added as zero, and the total is a floor either way. The
+    cost cannot be treated that way, because a zero there is a positive claim that the
+    call was free -- so `_cost_totals` returns the count of the rows it could not see.
+
+    `reasoning_tokens` is the one most often absent: `client.py:271` reads it off
+    `usage.completion_tokens_details`, which a backend without a reasoning trace does
+    not send. It is a BREAKDOWN of the completion tokens and is therefore already
+    inside the second number, never to be added to it -- `report._performance_section`
+    prints that in the report, where the person adding two columns together is.
+    """
+    return (
+        sum(row.prompt_tokens or 0 for row in rows),
+        sum(row.completion_tokens or 0 for row in rows),
+        sum(row.reasoning_tokens or 0 for row in rows),
+    )
+
+
+def _cost_totals(rows: Sequence[ItemResult]) -> tuple[float, int]:
+    """(cost in USD, how many rows reported no cost at all). The pair, never the sum.
+
+    The sum alone is `runner.total_cost()` restricted to these rows, and it is a LOWER
+    BOUND for the reason that method gives (`runner.py:411-421`): OpenRouter reports
+    `usage.cost` only for the providers that supply it, `client.py:272` keeps a missing
+    value as None rather than zero, and a None is skipped rather than counted free.
+
+    A floor whose coverage is invisible is worse than no number, because it is quotable:
+    0.02 USD over 40 calls and 0.02 USD over the 3 calls that happened to report both
+    print as 0.02. So the count travels with the total, all the way onto the page.
+    """
+    reported = [row.cost for row in rows if row.cost is not None]
+    return (sum(reported), len(rows) - len(reported))
+
+
+def _latency_stats(rows: Sequence[ItemResult]) -> tuple[float | None, float | None]:
+    """(median, max) request seconds over EVERY call, including the ones that died.
+
+    Every call, not the parsed ones. A median computed over successes alone gets better
+    as the failures get worse, which is the wrong direction for the one number whose job
+    is to say what this arm cost in wall clock. A 120s timeout is 120 seconds that were
+    spent, and `outcome_counts` in section 3 is what says how many rows were timeouts.
+
+    `ItemResult.latency_s` is the LAST attempt's request time with backoff sleeps
+    excluded (`runner.py:236-238`), so a retried item reports the attempt that answered
+    rather than the wall clock it occupied. That is the runner's definition and this
+    function does not second-guess it; the report states it so the number is read as
+    what it is.
+
+    (None, None) for no rows, rather than (0.0, 0.0). A zero-second median is a claim
+    about a run that did not happen.
+    """
+    values = [row.latency_s for row in rows]
+    if not values:
+        return (None, None)
+    return (statistics.median(values), max(values))
+
+
+def _correct_answers(dimensions: Mapping[str, object], dimension: str) -> int:
+    """How many rows the named dimension got RIGHT, off the scorer's own result object.
+
+    `sum(c.tp for c in DimensionResult.classes)` -- and for a one-vs-rest split over a
+    single-label dimension that sum IS the count of correct rows, because a row can
+    contribute a true positive to at most one class: `tp` for class `c` needs the ground
+    truth to be `c` and the prediction to be `c`, and a row has one of each. Rows whose
+    ground-truth label sits outside the label space contribute nothing, which is right:
+    a label the scorer cannot score is not one an arm can get right.
+
+    Zero for a dimension that was not scored, rather than a guess. `report` prints "0
+    correct rows, and a cost divided by zero correct answers is not a number" rather
+    than a ratio, so an unscored dimension cannot become a cost per correct answer that
+    happens to look plausible.
+    """
+    result = dimensions.get(dimension)
+    if not isinstance(result, DimensionResult):
+        return 0
+    true_positives, _fp, _fn, _tn = result.totals()
+    return true_positives
+
+
 def arm_summary(
     loaded: LoadedRun,
     gt: Sequence[Record],
@@ -564,7 +686,46 @@ def arm_summary(
     `parse_ok=True`, scores a product true positive per ground-truth product, and moves
     nothing in coverage (`flatten.py`, KNOWN CONSEQUENCE). Counted from the payloads
     rather than from the flattened rows so it cannot be confused with a parse failure.
+
+    **Tokens, cost and latency are run totals; cost per correct answer is not.** The
+    first three describe what was spent, so they cover every row the run made -- the
+    replicates were paid for whether or not they were scored. The ratio cannot: its
+    denominator is `dimensions`, which is one replicate, so its numerator has to be that
+    same replicate's cost or the figure is `repeats` times the number an app owner would
+    act on. Production makes one call per item.
+
+    **Which replicate, read off the log rather than assumed to be 1.** `dimensions` is
+    scored on `per_replicate[0]`, and `replicate_records` returns
+    `[per_replicate[key] for key in sorted(per_replicate)]` -- index 0 is the LOWEST
+    replicate number present, which is 1 in every log this CLI writes and need not be in
+    a log that was filtered by hand. Taking the minimum makes the numerator select the
+    same calls the denominator scored by construction, instead of by a convention that
+    is true today. A hardcoded 1 against a log starting at replicate 2 would divide an
+    empty cost by a real hit count and print 0.000000 USD per correct answer.
     """
+    rows = loaded.result.results
+    dimensions = _score(gt, per_replicate[0])
+
+    prompt_tokens, completion_tokens, reasoning_tokens = _token_totals(rows)
+    cost_usd, calls_without_cost = _cost_totals(rows)
+    latency_median, latency_max = _latency_stats(rows)
+
+    scored_replicate = min((row.replicate for row in rows), default=None)
+    scored_rows = [row for row in rows if row.replicate == scored_replicate]
+    scored_cost, scored_without_cost = _cost_totals(scored_rows)
+    correct = _correct_answers(dimensions, COST_PER_CORRECT_DIMENSION)
+
+    # Two ways this ratio must refuse to exist, and they are different findings, so the
+    # report is handed None and the counts rather than a number and a footnote:
+    #   * no correct answer -- a division by zero, and "infinite" is not a cost;
+    #   * no row of the scored replicate reported a cost at all -- the numerator is
+    #     UNKNOWN, and 0.000000 USD per correct answer reads as a free model.
+    # A partially reported numerator is allowed through and is a lower bound, which is
+    # what the whole section says of every number in it.
+    cost_per_correct = None
+    if correct and scored_without_cost < len(scored_rows):
+        cost_per_correct = scored_cost / correct
+
     return ArmSummary(
         arm=loaded.arm,
         model=loaded.result.config.model,
@@ -572,7 +733,7 @@ def arm_summary(
         observed_models=loaded.result.observed_models(),
         outcome_counts=loaded.result.outcome_counts(),
         n_flip=n_flip(per_replicate),
-        dimensions=_score(gt, per_replicate[0]),
+        dimensions=dimensions,
         replicates=loaded.result.config.repeats,
         decoding=loaded.decoding,
         answered_nothing=sum(
@@ -580,6 +741,18 @@ def arm_summary(
             for row in loaded.result.results
             if named_no_product(row.payload, parse_ok=row.parse_ok)
         ),
+        calls=len(rows),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        reasoning_tokens=reasoning_tokens,
+        cost_usd_lower_bound=cost_usd,
+        calls_without_cost=calls_without_cost,
+        latency_median_s=latency_median,
+        latency_max_s=latency_max,
+        cost_per_correct_usd=cost_per_correct,
+        cost_per_correct_dimension=COST_PER_CORRECT_DIMENSION,
+        correct_answers=correct,
+        scored_replicate_cost_usd=scored_cost,
     )
 
 
@@ -1299,6 +1472,11 @@ def _footer(
         "  product), so replicates of one item overwrite each other and only the last",
         "  survives. Sections 1 and 4 -- the mechanism verdicts and N_flip -- are the",
         "  ones that read every replicate.",
+        "Section 6 is split on the same line and deliberately. Its token, cost and latency",
+        "  totals cover EVERY replicate, because every replicate was paid for whether or",
+        "  not it was scored. Its cost per correct answer covers REPLICATE 1 alone on both",
+        "  sides of the division, because the denominator is section 5's and a numerator",
+        "  holding the whole bill would report repeats-times the cost of an answer.",
     ]
     if deltas:
         lines.append("Recorded arm differences (expected, not blocking):")

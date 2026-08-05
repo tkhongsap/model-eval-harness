@@ -643,6 +643,10 @@ Current retention wording (`prompt.py:4375-4376`):
 - ก่อนหน้านี้มีเจ้าหน้าที่เสนอโปรโมชั่นราคาลดลงแต่ยังไม่ถูกใจ
 ```
 
+**The boundary against `promotion related` is arbitrated — see "Class-boundary arbitrations",
+Rule A (**D15**).** These two lines are not sufficient on their own: the refusal condition is
+in `prompt.txt:43`, and `ก่อนหน้านี้` is doing more work than it looks like.
+
 ### 1.11 `other`
 
 | Where | Citation |
@@ -700,6 +704,10 @@ Current retention wording (`prompt.py:4379-4381`):
 - เจอภัยพิบัติทางธรรมชาติ เช่น อุทกกภัย, นำ้ท่วม
 ```
 
+**`เหตุผลอื่นๆ` is not a licence — see "Class-boundary arbitrations", Rule B (**D16**).**
+`other` is bounded below by the ten named classes and above by `prompt.py:4326`. A span that is
+not a stated cancellation reason does not become `other` by failing to be anything else.
+
 ### 1.12 `true point, dtac reward` — PROMPT ONLY, NOT A VALID LABEL
 
 **Do not use this value.** It is reason #10 in `prompt.txt` and appears in every historical
@@ -735,6 +743,358 @@ Three independent reasons it cannot be used:
 
 **Rule: a points-or-rewards transcript is labelled `other`.** Cite `prompt.py:4380` alongside
 `prompt.txt:48`.
+
+## Class-boundary arbitrations
+
+Two boundaries inside the 11 values were **under-documented, not undecided**. The text that
+separates them exists in production; it just did not live anywhere an item author would look.
+Boundary A's discriminator was one English sentence in a sibling app's prompt plus **one word**
+of `prompt.py:4376`. Boundary B's upper bound was in `prompt.txt:47` and in the scope clause at
+`prompt.py:4326`, two files away from the class definition it bounds.
+
+Both rulings below are derived from the sources under Provenance. **Nothing here was chosen
+after looking at a model's output or at a score.** The measurement section at the end records
+what the committed runs happened to do, separately and afterwards, and it is corroboration
+only — see the caution at the end of that section.
+
+Both rulings sit inside the precedence in "Which file wins" and depend on it. Two structural
+facts constrain every rule below:
+
+- **Rank is discarded** (**D9**, `fact_checker.py:871-879`). A rule may decide **membership**
+  and nothing else.
+- **Membership is scored per class** (`fact_checker.py:893-902`). An extra label is a false
+  positive for *its own* class and leaves the correct classes undisturbed. So "which labels go
+  on this item" is a decision with a measurable cost, taken once, by the fixture author.
+
+### A — `promotion related` vs `down sell not success`
+
+#### Where the overlap actually is
+
+It is **not** between `prompt.py:4333`'s `ลูกค้าขอส่วนลด` ("the customer asks for a discount")
+and `prompt.py:4375`'s `ลูกค้าไม่ได้โปรโมชั่นราคาลดตามที่ต้องการ` ("the customer did not get the
+price-reduced promotion they wanted"). Those two already differ on their own wording: one is a
+**request**, the other is a **request plus a negative outcome**.
+
+The clause that manufactures the collision is **`prompt.py:4376`**:
+
+```text
+- ก่อนหน้านี้มีเจ้าหน้าที่เสนอโปรโมชั่นราคาลดลงแต่ยังไม่ถูกใจ
+```
+
+"Previously an agent offered a reduced-price promotion but it still was not to the customer's
+liking." Read **without its first word**, that fires on the ordinary shape of every retention
+call: the agent counter-offers, the customer is unimpressed. `ก่อนหน้านี้` is what scopes it.
+
+#### The discriminator, and its three supports
+
+**`prompt.txt:43`** — the only English definition of the class in any source:
+
+```text
+- Definition: Customer asked to lower the price/change plan, but the agent refused or couldn't provide it.
+```
+
+**`prompt.txt:44`** — all four keywords carry the refusal inside the span, and the third carries
+prior contacts:
+
+```text
+- Keywords: ขอลดโปรโมชั่นแล้วแต่เจ้าหน้าที่ก็ลดให้ไม่ได้, ขอเปลี่ยนโปรโมชั่นลดลงเจ้าหน้าไม่ให้, ติดต่อขอลดโปรโมชั่นหลายรอบแล้วก็ทำไม่ได้, ต้องการโปรโมชั่นราคา XXX เจ้าหน้าที่บอกว่าไม่มี
+```
+
+**`prompt.py:4531-4532`** (`prompt_tar_v8`) — **corroboration only, it does not govern**
+(`PORT-NOTES.md` confirms `prompt_v9_16` is the body under test). Cited because it shows the
+same authors writing the same class elsewhere and **bolding the two-part test**:
+
+```text
+- Definition (Eng): Issues related to customers not receiving proper promotions when attempting to down-sell to a cheaper plan or service. **Must involve a specific request from the customer to lower the price or change to a cheaper plan that was refused.**
+- Definition (Thai): ปัญหาที่ลูกค้าไม่ได้โปรโมชั่นราคาลดลงตามที่ต้องการ **ต้องมีการขอให้ลดราคาหรือเปลี่ยนโปรโมชั่นให้ถูกลงอย่างชัดเจนและถูกปฏิเสธ**
+```
+
+**`prompt.py:4335` closes the remaining hole.** The agent's retention offer is disqualified by
+name, and the stated reason is `ไม่ใช่ root cause ของปัญหาเป็นแค่ offer`. `prompt.py:4344`
+repeats the identical exclusion for `save cost`; `prompt.py:4382-4387` restricts all three
+reason ranks to `**ต้องเป็นคำพูดจากฝั่งลูกค้าเท่านั้น**`; and `prompt.py:4326` states the
+field's job — "all stated reasons **for cancellation**". The prompt applies one principle in
+three places: **an in-call counter-offer, and the customer's reaction to it, is not a
+cancellation reason.** `prompt.py:4376` is the one definition where that was left implicit.
+
+#### RULE A
+
+**A1 and A2 are both necessary.** A discount conversation is `down sell not success` only if
+both hold; otherwise it is `promotion related`, or neither.
+
+| | Condition | Cite |
+|---|---|---|
+| **A1** | The **customer** explicitly asked to lower the price or move to a cheaper plan. Customer speech, not the agent's. | `prompt.py:4382-4387`; `prompt.txt:43` |
+| **A2** | The company **refused, or could not provide it**. A reduction that is *granted* and then declined by the customer is the opposite of A2 and fails it. | `prompt.txt:43`; corroborated `prompt.py:4531-4532` |
+
+**A3 selects which limb you are standing on. It is not a third necessary condition.**
+
+| Where the refusal sits | Limb | Status |
+|---|---|---|
+| **Prior to, or independent of, this call's counter-offer** — an earlier call, a shop visit, a rejected app request | `prompt.py:4376` (`ก่อนหน้านี้`), reinforced by `prompt.txt:44`'s `ติดต่อขอลดโปรโมชั่นหลายรอบแล้วก็ทำไม่ได้` | **Arbitrated.** Unambiguous. Worked below on RET-13. |
+| **In-call: the customer asks, this agent flatly refuses, no prior contact** | `prompt.py:4375` + `prompt.txt:43` + `prompt.py:4531-4532` — none of which require priority | **UNARBITRATED.** See open question 6. No item exercises it. |
+
+A3's scope is narrower here than in the arbitration that produced this section, which made
+priority a third necessary condition. It was narrowed because **the sources do not support it
+as one**: `ก่อนหน้านี้` appears on limb `4376` only, and `prompt.txt:43` and `prompt.py:4531`
+both state the class with no priority requirement at all. Narrowing changes no verdict below —
+every item here is settled by A1 and A2 — but it stops the rule condemning a case it has no
+authority over.
+
+**A4 — exactly one of the two fires on a given discount request.** `prompt.py:4375` is
+`prompt.py:4333`'s `ลูกค้าขอส่วนลด` at a different outcome, so taking both labels off one
+request double-counts one fact. Request alone → `promotion related`. Request + refusal →
+`down sell not success`, and `promotion related` does **not** ride along. `promotion related`
+may still appear on the item, but only on a **span of its own** — an expired promo, a price
+complaint, a competitor comparison. This is the same discipline as "Collisions between outcome
+keywords and reason keywords": one span, one field, one label.
+
+**A5 — the residue goes nowhere.** A customer who rejects the agent's in-call counter-offer
+(`ไม่เอา`, `ก็ยังไม่คุ้ม`, `ไม่รับ`) has produced **no reason label at all** from that span. It
+is excluded material under `prompt.py:4335` / `:4344`, it is not a cancellation reason under
+`prompt.py:4326`, and it is on the wrong side of `prompt.py:4382-4387` because it exists only
+as a reply to agent speech. It is **not** `other` either — see Rule B. It is usually
+`call_result` material.
+
+**Not used, deliberately:** the position of either class in any list. Four sources order the
+reasons four different ways (**D12**), and an ordinal-position argument is an unacceptable
+citation form. The discriminator above is textual.
+
+#### RULE A applied — the positive case, RET-13
+
+`retention_v1.jsonl` RET-13, `call_id` 5013, Postpaid. **This is the item that exercises the
+rule's positive side**, and its ground truth was authored before this ruling existed.
+
+| Turn | Speaker | Span | Bearing |
+|---|---|---|---|
+| 4 | customer | `โปรมันแพงไป เดือนละเจ็ดร้อยกว่า` | `promotion related` on a **span of its own** — `ราคาโปรโมชันแพง` / `แพคเกจราคาสูง`, `prompt.py:4333`. This is A4 satisfied, not violated. |
+| 7 | customer | `เมื่อเดือนที่แล้วเนี่ย พี่โทรมาแล้วรอบนึงนะ` | Establishes a **prior contact**. |
+| 8 | customer | `พี่ก็ขอให้เขาลดให้อ่ะ เขาบอกลดไม่ได้ไง` | **A1 and A2 in one span.** Asked; was refused. This is the item's `ev_reason:down sell not success`. |
+| 10 | customer | `แล้วรอบก่อนหน้านั้นอีก ก็โทรมาถามเหมือนกัน ได้คำตอบเดิมเลยค่ะ` | A second prior contact — `prompt.txt:44`'s `ติดต่อขอลดโปรโมชั่นหลายรอบแล้วก็ทำไม่ได้` in shape. Puts the item squarely on the `prompt.py:4376` limb. |
+| 13 | **agent** | `ตอนนี้มีตัวสี่ร้อยเก้าสิบเก้าค่ะ` | In-call counter-offer. Excluded by `prompt.py:4335`. |
+| 14, 16, 18 | customer | `ทำไมพึ่งมาให้ตอนนี้ล่ะคะ` … `ไม่เอาแล้วค่ะ` … `ไม่ค่ะ ไม่รับ` | **A5 residue.** No reason label. The ground truth carries no `third`, which is correct. |
+
+**RET-13 satisfies A1, A2 and the `4376` limb of A3, and its `promotion related` sits on a
+separate span exactly as A4 requires. Its ground truth is confirmed correct.**
+
+#### RULE A applied — RET-02 and RET-12
+
+**RET-02** (`call_id` 5002, TOL). Turn order is what decides it.
+
+| Turn | Speaker | Span | Bearing |
+|---|---|---|---|
+| 4 | customer | `โปรโมชั่นหมดแล้ว ไง แล้วก็ไม่มีใครแจ้งพี่เลยสักคน` | `promotion related` — `โปรหมดอายุ`, `prompt.py:4333`; verbatim on `prompt.txt:8`. **Pre-offer.** |
+| 6 | customer | `พี่ไปถามที่ช็อป เขาบอกตัวนั้นปิดไปแล้ว` | The strongest prior-contact candidate in the item, and it **fails A1** — she asked after her old plan, not for a price reduction. `prompt.py:4333`'s `อยากย้ายกลับไปโปรก่อนหน้านี้` covers it: still `promotion related`. |
+| 7, 9 | **agent** | `ราคาลดลงค่ะ` … `ลดเดือนละร้อยห้าสิบค่ะ` | First counter-offer. Excluded by `prompt.py:4335`. |
+| 10 | customer | `มีโปรโมชั่นถูกกว่านี้ไหม เจ้าอื่นเขาให้ถูกกว่านี้อีกนะคะ` | **A1 satisfied.** Verbatim on `prompt.txt:8`. |
+| 12 | **agent** | `ได้ค่ะ พิเศษสุดลดได้อีกห้าสิบ รวมเป็นสองร้อยเลยค่ะ` | The discount was **granted**. **A2 fails**, in the strongest possible way. |
+| 13 | customer | `ไม่ค่ะ ไม่รับ พี่สมัครเจ้าอื่นไว้แล้ว` | The **customer** refuses. A5 residue — no reason label; this is `call_result` material. |
+
+**RET-02 is `promotion related`. A2 fails; A1 alone never was enough. Its ground truth
+(`main: promotion related`, no secondary, no third) is confirmed correct.**
+
+**RET-12** (`call_id` 5012, TVS).
+
+| Turn | Speaker | Span | Bearing |
+|---|---|---|---|
+| 2 | customer | `ผมไม่ค่อยได้ดูแล้วอ่ะครับ` | `save cost` — `ลูกค้าไม่ได้ใช้งานแล้ว`, `prompt.py:4342`. **Pre-offer, before any price is named.** |
+| 4 | customer | `สัญญาหมด ๓๑ ธันวาคม ๒๕๖๗ แล้วอ่ะครับ ไม่อยากต่อสัญญาแล้ว` | `contract end` keyword hit, killed by `prompt.py:4348` — an annual TVS package is neither `โปรโมชันผูกเครื่อง` nor `สัญญาเบอร์สวย`. |
+| 5 | **agent** | `เดือนละพันสองร้อยห้าสิบ` | First offer. |
+| 6 | customer | `มันเท่าเดิมเลยนะครับ ไม่ได้ลดเลยเหรอ` | A1 satisfied — but it exists **only as a reply to turn 5**. |
+| 7 | **agent** | `ถ้าต่อสองปีจะเหลือเดือนละเก้าร้อยเก้าสิบค่ะ` | Reduction **granted** (1250 → 990). |
+| 8 | customer | `บ้านผมดูแต่ยูทูบไง กล่องแทบไม่ได้เปิดเลยอ่ะ` | `save cost` again, `prompt.py:4342`. This is the ground truth's evidence span. |
+| 9 | **agent** | `งั้นลดเหลือแพ็กเกจเล็กเดือนละห้าร้อยห้าสิบ` | Reduction **granted** again (→ 550). |
+| 10 | customer | `ก็ยังไม่คุ้มอ่ะครับ ปีนึงก็หกพันกว่า` | Literally `prompt.py:4376`'s `แต่ยังไม่ถูกใจ` — and A5 residue, because every offer it evaluates is agent speech from this call. |
+
+Three price reductions offered, **zero refused**. A2 fails.
+
+Rule A also disposes of the adjacent question: does turn 6 trigger `prompt.py:4333`'s
+`ลูกค้าขอส่วนลด`? **No — A5.** It is an offer evaluation, not a stated reason for cancelling,
+and `prompt.py:4335` excludes by name the offer it evaluates. What survives is the label stated
+**before any offer existed**: `save cost` on `prompt.py:4342`'s first limb,
+`ลูกค้าไม่ได้ใช้งานแล้ว`. `prompt.py:4345`'s CRITICAL exclusion
+(`การที่ลูกค้าขอลดราคาโปรโมชันหรืออยากได้โปรถูก ยังไม่ใช่ save cost`) does **not** bite,
+precisely because the label does not rest on the price limb.
+
+**RET-12 falls on neither side of boundary A. `save cost` alone survives, and its ground truth
+is confirmed correct.**
+
+### B — `other` is not an unbounded catch-all
+
+#### The finding
+
+`prompt.py:4379`'s `เหตุผลอื่นๆ` reads as unbounded only if `prompt.py:4326` is ignored.
+`prompt.py:4326` scopes the whole field — "Summarize the service the client is canceling and
+**all stated reasons for cancellation**" — and `prompt.py:4382` scopes `main` the same way
+(`เหตุผลหลักที่ลูกค้าต้องการยกเลิก`).
+
+So `other` is bounded on **both** sides: below by the ten named classes, above by *"is this a
+stated reason the customer wants to cancel at all?"* It is a **residual within the reason
+field**, not a bin for anything on the form that did not fit elsewhere.
+
+`prompt.txt:47` states the upper bound directly, and is narrower than `เหตุผลอื่นๆ`:
+
+```text
+- Definition: Reasons not covered above OR specific call situations like "Callback/Busy".
+```
+
+`prompt.txt:48` then **enumerates 23 spans**, and `prompt.py:4534` (`prompt_tar_v8`,
+corroboration) adds `(Note: Defined as the last category)` with a 19-span list of its own. A
+class that is genuinely unbounded does not get enumerated twice.
+
+#### RULE B
+
+**B1 — Enumerated membership.** `other` is correct, and any other label is wrong, when the span
+is verbatim on `prompt.txt:48` or matches one of `prompt.py:4380-4381`'s named situations:
+
+| Situation | Cite |
+|---|---|
+| points/rewards redemption failure (`True point` / `dtac reward`) | `prompt.py:4380` + `prompt.txt:48`; already ruled in §1.12 and **D1** |
+| `ลูกค้าอยู่ๆเปลี่ยนใจ ไม่ยกเลิกแล้ว` | `prompt.py:4380` |
+| natural disaster / flood (`อุทกกภัย`, `นำ้ท่วม`) | `prompt.py:4381` |
+| callback-or-busy (`ขับรถอยู่`, `ติดประชุม`, `ไม่สะดวกคุย`, `เดี๋ยวโทรกลับมาใหม่นะ`, …) | `prompt.txt:47-48`; the reason/outcome pairing is ruled in "Collisions between outcome keywords and reason keywords" |
+
+The callback family is the **one** legitimate case where a span that is not a cancellation
+reason still produces `other`. It is legitimate because `prompt.txt:47` names it — which is why
+it lands in B1 and not in a hole in B3.
+
+**B2 — Residual admission, and the burden it carries.** A span **not** on any list may take
+`other` only if **both** hold:
+
+- it is a **stated reason for cancellation** (`prompt.py:4326`, `:4382`) in **customer speech**
+  (`prompt.py:4382-4387`); and
+- the author can write down the **ten-way negative check** — that the span fails all ten other
+  definitions at `prompt.py:4328-4376` — and records it in `rule_reason:other`.
+
+If the negative check cannot be written, the item is under-specified, and "How to use it"
+already says what to do about that: **rewrite the transcript until a rule applies; do not argue
+the label.** `other` is not the escape hatch from that instruction. It is a class with a
+definition, like the other ten.
+
+**B3 — Hard exclusions.** Three kinds of material are not reasons at all. None of them goes to
+`other`; they go nowhere.
+
+| Excluded | Why | Cite |
+|---|---|---|
+| The customer's **final decision** or porting statement | That is `call_result` | `main.py:1016-1020`; `prompt.py:4389-4399` |
+| A span **already carrying another label** | Fails B2's ten-way check by construction; and since the scorer measures membership per class, restating one fact under two labels manufactures an FP for the second | `fact_checker.py:893-902` |
+| **Agent speech**, or the customer's evaluation of an agent offer | This is Rule A5 | `prompt.py:4335`, `:4344`, `:4382-4387` |
+
+#### RULE B applied
+
+| Item | Row | Span | Verdict |
+|---|---|---|---|
+| RET-10 (`retention_v1.jsonl`) | Postpaid, `main: other` | `พอจะเอาไปแลกของ มันแลกไม่ได้สักทีอ่ะค่ะ` | **B1 row 1.** Points redemption failure, `prompt.py:4380`. The item already cites it. Confirmed correct. |
+| RET-16 (`block_c_tiebreak.jsonl`) | TVS, `main: other` | `เดี๋ยวโทรกลับมาใหม่นะ` | **B1 row 4.** Verbatim on `prompt.txt:48`, callback family. Confirmed correct. |
+| RET-16 | TOL, `main: other` | `ย้ายไปคอนโดที่มีเน็ตให้แล้ว` | **B2 does not pass as the item stands.** Open question 1 below. Not resolved here. |
+| RET-02 | — | *(no `other` in ground truth)* | Correct — nothing in the transcript reaches B1 or B2. |
+| RET-12 | — | *(no `other` in ground truth)* | Correct — same. |
+
+### What was measured
+
+Two measurements, both mechanical, both reproducible from the sources.
+
+**1. Verbatim keyword containment.** Every keyword list at `prompt.txt:4, 8, 12, 16, 20, 24,
+28, 32, 36, 40, 44, 48` (12 lists — the 11 scored classes plus the unscorable
+`true point, dtac reward` of **D1**) was tested for verbatim substring containment against each
+item's own `transcript_th`. Complete result:
+
+| Item | Class | Keyword line | Verbatim hits |
+|---|---|---|---|
+| RET-02 | `promotion related` | `prompt.txt:8` | `มีโปรโมชั่นถูกกว่านี้ไหม`, `โปรโมชั่นหมดแล้ว` |
+| RET-02 | *every other class* | — | **none** |
+| RET-12 | `contract end` | `prompt.txt:20` | `ไม่อยากต่อสัญญา` |
+| RET-12 | *every other class* | — | **none** |
+
+`down sell not success` (`prompt.txt:44`) and `other` (`prompt.txt:48`) score **zero hits on
+both items**. Since no keyword span appears on two lists (see "Cross-list collisions inside
+`reason`", immediately below), each hit is decisive for exactly one class. RET-12's single hit
+is the `contract end` trap the item was built around, and `prompt.py:4348` kills it — the
+worked example of precedence step 3 overriding step 4, and the reason `save cost` there rests
+on `prompt.py:4342` rather than on any `prompt.txt` line.
+
+**2. What the committed runs did.** `out/runs/20260805-005641Z-incumbent-base/` and
+`…-005643Z-candidate-base/`, 3 replicates each, all six calls `outcome: ok`. Both arms are
+identical across replicates **on all scored fields** (they differ only in the free-text
+`recommendation`, which is not scored), and both got `product` and `call_result` right on both
+items. The entire divergence is the reason set:
+
+| Item | Ground truth | Incumbent (`google/gemini-2.5-flash`) | Candidate (`qwen/qwen3.6-27b`) |
+|---|---|---|---|
+| RET-02 | `{promotion related}` | `{promotion related, down sell not success, other}` | `{promotion related, save cost, dissatisfied service}` |
+| RET-12 | `{save cost}` | `{save cost, contract end, other}` | `{save cost, contract end}` |
+
+Under Rule A, the incumbent's `down sell not success` on RET-02 is a genuine false positive:
+it is reachable only by reading `prompt.py:4375-4376` in isolation, dropping `ก่อนหน้านี้`,
+ignoring `prompt.txt:43`'s refusal condition, and ignoring `prompt.py:4335`. Under Rule B, all
+four `other` emissions are genuine false positives — on RET-02 the span offered is the churn
+decision (**B3 row 1**; the same arm labelled the call `churn` off that material in the same
+object), and on RET-12 the span offered **contains the ground truth's own `save cost` evidence
+span verbatim** (**B3 row 2**).
+
+**Caution, and it is the reason this subsection is last.** Measurement 2 is corroboration, not
+evidence. The rules above were derived from production text and would read identically had no
+model ever been run. A rule inferred from what models emit measures the models, not the
+semantics — the failure mode that retracted an earlier metric in this repo, which reported a
+comma-joining **format** difference (`main.py:977`, "Use comma separation") as a **fidelity**
+difference. Note that the incumbent's RET-12 `main.keyword` is comma-joined here too. That is
+format. Do not build anything on it.
+
+### Open questions this arbitration did not settle
+
+**No ground-truth change is implied by anything above**, with one exception flagged as open.
+RET-02 (`promotion related` alone), RET-12 (`save cost` alone), RET-13
+(`down sell not success` + `promotion related`) and RET-10 (`other`) are all **confirmed
+correct** as they stand. Recorded explicitly so the next author does not re-open them.
+
+1. **RET-16's TOL row: `other` vs `save cost`. Genuinely open.** The row is
+   `main: other`, evidence `ย้ายไปคอนโดที่มีเน็ตให้แล้ว` ("I moved to a condo that already
+   provides internet"), cited to `prompt.txt:46-47`. B2's ten-way negative check **does not
+   pass**: `prompt.py:4342` lists `ย้านบ้าน` (typo for `ย้ายบ้าน`, "moved house") and
+   `ลูกค้าไม่ได้ใช้งานแล้ว` as `save cost` limbs, and the customer at turn 19 adds
+   `ติดตั้งซ้ำก็ไม่ได้ใช้`. Against that: her stated reason is redundancy, not expense, and
+   `prompt.txt:15` defines `save cost` as wanting to reduce expenses *explicitly*. But
+   `prompt.py:4342` governs over `prompt.txt:15` (precedence step 3 over step 4), the three
+   limbs there are joined by `หรือ`, and **RET-12's own ground truth already rests on the
+   `ลูกค้าไม่ได้ใช้งานแล้ว` limb with no cost framing at all** — so the two items are currently
+   treated inconsistently. **Not resolved and not changed here:** `block_c_tiebreak.jsonl` is
+   owned elsewhere, and the resolution is an argued decision about which limb of
+   `prompt.py:4342` is load-bearing, not a boundary-A or boundary-B question.
+2. **RET-02's `rule_reason` citations are thin, though not wrong.** Both spans cite
+   `prompt.py:4333`. That line establishes `promotion related`; it does not by itself dispose
+   of the `down sell not success` reading, which is why a model found it. Recommended, as a
+   separate argued edit: `rule_reason:promotion related` → `prompt.py:4333; prompt.txt:8`, and
+   `rule_reason:promotion related#2` → `prompt.py:4333; prompt.txt:8; prompt.py:4335` — the
+   last being the line that excludes the down-sell reading. A citation strengthening, not a
+   label change. Still requires `evalgen check` and both test modes.
+3. **`dissatisfied service` on RET-02 turn 4 — out of scope, do not bundle it here.** The
+   candidate arm emitted `dissatisfied service` off `ไม่มีใครแจ้งพี่เลยสักคน` ("nobody informed
+   me"). That is the *same* rule already under review for RET-11 (`prompt.py:4361`, "the agent
+   didn't follow up"). It is a `dissatisfied service` question, not a boundary question, and it
+   should be decided in that item's workstream on its own evidence.
+4. **RET-02's `expected_failure` field is incomplete.** It predicts `product=Postpaid` or
+   `contract end` off `ใช้ตัวเดิมมาสองปีแล้ว`. **Neither occurred** on either arm — both got
+   `product` right and neither emitted `contract end`. The failures that did occur
+   (`down sell not success`, `other`, `save cost`, `dissatisfied service`) were not predicted.
+   RET-12's `expected_failure`, by contrast, predicted `contract end` and both arms emitted it.
+   A fixture-author note about RET-02's field, not a defect in its ground truth.
+5. **No item exercises `other` under B2** — every `other` in the testsets is either B1
+   enumerated (RET-10, RET-16 TVS) or open (RET-16 TOL). The ten-way negative check has
+   therefore never been written down for a real item, and B2 is untested as a workflow.
+6. **A3's in-call limb is unarbitrated.** No item contains a customer who asks for a reduction
+   in-call and is flatly refused in-call, with no prior contact. `prompt.py:4375`,
+   `prompt.txt:43` and `prompt.py:4531-4532` all admit that shape; only `prompt.py:4376`'s
+   `ก่อนหน้านี้` argues against it, and that word sits on the other limb. **Settle it before
+   authoring such an item**, and record the answer here.
+
+### Citing these boundaries
+
+| Field | Citation |
+|---|---|
+| `rule_reason:down sell not success` | `prompt.py:4375-4376` **plus** `prompt.txt:43` — the refusal condition (A2) exists only in the English line (**D15**) |
+| `rule_reason:other`, enumerated | `prompt.py:4380-4381` or `prompt.txt:47-48`, naming which B1 row applies |
+| `rule_reason:other`, residual | `prompt.py:4326` **plus** the ten-way negative check written out (B2) (**D16**) |
+| `rule_reason:promotion related`, where a down-sell reading is available | add `prompt.py:4335` — the line that excludes it |
 
 ## Cross-list collisions inside `reason`
 
@@ -1987,6 +2347,50 @@ says "Integer 0-100". A model emitting `250` is schema-valid.
 **Rule: ground-truth values are band midpoints in 0-100, cited to `prompt.txt:196-220`.** If
 the harness records out-of-range predictions, that is a finding about the model, not a fixture
 error.
+
+## D15 — The governing text defines `down sell not success` without its refusal condition; two other sources state it explicitly
+
+| Source | Says |
+|---|---|
+| `prompt.py:4375` (governs) | `ลูกค้าไม่ได้โปรโมชั่นราคาลดตามที่ต้องการ` — outcome only, **no refusal named** |
+| `prompt.py:4376` (governs) | `ก่อนหน้านี้มีเจ้าหน้าที่เสนอโปรโมชั่นราคาลดลงแต่ยังไม่ถูกใจ` — the condition is carried by the single word `ก่อนหน้านี้` |
+| `prompt.txt:43` | "Customer asked to lower the price/change plan, but **the agent refused or couldn't provide it**" |
+| `prompt.py:4531-4532` (`prompt_tar_v8`) | "**Must involve a specific request … that was refused**" — bolded by the prompt's own authors |
+| `prompt.py:4335`, `:4344` | the agent's in-call retention offer is excluded by name, for `promotion related` and `save cost` |
+| `prompt.py:4382-4387` | all three reason ranks are `**ต้องเป็นคำพูดจากฝั่งลูกค้าเท่านั้น**` — customer speech only |
+
+Read on its own, `prompt.py:4376` fires on the ordinary shape of every retention call: the
+agent counter-offers, the customer is unimpressed. The two conditions that stop it —
+**an explicit customer request** and **a refusal** — are stated in `prompt.txt` and in
+`prompt_tar_v8`, neither of which is the governing body, and nowhere in `prompt_v9_16` itself.
+That is why the boundary against `promotion related` was reachable in two directions before it
+was arbitrated.
+
+**Rule: apply Rule A in "Class-boundary arbitrations". A1 (customer request) and A2 (refusal)
+are both necessary. Cite `prompt.py:4375-4376` paired with `prompt.txt:43`, never
+`prompt.py:4375-4376` alone.**
+
+## D16 — `other` is unbounded in the governing text and bounded in every other source
+
+| Source | Says |
+|---|---|
+| `prompt.py:4379` (governs) | `เหตุผลอื่นๆ` — **unbounded on its face** |
+| `prompt.py:4380-4381` | three named situations: points/rewards, sudden change of mind, natural disaster |
+| `prompt.txt:47` | "Reasons not covered above OR specific call situations like `Callback/Busy`" — a stated upper bound |
+| `prompt.txt:48` | **23 enumerated spans** |
+| `prompt.py:4534` (`prompt_tar_v8`) | `(Note: Defined as the last category)`, with a 19-span list of its own |
+| `prompt.py:4326`, `:4382` | the field is "all stated reasons **for cancellation**" / `เหตุผลหลักที่ลูกค้าต้องการยกเลิก` |
+
+A class that is genuinely unbounded does not get enumerated twice. `เหตุผลอื่นๆ` reads as a
+catch-all only when `prompt.py:4326` is ignored: `other` is bounded **below** by the ten named
+classes and **above** by whether the span is a stated cancellation reason at all. It is a
+residual within the reason field, not a bin for whatever else was said on the call. The one
+exception — callback/busy, which is not a cancellation reason and still takes `other` — is
+legitimate only because `prompt.txt:47` names it.
+
+**Rule: apply Rule B in "Class-boundary arbitrations". Either the span is enumerated (B1) or
+the author writes down the ten-way negative check (B2). A final decision, a span already
+carrying another label, and agent speech all go nowhere — never to `other` (B3).**
 
 ---
 

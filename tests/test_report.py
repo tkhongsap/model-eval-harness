@@ -14,6 +14,18 @@ on a broken one. The three that matter most, and the plausible mistake each one 
 `render` is asserted on its stamps and its section ORDER rather than its wording. The
 order is the argument the report makes (provenance, then verdicts, then the aggregate
 numbers last), and it is the part a well-meaning edit breaks first.
+
+Section 6 -- cost, tokens and latency -- is asserted on the three things that make a
+cost figure honest rather than merely present, because a cost table is the part of a
+report that gets quoted with no context at all:
+
+  * the total is labelled a LOWER BOUND and prints how many calls it could not see,
+    which catches the plausible implementation that sums `cost or 0` and reports a
+    confident number covering a third of the run;
+  * `cost per correct answer` names the dimension it divided by, which catches a ratio
+    whose definition of correct nobody can reproduce;
+  * an arm with no reported cost prints UNKNOWN, not 0.000000 -- the one output that
+    would let a run with no cost accounting read as a free model.
 """
 
 from __future__ import annotations
@@ -323,6 +335,50 @@ def test_n_flip_is_zero_for_a_single_replicate():
 # --- render -------------------------------------------------------------------
 
 
+"""Performance figures for the shared fixture, chosen so every printed number can be
+checked by eye against the one beside it.
+
+Two items over three replicates is six calls per arm. The candidate is shaped like the
+reasoning arm this section exists to make visible: four times the cost, a real reasoning
+count inside its completion tokens, a tail latency 12x its median, and two of its six
+calls reporting no cost at all -- which is the case where a bare total lies.
+
+`scored_replicate_cost_usd` is deliberately a THIRD of the run total, because the ratio
+divides one replicate's cost by one replicate's correct answers while the table above it
+covers all three. A test that gave them the same value would pass against an
+implementation that had confused the two.
+"""
+INCUMBENT_PERF = dict(
+    calls=6,
+    prompt_tokens=7200,
+    completion_tokens=1080,
+    reasoning_tokens=0,
+    cost_usd_lower_bound=0.006,
+    calls_without_cost=0,
+    latency_median_s=1.25,
+    latency_max_s=2.5,
+    cost_per_correct_usd=0.001,
+    cost_per_correct_dimension="call_result",
+    correct_answers=2,
+    scored_replicate_cost_usd=0.002,
+)
+
+CANDIDATE_PERF = dict(
+    calls=6,
+    prompt_tokens=15600,
+    completion_tokens=8700,
+    reasoning_tokens=6600,
+    cost_usd_lower_bound=0.024,
+    calls_without_cost=2,
+    latency_median_s=4.2,
+    latency_max_s=51.4,
+    cost_per_correct_usd=0.008,
+    cost_per_correct_dimension="call_result",
+    correct_answers=1,
+    scored_replicate_cost_usd=0.008,
+)
+
+
 @pytest.fixture
 def report_text():
     gt = [rec("5001", "postpaid", "save", "network"), rec("5002", "tol", "churn", "network")]
@@ -334,12 +390,12 @@ def report_text():
         "call_result": score_call_result(gt, gt, RETENTION.call_result),
         "reason": score_reason(gt, gt, RETENTION.reason),
         "product": score_product(gt, gt, RETENTION.product),
-    })
+    }, **INCUMBENT_PERF)
     candidate = arm("candidate", n_flip=4, dimensions={
         "call_result": score_call_result(gt, bad[0], RETENTION.call_result),
         "reason": score_reason(gt, bad[0], RETENTION.reason),
         "product": score_product(gt, bad[0], RETENTION.product),
-    })
+    }, **CANDIDATE_PERF)
 
     return render(
         incumbent,
@@ -372,7 +428,7 @@ def test_render_prints_the_provenance_stamps(report_text):
 
 def test_render_puts_the_sections_in_the_mandated_order(report_text):
     """The order is the argument: provenance, verdicts, per-item disagreement, what the
-    models returned, instability -- and the quotable aggregate numbers LAST."""
+    models returned, instability -- and the quotable numbers LAST."""
     order = [
         "RECONCILED: NO",
         "1. MECHANISM TABLE",
@@ -380,12 +436,32 @@ def test_render_puts_the_sections_in_the_mandated_order(report_text):
         "3. WHAT THE MODELS ACTUALLY RETURNED",
         "4. N_flip",
         "5. AGGREGATE METRICS",
+        "6. COST, TOKENS AND LATENCY",
         "NOT OBSERVABLE BY THIS PACK",
     ]
     found = [report_text.index(marker) for marker in order]
     assert found == sorted(found), (
         "sections are out of order. A report that leads with an aggregate percentage at "
         f"n=22 has lost the argument in its first line. Got: {list(zip(order, found))}"
+    )
+
+
+def test_the_cost_section_never_precedes_the_mechanism_table(report_text):
+    """Cost is the most quotable number in the document and the easiest to move up.
+
+    Asserted separately from the order test above rather than trusted to it, because
+    this is the specific edit that would be argued for on its own merits -- "put the
+    cost where people will see it" -- and the whole point of section 1 is that a reader
+    who stops early must stop on the verdicts, not on a price.
+    """
+    assert report_text.index("1. MECHANISM TABLE") < report_text.index(
+        "6. COST, TOKENS AND LATENCY"
+    )
+    assert report_text.index("5. AGGREGATE METRICS") < report_text.index(
+        "6. COST, TOKENS AND LATENCY"
+    ), (
+        "cost per correct answer divides a count section 5's table is built from, so it "
+        "cannot be read before the denominator has appeared"
     )
 
 
@@ -425,6 +501,158 @@ def test_render_warns_when_the_arms_ran_different_prompts(report_text):
         [],
     )
     assert "different prompts" in text
+
+
+# --- section 6: cost, tokens and latency --------------------------------------
+
+
+def test_render_prints_the_per_call_accounting_it_was_handed(report_text):
+    """The gap this section closes: run.jsonl carries tokens, cost and latency per call
+    and the text report printed none of them, so a reader could see which mechanisms an
+    arm passed and nothing about what asking it cost."""
+    section = report_text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "  incumbent         6        7200       1080           0" in section
+    assert "  candidate         6       15600       8700        6600" in section
+    assert "0.006000" in section and "0.024000" in section
+    assert "median     1.25s" in section and "max     2.50s" in section
+    assert "median     4.20s" in section and "max    51.40s" in section
+
+
+def test_the_cost_total_is_labelled_a_lower_bound_and_says_what_it_missed(report_text):
+    """A floor whose coverage is invisible is worse than no number, because it is
+    quotable: 0.02 USD over 40 calls and 0.02 USD over the 3 calls that happened to
+    report `usage.cost` both print as 0.02. The count travels with the total onto the
+    page, not into a log."""
+    section = report_text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "LOWER BOUND" in section
+    assert "no cost" in section, "the column that says how much of the run the total saw"
+    # The candidate's two uncosted calls, on the arm's own row rather than only in the
+    # prose: a caveat in a paragraph below a table does not travel with a pasted row.
+    candidate_row = next(
+        line for line in section.splitlines() if "0.024000" in line
+    )
+    assert candidate_row.split()[-1] == "2", (
+        f"the uncosted-call count must be on the arm's own row, got {candidate_row!r}"
+    )
+
+
+def test_cost_per_correct_answer_names_the_dimension_and_prints_the_division(report_text):
+    """A cost-per-correct whose definition of 'correct' is not stated is a ratio nobody
+    can reproduce -- and the three scored dimensions have three different denominators
+    (metrics.py:11-13), so they would give three different answers.
+
+    The division is printed, not just its result, so a reader can check it against the
+    numbers two sections above rather than believe it.
+    """
+    section = report_text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "0.001000 USD  = 0.002000 / 2 correct call_result rows" in section
+    assert "0.008000 USD  = 0.008000 / 1 correct call_result rows" in section
+
+
+def test_cost_per_correct_answer_uses_one_replicate_on_both_sides(report_text):
+    """The run cost 0.006 over three replicates and the ratio divides 0.002. Mixing a
+    3-replicate bill into a 1-replicate hit count would report three times the number an
+    app owner would act on, because production makes one call per item."""
+    section = report_text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "= 0.002000 /" in section, "the numerator is the scored replicate's cost"
+    assert "= 0.006000 /" not in section, "not the whole run's bill"
+    assert "ONE replicate" in section, "and the report has to say so"
+
+
+def test_an_arm_that_got_nothing_right_prints_no_ratio_at_all():
+    """Zero correct answers is a division by zero, and 'infinite' is not a cost. The
+    refusal names the reason rather than printing a blank, because a blank cell in a
+    cost table reads as a number nobody bothered to fill in."""
+    gt = [rec("5001", "postpaid", "save", "network")]
+    table = mechanism_table(gt, [list(gt)], [item("RET-01", "5001")])
+    text = render(
+        arm("incumbent", calls=3, cost_usd_lower_bound=0.003,
+            cost_per_correct_dimension="call_result", correct_answers=0,
+            scored_replicate_cost_usd=0.001, latency_median_s=1.0, latency_max_s=1.0),
+        arm("candidate", calls=3, cost_usd_lower_bound=0.003,
+            cost_per_correct_dimension="call_result", correct_answers=0,
+            scored_replicate_cost_usd=0.001, latency_median_s=1.0, latency_max_s=1.0),
+        {"incumbent": table, "candidate": table},
+        [],
+        [],
+    )
+    section = text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "NOT COMPUTED" in section
+    assert "0 call_result rows right" in section
+    assert "USD  =" not in section, "no ratio may be printed when there is no denominator"
+
+
+def test_an_arm_whose_provider_reported_no_cost_says_unknown_never_zero():
+    """The output that must not exist. OpenRouter reports usage.cost only for the
+    providers that supply it, so an arm can finish a full run with nothing to total --
+    and 0.000000 USD per correct answer reads as a free model rather than as an
+    unmeasured one."""
+    gt = [rec("5001", "postpaid", "save", "network")]
+    table = mechanism_table(gt, [list(gt)], [item("RET-01", "5001")])
+    unmeasured = dict(
+        calls=3, cost_usd_lower_bound=0.0, calls_without_cost=3,
+        cost_per_correct_usd=None, cost_per_correct_dimension="call_result",
+        correct_answers=1, scored_replicate_cost_usd=0.0,
+        latency_median_s=1.0, latency_max_s=1.0,
+    )
+    text = render(
+        arm("incumbent", **unmeasured),
+        arm("candidate", **unmeasured),
+        {"incumbent": table, "candidate": table},
+        [],
+        [],
+    )
+    section = text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "UNKNOWN rather than zero" in section
+    assert "0.000000 USD" not in section, (
+        "a zero cost per correct answer is a claim that the model was free. The "
+        "numerator was never reported, which is a different fact and the report must "
+        "print that one."
+    )
+
+
+def test_an_arm_with_no_per_call_accounting_prints_not_recorded():
+    """An ArmSummary built without a run log -- a test, or a caller scoring records it
+    already holds -- must not render as a free, instant run."""
+    gt = [rec("5001", "postpaid", "save", "network")]
+    table = mechanism_table(gt, [list(gt)], [item("RET-01", "5001")])
+    text = render(arm("incumbent"), arm("candidate"),
+                  {"incumbent": table, "candidate": table}, [], [])
+    section = text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert section.count("NOT RECORDED") >= 4, (
+        "both arms, in both the totals table and the latency block"
+    )
+    assert "0.000000" not in section
+
+
+def test_the_report_states_that_time_to_first_token_does_not_exist_here(report_text):
+    """The number a reader will look for and this harness cannot honestly supply.
+    `client.complete` calls `chat.completions.create` with no stream=True
+    (client.py:234), so the SDK returns once the whole body has arrived and the only
+    interval ever measured is the round trip. Stating the gap is the alternative to
+    deriving a TTFT from a number that is not one."""
+    section = report_text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "no time-to-first-token" in section
+    assert "does" in section and "not stream" in section
+    assert "client.py:234" in section, "the claim cites the line that makes it true"
+
+
+def test_reasoning_tokens_are_flagged_as_already_inside_the_completion_count(report_text):
+    """`reasoning_tokens` comes off usage.completion_tokens_details (client.py:271),
+    which is a BREAKDOWN of the completion tokens. A reader adding the two columns
+    double-counts them, and on a reasoning arm that is most of the bill."""
+    section = report_text.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "NOT to be added to compl_tok" in section
+    assert "already inside them" in section
 
 
 def test_render_refuses_a_mechanism_table_that_covers_one_arm():

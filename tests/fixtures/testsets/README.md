@@ -28,7 +28,7 @@ Every `rule_*` citation in this file resolves against that repository:
 (`sentiment-batch-mnp-develop/config/system_prompt/prompt.txt`) and disagrees with the
 retention prompt on four decisive points — indecision, `undefine`/`undefined`, `ไปต่างประเทศ`,
 and whether a bare price complaint is `save cost`. Citation counts in `retention_v1.jsonl`:
-**78 `prompt.py`, 2 `fact_checker.py` (grain and set-union mechanics), 1 `main.py` (the
+**79 `prompt.py`, 2 `fact_checker.py` (grain and set-union mechanics), 1 `main.py` (the
 `undefined` enum).**
 
 ## The contract every item satisfies
@@ -80,7 +80,7 @@ either side of `pd.merge` produces zero matched rows and a silently empty compar
 
 ## Coverage audit
 
-28 reason labels across 22 rows — **1.273 reasons per row**. A degenerate all-empty arm still
+29 reason labels across 22 rows — **1.318 reasons per row**. A degenerate all-empty arm still
 scores well on the reason dimension, which is the pathology the harness exists to catch; the
 mean is kept low on purpose so that property survives.
 
@@ -94,7 +94,7 @@ mean is kept low on purpose so that property survives.
 | `save cost` | 4 | RET-03, RET-12, RET-16 (postpaid), RET-16 (tol) |
 | `contract end` | 2 | RET-05, RET-20 |
 | `sale upsell problem` | **1** | RET-15 |
-| `dissatisfied service` | 3 | RET-04, RET-15, RET-17 |
+| `dissatisfied service` | 4 | RET-04, RET-11, RET-15, RET-17 |
 | `other` | **1** | RET-10 |
 | `post to pre` | **1** | RET-06 |
 | `customer reason` | **1** | RET-18 |
@@ -168,7 +168,7 @@ What is still wrong, and known to be wrong:
   backchannel turns are rare, and there are only three places in the pack where the line drops
   or speakers overlap (RET-16, RET-18, RET-20). Real calls have holds, repeats, "ขอโทษนะคะ
   ไม่ได้ยินค่ะ", and topic drift. This pack mostly does not.
-* **14 of 75 evidence spans (19%) are still literal strings from a production keyword list**
+* **14 of 76 evidence spans (18%) are still literal strings from a production keyword list**
   (down from 47 of 70 before the fix pass). They are concentrated in the `clear` family, where
   a literal span is the point. Listed for review: RET-01 `เน็ตช้า`; RET-02 `โปรโมชั่นหมดแล้ว`,
   `มีโปรโมชั่นถูกกว่านี้ไหม`; RET-03 `ขอยกเลิกรหัสย้ายค่าย`, `อยากลดค่าใช้จ่าย`; RET-04 `รอคิวนาน`;
@@ -222,12 +222,12 @@ Expected: `[]`. Anything else means a label has drifted from the text it claims 
 **Gate CI on this returning empty** — the four pre-merge blocks shipped without ever being run
 through their own loader, and returned 155 problems when they finally were.
 
-Current state, verified: `validate()` → **0 problems**; **75/75** evidence spans are
+Current state, verified: `validate()` → **0 problems**; **76/76** evidence spans are
 character-for-character substrings of their own `transcript_th`; UTF-8 with no BOM, LF-only;
 `call_id` 5001–5020 and `phone_number` 0810000001–0810000020, all inside the synthetic ranges,
 no duplicates; **0** reason spans that occur only on `เจ้าหน้าที่` lines
 (`prompt.py:4382-4387` requires the reason phrase to be customer speech).
 
-`retention_v1.jsonl` sha256 `6e761141c4096a066585b2643ca5510a67bce6b9baa9f7159d6e3edb6b52d79b`
+`retention_v1.jsonl` sha256 `c367a478d89bb047acc1ea5806fc36b75b0b9f561b62a264aa0c2188493b2b0f`
 — editing a transcript is the one operation that can silently break the substring check, so
 re-run the validator after any edit.

@@ -736,6 +736,205 @@ def test_an_arm_that_named_no_product_is_counted_where_coverage_cannot_see_it(
     assert summary.dimensions["call_result"].weighted("recall") == 0.0
 
 
+# ====================================================== the per-call cost accounting
+#
+# `run.jsonl` has carried tokens, cost and latency per call since the runner was
+# written and the xlsx export prints them, but the TEXT report showed none of it. These
+# tests run the real chain -- fake client, real run loop, real log, real `arm_summary`
+# -- because the arithmetic is trivial and the join is not: the figures have to come
+# off the SAME rows the report's other numbers describe, and the cost-per-correct ratio
+# has to divide one replicate's cost by that replicate's hit count rather than a whole
+# run's bill by one replicate's answers.
+
+
+def test_the_run_totals_come_off_every_row_of_the_run(run_arm, perfect, testset, capsys):
+    """20 items x 2 replicates, at the fake's own per-call usage. Every column is the
+    fake's constant times 40, so a total computed over one replicate, over the parsed
+    rows only, or over the items rather than the calls each lands on a different
+    number."""
+    directory = run_arm("incumbent", perfect, repeats=2)
+    capsys.readouterr()
+
+    loaded = cli.load_run(directory)
+    gt = cli._load_gt(GT_PATH)
+    summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
+
+    assert summary.calls == 40, "20 items x 2 replicates, dead rows included"
+    assert summary.prompt_tokens == 40 * 1200
+    assert summary.completion_tokens == 40 * 180
+    assert summary.reasoning_tokens == 0
+    assert summary.cost_usd_lower_bound == pytest.approx(40 * 0.0004)
+    assert summary.calls_without_cost == 0
+    assert summary.latency_median_s == pytest.approx(0.01)
+    assert summary.latency_max_s == pytest.approx(0.01)
+
+
+def test_a_row_that_reported_no_cost_is_counted_rather_than_counted_as_free(
+    run_arm, testset, by_id, capsys
+):
+    """`usage.cost` is a provider-dependent extension. A missing one is skipped by
+    `runner.total_cost()` rather than summed as zero (runner.py:411-421), so the total
+    is a floor -- and the count of the rows it could not see is what tells a reader how
+    much of the run the floor covers. Summed as zero instead, an arm whose provider
+    reports nothing prints as the cheapest one in the comparison."""
+    def sometimes_costed(item_id, _nth):
+        return answer(by_id[item_id], cost=None if item_id in {"RET-02", "RET-05"} else 0.0004)
+
+    directory = run_arm("incumbent", sometimes_costed, repeats=2)
+    capsys.readouterr()
+
+    loaded = cli.load_run(directory)
+    gt = cli._load_gt(GT_PATH)
+    summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
+
+    assert summary.calls_without_cost == 4, "two items x two replicates reported nothing"
+    assert summary.cost_usd_lower_bound == pytest.approx(36 * 0.0004), (
+        "the four uncosted calls are absent from the total, not counted as 0.00"
+    )
+
+
+def test_cost_per_correct_answer_divides_one_replicate_by_that_same_replicate(
+    run_arm, perfect, testset, capsys
+):
+    """The alignment that makes the ratio mean anything.
+
+    `dimensions` is scored on one replicate, so the numerator has to be that replicate's
+    cost. Using the whole run's bill would report `repeats` times the cost of an answer
+    -- 2x here, 3x at the default -- against a production path that makes ONE call per
+    item. The two numbers are deliberately different in this test (0.008 against 0.016)
+    so an implementation that reached for `total_cost()` fails rather than agreeing by
+    coincidence.
+
+    22 correct: the pack's 22 ground-truth rows all carry a call_result, and a perfect
+    arm gets all of them. That count is the scorer's own true-positive total, not a new
+    notion of correctness invented for a cost table.
+    """
+    directory = run_arm("incumbent", perfect, repeats=2)
+    capsys.readouterr()
+
+    loaded = cli.load_run(directory)
+    gt = cli._load_gt(GT_PATH)
+    summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
+
+    assert summary.cost_per_correct_dimension == "call_result"
+    assert summary.correct_answers == 22
+    assert summary.scored_replicate_cost_usd == pytest.approx(20 * 0.0004)
+    assert summary.cost_usd_lower_bound == pytest.approx(40 * 0.0004), (
+        "the run total covers both replicates; the ratio's numerator must not"
+    )
+    assert summary.cost_per_correct_usd == pytest.approx(20 * 0.0004 / 22)
+
+
+def test_the_scored_replicate_is_read_off_the_log_not_assumed_to_be_one(
+    run_arm, perfect, testset, capsys
+):
+    """`replicate_records` returns replicates in SORTED order and `dimensions` is scored
+    on index 0, which is the lowest replicate number present -- 1 in every log this CLI
+    writes, and not necessarily 1 in a log someone filtered by hand.
+
+    Taking the minimum is what makes the numerator select the same calls the denominator
+    scored by construction. Hardcoding 1 against this log would sum the cost of nothing
+    and print 0.000000 USD per correct answer, which reads as a free model.
+    """
+    directory = run_arm("incumbent", perfect, repeats=2)
+    capsys.readouterr()
+
+    log = directory / "run.jsonl"
+    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").split("\n") if line.strip()]
+    for row in rows:
+        row["replicate"] += 1                      # the log now starts at replicate 2
+        row["cost"] = 0.001 if row["replicate"] == 2 else 0.002
+    log.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+        encoding="utf-8", newline="\n",
+    )
+
+    loaded = cli.load_run(directory)
+    gt = cli._load_gt(GT_PATH)
+    summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
+
+    assert summary.scored_replicate_cost_usd == pytest.approx(20 * 0.001), (
+        "the numerator must be replicate 2 -- the one that was scored -- not an empty "
+        "selection of a replicate 1 that no longer exists"
+    )
+    assert summary.cost_per_correct_usd == pytest.approx(20 * 0.001 / 22)
+
+
+def test_an_arm_whose_provider_reported_no_cost_gets_no_ratio_at_all(
+    run_arm, testset, by_id, capsys
+):
+    """The whole run finishes with nothing to total. 0.000000 USD per correct answer
+    would read as a free model; the numerator is UNKNOWN, which is a different fact and
+    the one the report has to print."""
+    directory = run_arm(
+        "incumbent", lambda item_id, _nth: answer(by_id[item_id], cost=None), repeats=1
+    )
+    capsys.readouterr()
+
+    loaded = cli.load_run(directory)
+    gt = cli._load_gt(GT_PATH)
+    summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
+
+    assert summary.calls_without_cost == 20 and summary.calls == 20
+    assert summary.cost_usd_lower_bound == 0.0
+    assert summary.correct_answers == 22, "the arm was perfect; only the billing is absent"
+    assert summary.cost_per_correct_usd is None, (
+        "a zero numerator over 22 correct answers is 0.000000 USD per correct answer, "
+        "which is a claim that the model was free rather than that it was unmeasured"
+    )
+
+
+def test_latency_counts_the_calls_that_died(run_arm, testset, by_id, capsys):
+    """A median over the successes alone improves as the failures get worse, which is
+    the wrong direction for the one number whose job is to say what an arm cost in wall
+    clock. A 120s timeout is 120 seconds that were spent."""
+    def one_dead_item(item_id, _nth):
+        if item_id == "RET-04":
+            raise FakeTransportError("APITimeoutError: timed out", latency_s=120.0)
+        return answer(by_id[item_id], latency_s=0.5)
+
+    directory = run_arm("incumbent", one_dead_item, repeats=1)
+    capsys.readouterr()
+
+    loaded = cli.load_run(directory)
+    gt = cli._load_gt(GT_PATH)
+    summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
+
+    assert summary.calls == 20, "the dead item is still one row, and still one call"
+    assert summary.latency_max_s == pytest.approx(120.0), (
+        "the timeout is in the maximum. Excluding failures would report this arm as the "
+        "fast one"
+    )
+    assert summary.latency_median_s == pytest.approx(0.5)
+    assert summary.calls_without_cost == 1, "nothing was billed for a request that failed"
+
+
+def test_compare_prints_the_cost_section_end_to_end(run_arm, perfect, by_id, capsys):
+    """The counter is worthless if the report forgets to print it. Asserted through the
+    real `compare` path rather than against `render` alone, which is the same argument
+    `answered_nothing` is tested on."""
+    def pricier(item_id, _nth):
+        return answer(by_id[item_id], prompt_tokens=2600, completion_tokens=1450,
+                      reasoning_tokens=1100, cost=0.0031, latency_s=4.2)
+
+    incumbent = run_arm("incumbent", perfect, repeats=1)
+    candidate = run_arm("candidate", pricier, repeats=1)
+    capsys.readouterr()
+
+    assert main(["compare", "--incumbent", str(incumbent), "--candidate", str(candidate)]) == EXIT_OK
+    report = capsys.readouterr().out
+    section = report.split("6. COST, TOKENS AND LATENCY")[1]
+
+    assert "LOWER BOUND" in section
+    assert str(20 * 1200) in section and str(20 * 2600) in section
+    assert "0.008000" in section and "0.062000" in section
+    assert "correct call_result rows" in section, "the ratio names the dimension it used"
+    assert "REPLICATE 1" in report, (
+        "and the footer still says which replicate the scored half of that ratio came "
+        "from"
+    )
+
+
 # =========================================================== the comparison refusals
 
 

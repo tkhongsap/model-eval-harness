@@ -176,6 +176,43 @@ class ArmSummary:
     positive for every ground-truth product while `Coverage.parse_failures` stays at
     zero. It gets its own line because "answered nothing" and "answered wrong" reach
     the product dimension as the same number and are not the same finding.
+
+    The performance block: what the run spent
+    -----------------------------------------
+    `calls` through `scored_replicate_cost_usd` are the run's own per-call accounting,
+    summed. `run.jsonl` has carried tokens, cost and latency per call since the runner
+    was written and the xlsx export has printed them on its "Per call" sheet, but this
+    report showed none of it -- so the reader of a `compare-*.txt` could see which
+    mechanisms an arm passed and not what the arm cost to ask.
+
+    Several of them carry no figure of their own. They are here so that the ones that
+    do cannot be misread, which is the whole difficulty with a cost table:
+
+      * `calls` is the denominator of everything else here. A cost is a different fact
+        over 20 calls than over 60, and the section prints NOT RECORDED when this is
+        zero rather than a row of zeros that reads as a free, instant run.
+      * `calls_without_cost` is how many rows the cost total could not see.
+        `cost_usd_lower_bound` is a LOWER BOUND, not a total: OpenRouter reports
+        `usage.cost` only for providers that supply it, `client.py:272` keeps a missing
+        value as None rather than zero, and `runner.total_cost()` skips those rows
+        instead of counting them free (`runner.py:411-421`). Without the count beside
+        it, 0.02 USD over 40 calls and 0.02 USD over the three calls that happened to
+        report are the same string.
+      * `correct_answers` and `scored_replicate_cost_usd` are the two halves of
+        `cost_per_correct_usd`, carried so the division can be CHECKED rather than
+        believed.
+
+    **`cost_per_correct_usd` invents no new notion of "correct".** It divides one
+    replicate's cost by the true-positive count of a dimension the metrics table
+    already scores -- `sum(c.tp for c in DimensionResult.classes)`, the same arithmetic
+    the weighted recall in section 5 is built from. `cost_per_correct_dimension` names
+    which one, and the report prints that name on the line: a cost-per-correct whose
+    definition of correct is not stated is a ratio nobody can reproduce.
+
+    Numerator and denominator are both ONE replicate, and that alignment is the point.
+    `dimensions` is scored on one replicate (`cli.arm_summary`), so a numerator holding
+    a three-replicate bill would report three times the number an app owner would act
+    on -- production makes one call per item.
     """
 
     arm: str
@@ -188,6 +225,23 @@ class ArmSummary:
     replicates: int = 1
     decoding: Mapping[str, object] = field(default_factory=dict)
     answered_nothing: int = 0
+    # Every performance field is defaulted, and `calls` is the one the report gates on.
+    # An ArmSummary built without a run log -- a test, a caller scoring records it
+    # already holds -- still renders; it prints NOT RECORDED rather than a zero cost,
+    # because a zero here would read as "this arm was free" and that is exactly the
+    # claim a missing `usage.cost` must never be allowed to make.
+    calls: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    reasoning_tokens: int = 0
+    cost_usd_lower_bound: float = 0.0
+    calls_without_cost: int = 0
+    latency_median_s: float | None = None
+    latency_max_s: float | None = None
+    cost_per_correct_usd: float | None = None
+    cost_per_correct_dimension: str = ""
+    correct_answers: int = 0
+    scored_replicate_cost_usd: float | None = None
 
 
 # --------------------------------------------------------------------------------------
@@ -526,6 +580,14 @@ def render(
     which are the most quotable and the least interpretable at n=22. A report that leads
     with 84.1% has already lost the argument in its first line, whatever the rest says.
 
+    Cost, tokens and latency come after the aggregates, and that placement follows the
+    same rule rather than bending it. Nothing about section 6 moves the aggregates
+    earlier; what it does is put the most quotable number in the whole document -- the
+    one an app owner repeats in a meeting -- behind every caveat that qualifies it. It
+    also has to sit there for a plainer reason: `cost per correct answer` divides a
+    count section 5's table is built from, so a reader who met it first would be asked
+    to check a division whose denominator had not appeared yet.
+
     The output can contain Thai (`MechanismRow.detail` carries `expected_failure`
     verbatim). Call `console.configure_stdout()` before printing it.
     """
@@ -539,6 +601,7 @@ def render(
     lines += _returned_section(arms)
     lines += _flip_section(arms)
     lines += _metrics_section(arms)
+    lines += _performance_section(arms)
     lines += _not_observable_section()
     # rstrip per line: the column padding leaves trailing spaces that show up as diff
     # noise the moment anyone commits a report or pastes one into a ticket.
@@ -816,6 +879,142 @@ def _metrics_section(arms: Sequence[ArmSummary]) -> list[str]:
         "  unparseable items were dropped, and one-vs-rest accuracy over an 11-class",
         "  reason space is dominated by true negatives. Recall and F1 carry the gate",
         "  (compare.py:11-13, test_differential.py).",
+        "",
+    ]
+    return lines
+
+
+def _performance_section(arms: Sequence[ArmSummary]) -> list[str]:
+    """What the run spent: tokens, cost, latency, and cost per correct answer.
+
+    All of it is arithmetic over `ArmSummary`'s own fields. This module computes no
+    metric (see the module docstring) and that rule does not soften for a division: the
+    ratio, its numerator and its denominator are all handed in by `cli.arm_summary`,
+    which is the only place the per-call rows exist.
+
+    Every number here is a FLOOR rather than a total, and each is a floor for its own
+    reason, which is why they are not collapsed into one caveat:
+
+      * cost, because `usage.cost` is a provider-dependent extension and a row that did
+        not report one is skipped rather than counted free (`runner.py:411-421`). The
+        count of those rows is printed beside the total, not in a log.
+      * reasoning tokens, because `client.py:271` reads them off
+        `usage.completion_tokens_details` and a backend that sends no breakdown yields
+        None, which sums as zero. Zero in that column means "none reported", not "none
+        spent" -- and those tokens are already inside the completion count, so adding
+        the two columns double-counts them.
+      * every column, because a call that never returned carries no usage at all.
+        Section 3's `transport_error` count is how many, which is why this section
+        points at it rather than restating it.
+
+    KNOWN GAP, stated here rather than filled in: there is no time-to-first-token, and
+    there is nothing this harness could honestly put in that column. `client.complete`
+    calls `chat.completions.create` with no `stream=True` (`client.py:234`), so the SDK
+    returns once the whole body has arrived and the only interval that was ever measured
+    is the full round trip. Deriving a TTFT from it would be an invented number quoted
+    against a streaming production path this pack has never exercised.
+    """
+    lines = [
+        _SECTION,
+        "6. COST, TOKENS AND LATENCY - what this run spent, not what a model is worth",
+        _SECTION,
+        f"  {'arm':<12} {'calls':>6} {'prompt_tok':>11} {'compl_tok':>10} "
+        f"{'reason_tok':>11} {'cost USD':>13} {'no cost':>8}",
+    ]
+    for arm in arms:
+        if not arm.calls:
+            lines.append(f"  {arm.arm:<12} NOT RECORDED")
+            continue
+        lines.append(
+            f"  {arm.arm:<12} {arm.calls:>6} {arm.prompt_tokens:>11} "
+            f"{arm.completion_tokens:>10} {arm.reasoning_tokens:>11} "
+            f"{arm.cost_usd_lower_bound:>13.6f} {arm.calls_without_cost:>8}"
+        )
+
+    lines += [
+        "",
+        "  cost USD is a LOWER BOUND and `no cost` is how many of those calls the bound",
+        "  could not see. OpenRouter reports usage.cost only for the providers that supply",
+        "  it; client.py:272 keeps a missing value as None rather than zero and",
+        "  runner.total_cost() skips those rows instead of counting them as free. Quoted",
+        "  without the second column the first one is a floor whose coverage is invisible:",
+        "  0.02 USD over 40 calls and 0.02 USD over the 3 calls that reported both print",
+        "  as 0.02.",
+        "",
+        "  reason_tok is a floor for its own reason and is NOT to be added to compl_tok.",
+        "  reasoning_tokens comes from usage.completion_tokens_details (client.py:271),",
+        "  which is a BREAKDOWN of the completion tokens and already inside them. A",
+        "  backend that sends no breakdown sums here as zero, so 0 means 'none reported',",
+        "  not 'none spent' -- and a reasoning backend that spends the whole budget",
+        "  thinking and returns nothing is a run-configuration bug, not a model failure",
+        "  (section 3, empty_length).",
+        "",
+        "  A call that never returned carries no usage, so it contributes nothing to any",
+        "  column above. Section 3's transport_error count is how many such calls there",
+        "  were, and it is the number that says how much of this arm these totals cover.",
+        "",
+        "  These totals cover EVERY replicate. Cost per correct answer does not; see below.",
+        "",
+        "  Latency per call, over every call the run made:",
+    ]
+    for arm in arms:
+        if arm.latency_median_s is None or arm.latency_max_s is None:
+            lines.append(f"    {arm.arm:<12} NOT RECORDED")
+            continue
+        lines.append(
+            f"    {arm.arm:<12} median {arm.latency_median_s:>8.2f}s     "
+            f"max {arm.latency_max_s:>8.2f}s"
+        )
+
+    lines += [
+        "    latency_s is the LAST attempt's request time with backoff sleeps excluded",
+        "    (runner.py:236-238), so a retried item reports the attempt that answered and",
+        "    not the wall clock it occupied. Failed calls are counted in: a 120s timeout is",
+        "    120 seconds this arm cost, and a median over the successes alone would improve",
+        "    as the failures got worse.",
+        "    There is no time-to-first-token here and there cannot be: client.complete does",
+        "    not stream (client.py:234), so the only interval ever measured is the whole",
+        "    round trip. Nothing above is a streaming latency and none of it is comparable",
+        "    to one.",
+        "",
+        "  Cost per correct answer:",
+    ]
+    for arm in arms:
+        if arm.cost_per_correct_usd is not None:
+            lines.append(
+                f"    {arm.arm:<12} {arm.cost_per_correct_usd:.6f} USD  = "
+                f"{arm.scored_replicate_cost_usd:.6f} / {arm.correct_answers} correct "
+                f"{arm.cost_per_correct_dimension} rows"
+            )
+        elif not arm.calls:
+            lines.append(f"    {arm.arm:<12} NOT RECORDED")
+        elif arm.correct_answers == 0:
+            lines.append(
+                f"    {arm.arm:<12} NOT COMPUTED - this arm got 0 "
+                f"{arm.cost_per_correct_dimension or 'scored'} rows right, and a cost "
+                "divided by zero correct answers is not a number."
+            )
+        else:
+            lines.append(
+                f"    {arm.arm:<12} NOT COMPUTED - no provider reported a cost for the "
+                "scored replicate, so the numerator is UNKNOWN rather than zero."
+            )
+
+    lines += [
+        "    Numerator and denominator are ONE replicate: that replicate's cost over that",
+        "    replicate's correct answers. Production makes one call per item, so a figure",
+        "    dividing a 3-replicate bill by a 1-replicate hit count would be three times",
+        "    the number anyone would act on. The footer names which replicate was scored.",
+        "    'Correct' is not a notion invented for this line. It is the true-positive",
+        "    count of the dimension named on the line, which section 5 already scores, and",
+        "    the line prints the division so it can be checked rather than believed.",
+        "",
+        "    It inherits every caveat above it AND every caveat in section 1. The cost half",
+        "    is a lower bound; at 22 scored rows one row moves the correct half by about",
+        "    5%; and the two arms may have been served by different backends at different",
+        "    prices on one afternoon (section 3's observed-model histogram is where that",
+        "    shows). This is an order of magnitude for planning, not a price quote and not",
+        "    a reason to choose a model.",
         "",
     ]
     return lines

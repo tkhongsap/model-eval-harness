@@ -5,10 +5,14 @@ reproduce the baseline it will be compared against. Both committed run directori
 scored here, and the expected values are written out rather than computed, because a test
 that recomputes the thing under test agrees with it by construction:
 
-    20260804-222943Z-incumbent   gemini-2.5-flash   42 invented / 18 example   0.4286
-    20260804-224050Z-candidate   qwen3.6-27b        30 invented / 19 example   0.6333
+    20260804-222943Z-incumbent   gemini-2.5-flash   39 invented / 15 example   0.3846
+    20260804-224050Z-candidate   qwen3.6-27b        29 invented / 18 example   0.6207
 
-If either moves, the helper changed, not the baseline.
+If either moves, the helper changed, not the baseline — with one exception, already spent:
+these counts are a measurement of frozen run logs AGAINST A GROUND TRUTH, so correcting the
+ground truth legitimately moves them. That happened once, on 2026-08-05, and is recorded in
+the two baseline docstrings below. The run logs were not touched and cannot be; the numbers
+above were re-derived from them, not adjusted until the suite went green.
 
 The rest of the file is about the ways a counter like this is wrong while still printing
 a number: counting slots the ground truth filled, counting predictions that join no
@@ -55,31 +59,56 @@ needs_runs = pytest.mark.skipif(
 
 @needs_runs
 def test_reproduces_the_gemini_baseline() -> None:
-    """42 invented, 18 of them example values, 42%."""
+    """39 invented, 15 of them example values, 38%.
+
+    Was 42 / 18 / 42% until 2026-08-05, when RET-11's ground truth gained
+    `secondary=dissatisfied service` (`retention_v1.jsonl:11`, licensed by
+    `prompt.py:4361`, evidence span `ไม่มีใครตามเรื่องเลย`). The run log was not touched.
+    What moved is what the log is measured against: `FABRICATION_SLOTS` is
+    (`secondary`, `third`) (`fabrication.py:85`) and a slot only counts as invented into
+    while the GROUND TRUTH left it blank (`fabrication.py:149-151`), so 5011's secondary
+    stopped being a blank slot.
+
+    Re-derived from the log rather than back-fitted to the assertion: at call 5011,
+    product Postpaid, all 3 replicates are `parse_ok` and each puts exactly one label in
+    `secondary` — `dissatisfied service`, which is in `EXAMPLE_REASONS`. So both counters
+    lose the same 3: invented 42 - 3 = 39, example_derived 18 - 3 = 15. `third` at 5011 is
+    empty in all 3 replicates and 5011's gt `third` stays blank, so nothing else moves.
+    """
     result = fabrication_rate(INCUMBENT, GT_PATH)
     assert result["model_requested"] == "google/gemini-2.5-flash"
     assert result["prompt_id"] == "v9_16_base"
-    assert result["invented"] == 42
-    assert result["example_derived"] == 18
-    assert result["rate"] == pytest.approx(18 / 42, abs=1e-6)
-    # 0.42857..., quoted as "42%" by truncation rather than rounding. The pair 18/42 is
+    assert result["invented"] == 39
+    assert result["example_derived"] == 15
+    assert result["rate"] == pytest.approx(15 / 39, abs=1e-6)
+    # 0.38461..., quoted as "38%" by truncation rather than rounding. The pair 15/39 is
     # what is load-bearing; the percentage is how it was written down.
-    assert int(result["rate"] * 100) == 42
+    assert int(result["rate"] * 100) == 38
 
 
 @needs_runs
 def test_reproduces_the_qwen_baseline() -> None:
-    """30 invented, 19 of them example values, 63% -- and `save cost` alone is 13.
+    """29 invented, 18 of them example values, 62% -- and `save cost` alone is still 13.
 
     The `save cost` line is the finding this whole variant rests on: a single value from
-    the worked example accounts for 43% of everything the arm invented.
+    the worked example accounts for 45% of everything the arm invented.
+
+    Was 30 / 19 / 63% until the 2026-08-05 RET-11 ground-truth correction described in
+    `test_reproduces_the_gemini_baseline`. Re-derived the same way, from the same log:
+    at call 5011 / Postpaid this run has only ONE `parse_ok` replicate (the other two are
+    among its 10 skipped records, pinned below), and that one replicate puts
+    `dissatisfied service` in `secondary`. So this arm loses 1 where Gemini lost 3:
+    invented 30 - 1 = 29, example_derived 19 - 1 = 18.
+
+    `save cost` is untouched at 13, measured, which matters more than the headline: the
+    correction moved the denominator, not the finding the variant was built to test.
     """
     result = fabrication_rate(CANDIDATE, GT_PATH)
     assert result["model_requested"] == "qwen/qwen3.6-27b"
-    assert result["invented"] == 30
-    assert result["example_derived"] == 19
-    assert result["rate"] == pytest.approx(19 / 30, abs=1e-6)
-    assert round(result["rate"] * 100) == 63
+    assert result["invented"] == 29
+    assert result["example_derived"] == 18
+    assert result["rate"] == pytest.approx(18 / 29, abs=1e-6)
+    assert round(result["rate"] * 100) == 62
     assert result["emitted"]["save cost"] == 13
 
 

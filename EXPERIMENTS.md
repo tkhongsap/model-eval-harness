@@ -113,6 +113,59 @@ choosing the rule to fit the result.
 One headline number moved between passes: `reason` net on `e1` went **+5 -> +4**. Small, real,
 and it means a single Qwen run should not be quoted without a repeat.
 
+**A metric was built, measured, and retracted. The retraction is the finding.**
+
+An "evidence fidelity" metric was drafted to score whether each `keyword` value appears
+verbatim in the transcript, and it reported Qwen ahead. It never reached a table above; it
+was withdrawn. It had been built from the run data it was judging, with no hand-computed
+expectation written first, and it measured a **format** difference and reported it as a
+fidelity one.
+
+`keyword`'s schema description sits in `src/evalgen/schemas/retention.json`, ported from
+production `main.py:977`, and `response_format` sends it to **both** arms on every call:
+
+> "List keywords or short phrases directly from the audio that explicitly indicate or
+> support the reason. **Use comma separation.** Use empty string if not applicable."
+
+Gemini obeys the comma instruction. The retracted metric matched whole strings, so every
+multi-segment cell Gemini produced was scored a miss. Comma-split first — the convention
+`records.py:57-60` already applies to the sibling field `reason` — and the **same base-run
+data** gives:
+
+| arm, base run | whole-string verbatim | comma-split verbatim |
+|---|---|---|
+| Gemini | 81/120 = 67.5% | **189/189 = 100.0%** |
+| Qwen | 126/132 = 95.5% | 126/132 = 95.5% (no commas to split) |
+
+**The whole gap was the comma, and the direction was backwards.** Split on the separator the
+schema asks for, the incumbent is at 100.0% and the candidate at 95.5%.
+
+It could not have changed the ranking either way: `keyword` is not scored in production at
+all. `decoding.py:130` and `flatten.py:243` both record that only `.reason` is read
+(`fact_checker.py:607-617`).
+
+**Diagnostic, not a scored dimension — Qwen never emits a comma.**
+
+| run | non-empty `keyword` fields | with a comma |
+|---|---|---|
+| incumbent-base | 120 | 39 |
+| incumbent-e1 | 123 | 45 |
+| candidate-base | 132 | **0** |
+| candidate-e1 | 108 | **0** |
+| pin-proof-morph | 17 | **0** |
+
+Across **257** non-empty `keyword` fields Qwen emits zero commas — it ignores an explicit
+schema instruction 100% of the time, on a field both arms receive identically. Gemini uses
+one on 84 of its 243. This enters no verdict, because production does not score `keyword`.
+It is recorded because it is the one place in this experiment where the candidate is
+measurably not doing what the schema says, and that is worth watching on a field that **is**
+scored.
+
+**How it was caught, and what changed.** Adversarial review, not the run. The metric was
+built from the data it would judge and it confirmed the answer its author already held.
+**A new metric now needs a hand-computed expectation written down before the code exists**,
+the way `tests/fixtures/retention_expected.csv` was derived in `WORKED-COMPUTATION.md`.
+
 ### Recommended next steps
 
 Ordered by expected value, with what each would falsify.
@@ -127,9 +180,13 @@ Ordered by expected value, with what each would falsify.
 3. **Attack the four shared failures directly.** Neither model emits `product: unknown` or
    `call_result: undefined`. A single explicit instruction that these classes are real and
    expected is one edit and targets 3 of the 4. Falsified if either class still never appears.
-4. **Score evidence fidelity.** Qwen's `keyword` is verbatim in the transcript; Gemini's is a
-   comma-stitched fabrication that does not appear verbatim. This is the rule True defended
-   across six prompt versions and **nothing here scores it.** Adding it may change the ranking.
+4. ~~**Score evidence fidelity.**~~ **WITHDRAWN — the claim under it was false.** It read:
+   *"Qwen's `keyword` is verbatim in the transcript; Gemini's is a comma-stitched fabrication
+   that does not appear verbatim ... Adding it may change the ranking."* Both halves are
+   wrong. Gemini's commas are what the schema instructs, and split on them Gemini is verbatim
+   at **100.0%** against Qwen's **95.5%** — the opposite of the claim. Production does not
+   score `keyword`, so no ranking was ever available to change. See *"A metric was built,
+   measured, and retracted"* above. Nothing takes this slot.
 5. **Raise replicates from 3 to 5 for Qwen only.** Gemini is deterministic; Qwen is not.
    Cheap, and it makes the net numbers stable enough to quote.
 
