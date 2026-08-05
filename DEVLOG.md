@@ -5,6 +5,32 @@
 **Current Focus**: Waiting on real ground-truth data. Nothing in the harness is
 blocked on code.
 
+**Blocking the Qwen candidate arm (2026-08-05).** `out/runs/20260804-224050Z-candidate`
+is **INVALID and must not be scored**: it was served by two backends under one model
+id. Backends are now pinnable (`--provider`) and a split is now visible
+(`prompt_token_spread`), but the pin forces a choice the harness cannot make for
+itself, and the choice that matches production is the one that currently fails:
+
+- Production runs `thinkingBudget: 0` (`config/model_setting/retention.yml`), a
+  NON-REASONING regime. Of nine `qwen/qwen3.6-27b` endpoints, exactly one is
+  non-reasoning: **Alibaba** (`reasoning_tokens=0`, ~2587 prompt tokens on RET-01,
+  7-11s). The other eligible backends (Chutes, DeepInfra, CoreWeave) all reason and
+  all report 3691 prompt tokens on the same bytes.
+- **Pinned to Alibaba, 20 of 20 items returned `schema_violation`** (plus 9 of 9 on the
+  3x3 stability probe). Every one is a bare JSON *number literal* -- e.g.
+  `-1.1000000000000001e-05` followed by ~500 digits -- where the schema's root type is
+  `object`. `finish_reason: stop`, no truncation. That is a broken constrained decoder
+  on that endpoint, not a model failing a hard task: the identical request returns a
+  well-formed object from Chutes, DeepInfra and CoreWeave.
+- **Open decision, for a human**: measure the candidate in a reasoning regime that
+  production does not run (an upper bound nobody can deploy, at ~45-75s per call
+  against production's ~7s), or report that `qwen/qwen3.6-27b` has no usable
+  non-reasoning endpoint on OpenRouter for constrained decoding. Both are defensible;
+  they are different questions and the harness must not pick one silently.
+- Note the earlier run is now **unattributable**: its regime-A rows scored 21 of 31
+  `ok`, against 0 of 20 today, and it recorded no `provider` field, so the difference
+  cannot be assigned to a backend. That gap is exactly what this change closes.
+
 - [ ] Receive the **first two header rows** of the Retention ground-truth workbook
       (no data rows). This settles the two-row header layout that
       `adapters/retention.py::load_workbook` currently refuses to guess, and contains
