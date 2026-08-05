@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Canon-aligned documentation set: `AGENTS.md`, `CLAUDE.md`, `DEVLOG.md`,
   `TESTING.md`, `CONTRIBUTING.md`, and this changelog.
 - CI workflow running the test suite on push and pull request.
+- **`--provider NAME` pins an arm to one OpenRouter backend**, sending
+  `{"order": [NAME], "allow_fallbacks": false, "require_parameters": true}` and
+  recording it in `run.json` as `provider_requested`. `allow_fallbacks: false` is the
+  load-bearing key: `order` alone is a preference the router abandons whenever the
+  named endpoint is busy, and a run that fell through looks identical in the log.
+- **`RunResult.prompt_token_spread` / `split_items`**, the check that an arm was one
+  backend. Every replicate of an item sends a byte-identical request, so
+  `prompt_tokens` is a pure function of the backend's tokenizer and two values means
+  two builds. This is the evidence a pin held; the `provider` field is the router
+  describing its own routing and cannot serve as its own verification.
+- `observed_providers` histogram, in `run.json` and on the console, beside
+  `observed_models`.
 
 ### Changed
 
@@ -20,6 +32,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 ### Fixed
+
+- **An arm could be served by two backends with nothing in the log to show it.**
+  MEASURED: a 60-call `qwen/qwen3.6-27b` run split across two builds -- one with
+  `reasoning_tokens=0`, 2538-2643 prompt tokens, a 5.8s median and 10 of 31 rows in
+  `schema_violation`; the other with `reasoning_tokens>0`, 3583-3931 prompt tokens, a
+  71.7s median and 0 of 29. `observed_models` reported `60 x qwen/qwen3.6-27b` and the
+  split was invisible, because the guard watched `response.model` and the model id was
+  never what changed. 14 of 20 items returned two distinct `prompt_tokens` values for
+  a byte-identical request; the incumbent returned 0 of 20.
+- **`raw_content`, `finish_reason`, `generation_id` and `provider` are now persisted
+  per row.** `client.Completion.raw` documented these as "still recoverable from the
+  run log"; they were not -- `runner._result_from_completion` never touched `raw`, so
+  nothing in it ever reached disk. The cost was measured: all ten `schema_violation`
+  rows of the candidate run were undiagnosable, because the model's own text was
+  discarded at exactly the boundary where the harness decided it was wrong. The
+  docstring that claimed otherwise is corrected rather than deleted.
 
 ### Security
 
