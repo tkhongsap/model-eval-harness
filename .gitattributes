@@ -20,7 +20,7 @@
 * text=auto eol=lf
 
 # Binaries: explicitly exempted from any text handling. Matters now
-# that source-code-review/ carries real images and .xlsx workbooks.
+# that production-reference/ carries real images and .xlsx workbooks.
 *.png binary
 *.jpg binary
 *.jpeg binary

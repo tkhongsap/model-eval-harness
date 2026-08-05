@@ -12,10 +12,11 @@ harness was written is the middle of `prompt.py`'s `prompt_v9_16` monolith, line
 4318-4409. Both halves are therefore extracted into `src/evalgen/prompts/` as committed
 text files.
 
-**Why they are files and not a read of `source-code-review/`.** That tree is gitignored
-and absent from CI. A builder that reads it works on the author's laptop and raises
-`FileNotFoundError` on every other machine, which is the sort of failure that shows up
-after the run has been scheduled rather than before. The assets carry the prompt; the
+**Why they are files and not a read of `production-reference/` at runtime.** That tree
+is tracked now, but reading the prompt live from it would still be wrong: this snapshot
+is a deliberate, reviewed extraction, sha256-pinned in `prompts/PORT-NOTES.md`, so a
+later change to the reference tree is a diff a reviewer sees rather than a prompt that
+silently changes underneath a scheduled run. The assets carry the prompt; the
 production tree is only ever the provenance.
 
 Three transcription bugs were fixed on the way in. Each is recorded with before/after in
@@ -173,7 +174,7 @@ def _read(path: Path) -> str:
     except FileNotFoundError as exc:  # pragma: no cover - packaging failure, not logic
         raise PromptError(
             f"prompt asset missing: {path}. These files are committed precisely so the "
-            "prompt does not depend on source-code-review/, which is gitignored."
+            "prompt does not depend on reading production-reference/ live at run time."
         ) from exc
 
 

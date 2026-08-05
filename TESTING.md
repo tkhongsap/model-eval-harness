@@ -29,6 +29,15 @@ set TRUE_SOURCE_ROOT=C:\Users\te90056471\my-github\life-os\work-work\projects\20
 .venv\Scripts\python -m pytest tests/ -q
 ```
 
+As of 2026-08-05 a reference copy is also tracked in this repo at `production-reference/`
+(see its `.gitignore` entry for why). Pointing `TRUE_SOURCE_ROOT` at
+`production-reference/sentiment-batch-retention-main` instead of the life-os path works
+identically; `tests/production_ref.py`'s own default still resolves to a directory
+*outside* the repo, so standalone `pytest tests/ -q` keeps skipping the differential
+tests unless `TRUE_SOURCE_ROOT` is set explicitly -- that default was left alone
+deliberately rather than widened to auto-discover the in-repo copy, so the documented
+"375 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
+
 The skipped tests are the differential check against production's real scorer, and the
 cross-check of our pins against production's `requirements.txt`. **The version pin gate
 itself always runs**, in both modes: it depends on nothing outside this repository.

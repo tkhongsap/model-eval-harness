@@ -25,7 +25,7 @@ from pathlib import Path
 # Set TRUE_SOURCE_ROOT to override; defaults to the vendored archive in this repo.
 DEFAULT_SOURCE = (
     Path(__file__).resolve().parents[2]
-    / "source-code-review"
+    / "production-reference"
     / "sentiment-batch-retention-main"
 )
 

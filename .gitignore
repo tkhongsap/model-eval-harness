@@ -132,7 +132,7 @@ Untitled.*
 # ===================================================================
 # True's production source: TRACKED, by deliberate reversal.
 #
-# Until 2026-08-05 this repository blocked source-code-review/ outright
+# Until 2026-08-05 this repository blocked the directory outright
 # ("must NEVER live in this repository"), after a workflow agent copied
 # 635 files / 15MB of it here by accident on 2026-08-04 -- a copy that
 # didn't even work, since production_ref.py resolved TRUE_SOURCE_ROOT to
@@ -147,9 +147,12 @@ Untitled.*
 # Scanned before commit: no .env/.pem/.key/credentials files and no
 # live-API-key-shaped strings found in the tree.
 #
+# Renamed source-code-review/ -> production-reference/ the same day: the
+# old name read as a temporary review copy, which this deliberately is not.
+#
 # This repository stays private BECAUSE it now holds this (AGENTS.md,
 # "Open items"). The exception below exists because the blanket workbook
 # rule above would otherwise strip legitimate config files out of a tree
 # that is meant to be a complete, checkable reference copy.
 # ===================================================================
-!source-code-review/**/*.xlsx
+!production-reference/**/*.xlsx

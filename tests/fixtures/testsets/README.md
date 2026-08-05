@@ -14,7 +14,7 @@ call-analysis app. Twenty items, twenty-two scored rows, no real customer data.
 
 ## What the app under test is
 
-The **Retention** app: `source-code-review/sentiment-batch-retention-main/`.
+The **Retention** app: `production-reference/sentiment-batch-retention-main/`.
 
 Every `rule_*` citation in this file resolves against that repository:
 

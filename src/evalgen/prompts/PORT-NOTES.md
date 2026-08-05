@@ -4,8 +4,8 @@ What was copied out of True's production tree, where it came from, and every cha
 that changed on the way. Written so a reviewer can re-derive both files from the
 production sources without running anything.
 
-Production tree (gitignored, read-only, never edited):
-`source-code-review/sentiment-batch-retention-main/`
+Production tree (tracked as a reference copy, read-only, never edited):
+`production-reference/sentiment-batch-retention-main/`
 
 | Asset | Source | sha256 |
 |---|---|---|
@@ -16,9 +16,11 @@ Both files: UTF-8, no BOM, LF, single trailing newline.
 
 ## Why these are files at all
 
-`source-code-review/` is gitignored and absent from CI. A prompt read from there works on
-one laptop and raises `FileNotFoundError` everywhere else — after the run is scheduled,
-not before. The assets carry the prompt; the production tree is only provenance.
+`production-reference/` is tracked, but reading the prompt from it live at run time would
+still be wrong: this snapshot is reviewed and sha256-pinned, so a later change to the
+reference tree is a diff someone sees rather than a prompt that silently changes
+underneath a scheduled run. The assets carry the prompt; the production tree is only
+provenance.
 
 ## Boundaries, verified rather than assumed
 
