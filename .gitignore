@@ -21,12 +21,15 @@
 data/
 out/
 build/
-*.xlsm
 
-# Belt and braces: raw workbooks and extracts anywhere in the tree.
-# tests/fixtures/*.csv is synthetic (08100000xx) and IS tracked, so
-# csv is not blanket-ignored; the data/ rule above covers real ones.
-**/ground_truth*.xlsx
+# Belt and braces: raw workbooks and extracts anywhere in the tree, not just
+# inside data/ and out/. Ground-truth workbooks arrive as .xlsx; .xlsm is
+# blocked too in case a macro-enabled copy shows up. Blanket rather than
+# name-matched, because a real workbook saved under any filename outside
+# data/ or out/ must still be caught. tests/fixtures/*.csv is synthetic
+# (08100000xx) and IS tracked, so csv is not blanket-ignored.
+*.xlsx
+*.xlsm
 **/Post Evaluate*
 **/*_PRIVATE.*
 **/*NAMED-PRIVATE*
@@ -82,7 +85,7 @@ ENV/
 *.ipynb
 
 # ===================================================================
-# IDE and editors
+# IDE, editors and AI-tool local config
 # ===================================================================
 .idea/
 .vscode/
@@ -91,6 +94,12 @@ ENV/
 *~
 *.sublime-project
 *.sublime-workspace
+
+# Claude Code's project directory: local settings plus, in practice, a mix
+# of marketplace-installed skills and machine-specific state, not authored
+# project content. Ignored wholesale, same treatment as .idea/ and .vscode/
+# above rather than a special case.
+.claude/
 
 # ===================================================================
 # OS
@@ -104,6 +113,10 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# Windows: the alternate-data-stream marker left on any file downloaded
+# through a browser. Harmless, but it has no business in a commit.
+*:Zone.Identifier
+
 # ===================================================================
 # Logs, temp, scratch
 # ===================================================================
@@ -115,3 +128,16 @@ temp/
 *.bak
 Untitled.*
 ~$*
+
+# ===================================================================
+# True's production source must NEVER live in this repository.
+#
+# A workflow agent copied 635 files / 15MB of it here on 2026-08-04 to
+# satisfy the differential test. It did not even work: production_ref.py
+# resolves TRUE_SOURCE_ROOT to <parent>/source-code-review, not to a copy
+# inside the repo, so the test skipped anyway. The copy was pure liability.
+#
+# The canonical copy lives in life-os. Point TRUE_SOURCE_ROOT at it:
+#   TRUE_SOURCE_ROOT=.../life-os/work-work/projects/.../source-code-review/sentiment-batch-retention-main
+# ===================================================================
+source-code-review/
