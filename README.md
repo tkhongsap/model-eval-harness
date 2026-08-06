@@ -30,6 +30,7 @@ boundary is enforced rather than asserted.
 | What is being worked on now, and what is next | [DEVLOG.md](./DEVLOG.md) |
 | Enterprise phase-one/phase-two objectives, gates and workflow | [docs/enterprise-evaluation-framework.md](./docs/enterprise-evaluation-framework.md) |
 | Machine-checkable Experiment 5 preregistration | [experiments/retention-e5.plan.json](./experiments/retention-e5.plan.json) |
+| Experiment 5 provider qualification results | [docs/experiment5-qualification.md](./docs/experiment5-qualification.md) |
 | Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |
@@ -162,7 +163,7 @@ src/evalgen/       the generator half. Calls models on purpose, so the scorer ma
   experiments.py   machine plans, provider qualification, reliability and decision gates
   (also config, console, evidence, fabrication, testsets)
 scripts/
-  evalgen.py       CLI: check/baseline/stability/compare plus experiment check/budget/qualify/run/report
+  evalgen.py       CLI: check/baseline/stability/compare plus experiment check/budget/qualify/reclassify/run/report
   run_index.py     regenerates RUNS.md from each run's `run.json` provenance, never its payload
   run_report.py    everything one run directory has to answer for, in one place
   export_xlsx.py   the comparison as a workbook, with its caveats on the first sheet

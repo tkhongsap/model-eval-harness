@@ -177,19 +177,23 @@ maximum and therefore requires amending and reviewing the draft before calls.
 At the 2026-08-06 inventory/prices, a deliberately conservative ceiling is **$3.47**
 for all 108 probes: input tokens are estimated at twice the UTF-8 content bytes and every
 call is assumed to spend all 8,000 output tokens at the highest listed provider price.
-Applying the same deliberately extreme assumption to all full/load calls produces a
-current all-stage ceiling of **$68.04** (`experiment-budget`). This is an approval cap,
-not likely spend; selected providers narrow it at gate 2.
+Gate 1 completed all 108 probes for US$0.109184588 reported cost. Twelve providers
+qualified and six were request incompatible. After selecting Google, Morph and AkashML,
+the same deliberately extreme assumption produces a **$50.13** full/load ceiling and a
+**$53.60** all-stage planning ceiling (`experiment-budget`). These are approval caps,
+not expected spend. Full results remain behind Gate 2.
 
 ## Approval gates and engineer workflow
 
 1. Draft: run `experiment-check`, review this plan together and refresh provider
-   inventory. No model calls.
+   inventory. No model calls. **Complete.**
 2. Qualification approval: review maximum bounded cost, then authorize only named
-   six-call probes. Record every result, including failed endpoints.
+   six-call probes. Record every result, including failed endpoints. **Complete: 108
+   calls; see `docs/experiment5-qualification.md`.**
 3. Lock approval: select qualified providers, copy qualification hashes into the plan,
    set status `locked`, rerun offline checks, review exact projected cost, and approve
-   full/load calls. The command requires the reviewed plan SHA.
+   full/load calls. **Plan lock and checks are complete; paid-call approval is pending.**
+   The command requires the reviewed plan SHA.
 4. Report review: examine item regressions and phase slices before aggregates.
    Operations rank only quality-eligible arms.
 5. Reconciliation: compare against production-shaped truth and the live Gemini report.

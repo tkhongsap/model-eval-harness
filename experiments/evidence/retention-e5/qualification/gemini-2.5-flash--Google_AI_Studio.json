@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "gemini-2.5-flash",
+  "model": "google/gemini-2.5-flash",
+  "provider": "Google AI Studio",
+  "qualification_contract_sha": "5d700274656d08468405a31757e6b3388237c1a91653dd37d932197859cf8aca",
+  "run_id": "20260806-055623Z-qual-gemini-2.5-flash-Google AI Studio",
+  "qualification": {
+    "status": "QUALIFIED",
+    "passed": true,
+    "calls": 6,
+    "parse_ok": 6,
+    "observed_models": {
+      "google/gemini-2.5-flash": 6
+    },
+    "observed_providers": {
+      "Google AI Studio": 6
+    },
+    "reasoning_tokens": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "calls_without_prompt_usage": 0,
+    "split_items": {},
+    "http_statuses": {},
+    "reasons": []
+  },
+  "qualification_sha": "dac78526e3940dff11490e977a3df178542035c004acc8749ea1e668fabe972a"
+}

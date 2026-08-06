@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-27b",
+  "model": "qwen/qwen3.6-27b",
+  "provider": "Phala",
+  "qualification_contract_sha": "afee4c00a0abffc156c77a400319ef886f14d9edf0c66a402884d778b577397a",
+  "run_id": "20260806-060103Z-qual-qwen3.6-27b-Phala",
+  "qualification": {
+    "status": "REQUEST_INCOMPATIBLE",
+    "passed": false,
+    "calls": 6,
+    "parse_ok": 0,
+    "observed_models": {},
+    "observed_providers": {},
+    "reasoning_tokens": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "calls_without_prompt_usage": 6,
+    "split_items": {},
+    "http_statuses": {
+      "404": 6
+    },
+    "reasons": [
+      "parse_ok was 0/6",
+      "observed model set [] != ['qwen/qwen3.6-27b']",
+      "observed provider set [] != ['Phala']",
+      "reasoning_tokens was not exactly zero on every call",
+      "6 calls had no positive prompt token count",
+      "exact request rejected with HTTP statuses {'404': 6}"
+    ]
+  },
+  "qualification_sha": "117122e2cf734bc1989136901742936a8218bc1703f3bede3b753102b2cb1ed9"
+}

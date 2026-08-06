@@ -3,10 +3,10 @@
 Synthetic Thai call transcripts for comparing two LLMs on True Corp's **Retention**
 call-analysis app. Twenty items, twenty-two scored rows, no real customer data.
 
-**Everything below describes `retention_v1` unless it says otherwise.** A second pack,
-`retention_v2` — 100 items, 108 scored rows — now sits in this directory and has its own
-section at the end. `retention_v1` is **frozen**: Experiments 1 and 2 cite it, so nothing
-this document says about it moves.
+**Everything below describes `retention_v1` unless it says otherwise.** `retention_v2`
+contains 100 items / 108 scored rows; `retention_v3` preserves that prefix and adds 38
+versioned robustness items for 138 items / 150 scored rows. `retention_v1` is
+**frozen**: Experiments 1 and 2 cite it, so nothing this document says about it moves.
 
 | File | What it is |
 |---|---|
@@ -14,6 +14,9 @@ this document says about it moves.
 | `retention_v1.gt.csv` | Ground truth flattened to the scorer's grain — one row per `(call_id, phone_number, product)`. 22 rows. |
 | `retention_v2.jsonl` | The 100-item pack, `RET-01` … `RET-100`. Same contract, same encoding rules. Its first 20 items are byte-identical to `retention_v1.jsonl`. See [The v2 pack](#the-v2-pack--retention_v2). |
 | `retention_v2.gt.csv` | v2 ground truth at the same grain. 108 rows. |
+| `retention_v3.jsonl` | The Experiment 5 pack, `RET-01` … `RET-138`. Its first 100 items preserve v2; the manifest defines Phase 1 and Phase 2 slices. |
+| `retention_v3.gt.csv` | v3 ground truth at the same grain. 150 rows. |
+| `retention_v3.manifest.json` | Versioned dataset contract: hashes, row counts, slice ids, provenance and review status. |
 | `VOCABULARIES.md` | Label vocabularies, provenance and the D1–D14 divergence register. The authority for what a label means. |
 | `block_a_clear.jsonl`, `block_b_thai.jsonl`, `block_c_tiebreak.jsonl`, `block_d_escape.jsonl` | The pre-merge drafts. Superseded by `retention_v1.jsonl`; kept only for diff history. **Do not score against them** — they were never run through the loader and fail `validate()` in 155 places. |
 

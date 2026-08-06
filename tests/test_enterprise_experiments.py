@@ -98,6 +98,58 @@ def _qualified_run() -> RunResult:
     return _run(*rows)
 
 
+def _lock_with_fake_qualifications(plan, directory: Path):
+    """Replace live evidence paths with a complete deterministic test evidence set."""
+    plan["status"] = "locked"
+    draft_plan_sha = "a" * 64
+    provider_results = 0
+    for arm_index, arm in enumerate(plan["arms"]):
+        evidence = {}
+        selected_artifact = None
+        for provider_index, provider in enumerate(arm["provider_candidates"]):
+            artifact = {
+                "schema_version": 1,
+                "experiment_id": plan["experiment_id"],
+                "plan_sha": draft_plan_sha,
+                "arm": arm["id"],
+                "model": arm["model"],
+                "provider": provider,
+                "qualification_contract_sha": qualification_contract_sha(
+                    plan, arm_id=arm["id"], provider=provider
+                ),
+                "run_id": f"qualification-{arm_index}-{provider_index}",
+                "qualification": {
+                    "status": "QUALIFIED",
+                    "passed": True,
+                    "calls": 6,
+                },
+            }
+            artifact["qualification_sha"] = canonical_sha(artifact)
+            path = directory / f"qualification-{arm_index}-{provider_index}.json"
+            path.write_text(json.dumps(artifact), encoding="utf-8")
+            evidence[provider] = str(path)
+            provider_results += 1
+            if provider_index == 0:
+                selected_artifact = (provider, path, artifact)
+        provider, path, artifact = selected_artifact
+        arm.update({
+            "availability": "QUALIFIED",
+            "selected_provider": provider,
+            "qualification_artifact": str(path),
+            "qualification_sha": artifact["qualification_sha"],
+            "qualification_evidence": evidence,
+            "unavailability_evidence": {},
+        })
+    plan["qualification_evidence_summary"] = {
+        "draft_plan_sha": draft_plan_sha,
+        "provider_results": provider_results,
+        "logical_calls": provider_results * 6,
+        "status_counts": {"QUALIFIED": provider_results},
+        "raw_model_output_committed": False,
+    }
+    return plan
+
+
 def test_committed_experiment_plan_and_prompt_library_are_in_sync():
     plan = load_plan(PLAN)
 
@@ -119,30 +171,9 @@ def test_committed_experiment_plan_and_prompt_library_are_in_sync():
 
 
 def test_locked_plan_requires_untampered_qualified_artifacts(tmp_path):
-    plan = json.loads(json.dumps(load_plan(PLAN)))
-    plan["status"] = "locked"
-    for index, arm in enumerate(plan["arms"]):
-        provider = arm["provider_candidates"][0]
-        artifact = {
-            "schema_version": 1,
-            "experiment_id": plan["experiment_id"],
-            "plan_sha": "qualification-time-draft-sha",
-            "arm": arm["id"],
-            "model": arm["model"],
-            "provider": provider,
-            "qualification_contract_sha": qualification_contract_sha(
-                plan, arm_id=arm["id"], provider=provider
-            ),
-            "run_id": f"qualification-{index}",
-            "qualification": {"status": "QUALIFIED", "passed": True},
-        }
-        artifact["qualification_sha"] = canonical_sha(artifact)
-        path = tmp_path / f"qualification-{index}.json"
-        path.write_text(json.dumps(artifact), encoding="utf-8")
-        arm["selected_provider"] = provider
-        arm["availability"] = "QUALIFIED"
-        arm["qualification_artifact"] = str(path)
-        arm["qualification_sha"] = artifact["qualification_sha"]
+    plan = _lock_with_fake_qualifications(
+        json.loads(json.dumps(load_plan(PLAN))), tmp_path
+    )
 
     assert validate_plan(plan, root=ROOT) == []
 
@@ -154,6 +185,22 @@ def test_locked_plan_requires_untampered_qualified_artifacts(tmp_path):
     problems = validate_plan(plan, root=ROOT)
     assert any("invalid self-hash" in problem for problem in problems)
     assert any("qualification status" in problem for problem in problems)
+
+
+def test_locked_plan_requires_evidence_for_unselected_candidates(tmp_path):
+    plan = _lock_with_fake_qualifications(
+        json.loads(json.dumps(load_plan(PLAN))), tmp_path
+    )
+    arm = plan["arms"][1]
+    unselected = arm["provider_candidates"][1]
+    del arm["qualification_evidence"][unselected]
+
+    problems = validate_plan(plan, root=ROOT)
+
+    assert any(
+        "qualification_evidence must cover every candidate provider" in problem
+        for problem in problems
+    )
 
 
 def test_explicit_reasoning_off_is_in_the_exact_pinned_request():
@@ -224,7 +271,10 @@ def test_qualification_requires_all_six_calls_identity_usage_and_zero_reasoning(
     assert result.reasons == ()
 
 
-def test_morph_style_400_is_request_incompatible_not_transient():
+@pytest.mark.parametrize("http_status", [400, 404, 422])
+def test_exact_request_rejection_is_request_incompatible_not_identity(
+    http_status,
+):
     rows = [
         _row(
             item,
@@ -235,7 +285,7 @@ def test_morph_style_400_is_request_incompatible_not_transient():
             provider=None,
             prompt_tokens=None,
             reasoning_tokens=None,
-            http_status=400,
+            http_status=http_status,
         )
         for item in ("RET-01", "RET-109", "RET-138")
         for replicate in (1, 2)
@@ -248,7 +298,10 @@ def test_morph_style_400_is_request_incompatible_not_transient():
 
     assert not result.passed
     assert result.status == "REQUEST_INCOMPATIBLE"
-    assert result.http_statuses == {"400": 6}
+    assert result.http_statuses == {str(http_status): 6}
+    assert result.reasons[-1] == (
+        f"exact request rejected with HTTP statuses {{'{http_status}': 6}}"
+    )
 
 
 def test_scalar_or_invalid_json_is_schema_incompatible():
@@ -264,6 +317,56 @@ def test_scalar_or_invalid_json_is_schema_incompatible():
     )
 
     assert result.status == "SCHEMA_INCOMPATIBLE"
+
+
+def test_qualification_report_reclassifies_paid_rows_without_a_client(
+    tmp_path, monkeypatch, capsys
+):
+    rows = [
+        _row(
+            item,
+            replicate,
+            outcome="transport_error",
+            payload=None,
+            model=None,
+            provider=None,
+            prompt_tokens=None,
+            reasoning_tokens=None,
+            http_status=404,
+        )
+        for item in ("RET-01", "RET-109", "RET-138")
+        for replicate in (1, 2)
+    ]
+    plan = load_plan(PLAN)
+    loaded = SimpleNamespace(
+        directory=tmp_path,
+        meta={
+            "experiment_mode": "qualification",
+            "experiment_plan_sha": canonical_sha(plan),
+            "arm": "qwen3.6-27b",
+            "provider_requested": "Morph",
+            "model_requested": "qwen/qwen3.6-27b",
+        },
+        result=_run(*rows),
+    )
+    monkeypatch.setattr(cli, "load_run", lambda path: loaded)
+
+    code = main(
+        [
+            "qualification-report",
+            "--plan",
+            str(PLAN),
+            "--run",
+            str(tmp_path),
+        ]
+    )
+
+    assert code == 1
+    assert "No model call was made and no key was read." in capsys.readouterr().out
+    artifact = json.loads((tmp_path / "qualification.json").read_text())
+    assert artifact["qualification"]["status"] == "REQUEST_INCOMPATIBLE"
+    recorded_sha = artifact.pop("qualification_sha")
+    assert recorded_sha == canonical_sha(artifact)
 
 
 def test_reasoning_tokens_make_an_otherwise_valid_provider_regime_incompatible():
@@ -398,16 +501,22 @@ def test_experiment_workbook_carries_quality_regressions_and_load(tmp_path):
     assert workbook["Regressions"]["B2"].value == "hashed"
 
 
-def test_cli_checks_plan_offline_and_refuses_full_calls_while_draft(capsys):
+def test_cli_checks_plan_offline_and_refuses_full_calls_while_draft(
+    tmp_path, capsys
+):
     plan = load_plan(PLAN)
 
     assert main(["experiment-check", "--plan", str(PLAN)]) == EXIT_OK
     assert main(["experiment-budget", "--plan", str(PLAN)]) == EXIT_OK
+    draft = json.loads(json.dumps(plan))
+    draft["status"] = "draft"
+    draft_path = tmp_path / "draft.plan.json"
+    draft_path.write_text(json.dumps(draft), encoding="utf-8")
     assert main([
         "experiment-run",
-        "--plan", str(PLAN),
+        "--plan", str(draft_path),
         "--arm", "qwen3.6-27b",
-        "--confirm-plan-sha", canonical_sha(plan),
+        "--confirm-plan-sha", canonical_sha(draft),
     ]) == EXIT_REFUSED
     output = capsys.readouterr()
     assert "not 'locked'" in output.err
@@ -424,32 +533,9 @@ def test_locked_experiment_runs_and_reports_are_reproducible_without_network(
     scorers, paired verdicts and JSON/Markdown/XLSX writers. If those pieces drift apart,
     this is where a plausible-looking final report must fail before an invoice exists.
     """
-    plan = json.loads(json.dumps(load_plan(PLAN)))
-    plan["status"] = "locked"
-    for index, arm in enumerate(plan["arms"]):
-        provider = arm["provider_candidates"][0]
-        artifact = {
-            "schema_version": 1,
-            "experiment_id": plan["experiment_id"],
-            "plan_sha": "qualification-time-draft-sha",
-            "arm": arm["id"],
-            "model": arm["model"],
-            "provider": provider,
-            "qualification_contract_sha": qualification_contract_sha(
-                plan, arm_id=arm["id"], provider=provider
-            ),
-            "run_id": f"qualified-{index}",
-            "qualification": {"status": "QUALIFIED", "passed": True},
-        }
-        artifact["qualification_sha"] = canonical_sha(artifact)
-        artifact_path = tmp_path / f"qualified-{index}.json"
-        artifact_path.write_text(json.dumps(artifact), encoding="utf-8")
-        arm.update({
-            "availability": "QUALIFIED",
-            "selected_provider": provider,
-            "qualification_artifact": str(artifact_path),
-            "qualification_sha": artifact["qualification_sha"],
-        })
+    plan = _lock_with_fake_qualifications(
+        json.loads(json.dumps(load_plan(PLAN))), tmp_path
+    )
 
     plan_path = tmp_path / "locked.plan.json"
     plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")

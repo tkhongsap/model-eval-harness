@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Committed Experiment 5 qualification evidence.** Gate 1 exercised all 18 named
+  providers in 108 one-attempt calls, retained every outcome as a safe self-hashed
+  artifact, selected Google/Morph/AkashML by historical continuity, and locked the
+  plan while leaving full/load approval pending. `qualification-report` deterministically
+  reclassifies recorded qualification rows without a key or model call.
+
 - **Experiment 5 enterprise evaluation workflow.** A machine-checkable draft plan pins
   Retention v3, three arms, fixed prompt, explicit reasoning-off regime, three
   replicates, one attempt, exact paired decision rule, 99% reliability gate, and the

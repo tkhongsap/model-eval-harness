@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-27b",
+  "model": "qwen/qwen3.6-27b",
+  "provider": "SiliconFlow",
+  "qualification_contract_sha": "5df3432079d42216577d90b7516bf724c0045b77565ff75995f312f2b9135ad6",
+  "run_id": "20260806-060001Z-qual-qwen3.6-27b-SiliconFlow",
+  "qualification": {
+    "status": "REQUEST_INCOMPATIBLE",
+    "passed": false,
+    "calls": 6,
+    "parse_ok": 0,
+    "observed_models": {},
+    "observed_providers": {},
+    "reasoning_tokens": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "calls_without_prompt_usage": 6,
+    "split_items": {},
+    "http_statuses": {
+      "404": 6
+    },
+    "reasons": [
+      "parse_ok was 0/6",
+      "observed model set [] != ['qwen/qwen3.6-27b']",
+      "observed provider set [] != ['SiliconFlow']",
+      "reasoning_tokens was not exactly zero on every call",
+      "6 calls had no positive prompt token count",
+      "exact request rejected with HTTP statuses {'404': 6}"
+    ]
+  },
+  "qualification_sha": "ce3c857f4d7cf7632c3d4abb9e8cda6263f3f2120b2d41660fd0877d2ebfa2e0"
+}

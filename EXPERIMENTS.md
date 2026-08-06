@@ -823,9 +823,9 @@ production-robustness cases and under load?
 
 | Arm | Model | Provider | Reasoning | Prompt |
 |---|---|---|---|---|
-| incumbent | `google/gemini-2.5-flash` | selected only after qualification | explicit `none` | `v9_16_base` |
-| candidate | `qwen/qwen3.6-27b` | selected only after qualification | explicit `none` | `v9_16_base` |
-| candidate | `qwen/qwen3.6-35b-a3b` | selected only after qualification | explicit `none` | `v9_16_base` |
+| incumbent | `google/gemini-2.5-flash` | Google | explicit `none` | `v9_16_base` |
+| candidate | `qwen/qwen3.6-27b` | Morph | explicit `none` | `v9_16_base` |
+| candidate | `qwen/qwen3.6-35b-a3b` | AkashML | explicit `none` | `v9_16_base` |
 
 Full run: `retention_v3`, 138 items / 150 scored rows, three identical replicates,
 concurrency four, temperature/top-p/seed `0/0/0`, 8,000 maximum tokens, and **one API
@@ -846,6 +846,27 @@ message layout or weakening the schema, because that defines a new workload. If 
 provider qualifies with reasoning disabled, the production-like 27B arm is
 `UNAVAILABLE`; reasoning-enabled CoreWeave may be a separately labelled diagnostic and
 cannot stand in for it.
+
+### Gate 1 result: qualification complete
+
+Gate 1 was approved for at most 400 calls / US$15; the tighter preregistered bound
+controlled execution. All 18 provider names received exactly three items × two
+replicates with one attempt, for **108 calls** and **US$0.109184588** reported cost.
+Twelve providers qualified and six returned 404 `No endpoints found` under the exact
+required-parameter request. Those six are `REQUEST_INCOMPATIBLE`, not identity
+mismatches: no endpoint ran and therefore none could report an identity.
+
+Morph and Alibaba both qualified 6/6 with zero reasoning tokens. Their earlier failures
+were real but did not reproduce: Morph no longer rejected the two-message prompt and
+Alibaba no longer returned a scalar root. This is evidence of endpoint change, not a
+reason to trust catalog status without probing.
+
+Provider selection used historical continuity, not the three probe outputs: Google for
+the incumbent, Morph for 27B and AkashML for 35B-A3B. The plan is locked at SHA
+`2823d3359f6ca6dee601f27b84672ef100971b609bdf38368a56990f2e323c8e`.
+All self-hashed results, selection rationale and the failure-classifier correction are
+recorded in `docs/experiment5-qualification.md`. Gate 2 remains pending; no full or
+load call has been made.
 
 ### Pre-registered decision rule
 
@@ -877,9 +898,10 @@ qualification ceiling is **$3.47** (twice the UTF-8 content bytes for input and 
 call spending all 8,000 output tokens). Refreshing inventory or price changes that
 maximum and requires draft review.
 
-The same deliberately extreme bound over qualification plus all full/load calls is
-**$68.04** at the snapshot: Gemini $28.32, 27B $26.02, 35B-A3B $10.23, qualification
-$3.47. `evalgen experiment-budget` recalculates it from the plan. This is not expected
+After provider selection, the deliberately extreme full/load bound is **$50.13**:
+Gemini/Google $28.32, 27B/Morph $15.12 and 35B-A3B/AkashML $6.69. Including the original
+$3.47 qualification ceiling gives a grand planning maximum of **$53.60**.
+`evalgen experiment-budget` recalculates it from the locked plan. This is not expected
 spend; it is the conservative planning ceiling under recorded prices and token caps.
 
 ### What would change the decision

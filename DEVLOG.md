@@ -2,27 +2,30 @@
 
 ## 🔴 Active Task
 
-**Current Focus (2026-08-06): Experiment 5 is pre-registered and awaiting the first
-approval gate.** The offline implementation is complete on its isolated branch:
+**Current Focus (2026-08-06): Experiment 5 qualification is complete and Gate 2 is
+pending.** The offline implementation is complete on its isolated branch:
 explicit reasoning-off requests, content-addressed classification/scoring/workload
 provenance, one-attempt experiment reliability, exact discordance-calibrated verdicts,
 provider qualification, locked full/load execution, and structured JSON/Markdown/XLSX
-reporting. `experiments/retention-e5.plan.json` remains `draft`; no Experiment 5 model
-call has been made. Next is team review of provider inventory and bounded qualification
-cost, not an automatic run.
+reporting. Gate 1 made exactly 108 single-attempt calls across 18 provider names for
+US$0.109184588 reported cost. Twelve providers qualified and six were request
+incompatible. The plan is now locked to Google, Morph and AkashML; no full or load call
+has been made. Next is review of the locked SHA, qualification evidence and US$50.13
+full/load ceiling, not an automatic run.
 
 Real production-shaped ground truth is still the decision blocker. `RECONCILED: NO` is
 what stands between synthetic-text results and a migration verdict, and no code in this
 repository can lift it.
 
-**Morph/27B status is now a qualification result, not a code special case.** The team's
-fresh probe repeated HTTP 400 `Multi-turn conversations are not supported`; Alibaba
-repeated its scalar-JSON decoder failure. The Experiment 5 probe sends the unchanged
-two-message request with explicit reasoning off and classifies those outcomes as
-`REQUEST_INCOMPATIBLE` and `SCHEMA_INCOMPATIBLE`. It neither retries a deterministic
-400 nor changes message layout to make Morph pass. If no provider qualifies for 27B
-with reasoning off, that arm is `UNAVAILABLE`; reasoning-enabled CoreWeave is a separate
-diagnostic, not a substitute.
+**Morph and Alibaba changed again, and the exact probe caught it.** Morph returned 6/6
+valid object-root responses to the unchanged two-message request; Alibaba also returned
+6/6 objects rather than the earlier scalar JSON. Both reported zero reasoning tokens.
+Morph is therefore the locked production-like 27B endpoint. Six other provider/model
+combinations returned HTTP 404 because no endpoint satisfied the full required-parameter
+request; an exposed classifier-precedence defect was fixed so these are
+`REQUEST_INCOMPATIBLE`, not identity mismatches. The paid rows were reclassified
+offline with `qualification-report`; none was retried. Historical reasoning-enabled
+CoreWeave remains a separate diagnostic, not a substitute.
 
 **~~Blocking the Qwen candidate arm (2026-08-05).~~ RESOLVED the same day, before
 Experiment 1 closed.** The arm was never blocked. One endpoint was broken, and the entry

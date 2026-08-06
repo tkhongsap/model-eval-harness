@@ -1401,7 +1401,13 @@ def cmd_experiment_check(args: argparse.Namespace) -> int:
             print(f"  - {problem}")
         return EXIT_PROBLEMS
     print("\nOK. The plan and its committed assets are internally consistent.")
-    print("No model call was made; provider availability has not been asserted.")
+    if plan.get("status") == "locked":
+        print(
+            "No model call was made; committed provider qualification artifacts "
+            "were verified."
+        )
+    else:
+        print("No model call was made; provider availability has not been asserted.")
     return EXIT_OK
 
 
@@ -1518,26 +1524,46 @@ def cmd_qualify(args: argparse.Namespace) -> int:
     )
     if code != EXIT_OK or loaded is None:
         return code
+    return _write_qualification_artifact(
+        plan=plan,
+        plan_sha=plan_sha,
+        arm=arm,
+        provider=args.provider,
+        loaded=loaded,
+        target=directory / "qualification.json",
+    )
+
+
+def _write_qualification_artifact(
+    *,
+    plan: Mapping[str, Any],
+    plan_sha: str,
+    arm: Mapping[str, Any],
+    provider: str,
+    loaded: LoadedRun,
+    target: Path,
+) -> int:
+    """Deterministically classify and write one safe qualification artifact."""
     result = assess_qualification(
         loaded.result,
         expected_model=str(arm["model"]),
-        expected_provider=args.provider,
+        expected_provider=provider,
     )
     artifact = {
         "schema_version": 1,
         "experiment_id": plan["experiment_id"],
         "plan_sha": plan_sha,
-        "arm": args.arm,
+        "arm": arm["id"],
         "model": arm["model"],
-        "provider": args.provider,
+        "provider": provider,
         "qualification_contract_sha": qualification_contract_sha(
-            plan, arm_id=args.arm, provider=args.provider
+            plan, arm_id=str(arm["id"]), provider=provider
         ),
-        "run_id": directory.name,
+        "run_id": loaded.directory.name,
         "qualification": result.to_dict(),
     }
     artifact["qualification_sha"] = canonical_sha(artifact)
-    target = directory / "qualification.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         json.dumps(artifact, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -1549,6 +1575,47 @@ def cmd_qualify(args: argparse.Namespace) -> int:
     print(f"qualification sha  {artifact['qualification_sha']}")
     print(f"wrote {target}")
     return EXIT_OK if result.passed else EXIT_PROBLEMS
+
+
+def cmd_qualification_report(args: argparse.Namespace) -> int:
+    """Reclassify an existing qualification run without making a model call."""
+    plan, plan_sha = _checked_plan(Path(args.plan))
+    loaded = load_run(Path(args.run))
+    meta = loaded.meta
+    if meta.get("experiment_mode") != "qualification":
+        raise CliError(
+            f"run mode is {meta.get('experiment_mode')!r}, not 'qualification'"
+        )
+    if meta.get("experiment_plan_sha") != plan_sha:
+        raise CliError(
+            "qualification run plan SHA does not match the current plan; reclassify "
+            "against the exact draft that produced the paid rows"
+        )
+    arm_id = str(meta.get("arm") or "")
+    try:
+        arm = arm_by_id(plan, arm_id)
+    except PlanError as exc:
+        raise CliError(str(exc)) from exc
+    provider = str(meta.get("provider_requested") or "")
+    if provider not in arm.get("provider_candidates", []):
+        raise CliError(
+            f"recorded provider {provider!r} is not preregistered for {arm_id}"
+        )
+    if meta.get("model_requested") != arm.get("model"):
+        raise CliError(
+            f"recorded model {meta.get('model_requested')!r} does not match "
+            f"plan model {arm.get('model')!r}"
+        )
+    target = Path(args.out) if args.out else loaded.directory / "qualification.json"
+    print("No model call was made and no key was read.")
+    return _write_qualification_artifact(
+        plan=plan,
+        plan_sha=plan_sha,
+        arm=arm,
+        provider=provider,
+        loaded=loaded,
+        target=target,
+    )
 
 
 def cmd_experiment_run(args: argparse.Namespace) -> int:
@@ -2392,6 +2459,19 @@ def build_parser() -> argparse.ArgumentParser:
     qualify.add_argument("--timeout", type=float, default=120.0)
     qualify.add_argument("--dry-run", action="store_true")
     qualify.set_defaults(handler=cmd_qualify)
+
+    qualification_report = subparsers.add_parser(
+        "qualification-report",
+        help="reclassify one recorded qualification run; no network or key",
+    )
+    qualification_report.add_argument(
+        "--plan", default=str(DEFAULT_EXPERIMENT_PLAN)
+    )
+    qualification_report.add_argument("--run", required=True)
+    qualification_report.add_argument(
+        "--out", default=None, help="default: overwrite RUN/qualification.json"
+    )
+    qualification_report.set_defaults(handler=cmd_qualification_report)
 
     experiment_run = subparsers.add_parser(
         "experiment-run",

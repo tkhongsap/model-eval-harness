@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "retention-e5",
   "title": "Enterprise evaluation framework reference experiment: Retention phase one and phase two",
-  "status": "draft",
+  "status": "locked",
   "preregistered_utc": "2026-08-06T00:00:00+07:00",
   "app": "retention",
   "question": "Can a Qwen-based replacement match Gemini on True Retention call classification under production-like constraints?",
@@ -366,10 +366,14 @@
         "Google",
         "Google AI Studio"
       ],
-      "availability": "PENDING",
-      "selected_provider": null,
-      "qualification_artifact": null,
-      "qualification_sha": null,
+      "availability": "QUALIFIED",
+      "selected_provider": "Google",
+      "qualification_artifact": "experiments/evidence/retention-e5/qualification/gemini-2.5-flash--Google.json",
+      "qualification_sha": "00f1cf2379469fdcaf203803ca6853dde08d25cdb8bce503e0e43e90ecb5e67c",
+      "qualification_evidence": {
+        "Google": "experiments/evidence/retention-e5/qualification/gemini-2.5-flash--Google.json",
+        "Google AI Studio": "experiments/evidence/retention-e5/qualification/gemini-2.5-flash--Google_AI_Studio.json"
+      },
       "unavailability_evidence": {},
       "regime": "explicit reasoning off"
     },
@@ -388,10 +392,21 @@
         "Alibaba",
         "CoreWeave"
       ],
-      "availability": "PENDING",
-      "selected_provider": null,
-      "qualification_artifact": null,
-      "qualification_sha": null,
+      "availability": "QUALIFIED",
+      "selected_provider": "Morph",
+      "qualification_artifact": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Morph.json",
+      "qualification_sha": "f03fa0f3078725125977b810e03a4d10c9728c347388a1641222d2a3eb00d9f0",
+      "qualification_evidence": {
+        "Morph": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Morph.json",
+        "Chutes": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Chutes.json",
+        "SiliconFlow": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--SiliconFlow.json",
+        "Io Net": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Io_Net.json",
+        "Phala": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Phala.json",
+        "DeepInfra": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--DeepInfra.json",
+        "Venice": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Venice.json",
+        "Alibaba": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--Alibaba.json",
+        "CoreWeave": "experiments/evidence/retention-e5/qualification/qwen3.6-27b--CoreWeave.json"
+      },
       "unavailability_evidence": {},
       "regime": "explicit reasoning off",
       "unavailable_policy": "If no provider qualifies, mark the production-like arm UNAVAILABLE. CoreWeave reasoning-enabled may run only as a separately labelled diagnostic."
@@ -409,14 +424,49 @@
         "SiliconFlow",
         "CoreWeave"
       ],
-      "availability": "PENDING",
-      "selected_provider": null,
-      "qualification_artifact": null,
-      "qualification_sha": null,
+      "availability": "QUALIFIED",
+      "selected_provider": "AkashML",
+      "qualification_artifact": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--AkashML.json",
+      "qualification_sha": "24a730e60da26c0cbb4fd8f476796a5a8282256ca528717546167eda0b1fdafe",
+      "qualification_evidence": {
+        "DeepInfra": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--DeepInfra.json",
+        "AkashML": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--AkashML.json",
+        "Parasail": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--Parasail.json",
+        "AtlasCloud": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--AtlasCloud.json",
+        "Phala": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--Phala.json",
+        "SiliconFlow": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--SiliconFlow.json",
+        "CoreWeave": "experiments/evidence/retention-e5/qualification/qwen3.6-35b-a3b--CoreWeave.json"
+      },
       "unavailability_evidence": {},
       "regime": "explicit reasoning off"
     }
   ],
+  "provider_selection": {
+    "recorded_utc": "2026-08-06T06:10:00Z",
+    "rule": "Select the provider used by the most recent comparable historical experiment for that arm if and only if it passes the preregistered qualification contract; do not use the three probe items' labels or outputs for selection.",
+    "selected": {
+      "gemini-2.5-flash": "Google",
+      "qwen3.6-27b": "Morph",
+      "qwen3.6-35b-a3b": "AkashML"
+    },
+    "continuity": {
+      "gemini-2.5-flash": "Experiment 4 incumbent",
+      "qwen3.6-27b": "Experiments 1-3 production-like non-reasoning arm",
+      "qwen3.6-35b-a3b": "Experiment 4 candidate arm"
+    },
+    "coreweave_policy": "CoreWeave is not substituted for Morph. Historical reasoning-enabled CoreWeave results remain a separately labelled diagnostic; this locked full arm uses Morph with explicit reasoning off."
+  },
+  "qualification_evidence_summary": {
+    "draft_plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+    "provider_results": 18,
+    "logical_calls": 108,
+    "status_counts": {
+      "QUALIFIED": 12,
+      "REQUEST_INCOMPATIBLE": 6
+    },
+    "reported_cost_usd_lower_bound": 0.109184588,
+    "raw_model_output_committed": false
+  },
   "qualification": {
     "item_ids": [
       "RET-01",
@@ -503,7 +553,7 @@
     "grand_total_max": 1566
   },
   "qualification_budget": {
-    "inventory_checked_utc": "2026-08-06T05:02:42Z",
+    "inventory_checked_utc": "2026-08-06T05:54:37Z",
     "inventory_source": "https://openrouter.ai/api/v1/models/:author/:slug/endpoints",
     "eligible_provider_names": 18,
     "maximum_calls": 108,
@@ -547,5 +597,33 @@
   "approvals": [
     "Approval 1: authorize only the bounded qualification probes after reviewing current provider inventory and maximum cost.",
     "Approval 2: lock plan/provider/qualification hashes and authorize full plus load calls after reviewing qualification results and exact projected cost."
+  ],
+  "approval_records": [
+    {
+      "gate": 1,
+      "status": "APPROVED",
+      "recorded_utc": "2026-08-06T05:54:37Z",
+      "source": "interactive user approval",
+      "scope": "provider qualification only",
+      "authorized_maximum_calls": 400,
+      "authorized_maximum_usd": 15.0,
+      "operative_plan_maximum_calls": 108,
+      "operative_plan_maximum_usd": 3.47,
+      "excludes": [
+        "full evaluation runs",
+        "load evaluation runs"
+      ]
+    },
+    {
+      "gate": 2,
+      "status": "PENDING",
+      "scope": "full and load evaluation calls",
+      "requires": [
+        "review the locked plan SHA",
+        "review selected provider qualification evidence",
+        "review the selected-provider cost ceiling",
+        "explicit interactive user approval"
+      ]
+    }
   ]
 }

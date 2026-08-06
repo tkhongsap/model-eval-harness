@@ -59,13 +59,15 @@ The first command validates the plan, asset hashes, fixed slices, prompt registr
 budget, reliability threshold and lock requirements. It makes no network call and reads
 no API key. The budget command uses the committed provider-price snapshot and worst-case
 token caps; it also makes no call. The unit suite pins explicit reasoning-off request shape, exact bands,
-provider failure classifications, the 410/414 gate, paired item stability, operational
-accounting, and refusal to run a full arm while the plan is draft.
+provider failure classifications, complete committed qualification evidence, the
+410/414 gate, paired item stability, operational accounting, and refusal to run a full
+arm while a plan is draft.
 
-`qualify` and `experiment-run` are intentionally absent from offline verification: they
-make paid calls. Qualification requires the first approval gate; full/load execution
-requires a locked plan, qualification hashes, exact current plan SHA and the second
-approval gate.
+`qualification-report` is the no-network path for deterministically reclassifying a
+recorded qualification run after a classifier correction; it reads no key and never
+reruns paid rows. `qualify` and `experiment-run` are intentionally absent from offline
+verification because they make paid calls. Gate 1 qualification is complete. Full/load
+execution still requires the locked plan SHA and explicit Gate 2 approval.
 
 ## Verification Scripts
 
@@ -345,13 +347,16 @@ be measuring the grammar rather than the example. Both facts are pinned:
 `test_e1_example_is_legal_under_the_grammar_that_is_actually_sent` and
 `test_e1_example_fails_the_committed_port_schema_at_exactly_the_blanked_slots`.
 
-### 9. The pack is an argument, and there are two of them
+### 9. The pack is an argument, and there are three of them
 
 ```bash
 .venv/Scripts/python scripts/evalgen.py check          # retention_v1, the default
 .venv/Scripts/python scripts/evalgen.py check \
     --testset tests/fixtures/testsets/retention_v2.jsonl \
     --gt tests/fixtures/testsets/retention_v2.gt.csv
+.venv/Scripts/python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_v3.jsonl \
+    --gt tests/fixtures/testsets/retention_v3.gt.csv
 ```
 
 `--testset` / `--gt` default to `retention_v1.*` (`cli.py:131-132`), so a command with
@@ -361,11 +366,12 @@ neither flag scores the 20-item pack. The same pair is accepted by `baseline` an
 | Pack | Items | Scored rows | Status |
 |---|---:|---:|---|
 | `retention_v1` | 20 | 22 | **Frozen.** Experiments 1 and 2 cite it, so it does not move. |
-| `retention_v2` | 100 | 108 | Current. `RET-01`…`RET-20` byte-identical to v1; `RET-21`…`RET-100` new. |
+| `retention_v2` | 100 | 108 | **Frozen.** Experiment 3 and 4 cite it; `RET-01`…`RET-20` are byte-identical to v1. |
+| `retention_v3` | 138 | 150 | Experiment 5. v2 prefix plus 38 versioned robustness items. |
 
-Verified above by running `check` against each: 100 items, 108 rows, `OK. No problem
-found.` The scored row is `(call_id, phone_number, product)` in both packs, which is why
-neither row count equals its item count.
+Verified above by running `check` against each. The scored row is
+`(call_id, phone_number, product)` in every pack, which is why the v1/v2/v3 row counts
+do not always equal their item counts.
 
 What v2 buys: the six reason classes sitting at **support 1** in v1 are gone — v2's
 minimum reason-class support is **6**, across the same 11 classes, so a single miss no

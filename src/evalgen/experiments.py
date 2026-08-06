@@ -260,6 +260,16 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
         problems.append(f"cannot compute call budget: {exc}")
 
     if plan.get("status") == "locked":
+        evidence_summary = plan.get("qualification_evidence_summary", {})
+        evidence_plan_sha = (
+            evidence_summary.get("draft_plan_sha")
+            if isinstance(evidence_summary, Mapping)
+            else None
+        )
+        all_artifacts: dict[tuple[str, str], Mapping[str, Any]] = {}
+        status_counts: dict[str, int] = defaultdict(int)
+        evidence_calls = 0
+
         def read_artifact(index: int, arm: Mapping[str, Any], provider: str, name: Any):
             if not name:
                 problems.append(
@@ -279,7 +289,27 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
                 problems.append(
                     f"arms[{index}] qualification artifact has an invalid self-hash"
                 )
+            expect(
+                f"arms[{index}] qualification schema version",
+                artifact.get("schema_version"),
+                1,
+            )
+            expect(
+                f"arms[{index}] qualification experiment",
+                artifact.get("experiment_id"),
+                plan.get("experiment_id"),
+            )
+            expect(
+                f"arms[{index}] qualification draft plan SHA",
+                artifact.get("plan_sha"),
+                evidence_plan_sha,
+            )
             expect(f"arms[{index}] qualification arm", artifact.get("arm"), arm.get("id"))
+            expect(
+                f"arms[{index}] qualification model",
+                artifact.get("model"),
+                arm.get("model"),
+            )
             expect(f"arms[{index}] qualification provider", artifact.get("provider"), provider)
             expect(
                 f"arms[{index}] qualification contract",
@@ -295,6 +325,52 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
                 problems.append(f"arms[{index}] must be an object")
                 continue
             arm = raw_arm
+            expected_providers = set(arm.get("provider_candidates", []))
+            evidence = arm.get("qualification_evidence")
+            if not isinstance(evidence, Mapping) or set(evidence) != expected_providers:
+                problems.append(
+                    f"arms[{index}].qualification_evidence must cover every "
+                    f"candidate provider: {sorted(expected_providers)}"
+                )
+                evidence = {}
+            arm_artifacts: dict[str, Mapping[str, Any]] = {}
+            for provider, artifact_name in evidence.items():
+                provider_name = str(provider)
+                artifact = read_artifact(index, arm, provider_name, artifact_name)
+                if artifact is None:
+                    continue
+                arm_artifacts[provider_name] = artifact
+                all_artifacts[(str(arm.get("id")), provider_name)] = artifact
+                qualification_result = artifact.get("qualification", {})
+                status = qualification_result.get("status")
+                if status not in {
+                    "QUALIFIED",
+                    "REQUEST_INCOMPATIBLE",
+                    "SCHEMA_INCOMPATIBLE",
+                    "REGIME_INCOMPATIBLE",
+                    "IDENTITY_INCOMPATIBLE",
+                    "PROVENANCE_INCOMPATIBLE",
+                }:
+                    problems.append(
+                        f"arms[{index}] {provider_name} has unknown qualification "
+                        f"status {status!r}"
+                    )
+                else:
+                    status_counts[str(status)] += 1
+                calls = qualification_result.get("calls")
+                if not isinstance(calls, int) or calls < 0:
+                    problems.append(
+                        f"arms[{index}] {provider_name} qualification calls must "
+                        "be a non-negative integer"
+                    )
+                else:
+                    evidence_calls += calls
+                expect(
+                    f"arms[{index}] {provider_name} qualification passed",
+                    qualification_result.get("passed"),
+                    status == "QUALIFIED",
+                )
+
             availability = arm.get("availability")
             if availability not in {"QUALIFIED", "UNAVAILABLE"}:
                 problems.append(
@@ -303,16 +379,20 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
                 )
                 continue
             if availability == "UNAVAILABLE":
-                evidence = arm.get("unavailability_evidence")
-                expected_providers = set(arm.get("provider_candidates", []))
-                if not isinstance(evidence, Mapping) or set(evidence) != expected_providers:
+                unavailable = arm.get("unavailability_evidence")
+                if not isinstance(unavailable, Mapping) or set(unavailable) != expected_providers:
                     problems.append(
                         f"arms[{index}].unavailability_evidence must cover every "
                         f"candidate provider: {sorted(expected_providers)}"
                     )
                     continue
-                for provider, artifact_name in evidence.items():
-                    artifact = read_artifact(index, arm, str(provider), artifact_name)
+                for provider, artifact_name in unavailable.items():
+                    expect(
+                        f"arms[{index}] unavailability artifact for {provider}",
+                        artifact_name,
+                        evidence.get(provider),
+                    )
+                    artifact = arm_artifacts.get(str(provider))
                     if artifact is not None and artifact.get("qualification", {}).get("status") == "QUALIFIED":
                         problems.append(
                             f"arms[{index}] is UNAVAILABLE but {provider} qualified"
@@ -329,9 +409,12 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
                 problems.append(
                     f"arms[{index}].selected_provider {provider!r} is not a candidate"
                 )
-            artifact = read_artifact(
-                index, arm, str(provider), arm.get("qualification_artifact")
+            expect(
+                f"arms[{index}] selected qualification artifact",
+                arm.get("qualification_artifact"),
+                evidence.get(provider),
             )
+            artifact = arm_artifacts.get(str(provider))
             if artifact is None:
                 continue
             expect(
@@ -343,6 +426,29 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
                 f"arms[{index}] qualification status",
                 artifact.get("qualification", {}).get("status"),
                 "QUALIFIED",
+            )
+        if not isinstance(evidence_summary, Mapping):
+            problems.append("qualification_evidence_summary must be an object")
+        else:
+            expect(
+                "qualification evidence provider results",
+                evidence_summary.get("provider_results"),
+                len(all_artifacts),
+            )
+            expect(
+                "qualification evidence logical calls",
+                evidence_summary.get("logical_calls"),
+                evidence_calls,
+            )
+            expect(
+                "qualification evidence status counts",
+                evidence_summary.get("status_counts"),
+                dict(status_counts),
+            )
+            expect(
+                "qualification evidence raw model output committed",
+                evidence_summary.get("raw_model_output_committed"),
+                False,
             )
     return problems
 
@@ -541,7 +647,21 @@ def qualification(
     if split:
         reasons.append(f"prompt token fingerprint split on {sorted(split)}")
 
-    request_error = any(row.http_status == 400 for row in rows)
+    # With a provider pin and ``require_parameters=true``, OpenRouter uses 404
+    # ("No endpoints found") when the named backend cannot accept the exact
+    # request.  That is a request-regime incompatibility, not an identity
+    # mismatch merely because no backend had a chance to report its identity.
+    # 400 and 422 are the other deterministic request-rejection statuses seen
+    # at this boundary.  Authentication failures and rate limits deliberately
+    # remain outside this bucket.
+    request_error = any(row.http_status in {400, 404, 422} for row in rows)
+    if request_error:
+        rejected = {
+            key: value
+            for key, value in statuses.items()
+            if int(key) in {400, 404, 422}
+        }
+        reasons.append(f"exact request rejected with HTTP statuses {rejected}")
     schema_error = any(row.outcome in {"not_json", "schema_violation"} for row in rows)
     regime_error = any(value is not None and value != 0 for value in reasoning)
     identity_error = (
