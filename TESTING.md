@@ -9,7 +9,7 @@ python -m venv .venv
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected: **451 passed, 11 skipped**.
+Expected: **491 passed, 11 skipped**.
 
 The 11 skips are correct and expected standalone. See "Two modes" below.
 
@@ -20,8 +20,8 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Expected |
 |---|---|---|
-| **Standalone** | `pytest tests/ -q` | **451 passed, 11 skipped** |
-| **With production source** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | **462 passed, 0 skipped** |
+| **Standalone** | `pytest tests/ -q` | **491 passed, 11 skipped** |
+| **With production source** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | **502 passed, 0 skipped** |
 
 ```bash
 # Windows, pointing at the vendored archive in life-os
@@ -36,7 +36,7 @@ identically; `tests/production_ref.py`'s own default still resolves to a directo
 *outside* the repo, so standalone `pytest tests/ -q` keeps skipping the differential
 tests unless `TRUE_SOURCE_ROOT` is set explicitly -- that default was left alone
 deliberately rather than widened to auto-discover the in-repo copy, so the documented
-"451 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
+"491 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
 
 The skipped tests are the differential check against production's real scorer, and the
 cross-check of our pins against production's `requirements.txt`. **The version pin gate

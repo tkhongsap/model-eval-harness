@@ -58,7 +58,7 @@ to the scoring path "just for a moment" breaks a build rather than a rule.
 ## Running things
 
 ```bash
-.venv/Scripts/python -m pytest tests/ -q          # 451 passed, 11 skipped
+.venv/Scripts/python -m pytest tests/ -q          # 491 passed, 11 skipped
 ```
 
 Full detail, including how to make the differential test actually run, is in

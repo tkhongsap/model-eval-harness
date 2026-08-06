@@ -3,9 +3,10 @@
 ## 🔴 Active Task
 
 **Current Focus**: Waiting on real ground-truth data. Nothing in the harness is
-blocked on code -- `src/evalgen/` calls both arms end to end, and Experiments 1, 2 and 3
-are run and written up in `EXPERIMENTS.md`. `RECONCILED: NO` is what stands between
-those numbers and a migration verdict, and no code in this repository can lift it.
+blocked on code -- `src/evalgen/` calls all three arms end to end (incumbent gemini,
+candidate qwen3.6-27b, and qwen3.6-35b-a3b), and Experiments 1-5 are run and written up
+in `EXPERIMENTS.md`. `RECONCILED: NO` is what stands between those numbers and a
+migration verdict, and no code in this repository can lift it.
 
 **~~Blocking the Qwen candidate arm (2026-08-05).~~ RESOLVED the same day, before
 Experiment 1 closed.** The arm was never blocked. One endpoint was broken, and the entry
@@ -82,23 +83,27 @@ kept in place and corrected, because the wrong inference is the useful part:
 
 ## 🐛 Known Bugs
 
-**One known limitation in this repository.** This section read "None in this repository"
-until 2026-08-05, when Experiment 3 produced one:
+**No known limitations in this repository as of 2026-08-06.** The one entry this
+section carried, below, was resolved the same day it was predicted would matter most:
 
-- [ ] **The mechanism table stops discriminating as the pack grows, and at 100 items it
-      carries no information.** Its verdict rule is FAIL if *any* item in a group fails
-      on every replicate, which is monotone decreasing in group size: adding items can
-      only push a row toward FAIL. At 20 items four of five rows read FAIL/FAIL and
-      `multislot` (n=2) was the one row still separating the arms; at 100 items
-      `multislot` grew to 10 items and collapsed, and all five rows now read FAIL/FAIL on
-      both arms. It was predicted in writing before the pack was built
-      (`docs/eval-improvement-plan.md`, finding 1; `docs/testset-v2-plan.md`, caveat 1)
-      and Experiment 3 confirmed it. **Restoring it needs a different verdict rule, not
-      more items** -- a group-level rule monotone in group size cannot survive growth, so
-      this is an argument to have, not a patch to apply. (Priority: High. It is the
-      report's designed headline, section 1. It moves no number: `render()` builds the
-      mechanism section from `mechanism_table` and the per-dimension aggregates from
-      `ArmSummary`, separately.)
+- [x] ~~**The mechanism table stops discriminating as the pack grows, and at 100 items it
+      carries no information.**~~ **RESOLVED (2026-08-06).** `MechanismRow` gained
+      `always_correct` and a derived, non-monotone `rate` alongside the kept
+      PASS/FLAKY/FAIL letter (`report.py`). The letter still saturates by construction --
+      that is what made it worth keeping the rate beside it, not instead of it -- but the
+      rate does not: one more correct item raises it, one more wrong item lowers it, so
+      two all-FAIL rows still separate. `retention_v3`'s 9-family table (up from 5) is
+      the first pack this was load-bearing for.
+      <details><summary>Original entry, kept for the record</summary>
+
+      Its verdict rule was FAIL if *any* item in a group failed on every replicate,
+      which is monotone decreasing in group size: adding items can only push a row
+      toward FAIL. At 20 items four of five rows read FAIL/FAIL and `multislot` (n=2)
+      was the one row still separating the arms; at 100 items `multislot` grew to 10
+      items and collapsed, and all five rows read FAIL/FAIL on both arms. Predicted in
+      writing before the pack was built (`docs/eval-improvement-plan.md`, finding 1;
+      `docs/testset-v2-plan.md`, caveat 1) and Experiment 3 confirmed it.
+      </details>
 
 **Production defects found while building, reproduced deliberately** (not bugs here,
 but the reason some code looks odd):
@@ -117,6 +122,41 @@ but the reason some code looks odd):
 
 ## ✅ History
 
+- **2026-08-06**: Experiment 5. `retention_v3` (138 items) scored on all three arms
+  under the re-derived bands, 1,242 calls, ~$9.49. Both Qwen arms are **AHEAD** of the
+  incumbent on `reason` at alpha=1/64 -- the first AHEAD verdict in this project without
+  a repeat-pass caveat -- but it is bought entirely inside the reasoning-regime confound
+  Experiment 4 found (2.3-2.6M reasoning tokens on both Qwen arms, zero on the
+  incumbent), so it reads as "Qwen with reasoning beats Gemini with none," not "Qwen
+  labels Thai better." `product` returned zero informative verdicts across all nine
+  comparisons scored: every one landed `d < 6`. `long_context`, read on the
+  always-correct metric, showed the incumbent failing consistently at 10x (3 `FAIL`
+  items, 0 `FLAKY`) while both Qwen arms were only ever `FLAKY` at either dilation --
+  correcting a premature mid-run read that length degrades labelling in general; it
+  degrades this one model. The `scorer_sha`-invalidates-comparability defect from
+  Experiment 4 recurred mid-run-sequence (a docs commit moved HEAD between arm launches)
+  and this time cost a real re-run, not just a footnote.
+- **2026-08-06**: Prerequisites for `retention_v3` -- verdict bands re-derived from the
+  arithmetic alone (the old n=22 bands returned a directional verdict on two identical
+  models 57% of the time by 108 rows), `MechanismRow` gained a non-monotone `rate`
+  (resolves the Known Bug below), 16 new pack-validation tests plus a CI step closing the
+  hole where `retention_v2` had zero automated checks, and the phone block widened
+  `^08100000[0-9]{2}$` -> `^0810000[0-9]{3}$` (strict superset, zero fixture numbers
+  moved, 100 in use / 900 free). Suite: 483 passed / 11 skipped standalone, 494 / 0
+  differential.
+- **2026-08-06**: `retention_v3` authored -- 138 items, the 100-item v2 pack
+  byte-identical plus 38 new across four families the pack had zero coverage of before:
+  `long_context` (dilated Experiment-3 items, 3x and 10x), `asr_noise` (ten artifact
+  classes, hand-derived expectation written twice after the first version's own
+  verification method turned out to have imported the code it was meant to check
+  independently -- recorded as a process failure in `ASR-EXPECTATION.md` itself, not
+  quietly redone), `code_switch`, and `regression`. A budget overrun against the
+  pre-registered `+8 to 12`, recorded as one rather than argued away.
+- **2026-08-05**: Experiment 4. Third arm, `qwen/qwen3.6-35b-a3b`: not viable, loses to
+  the 27B on all three dimensions. The real finding is that re-running the 27B after
+  Morph started returning HTTP 400 moved `reason` net **-1 -> +24** on an unchanged
+  model id, prompt and pack, because the replacement endpoint (CoreWeave) reasons and
+  Morph did not -- the pin is a term in the result, not a detail of the method.
 - **2026-08-05**: Run index. `scripts/run_index.py` generates `RUNS.md` from `out/runs/`,
   a committed index of every run with the provenance needed to cite one: model, provider,
   prompt sha, decoding, outcomes, pin proof, cost. `out/` is gitignored because run

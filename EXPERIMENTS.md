@@ -803,7 +803,185 @@ True's systems.
 
 ---
 
-## Experiment 5 — *not started*
+## Experiment 5 — retention_v3, the re-derived bands' first live test, and a length failure that turns out to belong to one model
+
+**Date:** 2026-08-06
+**Question:** With `retention_v3` (138 items: the 100-item v2 pack byte-identical, plus 38
+new items across four families — `long_context`, `asr_noise`, `code_switch`,
+`regression`) and the √d bands re-derived above, what do the three arms actually look
+like under a properly-powered paired test, and does context length degrade labelling?
+
+### What was run
+
+| # | Run | Model | Provider | Result |
+|---|---|---|---|---|
+| 5.1 | v3-gemini | gemini-2.5-flash | Google | 414/414 ok, `scorer_sha a7aff2f` |
+| 5.2 | v3-qwen27b | qwen3.6-27b | CoreWeave | 413/414 ok, 1 `empty_length`, `scorer_sha e0462c9` |
+| 5.3 | v3-qwen35a3b | qwen3.6-35b-a3b | AkashML | 400/414 ok, 14 `empty_length`, `scorer_sha e0462c9` |
+| 5.4 | v3-gemini-rescored | gemini-2.5-flash | Google | 414/414 ok, `scorer_sha e0462c9` — **5.1 superseded, see harness note below** |
+
+138 items x 3 replicates, `retention_v3`, prompt `v9_16_base`, decoding unchanged
+(`temperature=0, top_p=0, seed=0, max_tokens=8000`). Every run's `prompt_tokens`
+fingerprint returned exactly one value per item — no split arm.
+
+### Harness note: the `scorer_sha` gate fired again, and this time it cost a re-run
+
+Run 5.1 finished at `scorer_sha a7aff2f`. Before 5.2 and 5.3 finished, `e0462c9` (the
+hand-derived ASR-expectation doc, a pure `.md` addition — `git diff a7aff2f e0462c9 --
+stat` touches exactly one file, zero lines of code) landed on this branch, because it was
+committed mid-run-sequence. `evalgen compare` refused 5.1 against 5.2 on
+`scorer_sha` mismatch. This is the identical shape of Experiment 4's harness defect #2
+("`scorer_sha` is repo HEAD, so any commit invalidates comparability... a docs-only
+commit moved the sha"), observed for a second time. **The fix was the same as the
+principle demands: do not weaken the gate, make the runs actually comparable.** 5.1 was
+re-run as 5.4 at current HEAD ($0.4937 spent on 5.1 bought nothing). Two occurrences in
+five experiments makes this a standing cost of the current design, not a one-off — see
+recommended next steps.
+
+### Result
+
+**Governed reading: the paired verdicts under the bands derived above, not the raw
+percentages.** `d` is the discordant-pair count each comparison actually produced;
+`band(d)` is read off the table, not assumed from a previous run's size.
+
+| Comparison | dimension | d | net | band | verdict |
+|---|---|---:|---:|---:|---|
+| Gemini vs Qwen27B | call_result | 4 | +2 | — | **UNDERPOWERED: NO VERDICT** (d<6) |
+| Gemini vs Qwen27B | reason | 40 | **+26** | ±16 | **AHEAD — Qwen27B** |
+| Gemini vs Qwen27B | product | 0 | 0 | — | **UNDERPOWERED: NO VERDICT** (nothing discordant) |
+| Gemini vs Qwen35B | call_result | 13 | -7 | ±9 | INDISTINGUISHABLE |
+| Gemini vs Qwen35B | reason | 41 | **+17** | ±15 | **AHEAD — Qwen35B** |
+| Gemini vs Qwen35B | product | 5 | -1 | — | **UNDERPOWERED: NO VERDICT** (d<6) |
+| Qwen27B vs Qwen35B | call_result | 11 | -9 | ±9 | **BEHIND — Qwen35B** |
+| Qwen27B vs Qwen35B | reason | 29 | -9 | ±13 | INDISTINGUISHABLE |
+| Qwen27B vs Qwen35B | product | 5 | -1 | — | **UNDERPOWERED: NO VERDICT** (d<6) |
+
+**Both Qwen arms are AHEAD of Gemini on `reason` at alpha=1/64 — the first dimension in
+this project to clear an AHEAD band without a repeat-pass caveat.** Neither win is free:
+both were bought in a reasoning regime (see below). `call_result` cannot distinguish
+Gemini from either Qwen arm (underpowered or INDISTINGUISHABLE) but **can** distinguish
+the two Qwen arms from each other — Qwen35B is BEHIND Qwen27B on `call_result`, exactly
+at the ±9 boundary. `product` returned **zero informative verdicts across all nine
+cells** — every comparison landed d<6. This mirrors the `product` pattern already
+recorded above (measured d across four 108-row runs: 6, 0, 6, 2): the dimension the two
+models already agree on most stays too low-discordance to test, and that gets worse, not
+better, as agreement improves.
+
+For orientation only — not a verdict, and not interpretable at this n per the reasoning
+above the bands table — whole-item correctness on replicate 1:
+
+| family | n | Gemini | Qwen27B | Qwen35B |
+|---|---:|---:|---:|---:|
+| clear | 30 | 47% | 73% | 77% |
+| thai_linguistic | 30 | 43% | 77% | 57% |
+| tiebreak | 17 | 47% | 65% | 65% |
+| multislot | 10 | 40% | 50% | 20% |
+| escape | 13 | 46% | 62% | 54% |
+| long_context | 12 | 67% | 83% | 75% |
+| asr_noise | 10 | 60% | 80% | 40% |
+| code_switch | 10 | 60% | 70% | 70% |
+| regression | 6 | 67% | 83% | 83% |
+| **overall** | 138 | **50%** | **72%** | **62%** |
+
+### `long_context` — the dilation family, read properly
+
+The mechanism table (always-correct-on-all-3-replicates, the metric Experiment 3
+established as the one that does not saturate) gives all three arms the same headline
+**9/12**, but the *shape* of the 3 misses differs completely, and only the shape
+survives a length claim:
+
+| Level (n=6 each) | Gemini | Qwen27B | Qwen35B |
+|---|---|---|---|
+| 3x | 6/6 always-correct | 4/6 always-correct, **2 FLAKY** (RET-109, RET-111) | 5/6 always-correct, **1 FLAKY** (RET-105) |
+| 10x | 3/6 always-correct, **3 FAIL** (RET-104, RET-108, RET-110) | 5/6 always-correct, **1 FLAKY** (RET-110) | 4/6 always-correct, **2 FLAKY** (RET-106, RET-110) |
+
+**Gemini's three misses are all at 10x, all `FAIL` — wrong on every single replicate,
+the same wrong answer three times.** Neither Qwen arm has a single `FAIL` item anywhere
+in this family; every Qwen miss is `FLAKY` — right on some replicates, wrong on others,
+roughly evenly split between 3x and 10x. That is a real difference in *kind*, not just
+rate: Gemini's failure at length looks like a deterministic misread that a fourth
+replicate will not fix; the Qwen arms' imperfection at any length looks like ordinary
+decoding noise.
+
+**Correction to a live read I gave mid-run.** After only the Gemini arm had finished, I
+reported the replicate-1 curve (83% at 3x, 50% at 10x) as "the first evidence in this
+project that context length degrades labelling." That was premature and said so at the
+time. With all three arms in and scored properly: **length degrades Gemini. It does not
+degrade Qwen27B or Qwen35B on this pack.** The corrected claim is about a model, not
+about length — which is a materially different thing to tell the migration decision.
+
+### The confound that governs how every AHEAD verdict above should be read
+
+| | reasoning tokens | regime |
+|---|---:|---|
+| Gemini (5.4) | **0** | non-reasoning — matches `config/model_setting/retention.yml`'s `thinkingBudget: 0` |
+| Qwen27B (5.2) | 2,379,369 | reasoning (CoreWeave — Morph, the only non-reasoning endpoint, still returns HTTP 400, per Experiment 4) |
+| Qwen35B (5.3) | 2,620,339 | reasoning (AkashML) |
+
+Both Qwen AHEAD verdicts on `reason` are therefore **"Qwen with ~2.4-2.6M tokens of
+reasoning beats Gemini with none,"** not "Qwen labels Thai better." This is exactly
+Experiment 4's finding restated at the new pack size, still unresolved: there is
+currently no working non-reasoning endpoint for `qwen/qwen3.6-27b` at all, so the
+regime confound cannot be removed with the endpoints available today, only disclosed.
+
+### Cost, tokens and latency (5.4 + 5.2 + 5.3, the comparable set)
+
+| arm | calls | reason tok | cost USD | latency median | latency max | empty_length |
+|---|---:|---:|---:|---:|---:|---:|
+| Gemini (5.4) | 414 | 0 | $0.4830 | 2.02s | 5.22s | 0 |
+| Qwen27B (5.2) | 414 | 2,379,369 | $6.5531 | 40.62s | 85.94s | 1 |
+| Qwen35B (5.3) | 414 | 2,620,339 | $1.9626 | 28.75s | 91.70s | **14** |
+
+Qwen27B costs **13.6x** Gemini per arm and **3.3x** Qwen35B, for a `reason` verdict that
+is statistically real but regime-confounded. Qwen35B's 14 `empty_length` rows (it
+exhausted the 8,000-token budget on reasoning and returned nothing 3.4% of the time) is
+the same failure mode Experiment 4 saw at smaller n, now large enough to be a real
+contributor to its lower `call_result` and `product` scores rather than a rounding
+artifact.
+
+`N_flip` (replicate instability, every dimension, every row): Gemini **0**, Qwen27B
+**43**, Qwen35B **70**. Both reasoning arms are far less stable than the incumbent on
+byte-identical `temperature=0` requests, consistent with every prior experiment.
+
+### Recommended next steps
+
+1. **Batch doc/fixture commits before launching a multi-arm run, or budget for a
+   re-run.** Two occurrences of the same `scorer_sha`-invalidates-comparability defect
+   in five experiments (Experiment 4 finding #2; this run's harness note) is a pattern,
+   not a coincidence. Falsified if a future multi-arm launch survives an in-flight
+   commit without needing a re-run — it will not, under the gate as written, so the real
+   fix is process discipline: land every commit before `baseline` starts, not after.
+2. **Do not extend `long_context` past 10x, or add more dilation items, without a
+   non-reasoning Qwen endpoint.** The one clean model-level finding here (Gemini
+   degrades at length, Qwen does not) is bought entirely inside the regime confound;
+   more items sharpen a number that is still not isolating the variable it claims to.
+   Falsified if a non-reasoning `qwen/qwen3.6-27b` endpoint becomes available and the
+   FAIL/FLAKY split above holds under it.
+3. **`product` needs a different growth strategy than "more items."** Zero informative
+   verdicts across nine cells, at 150 rows, is the predicted outcome of a dimension
+   both arms already agree on — adding items proportionally will not raise `d` past 6
+   unless new items are specifically chosen to be `product`-discordant (a call whose
+   product classification is genuinely ambiguous), which today's authoring process does
+   not target.
+4. Everything else still waits on `RECONCILED`.
+
+### Output files
+
+| What | Path |
+|---|---|
+| Gemini vs Qwen27B | `out/reports/compare-v3-gemini-vs-27b.txt` |
+| Gemini vs Qwen35B | `out/reports/compare-v3-gemini-vs-35b.txt` |
+| Qwen27B vs Qwen35B | `out/reports/compare-v3-27b-vs-35b.txt` |
+| ASR-noise hand-derived expectation | `tests/fixtures/testsets/ASR-EXPECTATION.md` |
+| Every run, with provenance | `RUNS.md` |
+
+**Cost of Experiment 5: ~$9.49**, of which **$0.4937 bought nothing** — run 5.1,
+made incomparable by an in-flight commit and superseded by 5.4. Item keys used a local
+placeholder `EVAL_HARNESS_KEY_HMAC`; they do not resolve inside True's systems.
+
+---
+
+## Experiment 6 — *not started*
 
 Use this template:
 
