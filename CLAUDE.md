@@ -58,7 +58,7 @@ to the scoring path "just for a moment" breaks a build rather than a rule.
 ## Running things
 
 ```bash
-.venv/Scripts/python -m pytest tests/ -q          # 451 passed, 11 skipped
+.venv/Scripts/python -m pytest tests/ -q          # 491 passed, 11 skipped
 ```
 
 Full detail, including how to make the differential test actually run, is in
@@ -70,7 +70,12 @@ Full detail, including how to make the differential test actually run, is in
 - Conventional Commits, matching the existing history.
 - Commit or push **only when explicitly asked**.
 - Keep customer identifiers out of examples, commit messages and test fixtures. The
-  synthetic phone range is `08100000xx` and it stays that way.
+  synthetic phone block is `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`) —
+  `0810000000`–`0810000999`, 1000 numbers, of which 100 are in use and 900 are free.
+  Every committed fixture value still sits in the original `08100000xx` hundred; the
+  block was widened on 2026-08-06 because `retention_v2` used all 100 of them, and the
+  new pattern is a strict superset, so no fixture number moved. Widening it again is a
+  reviewed change to a data-safety control, never a convenience.
 
 ## Build and Verification Contract
 

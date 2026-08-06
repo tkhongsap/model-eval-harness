@@ -36,9 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   verbatim, and `retention_v1.jsonl` / `retention_v1.gt.csv` are frozen byte-identical so
   Experiments 1 and 2 stay reproducible. Reason-class support goes from six classes at
   n=1 to a minimum of 6 each, which is what stopped per-class metrics separating two
-  models. The synthetic phone block is now exhausted: `^08100000[0-9]{2}$` admits exactly
-  100 numbers and all 100 are used, so a 101st item is a reviewed change to one of the
-  identifier controls. Objections to the expansion, and four known limitations, are kept
+  models. It also spent the synthetic phone block: `^08100000[0-9]{2}$` admits exactly 100
+  numbers and all 100 went into this pack, which is what forced the widening recorded
+  under Security below. Objections to the expansion, and four known limitations, are kept
   in `docs/testset-v2-plan.md` rather than discarded.
 - **"Side by side" sheet in `scripts/export_xlsx.py`**: one row per item, every arm's
   whole answer against the ground truth, OK/MISMATCH per arm and a flips marker.
@@ -76,11 +76,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   reasons it should not decide the migration -- no component of either source tests Thai,
   and AA compares Qwen in reasoning mode against Gemini in non-reasoning mode while
   production runs `thinkingBudget: 0`.
+- **Experiment 4: a third arm, `qwen/qwen3.6-35b-a3b`, and the discovery that the
+  endpoint moves the answer more than the model does.** Not viable: loses to the 27B on
+  all three dimensions, loses to the incumbent on two, is 31x less stable (`N_flip` 62 vs
+  2), 15x slower, 4x dearer despite a cheaper token price. The headline finding is about
+  the harness, not either model: re-running the 27B after Morph started returning HTTP
+  400 (it had served every prior experiment) moved `reason` net from **-1 to +24**, same
+  model id, prompt and pack, because CoreWeave serves it in a reasoning regime and Morph
+  did not. Production runs `thinkingBudget: 0`; the `+24` describes a regime it does not
+  deploy. Two harness defects recorded, not patched: `prompt_token_spread` false-positives
+  on a failed row with no usage (`0` treated as a token count), and `scorer_sha` is repo
+  HEAD, so a docs-only commit invalidates a comparison already in flight. Narrative in
+  `EXPERIMENTS.md`.
+- **`tests/test_testset_pack.py`, 16 tests, plus a CI step running `evalgen check` on
+  every tracked pack.** No pytest test loaded `retention_v2.jsonl` and CI ran only
+  `pytest`, so the 100-item pack Experiments 3 and 4 were scored on had zero automated
+  validation. Asserts span uniqueness (`transcript.count(span) == 1`, with RET-85's known
+  v2 violation on a **dated** allowlist compared in both directions, so a fix or a new
+  violation both fail loudly), customer-speech-only evidence, the 120-char turn cap
+  (asserted nowhere in code before this), label-space coverage floors, identifier
+  uniqueness, and the v1->v2 prefix-sha invariant.
+- **`retention_v3` test set: 138 items, four new families.** The first 100 lines are
+  `retention_v2` byte-identical (asserted invariant, sha `9c91b036...`); 38 new items add
+  `long_context` (12: six Experiment-3 items both arms got right on every replicate,
+  each dilated to 3x and 10x by inserting label-inert filler screened against the
+  reason-trigger vocabulary at `prompt.py:4330-4381` -- every licensing turn stays
+  byte-identical, so every `ev_*` span and `rule_*` citation carries over free), `asr_noise`
+  (10: one artifact class per item -- tone-mark loss, missing spaces, Thai/Arabic
+  numerals, proper-noun mangling, homophones, stutter, mid-turn truncation, speaker-label
+  leakage, plus RET-11's two artifacts as controls), `code_switch` (10: English
+  product/package terms mid-Thai at varying density), and `regression` (6: tripwires
+  including the RET-11 shape, two `other` routes that do not depend on a frozen byte, and
+  the discount boundary now unblocked by `VOCABULARIES.md` Rule A). Identifiers
+  `RET-101`-`RET-138`, `call_id = 5000+n`, `phone = "0810000" + f"{n:03d}"`, asserted as
+  an invariant. A budget overrun against the pre-registered `+8 to 12` in
+  `docs/eval-improvement-plan.md:158`, recorded as one: the different sizing rule (four
+  uncovered dimensions, not more depth on covered ones) is written down before authoring,
+  not argued after the fact.
+- **`tests/fixtures/testsets/ASR-EXPECTATION.md`**, the hand-derived expectation for the
+  ten `asr_noise` classes, read directly from committed Unicode codepoints with nothing
+  from `src/evalgen/evidence.py` imported or run. Written twice: the first version was
+  produced by a scratch script that, despite its own docstring claiming otherwise, had
+  imported and run `asr_normalise`/`ASR_SUBSTITUTIONS` from the module it existed to
+  check independently, and was lost in an over-broad cleanup before the defect was found.
+  Recorded as a process failure in the document itself, not quietly redone: an assertion
+  that a number is hand-derived is not evidence that it is.
+- **Experiment 5: `retention_v3` under the re-derived bands.** Both Qwen arms are
+  **AHEAD** of the incumbent on `reason` at alpha=1/64 (Qwen27B net +26/±16 at d=40,
+  Qwen35B net +17/±15 at d=41) -- the first dimension in this project to clear an AHEAD
+  band without a repeat-pass caveat, and still entirely inside the reasoning-regime
+  confound Experiment 4 found (both Qwen arms spent 2.3-2.6M reasoning tokens; the
+  incumbent spent none). `call_result` separates the two Qwen arms (Qwen35B **BEHIND**
+  Qwen27B, net -9/±9) but cannot separate either from the incumbent. `product` returned
+  zero informative verdicts across all nine cells scored -- every comparison landed
+  `d < 6`. The `long_context` family, read on the always-correct-across-3-replicates
+  metric, shows the incumbent failing consistently at 10x (3 items wrong on every
+  replicate, 0 at 3x) while both Qwen arms are merely flaky at either length (0 `FAIL`
+  items, `FLAKY` only) -- a real difference in kind, correcting a premature live read
+  ("context length degrades labelling") given after only the incumbent's arm had
+  finished. The `scorer_sha`-invalidates-comparability defect from Experiment 4 fired a
+  second time, mid-run-sequence, and cost a real re-run rather than only a footnote this
+  time. Narrative in `EXPERIMENTS.md`.
 
 ### Changed
 
-- **The suite moved 82 -> 451 passed standalone across this work**, 11 skipped
-  unchanged; 462 passed / 0 skipped with `TRUE_SOURCE_ROOT` set. Both numbers are from a
+- **Verdict bands re-derived from sample size and the null, replacing the n=22 absolute
+  counts.** Pre-registered as a hard prerequisite twice (`docs/testset-v2-plan.md`,
+  `docs/eval-improvement-plan.md`) and skipped both times. The old bands (`<= -2` BEHIND,
+  `>= +6` AHEAD) were measured broken and asymmetrically so: BEHIND fired on two identical
+  models **one time in three**, AHEAD was arithmetically unreachable on four of six 22-row
+  passes, and both would have silently loosened or tightened under any change to pack size
+  or arm pair. The new band scales as `sqrt(d)` (`d` = discordant pairs the comparison
+  actually produced), holding alpha = 1/64 per side constant -- the rate the old AHEAD gate
+  enforced at the only `d` where it could fire. `d >= 6` is now a hard floor: below it the
+  correct output is `UNDERPOWERED: NO VERDICT`, not `INDISTINGUISHABLE`, because that word
+  claims a measurement came out level rather than that none was possible. Derived from the
+  arithmetic alone, before any v3 item existed, so it could not be fit to an observed
+  result. Full derivation, including a correction made in review, in `EXPERIMENTS.md`.
+- **`MechanismRow` gains `always_correct` and a derived, non-monotone `rate`.** The
+  PASS/FLAKY/FAIL letter is kept -- it is the only signal that separates "needs a prompt
+  or model change" (FAIL) from "needs decoding discipline and more replicates" (FLAKY) --
+  but the letter alone saturates as a group grows: `P(item correct on all replicates) ≈
+  0.35-0.43` measured, so `P(family of n reads PASS) ≈ 0.43ⁿ` and any family of size >= 3
+  was arriving FAIL/FAIL regardless of how the two arms actually compared. `rate` has no
+  such ceiling: one more correct item raises it, one more wrong item lowers it, so two
+  all-FAIL rows still separate (e.g. 9/10 from 1/10). Resolves the Known Bug recorded
+  2026-08-05 predicting the mechanism table would carry zero information by 100 items --
+  it did, and `retention_v3`'s 9-family table (up from 5) is the first pack this fix was
+  load-bearing for.
+- **The suite moved 82 -> 491 passed standalone across this work**, 11 skipped
+  unchanged; 502 passed / 0 skipped with `TRUE_SOURCE_ROOT` set. Both numbers are from a
   run, not copied from another document -- several documents in this set were carrying
   counts stale by hundreds of tests.
 - **`source-code-review/` renamed `production-reference/`.** The old name read as a
@@ -155,6 +240,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   skipped regardless. The block is recorded rather than dropped: it was reversed by owner
   decision on 2026-08-05, after a credential scan, and the tree is now tracked as
   `production-reference/` (see Added).
+- **The synthetic phone block was widened, `^08100000[0-9]{2}$` → `^0810000[0-9]{3}$`**
+  (`src/evalgen/testsets.py:135`). This is a reviewed change to one of the three controls
+  that keep customer identifiers out of git, not a convenience: `retention_v2` used all
+  100 numbers the old pattern could spell (see Added), so the next item added had no phone
+  number left to draw. The new block is a **strict superset** — one digit moves from the
+  fixed prefix to the variable tail, `0810000` + `001` being the same string as `08100000`
+  + `01` — so **no fixture number moved**. `retention_v1.*` and `retention_v2.*` stay
+  byte-identical, `validate()` returns the same empty problem list on both under either
+  pattern, and every existing negative case is still rejected unedited; that last point
+  was a requirement rather than a happy result, because a widening that forces an edit to
+  the test guarding it cannot be reviewed. Capacity 100 → 1000,
+  `0810000000`–`0810000999`, of which 100 are in use and 900 are free. What the control
+  has always rested on is the `0810000` prefix, and that did not change. The reasoning is
+  kept at the pattern itself (`src/evalgen/testsets.py:99-133`); every document that
+  quoted the old range moved with it, with one deliberate exception — the `08100000xx` in
+  the 0.1.0 Security entry below is left as written, because it records what had been
+  committed at that release and every number it describes is still inside the new block.
+  Rewriting a released entry to match today's pattern would edit a record rather than
+  correct one.
 
 ---
 

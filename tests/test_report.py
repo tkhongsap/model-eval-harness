@@ -11,6 +11,15 @@ on a broken one. The three that matter most, and the plausible mistake each one 
   * `n_flip` counts CELLS -- catches counting rows, which reports a model unstable on
     both its outcome and its reasons as no worse than one unstable on either.
 
+The rate tests are built against the failure that was MEASURED rather than a principle.
+At 100 items all five mechanisms read FAIL/FAIL on both arms and section 1 carried no
+information at all (`EXPERIMENTS.md`, Experiment 3), because the verdict rule is monotone
+decreasing in group size. So the tests here fix the verdict and vary the group: three
+groups differing only in size, each holding exactly one broken item, must produce three
+identical letters and three different rates. An implementation that reported the rate as
+anything derived from the verdict -- or that quietly counted a flipping item as correct
+-- passes the single-group tests and fails those.
+
 `render` is asserted on its stamps and its section ORDER rather than its wording. The
 order is the argument the report makes (provenance, then verdicts, then the aggregate
 numbers last), and it is the part a well-meaning edit breaks first.
@@ -40,6 +49,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from evalgen.report import (  # noqa: E402
     ArmSummary,
+    MechanismRow,
     ReportError,
     mechanism_table,
     n_flip,
@@ -93,6 +103,24 @@ def item(item_id, call_id, family="clear", expected_failure="predicted miss"):
     )
 
 
+def group_of(n, *, correct, family="clear"):
+    """One family of `n` items, and a replicate where `correct` of them are right.
+
+    The wrong ones are wrong in the same way on every replicate, so the group's verdict
+    is FAIL for any `correct < n` and the only thing that moves between calls is the
+    rate. That is what makes the group-size tests below a test of monotonicity rather
+    than a test of two unrelated fixtures.
+    """
+    ids = range(1, n + 1)
+    gt = [rec(str(5000 + i), "postpaid", "save", "network") for i in ids]
+    items = [item(f"RET-{i:02d}", str(5000 + i), family=family) for i in ids]
+    pred = [
+        row if index < correct else rec(row.call_id, "postpaid", "churn", "network")
+        for index, row in enumerate(gt)
+    ]
+    return gt, items, pred
+
+
 def arm(name, **overrides):
     base = dict(
         arm=name,
@@ -122,6 +150,8 @@ def test_all_correct_on_every_replicate_is_pass():
     assert row.verdict == "PASS"
     assert row.failing_items == ()
     assert row.item_ids == ("RET-01",)
+    assert row.always_correct == 1
+    assert row.rate == 1.0
 
 
 def test_an_item_wrong_on_every_replicate_is_fail():
@@ -232,6 +262,115 @@ def test_an_unparseable_row_is_never_correct():
         "the labels match but the response never parsed. parse_ok is the only "
         "definition of 'this response counted' (outcomes.py:100-109)."
     )
+
+
+# --- the rate, which the verdict cannot express once a group is large ----------
+
+
+def test_two_groups_that_both_read_fail_are_told_apart_by_their_rates():
+    """The whole point of the rate, in one test.
+
+    Nine of ten items always right and one of ten always right are the same verdict --
+    and the verdict is not wrong, each group holds an item that never works -- but one
+    arm has a single bad item and the other is broken. Before the rate was printed the
+    report could not tell those apart, which is the state Experiment 3 left section 1 in:
+    five rows, all FAIL/FAIL, zero information about either model.
+    """
+    gt_good, items_good, pred_good = group_of(10, correct=9)
+    gt_bad, items_bad, pred_bad = group_of(10, correct=1)
+
+    (good,) = mechanism_table(gt_good, [pred_good] * 3, items_good)
+    (bad,) = mechanism_table(gt_bad, [pred_bad] * 3, items_bad)
+
+    assert good.verdict == "FAIL" and bad.verdict == "FAIL", (
+        "the verdict must not change; if it did, this test would be measuring the "
+        "letter rather than the rate beside it"
+    )
+    assert (good.always_correct, len(good.item_ids)) == (9, 10)
+    assert (bad.always_correct, len(bad.item_ids)) == (1, 10)
+    assert good.rate == 0.9 and bad.rate == 0.1
+
+
+def test_the_verdict_saturates_with_group_size_and_the_rate_does_not():
+    """Three groups, one broken item each, sizes 4 / 10 / 20.
+
+    The verdict rule is monotone decreasing in group size -- FAIL if ANY item is wrong on
+    every replicate -- so all three read FAIL and the letter says nothing about how much
+    of each group works. This is not hypothetical: `multislot` went from 2 items to 10
+    between Experiment 2 and Experiment 3 and collapsed from FAIL/PASS, the one row still
+    separating the arms, to FAIL/FAIL (`EXPERIMENTS.md`).
+
+    The rate is not monotone in group size, and the three values here are three different
+    numbers rising toward 1.0 while the letter stands still.
+    """
+    rows = []
+    for n in (4, 10, 20):
+        gt, items, pred = group_of(n, correct=n - 1)
+        (row,) = mechanism_table(gt, [pred] * 3, items)
+        rows.append(row)
+
+    assert [r.verdict for r in rows] == ["FAIL", "FAIL", "FAIL"]
+    assert [r.always_correct for r in rows] == [3, 9, 19]
+    assert [round(r.rate, 4) for r in rows] == [0.75, 0.9, 0.95]
+
+
+def test_a_flipping_item_does_not_count_toward_the_rate():
+    """The rate counts items correct on EVERY replicate, which is the same bar the PASS
+    verdict uses. An implementation that counted "correct at least once" would report 2/2
+    here, turn the FLAKY row into a full green rate, and delete exactly the
+    nondeterminism the replicates were paid for."""
+    gt = [rec("5001", "postpaid", "save", "network"), rec("5002", "tol", "churn", "network")]
+    items = [item("RET-01", "5001"), item("RET-02", "5002")]
+    flipped = rec("5002", "tol", "save", "network")
+    replicates = [list(gt), [gt[0], flipped], list(gt)]
+
+    (row,) = mechanism_table(gt, replicates, items)
+
+    assert row.verdict == "FLAKY"
+    assert row.always_correct == 1, "RET-02 was right on 2 of 3 replicates, so it is not"
+    assert row.rate == 0.5
+
+
+def test_the_rate_and_the_failing_items_are_complements():
+    """`always_correct` is stored rather than derived, so the two can drift apart. Every
+    item is either correct on every replicate or in `failing_items`; there is no third
+    bucket, and a row where these disagree is reporting two different groups."""
+    gt, items, pred = group_of(10, correct=6)
+
+    (row,) = mechanism_table(gt, [pred] * 2, items)
+
+    assert row.always_correct + len(row.failing_items) == len(row.item_ids)
+    assert row.always_correct == 6
+
+
+def test_the_rate_leads_the_detail_so_it_reaches_a_caller_printing_only_one_line():
+    """`cli.py:1286` prints `detail.splitlines()[0]` and the xlsx Mechanisms sheet prints
+    the detail column with no table above it. Both would otherwise show a FAIL and
+    nothing that separates one FAIL from another."""
+    gt, items, pred = group_of(10, correct=1)
+
+    (row,) = mechanism_table(gt, [pred] * 3, items)
+
+    assert row.detail.splitlines()[0].startswith(
+        "1/10 items correct on all 3 replicates"
+    )
+
+
+def test_an_empty_group_rates_zero_rather_than_a_vacuous_one():
+    """`mechanism_table` cannot build an empty group -- a group exists only once an item
+    has joined it -- so this is reachable only by hand. 0/0 has two defensible answers
+    and the vacuous 100% is the one this table must never print, for the same reason
+    `ReportError` refuses zero replicates and an item with no ground truth."""
+    row = MechanismRow(
+        mechanism="empty",
+        item_ids=(),
+        verdict="PASS",
+        always_correct=0,
+        failing_items=(),
+        detail="",
+    )
+
+    assert row.rate == 0.0
 
 
 # --- grouping -----------------------------------------------------------------
@@ -470,6 +609,76 @@ def test_render_shows_both_arms_verdicts_per_mechanism(report_text):
     assert "FAIL" in report_text and "PASS" in report_text
 
 
+def mechanism_line(text, mechanism):
+    """Section 1's row for one mechanism, read the way a reader's eye reads it."""
+    section = text.split("1. MECHANISM TABLE")[1].split("2. PER-ITEM DISAGREEMENT")[0]
+    return next(
+        line for line in section.splitlines()
+        if line.strip().startswith(mechanism + " ")
+    )
+
+
+def test_an_all_fail_mechanism_table_still_separates_the_two_arms():
+    """Section 1 is this pack's designed headline and at 100 items it printed FAIL/FAIL
+    on every row for both arms. Rendered, the same all-FAIL table must now show 9/10
+    against 1/10 -- otherwise the fix exists in the dataclass and not in the report
+    anybody reads."""
+    gt, items, pred_good = group_of(10, correct=9)
+    _, _, pred_bad = group_of(10, correct=1)
+
+    text = render(
+        arm("incumbent"),
+        arm("candidate"),
+        {
+            "incumbent": mechanism_table(gt, [pred_good] * 3, items),
+            "candidate": mechanism_table(gt, [pred_bad] * 3, items),
+        },
+        [],
+        [],
+    )
+    line = mechanism_line(text, "clear")
+
+    assert "9/10" in line and "1/10" in line, (
+        f"both rates belong on the mechanism's own row, got {line!r}"
+    )
+    assert "FAIL" in line
+
+
+def test_the_verdict_pair_stays_the_last_two_fields_of_the_mechanism_row():
+    """A rendering contract, asserted because something else already depends on it.
+
+    `tests/test_cli.py:204-210` reads a mechanism's two verdicts out of the rendered
+    report positionally, as `line.split()[-2:]`. Interleaving the rate with the verdict
+    -- "PASS 9/10   FAIL 1/10" -- would make that parser return ["1/10", "FAIL"] and fail
+    a suite of CLI tests for a reason that has nothing to do with either model. The rate
+    columns therefore sit before both verdicts, not between them.
+    """
+    gt, items, pred = group_of(10, correct=9)
+    table = mechanism_table(gt, [pred] * 3, items)
+    text = render(arm("incumbent"), arm("candidate"),
+                  {"incumbent": table, "candidate": table}, [], [])
+
+    assert mechanism_line(text, "clear").split()[-2:] == ["FAIL", "FAIL"]
+
+
+def test_the_section_says_the_letter_saturates_and_the_rate_does_not(report_text):
+    """The prose has to carry the reason, not just the number. A reader who has quoted
+    FAIL/FAIL from four experiments needs to be told why the column they know changed
+    meaning, and told with the measurement rather than an argument from principle."""
+    section = report_text.split("1. MECHANISM TABLE")[1].split(
+        "2. PER-ITEM DISAGREEMENT"
+    )[0]
+
+    assert "always correct" in section, "the rate column is named where it is explained"
+    assert "SATURATES" in section
+    assert "43/100" in section and "35/100" in section, (
+        "the claim is a measurement from Experiment 3, and the report cites it"
+    )
+    assert "9/10" in section and "1/10" in section, (
+        "the prose names the two rates the letter cannot tell apart"
+    )
+
+
 def test_render_prints_n_flip_with_its_replicate_count(report_text):
     assert "N_flip = 4" in report_text
     assert "over 3 replicates" in report_text
@@ -705,6 +914,8 @@ def test_a_perfect_arm_passes_every_mechanism_of_the_real_pack(real_pack):
     ts, gt = real_pack
     rows = mechanism_table(gt, [list(gt), list(gt)], list(ts.items))
     assert {r.verdict for r in rows} == {"PASS"}
+    assert [r.always_correct for r in rows] == [len(r.item_ids) for r in rows]
+    assert {r.rate for r in rows} == {1.0}
 
 
 def test_a_real_pack_item_that_never_works_fails_its_mechanism(real_pack):
@@ -724,3 +935,7 @@ def test_a_real_pack_item_that_never_works_fails_its_mechanism(real_pack):
     assert thai.verdict == "FAIL"
     assert thai.failing_items == ("RET-10",)
     assert "ย้ายค่าย" in thai.detail, "the item's own predicted failure should be quoted"
+    assert (thai.always_correct, len(thai.item_ids)) == (5, 6), (
+        "one item of six broke, and the rate is the only part of this row that says so. "
+        "The letter reads the same here as it would with all six broken."
+    )

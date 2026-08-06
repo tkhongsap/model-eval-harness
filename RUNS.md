@@ -16,7 +16,7 @@ was served by more than one build and its numbers are a blend of two systems.
 `cost` is a LOWER BOUND — OpenRouter reports `usage.cost` only for providers that
 supply it, and a missing value stays absent rather than becoming zero.
 
-**27 runs recorded.**
+**31 runs recorded.**
 
 | run_id | arm | model requested | provider | prompt | items x reps | outcomes | pin proof | cost USD | testset | scorer |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -47,8 +47,12 @@ supply it, and a missing value stays absent rather than becoming zero.
 | `20260805-174222Z-v2b-gemini` | v2b-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 100 x 3 | ok=299, **provider_error=1** | **SPLIT 99/100** | 0.349902 | `9c91b036b7b4` | `ea3c952` |
 | `20260805-174540Z-v2b-qwen27b` | v2b-qwen27b | `qwen/qwen3.6-27b` | Morph | v9_16_base | 100 x 3 | ok=0, **transport_error=300** | 0/0 | 0.000000 | `9c91b036b7b4` | `ea3c952` |
 | `20260805-174707Z-v2b-qwen27b-cw` | v2b-qwen27b-cw | `qwen/qwen3.6-27b` | CoreWeave | v9_16_base | 100 x 3 | ok=300 | 100/100 | 4.711622 | `9c91b036b7b4` | `ea3c952` |
+| `20260806-025251Z-v3-gemini` | v3-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.493702 | `ff7f728ca597` | `a7aff2f` |
+| `20260806-025645Z-v3-qwen27b` | v3-qwen27b | `qwen/qwen3.6-27b` | CoreWeave | v9_16_base | 138 x 3 | ok=413, **empty_length=1** | 138/138 | 6.553065 | `ff7f728ca597` | `e0462c9` |
+| `20260806-043135Z-v3-qwen35a3b` | v3-qwen35a3b | `qwen/qwen3.6-35b-a3b` | AkashML | v9_16_base | 138 x 3 | ok=400, **empty_length=14** | 138/138 | 1.962569 | `ff7f728ca597` | `e0462c9` |
+| `20260806-061714Z-v3-gemini-rescored` | v3-gemini-rescored | `google/gemini-2.5-flash` | Google | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.483005 | `ff7f728ca597` | `e0462c9` |
 
-**Total recorded spend: $9.9772 (lower bound) over 3458 calls.**
+**Total recorded spend: $19.4695 (lower bound) over 5114 calls.**
 
 ## Directories with no `run.json`
 

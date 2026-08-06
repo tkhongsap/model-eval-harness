@@ -3,10 +3,11 @@
 Synthetic Thai call transcripts for comparing two LLMs on True Corp's **Retention**
 call-analysis app. Twenty items, twenty-two scored rows, no real customer data.
 
-**Everything below describes `retention_v1` unless it says otherwise.** A second pack,
-`retention_v2` — 100 items, 108 scored rows — now sits in this directory and has its own
-section at the end. `retention_v1` is **frozen**: Experiments 1 and 2 cite it, so nothing
-this document says about it moves.
+**Everything below describes `retention_v1` unless it says otherwise.** Two later packs
+sit in this directory and have their own sections at the end: `retention_v2` (100 items,
+108 scored rows) and `retention_v3` (138 items, 150 scored rows, four new families).
+`retention_v1` is **frozen**: Experiments 1 and 2 cite it, so nothing this document says
+about it moves.
 
 | File | What it is |
 |---|---|
@@ -14,6 +15,9 @@ this document says about it moves.
 | `retention_v1.gt.csv` | Ground truth flattened to the scorer's grain — one row per `(call_id, phone_number, product)`. 22 rows. |
 | `retention_v2.jsonl` | The 100-item pack, `RET-01` … `RET-100`. Same contract, same encoding rules. Its first 20 items are byte-identical to `retention_v1.jsonl`. See [The v2 pack](#the-v2-pack--retention_v2). |
 | `retention_v2.gt.csv` | v2 ground truth at the same grain. 108 rows. |
+| `retention_v3.jsonl` | The 138-item pack, `RET-01` … `RET-138`. Its first 100 items are byte-identical to `retention_v2.jsonl`. See [The v3 pack](#the-v3-pack--retention_v3). |
+| `retention_v3.gt.csv` | v3 ground truth at the same grain. 150 rows. |
+| `ASR-EXPECTATION.md` | Hand-derived expectation for the ten `asr_noise` artifact classes in v3, derived before any model was scored on them. |
 | `VOCABULARIES.md` | Label vocabularies, provenance and the D1–D14 divergence register. The authority for what a label means. |
 | `block_a_clear.jsonl`, `block_b_thai.jsonl`, `block_c_tiebreak.jsonl`, `block_d_escape.jsonl` | The pre-merge drafts. Superseded by `retention_v1.jsonl`; kept only for diff history. **Do not score against them** — they were never run through the loader and fail `validate()` in 155 places. |
 
@@ -262,9 +266,15 @@ citation; a reason span must be customer speech; UTF-8, no BOM, LF only.
 | `call_id` | 5001–5020 | 5001–5099, 5100 |
 | `phone_number` | `0810000001`–`0810000020` | `0810000000`–`0810000099` |
 
-**The `08100000xx` block is fully consumed at 100 items.** A 101st item requires widening
-`PHONE_PATTERN`, which is one of the three controls keeping customer identifiers out of
-git — a deliberate, reviewed change, never a convenience.
+**v2 spent the whole `08100000xx` block — all 100 numbers that pattern could spell.** So
+`PHONE_PATTERN` was widened to `^0810000[0-9]{3}$` on 2026-08-06
+(`src/evalgen/testsets.py:135`). It is one of the three controls keeping customer
+identifiers out of git, so that was a deliberate, reviewed change and never a
+convenience. The new block is a strict superset of the old one — a digit moved from the
+fixed prefix to the variable tail — so every value in the table above still matches, both
+packs stay byte-identical, and `validate()` returns the same empty problem list under
+either pattern. Capacity is now 1000, `0810000000`–`0810000999`: 100 in use, 900 free for
+a v3.
 
 ### What it buys: the support-1 classes are gone
 
@@ -333,3 +343,91 @@ reason span on a `ลูกค้า:` line**; 0 of 1,807 turns over the 120-cha
 `retention_v2.jsonl` sha256 `9c91b036b7b4f102bc3683ea1a73050597a62677d40294b12bad32da844cc039`.
 The same warning applies as to v1: editing a transcript is the one operation that can
 silently break the substring check, so re-run the validator after any edit.
+
+---
+
+## The v3 pack — `retention_v3`
+
+**138 items, 150 ground-truth rows.** Built 2026-08-06. `RET-01` … `RET-100` are v2
+copied verbatim: the first 100 lines of `retention_v3.jsonl` hash to `9c91b036…`, the
+sha256 of the whole of `retention_v2.jsonl` above. `retention_v1.*` and `retention_v2.*`
+are untouched, so Experiments 1-4 stay reproducible against them.
+
+Same contract, same `validate()`, same encoding rules as v1 and v2.
+
+| | v1 | v2 | v3 |
+|---|---:|---:|---:|
+| items | 20 | 100 | 138 |
+| scored rows | 22 | 108 | 150 |
+| `call_id` | 5001–5020 | 5001–5100 | 5001–5100, 5101–5138 |
+| `phone_number` | `0810000001`–`0810000020` | `0810000000`–`0810000099` | + `0810000101`–`0810000138` |
+
+`RET-101` … `RET-138` use `call_id = 5000+n`, `phone_number = "0810000" + f"{n:03d}"`,
+asserted as an invariant by `test_testset_pack.py` rather than left to convention.
+
+### Four new families — everything v1/v2 had zero coverage of
+
+| Family | Items | n | What it stresses |
+|---|---|---:|---|
+| `long_context` | RET-101 … RET-112 | 12 | Six Experiment-3 items (both arms correct on all 3 replicates) dilated to 3x and 10x by inserting label-inert filler, screened against the reason-trigger vocabulary at `prompt.py:4330-4381`. Every licensing turn stays byte-identical and in order, so every `ev_*` span and `rule_*` citation carries over free; `gt` is identical to the base. Grows turn *count*, not turn length — the 120-char cap is never the constraint. Stops at 10x (~11,000 chars) because that is the point the transcript's own tokens first exceed the system prompt's. |
+| `asr_noise` | RET-113 … RET-122 | 10 | One ASR-shaped artifact class per item: tone-mark loss, missing word spaces, Thai vs Arabic numerals, proper-noun mangling, homophones, stutter, mid-turn truncation, speaker-label leakage, plus RET-11's `เเ`/U+200B artifacts as controls (RET-121, RET-122). Governing expectation, hand-derived from raw codepoints with nothing from `evidence.py` imported: [`ASR-EXPECTATION.md`](./ASR-EXPECTATION.md). Written twice — the first version's own producing script had imported the code it existed to check independently; that failure is recorded in the replacement document rather than quietly redone. |
+| `code_switch` | RET-123 … RET-132 | 10 | English product/package terms mid-Thai sentence, at varying density. |
+| `regression` | RET-133 … RET-138 | 6 | Named tripwires read per item, never as a family verdict: the RET-11 shape (dropped-reason), two `other` routes that do not depend on the flood keyword (changed-mind, rewards), the discount/down-sell boundary now unblocked by `VOCABULARIES.md` Rule A, a bare price complaint, and a `#2` corroborating-evidence key form. |
+
+### Known limitation — this is a budget overrun against the pre-registered plan, on purpose
+
+`docs/eval-improvement-plan.md:158` pre-registered **+8 to 12 items** for the next
+authoring pass; this added 38. The justification is a different sizing rule, not a
+relaxed one: that budget was sized to buy discriminating power on dimensions the pack
+already covered, while v3 buys first coverage of four it did not cover at all. Recorded
+here, before the fact, rather than argued after it — matching how the phone-block
+widening above is a reviewed control change and not a convenience.
+
+**v3 inherits every v1/v2 defect it did not have a reason to fix**, because fixing one
+would break the prefix-sha invariant the paired `long_context` design depends on: RET-85's
+duplicated evidence span (ships on a **dated** allowlist in `test_testset_pack.py`,
+compared in both directions so a fix or a new violation both fail loudly), the RET-36/
+RET-65 near-duplicate pair, 55 of 100 v2 transcripts converging on the same closing, and
+8 of 10 v2 `other` items keying off the flood keyword.
+
+### What v3 does not change
+
+Everything in "The Thai was DRAFTED BY AN LLM", "Limitation — what this measures, and
+what it does not", and "What v2 does not change" applies unchanged, to every item
+including the new ones: no native-speaker sign-off, production is still handed audio,
+`RECONCILED` is still `NO`. **`long_context` does not test the context window** — every
+candidate model has 262k+ tokens available — it tests whether the decisive phrase is
+still findable once the call is longer, which is a different question. **`asr_noise`
+imitates the shape of transcription error; it does not exercise the transcription
+stage itself**, since production does ASR and labelling in one pass from audio and this
+pack still starts from clean pre-tagged text.
+
+### Verification
+
+```bash
+# structural + label contract
+python -c "import sys; sys.path.insert(0,'src'); \
+from evalgen.testsets import load_testset, validate; \
+print(validate(load_testset('tests/fixtures/testsets/retention_v3.jsonl', app='retention')))"
+
+# pack-level check: testset, ground truth and prompt together. No key, no network, no cost.
+python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_v3.jsonl \
+    --gt tests/fixtures/testsets/retention_v3.gt.csv
+```
+
+Expected: `[]`, then `OK. No problem found.` over **138 items / 150 rows** and families
+`clear=30, thai_linguistic=30, tiebreak=17, multislot=10, escape=13, long_context=12,
+asr_noise=10, code_switch=10, regression=6`. Both were run at the time this section was
+written.
+
+Verified independently of the authoring agents, by `test_testset_pack.py` and by hand:
+138 unique ids, 138 unique `call_id`s and `phone_number`s; 518 evidence keys, all
+byte-exact substrings of their own transcript; every reason span on a customer-attributed
+line; 0 turns over the 120-character limit (max observed 107); `retention_v1.*` and
+`retention_v2.*` byte-identical to HEAD; first 100 lines of `retention_v3.jsonl` hash to
+`retention_v2.jsonl`'s own sha256.
+
+`retention_v3.jsonl` sha256 `ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff`.
+The same warning applies as to v1 and v2: editing a transcript is the one operation that
+can silently break the substring check, so re-run the validator after any edit.

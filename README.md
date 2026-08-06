@@ -61,8 +61,8 @@ the same numbers. Any one of them could be wrong; all three being wrong identica
 is not plausible.
 
 ```
-451 passed, 11 skipped   # .venv (pandas 2.3.3, production's pin), standalone
-462 passed, 0 skipped    # same venv, TRUE_SOURCE_ROOT set: the differential runs
+491 passed, 11 skipped   # .venv (pandas 2.3.3, production's pin), standalone
+502 passed, 0 skipped    # same venv, TRUE_SOURCE_ROOT set: the differential runs
 ```
 
 The 11 skips are the differential test and the pin cross-check against production's

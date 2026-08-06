@@ -47,12 +47,21 @@ inspect, which is what was asked for.
 | | v1 (in use) | v2 new | Remaining after |
 |---|---|---|---|
 | `call_id` `^5[0-9]{3}$` | 5001-5020 | 5021-5099, 5100 | 899 |
-| `phone` `^08100000[0-9]{2}$` | ...01-...20 | ...21-...99, ...00 | **0** |
+| `phone` `^08100000[0-9]{2}$` *(the block as it stood)* | ...01-...20 | ...21-...99, ...00 | **0** |
 
-`RET-100` takes `0810000000` and `5100`. **The phone block is fully consumed at 100
-items.** Any 101st item requires widening `PHONE_PATTERN`, which is one of the three
+`RET-100` takes `0810000000` and `5100`. **The phone block was fully consumed at 100
+items.** Any 101st item required widening `PHONE_PATTERN`, which is one of the three
 controls keeping customer identifiers out of git — a deliberate, reviewed change, never a
 convenience.
+
+**That widening happened, 2026-08-06**: `^08100000[0-9]{2}$` → `^0810000[0-9]{3}$`
+(`src/evalgen/testsets.py:135`), reviewed as the control change this section said it
+would have to be. One digit moves from the fixed prefix to the variable tail, which makes
+the new block a strict superset: every number allocated in the table above still matches,
+so no file listed here changed and `validate()` returns the same empty problem list on
+`retention_v1.jsonl` and `retention_v2.jsonl` under either pattern. Capacity is now 1000
+— `0810000000`–`0810000999` — with the same 100 in use and 900 free. The `call_id` row is
+untouched and still has 899.
 
 ### Family distribution
 

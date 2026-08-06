@@ -200,8 +200,12 @@ re-checked if either changes:
 - The repository **must stay private**. It cites internal SharePoint site names,
   production file paths and line numbers.
 - It contains **no customer data**, and the controls in `keys.py`, `paths.py` and
-  `.gitignore` exist to keep it that way. Fixture phone numbers are the synthetic
-  `08100000xx` range.
+  `.gitignore` exist to keep it that way. Fixture phone numbers come from the synthetic
+  block `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`), `0810000000`–`0810000999`,
+  outside anything True's systems issue. 100 of the 1000 are used, all of them in the
+  `08100000xx` hundred this block was widened from on 2026-08-06 once `retention_v2`
+  exhausted it; the wider pattern admits every number the narrower one did, so no
+  committed value changed.
 
 Revisit if the True GitHub Enterprise org becomes available, or if anyone outside
 True needs access.

@@ -14,7 +14,8 @@
 #   5. TRUE_SOURCE_ROOT is deliberately unset. True's production source is not
 #      available to CI, so the differential test SKIPS here. CI therefore proves
 #      LESS than a local run: it shows the harness is internally consistent, not
-#      that it agrees with production. Expected: 82 passed, 11 skipped.
+#      that it agrees with production. Expected: 483 passed, 11 skipped
+#      (MEASURED 2026-08-06; 467 + the 16 pack gates added the same day).
 #
 # Items 3 and 4 are real gaps against canon, not decisions. Closing them means
 # adding a pyproject.toml, which is a build change rather than documentation.
@@ -47,6 +48,37 @@ jobs:
       - name: Confirm the pins actually installed
         run: |
           python -c "import pandas, numpy, openpyxl; print(f'pandas {pandas.__version__} numpy {numpy.__version__} openpyxl {openpyxl.__version__}')"
+
+      # Runs BEFORE the suite: it is the cheapest step here (about a second against
+      # pytest's eighteen) and the most upstream, so a pack that has drifted says so
+      # in one line instead of as a scatter of downstream test failures.
+      #
+      # No network and no API key, verified rather than assumed: `cmd_check`
+      # (cli.py:866-904) calls `_load_testset`, `_load_gt` and `_prompt` and nothing
+      # else -- it never reaches `_api_key` (cli.py:848) or `build_client`
+      # (cli.py:834), which are the only two paths that need either. Confirmed on
+      # 2026-08-06 by running both commands below with OPENROUTER_API_KEY,
+      # OPEN_ROUTER_API and OPENROUTER_KEY all unset: exit 0, "OK. No problem found."
+      #
+      # This is not a duplicate of `tests/test_testset_pack.py`. That file gates seven
+      # properties of the packs; `check` additionally runs `_gt_disagreements`
+      # (cli.py:262), the ONLY thing that ever puts an item's own `gt` beside the
+      # ground-truth CSV, and it proves the prompt still assembles from its committed
+      # assets. Neither is covered for these packs anywhere else.
+      #
+      # Both packs are named explicitly, including v1, which is already the CLI default
+      # (cli.py:131-132). Relying on the default would leave CI checking whichever pack
+      # that constant happens to point at, and silently checking one pack twice the day
+      # it moves. If a `retention_v3` is ever added it needs a line here -- until then
+      # it is still gated, because `test_testset_pack.py` discovers packs by glob.
+      - name: Validate the committed testset packs
+        run: |
+          python scripts/evalgen.py check \
+            --testset tests/fixtures/testsets/retention_v1.jsonl \
+            --gt tests/fixtures/testsets/retention_v1.gt.csv
+          python scripts/evalgen.py check \
+            --testset tests/fixtures/testsets/retention_v2.jsonl \
+            --gt tests/fixtures/testsets/retention_v2.gt.csv
 
       - name: Run tests
         run: pytest tests/ -q -rs

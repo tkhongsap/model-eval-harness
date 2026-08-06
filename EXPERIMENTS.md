@@ -16,8 +16,216 @@ Every experiment records four things: what was run, what came out, what to do ne
 - **Production sends AUDIO. This sends pre-tagged Thai TEXT.** Agent-speech misattribution,
   ASR error and diarisation are invisible here.
 - The Thai was **drafted by an LLM** and has no native-speaker sign-off.
-- 22 scored rows: **one row is 4.5 points.** Verdict bands were fixed before any run:
-  net `<= -2` BEHIND, `-1..+5` INDISTINGUISHABLE, `>= +6` AHEAD.
+- ~~22 scored rows: **one row is 4.5 points.** Verdict bands were fixed before any run:
+  net `<= -2` BEHIND, `-1..+5` INDISTINGUISHABLE, `>= +6` AHEAD.~~
+  **SUPERSEDED 2026-08-06 — re-derived immediately below.** Kept visible and struck
+  through, not deleted, because Experiments 1-4 were each read against it. This file
+  corrects in place; the precedent is the withdrawn next step 4 at the foot of
+  Experiment 1 (:183-189).
+
+### Verdict bands, re-derived from sample size and the null (2026-08-06)
+
+This re-derivation was pre-registered as a hard prerequisite twice — in
+`docs/testset-v2-plan.md` and again in `docs/eval-improvement-plan.md` — and skipped
+both times. The pack has since gone 22 -> 108 scored rows and is heading to ~150, so
+the bands have been carried across a 5x change in n without anyone checking what they
+cost.
+
+**What was allowed as input, and what was refused.** The derivation below uses the
+*discordance rate* — how often the two arms disagree at all — and nothing else from the
+runs. It does **not** use the observed nets from any experiment. The extraction that
+produced the rate table sums `inc only + cand only` and discards the split before
+printing, so the direction was not available to the person choosing the rule. This is
+the same discipline :91-93 already applied in writing when it refused to move the AHEAD
+line to admit a result; a rule chosen to fit the numbers it will judge is not a rule.
+
+**The discordance rate, measured** from every committed comparison report in
+`out/reports/compare-*.txt`. `compare-A-gemini-vs-27b.txt` is byte-identical to
+`compare-v2-100items.txt` (same MD5) and was deduplicated, or the 108-row rows would
+have been double-counted.
+
+| dimension | 22-row reports | 108-row reports | pooled |
+|---|---|---|---|
+| `reason` | 27/132 = **0.205** | 101/432 = **0.234** | 0.227 |
+| `call_result` | 6/132 = 0.045 | 33/432 = 0.076 | 0.069 |
+| `product` | **0/132 = 0.000** | 14/432 = 0.032 | 0.025 |
+
+Two things this table settles. The rate is roughly **stable across the 5x growth in n**
+(0.205 -> 0.234 on `reason`), so projecting it to ~150 rows is defensible. And it differs
+by **10x between dimensions**, which alone kills any single fixed band shared by all
+three — `reason` discords about nine times as often as `product`, so the same net means
+completely different things on the two. Caveat on the estimate itself: the six 22-row
+reports are repeat passes over the same 20 items and the 108-row reports share a testset,
+so these are overlapping samples, not independent ones, and the rate is also a property
+of *which two arms* are being compared. It is used below only to project d for planning.
+The band that governs a verdict is computed from the d that run actually produced.
+
+**The null.** This is McNemar's setup. Concordant pairs (both arms right, both wrong)
+carry no information about which arm is better and drop out. Among the **d** pairs where
+exactly one arm is right, the null hypothesis "the two arms are equally good" makes each
+pair a fair coin. With `X ~ Binomial(d, 1/2)` the pairs favouring the candidate:
+
+```
+net = X - (d - X) = 2X - d        E[net] = 0        sd(net) = sqrt(d)
+```
+
+`net` therefore has the same parity as `d`, and — this is the whole result — its spread
+under the null grows as **sqrt(d)**, not as d and not as a constant.
+
+**What the pre-registered bands actually cost.** `P(net >= +6)` and `P(net <= -2)` under
+the null, exactly:
+
+| d | max abs net | P(net >= +6) | P(net <= -2) | P(either fires) |
+|---:|---:|---:|---:|---:|
+| 3 | 3 | **0 — unreachable** | 0.1250 | 0.1250 |
+| 4 | 4 | **0 — unreachable** | 0.3125 | 0.3125 |
+| 5 | 5 | **0 — unreachable** | 0.1875 | 0.1875 |
+| 6 | 6 | 0.0156 | 0.3438 | 0.3594 |
+| 24 (n=108) | | 0.1537 | 0.4194 | **0.5731** |
+| 34 (n=150) | | 0.1958 | 0.4321 | **0.6278** |
+
+**The two bands were never the same test.** AHEAD at `>= +6` was a 1-in-64 gate when it
+was reachable at all; BEHIND at `<= -2` fires **one time in three** on two identical
+models. They were written on the same line as if they were a matched pair.
+
+**AHEAD was arithmetically unreachable on most of the 22-row passes.** The 22-row
+`reason` d values are 3, 3, 4, 5, 6, 6 — so on **four of the six passes** no result
+whatsoever could have produced `net >= +6`. On `call_result` d was 1 on every 22-row
+pass, and on `product` d was **0 on all six** — that dimension had no discordant pairs at
+all at 22 rows, so its net was not a tie, it was an empty measurement.
+
+**Carried unchanged to the current pack, the rule is worse than useless.** At n=108 the
+pre-registered bands return a directional verdict on two identical models **57% of the
+time**, and at n=150, **63%**. A rule that calls a coin flip 57% of the time is not a
+conservative rule that occasionally misfires; it is closer to a coin flip about a coin
+flip.
+
+**Absolute counts or a proportion of discordant pairs? Neither — and that is the answer.**
+
+- **A fixed absolute count** (`>= +6` forever) holds the *threshold* constant while
+  `sd(net) = sqrt(d)` grows underneath it. Measured cost: alpha inflates 0.0156 -> 0.1537
+  -> 0.1958 across d = 6, 24, 34. The test silently loosens every time the pack grows.
+- **A fixed proportion** (`net/d >= c`) holds the *effect size* constant while the
+  evidence needed to establish it gets cheaper. Measured cost at c = 0.5: alpha collapses
+  0.109 -> 0.0113 -> 0.0015 across the same d. The test silently tightens every time the
+  pack grows — you pay for rows and lose the power to spend them. At c = 1.0 it demands a
+  clean sweep of 34 pairs, `P = 5.8e-11`, which nothing will ever satisfy.
+
+Both are wrong in the same way and in opposite directions: each holds fixed a quantity
+that is not the one the null constrains. The band must scale as **sqrt(d)**. In practice
+it is still an integer count — `net` is a count and the verdict reads on it — but the
+count is a **function of the d that run produced**, recomputed at scoring time, not a
+constant carried between runs. d is observed, not projected, so this rule is
+self-calibrating and immune to the rate drifting between arm pairs.
+
+**The invariant being held: alpha = 1/64 = 0.0156 per side.** That is the false-verdict
+rate the AHEAD gate actually enforced at the only d where it could fire at 22 rows.
+Reasons for choosing that one of the two available rates:
+
+1. It is the gate that would **authorise the migration** — the verdict with a cost
+   attached. The rate that guards the expensive action is the rate worth preserving.
+2. It is the only one of the two that was ever enforced against data rather than merely
+   written down.
+3. It is the stricter, so holding it makes **both** sides at least as strict as the
+   strictest thing the pre-registered rule ever did.
+
+**The BEHIND rate is deliberately not preserved, and this is a change, stated as one.**
+Holding 0.34 constant would mean deliberately reproducing a one-in-three false BEHIND
+forever. A 34% false-alarm rate is not an invariant; it is the defect this re-derivation
+was pre-registered to find. The bands below are symmetric, which is itself the correction:
+there is no argument for the evidence needed to say "worse" being weaker than the evidence
+needed to say "better" when the null is symmetric. Two-sided, the new bands sit at
+0.006-0.031 depending on where d lands on the parity lattice.
+
+**The bands.** `band(d)` = the smallest k, matching the parity of d, with
+`P(net >= k) <= 1/64`:
+
+| d | 6 | 7 | 8 | 9 | 10 | 12 | 16 | 20 | 24 | 26 | 30 | 34 | 40 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **band** | ±6 | ±7 | ±8 | ±9 | ±8 | ±10 | ±10 | ±12 | ±12 | ±12 | ±14 | ±14 | ±16 |
+| alpha | .0156 | .0078 | .0039 | .0020 | .0107 | .0032 | .0106 | .0059 | .0113 | .0145 | .0081 | .0122 | .0083 |
+
+Verdict: `net >= +band(d)` AHEAD, `net <= -band(d)` BEHIND, otherwise INDISTINGUISHABLE.
+The band is not monotone in d — it steps on the parity lattice — which is why the table
+governs and not a formula. If d falls outside the table, `ceil(2.4 * sqrt(d))` lifted to
+the parity of d was measured never to be looser than exact over d = 6..200, at the cost
+of being one step stricter than necessary at about two thirds of values. Reproduce with:
+
+```python
+from math import comb
+def p_ge(d, k):                       # P(net >= k) under H0, k >= 0
+    return sum(comb(d, x) for x in range((d + k + 1) // 2, d + 1)) / 2 ** d
+def band(d, alpha=1/64):              # None => no verdict is available at this d
+    k = d % 2
+    while k <= d:
+        if p_ge(d, k) <= alpha: return k
+        k += 2
+    return None
+```
+
+**Design points at the measured rates**, for planning only — the governing band is always
+computed from the run's own d:
+
+| n | `reason` | `call_result` | `product` |
+|---|---|---|---|
+| 22 | d~5, **no verdict possible** | d~1, **no verdict possible** | d~1, **no verdict possible** |
+| 108 | d~24, ±12 | d~7, ±7 | d~3, **no verdict possible** |
+| 150 | d~34, ±14 | d~10, ±8 | d~4, **no verdict possible** |
+
+**There is a floor below which no band exists.** The strongest possible evidence at a
+given d is a clean sweep, `P = 2^-d`, so alpha = 1/64 requires **d >= 6** before any
+AHEAD or BEHIND verdict is available at all. Below it the correct output is not
+INDISTINGUISHABLE — that word claims a measurement was made and came out level — but
+**UNDERPOWERED: NO VERDICT**.
+
+`product` is where this bites, and the honest statement of it is per run rather than per
+pack. **Measured d across the four 108-row comparisons: 6, 0, 6, 2.** The pooled-rate
+projection of ~3 is an average no single run realised, and an earlier draft of this
+paragraph used that projection to claim `product` "cannot deliver a verdict at any alpha
+this file would accept, at either size." **That was wrong**, and it was wrong in the way
+this whole derivation exists to prevent — it applied a projection where the governing rule
+says to use the d the run actually produced. Corrected in place rather than deleted:
+
+- Two of the four runs reached the `d >= 6` floor and were therefore scorable. Both
+  returned `net = -4`, so they land INDISTINGUISHABLE — a real measurement that came out
+  level, not an absence of one.
+- The other two (d = 0 and d = 2) are **UNDERPOWERED: NO VERDICT**. `d = 0` in particular
+  is not a tie at all: the two arms never disagreed on a single product row, so there was
+  nothing to test.
+
+So `product` is scorable on some runs and not others, decided per run at scoring time.
+Growing the pack raises the expected d but guarantees nothing for any particular pair —
+which is the argument for computing the band from observed d rather than from a projection.
+
+**A band derived for one n does not transfer to another n. This is the whole point.**
+Not as a caution — as arithmetic. The threshold that holds alpha fixed moves with
+sqrt(d), so quoting `±12` at 108 rows and `±12` at 150 rows are different tests, and
+quoting the n=22 `+6` at 108 rows is a tenfold loosening (0.0156 -> 0.1537) performed
+silently by doing nothing. **Any change to pack size, and any change to the arm pair
+(which moves the discordance rate), invalidates the band and requires recomputing it.**
+The same applies dimension by dimension within a single run: three dimensions with d of
+24, 7 and 3 get three different bands, and one of them gets none.
+
+**What this does not do.** It does not restate any verdict in Experiments 1-4. Those were
+read against a rule now measured to be miscalibrated, and re-reading them against this one
+is a separate piece of work with its own write-up — deliberately not done here, in the
+same session that chose the rule, and deliberately not previewed above.
+
+**Minimum detectable effect, so the cost of the new bands is on the record.** With p the
+true probability a discordant pair favours the candidate:
+
+| d | band | p for 50% power | p for 80% power |
+|---:|---:|---:|---:|
+| 6 | ±6 | 0.891 | 0.964 |
+| 24 (n=108) | ±12 | 0.726 | 0.797 |
+| 34 (n=150) | ±14 | 0.690 | 0.753 |
+
+This is the honest bill. At 108 rows the design detects a real difference 80% of the time
+only if roughly **4 in 5** discordant pairs genuinely favour one arm — a very large effect.
+Growing 108 -> 150 rows moves that from 0.797 to 0.753, which is a small return for 39%
+more rows and 39% more cost. **If the goal is to detect a modest true difference, more rows
+of this pack is not the lever**; a pack with a higher discordance rate, or scoring more than
+replicate 1 (Experiment 2, next step 2), buys more per row than length does.
 
 ---
 
@@ -595,7 +803,185 @@ True's systems.
 
 ---
 
-## Experiment 5 — *not started*
+## Experiment 5 — retention_v3, the re-derived bands' first live test, and a length failure that turns out to belong to one model
+
+**Date:** 2026-08-06
+**Question:** With `retention_v3` (138 items: the 100-item v2 pack byte-identical, plus 38
+new items across four families — `long_context`, `asr_noise`, `code_switch`,
+`regression`) and the √d bands re-derived above, what do the three arms actually look
+like under a properly-powered paired test, and does context length degrade labelling?
+
+### What was run
+
+| # | Run | Model | Provider | Result |
+|---|---|---|---|---|
+| 5.1 | v3-gemini | gemini-2.5-flash | Google | 414/414 ok, `scorer_sha a7aff2f` |
+| 5.2 | v3-qwen27b | qwen3.6-27b | CoreWeave | 413/414 ok, 1 `empty_length`, `scorer_sha e0462c9` |
+| 5.3 | v3-qwen35a3b | qwen3.6-35b-a3b | AkashML | 400/414 ok, 14 `empty_length`, `scorer_sha e0462c9` |
+| 5.4 | v3-gemini-rescored | gemini-2.5-flash | Google | 414/414 ok, `scorer_sha e0462c9` — **5.1 superseded, see harness note below** |
+
+138 items x 3 replicates, `retention_v3`, prompt `v9_16_base`, decoding unchanged
+(`temperature=0, top_p=0, seed=0, max_tokens=8000`). Every run's `prompt_tokens`
+fingerprint returned exactly one value per item — no split arm.
+
+### Harness note: the `scorer_sha` gate fired again, and this time it cost a re-run
+
+Run 5.1 finished at `scorer_sha a7aff2f`. Before 5.2 and 5.3 finished, `e0462c9` (the
+hand-derived ASR-expectation doc, a pure `.md` addition — `git diff a7aff2f e0462c9 --
+stat` touches exactly one file, zero lines of code) landed on this branch, because it was
+committed mid-run-sequence. `evalgen compare` refused 5.1 against 5.2 on
+`scorer_sha` mismatch. This is the identical shape of Experiment 4's harness defect #2
+("`scorer_sha` is repo HEAD, so any commit invalidates comparability... a docs-only
+commit moved the sha"), observed for a second time. **The fix was the same as the
+principle demands: do not weaken the gate, make the runs actually comparable.** 5.1 was
+re-run as 5.4 at current HEAD ($0.4937 spent on 5.1 bought nothing). Two occurrences in
+five experiments makes this a standing cost of the current design, not a one-off — see
+recommended next steps.
+
+### Result
+
+**Governed reading: the paired verdicts under the bands derived above, not the raw
+percentages.** `d` is the discordant-pair count each comparison actually produced;
+`band(d)` is read off the table, not assumed from a previous run's size.
+
+| Comparison | dimension | d | net | band | verdict |
+|---|---|---:|---:|---:|---|
+| Gemini vs Qwen27B | call_result | 4 | +2 | — | **UNDERPOWERED: NO VERDICT** (d<6) |
+| Gemini vs Qwen27B | reason | 40 | **+26** | ±16 | **AHEAD — Qwen27B** |
+| Gemini vs Qwen27B | product | 0 | 0 | — | **UNDERPOWERED: NO VERDICT** (nothing discordant) |
+| Gemini vs Qwen35B | call_result | 13 | -7 | ±9 | INDISTINGUISHABLE |
+| Gemini vs Qwen35B | reason | 41 | **+17** | ±15 | **AHEAD — Qwen35B** |
+| Gemini vs Qwen35B | product | 5 | -1 | — | **UNDERPOWERED: NO VERDICT** (d<6) |
+| Qwen27B vs Qwen35B | call_result | 11 | -9 | ±9 | **BEHIND — Qwen35B** |
+| Qwen27B vs Qwen35B | reason | 29 | -9 | ±13 | INDISTINGUISHABLE |
+| Qwen27B vs Qwen35B | product | 5 | -1 | — | **UNDERPOWERED: NO VERDICT** (d<6) |
+
+**Both Qwen arms are AHEAD of Gemini on `reason` at alpha=1/64 — the first dimension in
+this project to clear an AHEAD band without a repeat-pass caveat.** Neither win is free:
+both were bought in a reasoning regime (see below). `call_result` cannot distinguish
+Gemini from either Qwen arm (underpowered or INDISTINGUISHABLE) but **can** distinguish
+the two Qwen arms from each other — Qwen35B is BEHIND Qwen27B on `call_result`, exactly
+at the ±9 boundary. `product` returned **zero informative verdicts across all nine
+cells** — every comparison landed d<6. This mirrors the `product` pattern already
+recorded above (measured d across four 108-row runs: 6, 0, 6, 2): the dimension the two
+models already agree on most stays too low-discordance to test, and that gets worse, not
+better, as agreement improves.
+
+For orientation only — not a verdict, and not interpretable at this n per the reasoning
+above the bands table — whole-item correctness on replicate 1:
+
+| family | n | Gemini | Qwen27B | Qwen35B |
+|---|---:|---:|---:|---:|
+| clear | 30 | 47% | 73% | 77% |
+| thai_linguistic | 30 | 43% | 77% | 57% |
+| tiebreak | 17 | 47% | 65% | 65% |
+| multislot | 10 | 40% | 50% | 20% |
+| escape | 13 | 46% | 62% | 54% |
+| long_context | 12 | 67% | 83% | 75% |
+| asr_noise | 10 | 60% | 80% | 40% |
+| code_switch | 10 | 60% | 70% | 70% |
+| regression | 6 | 67% | 83% | 83% |
+| **overall** | 138 | **50%** | **72%** | **62%** |
+
+### `long_context` — the dilation family, read properly
+
+The mechanism table (always-correct-on-all-3-replicates, the metric Experiment 3
+established as the one that does not saturate) gives all three arms the same headline
+**9/12**, but the *shape* of the 3 misses differs completely, and only the shape
+survives a length claim:
+
+| Level (n=6 each) | Gemini | Qwen27B | Qwen35B |
+|---|---|---|---|
+| 3x | 6/6 always-correct | 4/6 always-correct, **2 FLAKY** (RET-109, RET-111) | 5/6 always-correct, **1 FLAKY** (RET-105) |
+| 10x | 3/6 always-correct, **3 FAIL** (RET-104, RET-108, RET-110) | 5/6 always-correct, **1 FLAKY** (RET-110) | 4/6 always-correct, **2 FLAKY** (RET-106, RET-110) |
+
+**Gemini's three misses are all at 10x, all `FAIL` — wrong on every single replicate,
+the same wrong answer three times.** Neither Qwen arm has a single `FAIL` item anywhere
+in this family; every Qwen miss is `FLAKY` — right on some replicates, wrong on others,
+roughly evenly split between 3x and 10x. That is a real difference in *kind*, not just
+rate: Gemini's failure at length looks like a deterministic misread that a fourth
+replicate will not fix; the Qwen arms' imperfection at any length looks like ordinary
+decoding noise.
+
+**Correction to a live read I gave mid-run.** After only the Gemini arm had finished, I
+reported the replicate-1 curve (83% at 3x, 50% at 10x) as "the first evidence in this
+project that context length degrades labelling." That was premature and said so at the
+time. With all three arms in and scored properly: **length degrades Gemini. It does not
+degrade Qwen27B or Qwen35B on this pack.** The corrected claim is about a model, not
+about length — which is a materially different thing to tell the migration decision.
+
+### The confound that governs how every AHEAD verdict above should be read
+
+| | reasoning tokens | regime |
+|---|---:|---|
+| Gemini (5.4) | **0** | non-reasoning — matches `config/model_setting/retention.yml`'s `thinkingBudget: 0` |
+| Qwen27B (5.2) | 2,379,369 | reasoning (CoreWeave — Morph, the only non-reasoning endpoint, still returns HTTP 400, per Experiment 4) |
+| Qwen35B (5.3) | 2,620,339 | reasoning (AkashML) |
+
+Both Qwen AHEAD verdicts on `reason` are therefore **"Qwen with ~2.4-2.6M tokens of
+reasoning beats Gemini with none,"** not "Qwen labels Thai better." This is exactly
+Experiment 4's finding restated at the new pack size, still unresolved: there is
+currently no working non-reasoning endpoint for `qwen/qwen3.6-27b` at all, so the
+regime confound cannot be removed with the endpoints available today, only disclosed.
+
+### Cost, tokens and latency (5.4 + 5.2 + 5.3, the comparable set)
+
+| arm | calls | reason tok | cost USD | latency median | latency max | empty_length |
+|---|---:|---:|---:|---:|---:|---:|
+| Gemini (5.4) | 414 | 0 | $0.4830 | 2.02s | 5.22s | 0 |
+| Qwen27B (5.2) | 414 | 2,379,369 | $6.5531 | 40.62s | 85.94s | 1 |
+| Qwen35B (5.3) | 414 | 2,620,339 | $1.9626 | 28.75s | 91.70s | **14** |
+
+Qwen27B costs **13.6x** Gemini per arm and **3.3x** Qwen35B, for a `reason` verdict that
+is statistically real but regime-confounded. Qwen35B's 14 `empty_length` rows (it
+exhausted the 8,000-token budget on reasoning and returned nothing 3.4% of the time) is
+the same failure mode Experiment 4 saw at smaller n, now large enough to be a real
+contributor to its lower `call_result` and `product` scores rather than a rounding
+artifact.
+
+`N_flip` (replicate instability, every dimension, every row): Gemini **0**, Qwen27B
+**43**, Qwen35B **70**. Both reasoning arms are far less stable than the incumbent on
+byte-identical `temperature=0` requests, consistent with every prior experiment.
+
+### Recommended next steps
+
+1. **Batch doc/fixture commits before launching a multi-arm run, or budget for a
+   re-run.** Two occurrences of the same `scorer_sha`-invalidates-comparability defect
+   in five experiments (Experiment 4 finding #2; this run's harness note) is a pattern,
+   not a coincidence. Falsified if a future multi-arm launch survives an in-flight
+   commit without needing a re-run — it will not, under the gate as written, so the real
+   fix is process discipline: land every commit before `baseline` starts, not after.
+2. **Do not extend `long_context` past 10x, or add more dilation items, without a
+   non-reasoning Qwen endpoint.** The one clean model-level finding here (Gemini
+   degrades at length, Qwen does not) is bought entirely inside the regime confound;
+   more items sharpen a number that is still not isolating the variable it claims to.
+   Falsified if a non-reasoning `qwen/qwen3.6-27b` endpoint becomes available and the
+   FAIL/FLAKY split above holds under it.
+3. **`product` needs a different growth strategy than "more items."** Zero informative
+   verdicts across nine cells, at 150 rows, is the predicted outcome of a dimension
+   both arms already agree on — adding items proportionally will not raise `d` past 6
+   unless new items are specifically chosen to be `product`-discordant (a call whose
+   product classification is genuinely ambiguous), which today's authoring process does
+   not target.
+4. Everything else still waits on `RECONCILED`.
+
+### Output files
+
+| What | Path |
+|---|---|
+| Gemini vs Qwen27B | `out/reports/compare-v3-gemini-vs-27b.txt` |
+| Gemini vs Qwen35B | `out/reports/compare-v3-gemini-vs-35b.txt` |
+| Qwen27B vs Qwen35B | `out/reports/compare-v3-27b-vs-35b.txt` |
+| ASR-noise hand-derived expectation | `tests/fixtures/testsets/ASR-EXPECTATION.md` |
+| Every run, with provenance | `RUNS.md` |
+
+**Cost of Experiment 5: ~$9.49**, of which **$0.4937 bought nothing** — run 5.1,
+made incomparable by an in-flight commit and superseded by 5.4. Item keys used a local
+placeholder `EVAL_HARNESS_KEY_HMAC`; they do not resolve inside True's systems.
+
+---
+
+## Experiment 6 — *not started*
 
 Use this template:
 
