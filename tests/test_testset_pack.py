@@ -44,7 +44,8 @@ because `validate` does not ask those questions at all:
   6. identifier invariants             -- `validate` checks item_id duplication and both
                                           patterns; it does not check that the scored
                                           key `(call_id, phone_number)` is unique.
-  7. v2 extends v1 byte-for-byte       -- nothing checked the two packs' relationship.
+  7. each pack extends its
+     predecessor byte-for-byte        -- nothing checked the packs' relationship.
 
 Two private helpers are imported on purpose
 -------------------------------------------
@@ -59,22 +60,35 @@ answered, and the two copies would drift silently -- the exact defect
 `testsets.validate` was written to catch, reintroduced in the file checking for it. A
 private import that breaks loudly when the helper moves is the cheaper failure.
 
-MEASURED, 2026-08-06, both packs
---------------------------------
+MEASURED, 2026-08-06, all three packs
+-------------------------------------
 Recorded here so a future reader can tell a real regression from a pack that grew:
 
-    retention_v1  20 items   366 turns   22 gt rows   76 evidence spans
+    retention_v1  20 items   366 turns   22 gt rows    76 evidence spans
     retention_v2  100 items  1807 turns  108 gt rows  369 evidence spans
+    retention_v3  138 items  4332 turns  150 gt rows  518 evidence spans
 
-    speaker prefixes   366/366 and 1807/1807 lines prefixed; 0 unprefixed, 0 blank
-    longest turn       107 codepoints in BOTH packs (RET-18, an agent greeting)
-    reason spans       32 in v1, 152 in v2; agent-only 0 and 0; and 0 in either pack
-                       appear in a customer turn AND an agent turn
-    repeated spans     0 in v1, 1 in v2 (RET-85, allowlisted below)
-    class support      all 19 retention classes covered in both packs
-    call ids           5001-5020 and 5001-5100, all distinct
-    phone numbers      100 distinct in v2, all in the original 08100000xx hundred of the
-                       widened `PHONE_PATTERN` block, no nulls
+    speaker prefixes   366/366, 1807/1807 and 4332/4332 lines prefixed; 0 unprefixed,
+                       0 blank
+    longest turn       107 codepoints in ALL THREE packs (RET-18, an agent greeting).
+                       The longest of v3's 38 NEW turns is 100.
+    reason spans       32 in v1, 152 in v2, 217 in v3; agent-only 0, 0 and 0; and 0 in
+                       any pack appear in a customer turn AND an agent turn
+    repeated spans     0 in v1, 1 in v2, 1 in v3 -- the SAME RET-85 span in both,
+                       because v3 carries v2's 100 lines verbatim. Two allowlist
+                       entries, one defect; see the note on the table below.
+    class support      all 19 retention classes covered in all three packs
+    call ids           5001-5020, 5001-5100 and 5001-5138, all distinct
+    phone numbers      100 distinct in v2, all in the original 08100000xx hundred; 138
+                       distinct in v3, of which the 38 added by `RET-101`...`RET-138`
+                       (`0810000101`-`0810000138`) are the FIRST fixtures to live
+                       outside that hundred. They are the reason `PHONE_PATTERN` was
+                       widened to `^0810000[0-9]{3}$` (`testsets.py:105-135`) -- the old
+                       block held exactly 100 numbers and v2 had spent all of them. No
+                       nulls in any pack.
+
+    v3's four new families    long_context 12, asr_noise 10, code_switch 10,
+                              regression 6 -- 38 items, `RET-101`...`RET-138`
 
 The product and call_result dimensions are deliberately NOT held to test 2
 -------------------------------------------------------------------------
@@ -95,6 +109,7 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -124,11 +139,44 @@ APP = "retention"
 PACKS: tuple[Path, ...] = tuple(sorted(TESTSETS.glob("retention_v*.jsonl")))
 PACK_IDS: tuple[str, ...] = tuple(path.stem for path in PACKS)
 
-# The packs Experiments 1-4 cite. Named here ONLY as the anti-vacuity floor for the
-# glob: a typo in the pattern, a renamed directory, or a fixture that stopped being
-# committed all produce an empty `PACKS`, and an empty parametrize list is a file full
-# of tests that pass by never running.
-REQUIRED_PACKS = frozenset({"retention_v1", "retention_v2"})
+
+def _version(path: Path) -> int:
+    """The `N` in `retention_v<N>.jsonl`.
+
+    Used ONLY to order `PACK_CHAIN`, and it exists because `sorted()` above is
+    lexicographic: it ranks `retention_v10` before `retention_v2`, which is harmless for
+    the per-pack tests (order does not matter there) and wrong for a chain, where it would
+    assert that v2 extends v10. Sorting numerically now costs one function and removes a
+    trap that springs eight packs from today, silently, in the one test whose whole
+    subject is which pack came first.
+    """
+    match = re.fullmatch(r"retention_v(\d+)", path.stem)
+    assert match is not None, (
+        f"{path.name} matched the pack glob but not `retention_v<N>.jsonl`, so it cannot "
+        "be placed in the version chain. Rename it or widen `_version` deliberately."
+    )
+    return int(match.group(1))
+
+
+# Consecutive pairs, oldest first: ((v1, v2), (v2, v3), ...). Each newer pack must begin
+# with its predecessor byte for byte, and deriving the pairs from the glob means a v4
+# gets that assertion the day it is committed rather than when someone remembers.
+_ORDERED: tuple[Path, ...] = tuple(sorted(PACKS, key=_version))
+PACK_CHAIN: tuple[tuple[Path, Path], ...] = tuple(zip(_ORDERED, _ORDERED[1:]))
+PACK_CHAIN_IDS: tuple[str, ...] = tuple(
+    f"{older.stem}->{newer.stem}" for older, newer in PACK_CHAIN
+)
+
+# The committed packs. Named here ONLY as the anti-vacuity floor for the glob: a typo in
+# the pattern, a renamed directory, or a fixture that stopped being committed all produce
+# an empty `PACKS`, and an empty parametrize list is a file full of tests that pass by
+# never running.
+#
+# `retention_v1` and `retention_v2` carry Experiments 1-4. `retention_v3` was added on
+# 2026-08-06 and carries no experiment yet, which is exactly why it is listed: a pack
+# nothing cites is the one that can be deleted or renamed without any run going red, and
+# the floor is what makes that a test failure rather than a silent loss of 38 items.
+REQUIRED_PACKS = frozenset({"retention_v1", "retention_v2", "retention_v3"})
 
 # The three retention label spaces, keyed the way `_labels_in_row` names its dimensions
 # and the way `testsets._validate_gt_rows` (testsets.py:502-506) indexes them.
@@ -177,8 +225,30 @@ MAX_TURN_CODEPOINTS = 120
 #   frozen: Experiments 3 and 4 were scored on these exact bytes. Narrowing the span to
 #   `แล้วกล่องทรูวิชั่นส์ล่ะคะ` would resolve it and belongs to whoever cuts the next pack,
 #   with the item id already written down here.
+#
+# ---------------------------------------------------------------------------
+# SECOND ENTRY -- added 2026-08-06 with `retention_v3`. Same defect, not a new one.
+# ---------------------------------------------------------------------------
+# `retention_v3` = `retention_v2`'s 100 lines VERBATIM plus 38 new items, and
+# `test_each_pack_begins_with_its_predecessor_byte_for_byte` is what holds that verbatim.
+# So v3 contains the same RET-85 bytes and measures the same 2 occurrences. Two rows for
+# one defect is the honest bookkeeping here, because the table is keyed by pack: the
+# alternative -- keying by `(item_id, key)` alone -- would exempt RET-85 in a pack that
+# had never been looked at.
+#
+# The note above said narrowing the span "belongs to whoever cuts the next pack". v3 IS
+# that pack and the narrowing was NOT done, deliberately: the 100 inherited lines are
+# byte-identical to v2 by construction, and editing RET-85 would break that relationship
+# and with it the comparability of every per-item number Experiments 3 and 4 quote. The
+# fix now belongs to whichever pack first stops extending v2.
+#
+# What was gated instead: **none of the 38 NEW items needs an entry.** All 149 of their
+# evidence spans occur exactly once in their own transcript, measured on the date above.
+# A new item arriving with a repeated span is a new violation and fails, which is the
+# property this table exists to keep.
 REPEATED_SPAN_ALLOWLIST: dict[tuple[str, str, str], int] = {
     ("retention_v2", "RET-85", "ev_product:tvs"): 2,
+    ("retention_v3", "RET-85", "ev_product:tvs"): 2,
 }
 
 
@@ -202,19 +272,30 @@ def _evidence_spans(item):
 
 
 def test_every_committed_pack_is_discovered():
-    """The glob found the packs the experiments cite.
+    """The glob found the committed packs, and the chain derived from it is non-empty.
 
     Without this, every parametrised test in this file is vacuous the moment the glob
     stops matching -- pytest reports zero failures for zero cases, and the report looks
     identical to a clean run. `>=` rather than `==` on purpose: a new pack must be picked
-    up automatically, which is the point of globbing, while the two that four experiments
-    depend on can never silently drop out.
+    up automatically, which is the point of globbing, while the three that are committed
+    can never silently drop out.
+
+    The second assertion covers `PACK_CHAIN`, which has its own way of emptying that the
+    first would not catch: the chain is `len(PACKS) - 1` pairs, so a glob that found
+    exactly ONE pack still satisfies a subset check against a one-name floor while
+    parametrising the prefix test to nothing at all.
     """
     assert REQUIRED_PACKS <= set(PACK_IDS), (
         f"pack discovery found {sorted(PACK_IDS)} in {TESTSETS}, which is missing "
         f"{sorted(REQUIRED_PACKS - set(PACK_IDS))}. Every parametrised test in this file "
         "runs off this glob, so a pack that is not discovered is a pack with no gate at "
         "all -- the exact state this file was written to end."
+    )
+    assert len(PACK_CHAIN) == len(PACKS) - 1 and PACK_CHAIN, (
+        f"pack discovery found {len(PACKS)} pack(s) but built {len(PACK_CHAIN)} chain "
+        f"pair(s) {list(PACK_CHAIN_IDS)}. The chain must be every consecutive pair, and "
+        "an empty one makes test_each_pack_begins_with_its_predecessor_byte_for_byte "
+        "pass without comparing any bytes."
     )
 
 
@@ -420,9 +501,10 @@ def test_every_label_class_has_support(pack: Path):
     counts as support for two classes rather than one non-existent class.
 
     MEASURED 2026-08-06: all 19 classes (4 product, 4 call_result, 11 reason) have support
-    in both packs. Thinnest in v1: `other`, `post to pre`, `customer reason`,
+    in all three packs. Thinnest in v1: `other`, `post to pre`, `customer reason`,
     `device promotion related`, `sale upsell problem` and `down sell not success` at 1 item
-    each, and `undefined` at 1.
+    each, and `undefined` at 1. v3 raises every one of those floors -- its thinnest classes
+    are `undefined` at 5 and `down sell not success` at 8.
     """
     support: Counter = Counter()
     for item in _pack(pack).items:
@@ -469,12 +551,15 @@ def test_identifier_invariants(pack: Path):
         answers one item's question with the other's row. Distinct `item_id`s do not
         prevent it, which is why `validate` passing is not enough.
 
-    MEASURED 2026-08-06: v1 call ids 5001-5020, v2 5001-5100, all distinct; 20 and 100
-    distinct phone numbers, all of them in the original `08100000xx` hundred that the
-    widened block still contains; no nulls in either pack. A null phone
-    stays legal here because `validate` allows it and production has the matching defect
-    (`testsets.py:392-399`) -- the pair-uniqueness check below skips nulls rather than
-    treating them as equal, since two null phones are two unknowns and not one value.
+    MEASURED 2026-08-06: v1 call ids 5001-5020, v2 5001-5100, v3 5001-5138, all distinct;
+    20, 100 and 138 distinct phone numbers. v1's and v2's all sit in the original
+    `08100000xx` hundred that the widened block still contains; v3's last 38
+    (`0810000101`-`0810000138`) are the first fixtures anywhere in the repo to use the
+    widening, and this test is what proves the widened `PHONE_PATTERN` actually admits
+    them. No nulls in any pack. A null phone stays legal here because `validate` allows it
+    and production has the matching defect (`testsets.py:392-399`) -- the pair-uniqueness
+    check below skips nulls rather than treating them as equal, since two null phones are
+    two unknowns and not one value.
     """
     items = _pack(pack).items
     problems: list[str] = []
@@ -507,55 +592,68 @@ def test_identifier_invariants(pack: Path):
     assert problems == [], f"{pack.name}:\n  " + "\n  ".join(problems)
 
 
-def test_v2_begins_with_v1_byte_for_byte():
-    """`retention_v2`'s first 20 lines ARE `retention_v1`, byte for byte.
+@pytest.mark.parametrize("older,newer", PACK_CHAIN, ids=PACK_CHAIN_IDS)
+def test_each_pack_begins_with_its_predecessor_byte_for_byte(older: Path, newer: Path):
+    """Each pack's first N lines ARE the previous pack, byte for byte.
 
-    `TESTING.md:317` states it as a property of the packs -- "`RET-01`...`RET-20`
-    byte-identical to v1" -- and nothing checked it. It is the reason the two packs'
-    results are comparable at all: Experiments 1 and 2 scored v1, Experiments 3 and 4
-    scored v2, and per-item numbers for `RET-01`...`RET-20` are quoted across that
-    boundary. If v2's copy of those items drifted by a single character, those
-    comparisons would be between two different items wearing one id, and every check in
-    this repo would still pass.
+    `TESTING.md:317` states it of v2 -- "`RET-01`...`RET-20` byte-identical to v1" -- and
+    nothing checked it. It is the reason the packs' results are comparable at all:
+    Experiments 1 and 2 scored v1, Experiments 3 and 4 scored v2, and per-item numbers for
+    `RET-01`...`RET-20` are quoted across that boundary. If v2's copy of those items
+    drifted by a single character, those comparisons would be between two different items
+    wearing one id, and every check in this repo would still pass.
+
+    Parametrised over consecutive packs rather than written twice, so `retention_v3`
+    (2026-08-06, `retention_v2` + 38 items) is held to the identical claim the day it
+    lands, and a v4 after it needs no edit here. That matters more for v3 than it did for
+    v2: v3 inherits 100 items whose numbers Experiments 3 and 4 already published, so an
+    accidental re-serialisation of the shared prefix -- different escaping, reordered
+    keys, a stray normalisation pass -- would silently invalidate every one of them.
 
     Asserted as a sha over bytes rather than by comparing parsed items, because parsed
     equality would forgive exactly the edits that break provenance: reordered JSON keys,
     changed escaping, a different unicode normalisation. `testset_sha` hashes bytes for
     the same reason (`testsets.py:169-175`).
 
-    Derived, not pinned to a literal. `sha256(v1) == sha256(v2's first N lines)` where N
-    is v1's own line count, so the test states the RELATIONSHIP and stays true through a
-    coordinated regeneration of both packs. A literal here would be a second freeze on
-    v1's absolute bytes, which is a different claim than the one `TESTING.md` makes and
-    would fail for a reason that has nothing to do with v2.
+    Derived, not pinned to a literal. `sha256(older) == sha256(newer's first N lines)`
+    where N is the older pack's own line count, so the test states the RELATIONSHIP and
+    stays true through a coordinated regeneration of both packs. A literal here would be a
+    second freeze on the older pack's absolute bytes, which is a different claim than the
+    one `TESTING.md` makes and would fail for a reason that has nothing to do with the
+    newer one.
 
-    MEASURED 2026-08-06: both sides are
-    `c367a478d89bb047acc1ea5806fc36b75b0b9f561b62a264aa0c2188493b2b0f`, over 20 lines of
-    v1 and the first 20 of v2's 100. Reassembly is exact including the trailing newline.
+    MEASURED 2026-08-06:
+
+      * v1 -> v2, both sides
+        `c367a478d89bb047acc1ea5806fc36b75b0b9f561b62a264aa0c2188493b2b0f`, over 20 lines
+        of v1 and the first 20 of v2's 100.
+      * v2 -> v3, both sides
+        `9c91b036b7b4f102bc3683ea1a73050597a62677d40294b12bad32da844cc039`, over 100 lines
+        of v2 and the first 100 of v3's 138.
+
+    Reassembly is exact including the trailing newline, in both cases.
     """
-    v1_path = TESTSETS / "retention_v1.jsonl"
-    v2_path = TESTSETS / "retention_v2.jsonl"
-    v1_bytes = v1_path.read_bytes()
-    v2_bytes = v2_path.read_bytes()
+    older_bytes = older.read_bytes()
+    newer_bytes = newer.read_bytes()
 
-    v1_lines = v1_bytes.split(b"\n")
-    v2_lines = v2_bytes.split(b"\n")
-    prefix_length = len([line for line in v1_lines if line.strip()])
+    older_lines = older_bytes.split(b"\n")
+    newer_lines = newer_bytes.split(b"\n")
+    prefix_length = len([line for line in older_lines if line.strip()])
 
-    assert prefix_length > 0, "retention_v1.jsonl holds no lines"
-    assert len(v2_lines) > prefix_length, (
-        f"retention_v2.jsonl has fewer lines ({len(v2_lines)}) than retention_v1.jsonl's "
+    assert prefix_length > 0, f"{older.name} holds no lines"
+    assert len(newer_lines) > prefix_length, (
+        f"{newer.name} has fewer lines ({len(newer_lines)}) than {older.name}'s "
         f"{prefix_length}, so it cannot extend it"
     )
 
-    prefix = b"\n".join(v2_lines[:prefix_length]) + b"\n"
+    prefix = b"\n".join(newer_lines[:prefix_length]) + b"\n"
     prefix_sha = hashlib.sha256(prefix).hexdigest()
-    v1_sha = hashlib.sha256(v1_bytes).hexdigest()
+    older_sha = hashlib.sha256(older_bytes).hexdigest()
 
-    assert prefix_sha == v1_sha, (
-        f"retention_v2.jsonl's first {prefix_length} lines hash to {prefix_sha}, but all "
-        f"of retention_v1.jsonl hashes to {v1_sha}. The two packs have diverged on the "
-        "items they share, so every per-item number quoted across Experiments 1-2 and "
-        "3-4 is now a comparison between two different items with the same id. Work out "
+    assert prefix_sha == older_sha, (
+        f"{newer.name}'s first {prefix_length} lines hash to {prefix_sha}, but all of "
+        f"{older.name} hashes to {older_sha}. The two packs have diverged on the items "
+        "they share, so every per-item number quoted across the experiments that scored "
+        "them is now a comparison between two different items with the same id. Work out "
         "which pack moved before changing anything here."
     )
