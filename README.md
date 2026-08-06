@@ -33,6 +33,7 @@ boundary is enforced rather than asserted.
 | Experiment 5 provider qualification results | [docs/experiment5-qualification.md](./docs/experiment5-qualification.md) |
 | Experiment 5 decision, operations and safe report set | [docs/experiment5-results.md](./docs/experiment5-results.md) |
 | Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
+| What the overnight audit found, and how the independent-judge experiment works | [docs/overnight-audit-and-experiment-6-report.md](./docs/overnight-audit-and-experiment-6-report.md) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |
 | The arithmetic every expectation comes from | [WORKED-COMPUTATION.md](./tests/fixtures/WORKED-COMPUTATION.md) |
@@ -66,14 +67,20 @@ the same numbers. Any one of them could be wrong; all three being wrong identica
 is not plausible.
 
 ```
-498 passed, 33 skipped   # fresh checkout; production source and historical out/ absent
+524 passed, 33 skipped   # fresh checkout; production source and historical out/ absent
+546 passed, 11 skipped   # this environment: production-reference tracked, historical out/ present
+557 passed, 0 skipped    # same environment, TRUE_SOURCE_ROOT set: the differential runs
 ```
 
 Eleven skips are the differential/pin checks that require `TRUE_SOURCE_ROOT`; 22 more
 require historical gitignored `out/` run directories and therefore skip in a fresh
 checkout. All refuse visibly rather than pass without their evidence, so **a green
 standalone run does not prove point 3**. Set the source root and report the count your
-environment actually ran.
+environment actually ran. The fresh-checkout figure is 498 (2026-08-06's measured count)
+plus the 26 self-contained tests `judge.py` and its regression fixes added on
+2026-08-07 (`tests/test_judge.py` plus new cases in `test_enterprise_experiments.py` and
+`test_testset_pack.py`), none of which needs `out/` or `TRUE_SOURCE_ROOT` -- computed,
+not independently re-measured against an actual fresh clone.
 
 ## What it cannot prove
 

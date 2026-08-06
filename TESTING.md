@@ -9,7 +9,10 @@ python -m venv .venv
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected in a fresh checkout: **498 passed, 33 skipped**.
+Expected in a fresh checkout: **524 passed, 33 skipped** (computed: 498 + the 26
+self-contained tests added 2026-08-07 for `judge.py` and its audit-fix regressions,
+none of which touches `out/` or `TRUE_SOURCE_ROOT` -- not independently re-measured
+against an actual fresh clone).
 
 The skips are correct: 11 need production source/pins and 22 integration checks need
 historical gitignored `out/` run directories that a fresh checkout does not contain.
@@ -21,8 +24,8 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Expected |
 |---|---|---|
-| **Fresh standalone checkout** | `pytest tests/ -q` | **498 passed, 33 skipped** |
-| **With production source and historical local `out/`** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | environment-dependent; report the observed count |
+| **Fresh standalone checkout** | `pytest tests/ -q` | **524 passed, 33 skipped** (computed, see above) |
+| **With production source and historical local `out/`** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | environment-dependent; report the observed count. Measured 2026-08-07 in an environment with `production-reference/` and historical `out/` runs present: **546 passed, 11 skipped** standalone, **557 passed, 0 skipped** with `TRUE_SOURCE_ROOT` set. |
 
 For the Experiment 5 implementation audit, the focused production differential,
 dependency-pin and boundary selection passed **18/18** with `TRUE_SOURCE_ROOT` set to

@@ -80,6 +80,18 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
   no blended one, no verdict, one run directory at a time.
 - `src/evalgen/fabrication.py`: how many reason labels a run invented, and how many of
   them the prompt's worked example handed it. Also a diagnostic, **not a scored dimension**.
+- `src/evalgen/judge.py`: an independent model's opinion on scorer disagreements. Also a
+  diagnostic, **not a scored dimension** -- but unlike the two above, isolation from the
+  verdict path is enforced by an AST test (`tests/test_judge.py`) rather than only
+  claimed in the module's own docstring. Hand-computed expectation for its
+  parsing/aggregation arithmetic in `tests/fixtures/judge/HAND-COMPUTED.md`, written
+  before the module, per the rule below.
+- `src/evalgen/experiments.py`: the Gate 1/Gate 2 provider-qualification and
+  decision-rule pipeline behind Experiment 5B (`experiments/retention-e5.plan.json`).
+  `decision()` is the final PASS/FAIL/INCONCLUSIVE/UNAVAILABLE call; see `EXPERIMENTS.md`
+  Experiment 6 for a gap this project found and fixed in it (an UNDERPOWERED stability
+  verdict silently reaching PASS) and two it recorded rather than fixed (see DEVLOG.md,
+  Known Bugs).
 - `src/evalgen/client.py`: the only file in `src/` that imports `openai`, so every other
   module here stays importable and testable with the SDK absent. The other side of the
   boundary `tests/test_boundary.py` guards.

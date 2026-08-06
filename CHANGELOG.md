@@ -167,6 +167,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   finished. The `scorer_sha`-invalidates-comparability defect from Experiment 4 fired a
   second time, mid-run-sequence, and cost a real re-run rather than only a footnote this
   time. Narrative in `EXPERIMENTS.md`.
+- **`src/evalgen/judge.py`: an independent model adjudicates scorer disagreements.**
+  Diagnostic only, matching `evidence.py`'s "never a scored dimension" constraint but
+  enforced rather than only claimed: `tests/test_judge.py` parses the AST of `report.py`
+  and `evalharness/compare.py` and fails if either ever imports `judge`, which is a
+  stronger guarantee than either existing diagnostic carries today. Hand-computed
+  expectation (`tests/fixtures/judge/HAND-COMPUTED.md`) fixes ten constructed raw
+  responses and their exact aggregation, written before the module, per this project's
+  standing rule for every new metric. 20 tests. Wired into the CLI as `evalgen judge`.
+  Judge model `google/gemma-4-31b-it`, reasoning disabled, pinned to CoreWeave after a
+  probe found the identical request returns different verdicts from CoreWeave/Novita
+  versus DeepInfra -- the same endpoint-changes-the-answer lesson Experiment 4 taught
+  about the primary arms.
+- **Experiment 6: the judge's first real run, 262 items across three pairings, zero
+  parse failures.** 62.6% `ground_truth_correct`, 30.5% `defensible_disagreement`, 6.9%
+  `ground_truth_error`. Four flags reached independently by all three pairings:
+  `RET-85`, `RET-94`, `RET-100` (`call_result`) and `RET-59` (`reason`). `RET-85` is the
+  strongest candidate on inspection -- ground truth `save` against a call where two of
+  three services are cancelled outright -- the same shape of catch RET-11 was. Nothing
+  was changed on the strength of any flag; that is the point of a diagnostic. Also
+  recorded: `RET-59`'s flag looks like the judge missing a settled class-boundary
+  convention in `VOCABULARIES.md`, and two responses (`RET-98`, `RET-129`) have rationale
+  text that reverses itself and contradicts their own `verdict` field -- read the
+  rationale, not just the enum, is now stated in both the module and the write-up.
+  Narrative in `EXPERIMENTS.md`; full report in
+  `docs/overnight-audit-and-experiment-6-report.md`.
+- **A full audit of the ~2,500 lines that merged in from Experiment 5B's enterprise
+  framework**, never previously code-reviewed line by line. 21 agents, 12 candidate
+  findings, all independently verified against the real code, zero refuted. Every
+  numeric claim checked against committed evidence matched exactly; `compare.exact_band`
+  matched `EXPERIMENTS.md`'s own reference table at every spot-checked value. Six fixes
+  landed (see Fixed), four gaps recorded rather than patched at 2 a.m. (see DEVLOG.md),
+  two stale line-number citations in this file corrected.
 
 ### Changed
 
@@ -212,6 +244,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 ### Fixed
+
+- **`decision()` never routed an UNDERPOWERED stability verdict to INCONCLUSIVE** --
+  quality dimensions got that treatment, stability (computed by the identical
+  `paired_verdict`/`exact_band` machinery) did not, and fell through to PASS with no
+  statistical evidence that stability held. Found by an audit of the merged enterprise
+  framework, reproduced live before fixing: three clean quality verdicts plus a
+  genuinely underpowered stability comparison (`d=2`) returned `PASS`. Did not affect
+  Experiment 5B's actual FAIL verdicts (its stability was `BEHIND`, not `UNDERPOWERED`,
+  on both candidates). Two regression tests added.
+- **`validate_plan()` never checked which arm's `role` was `incumbent`** -- not in the
+  always-run schema block, not in the locked-status deep audit that otherwise
+  re-verifies `selected_provider`/`qualification_sha` against evidence. A transposed
+  role flips AHEAD/BEHIND, and therefore PASS/FAIL, for every dimension with no error
+  anywhere in the pipeline. Now requires exactly one `incumbent` and every other arm
+  `candidate`. Three regression tests (transposed, duplicated, and an unrecognised
+  role).
+- **`retention_v3.manifest.json`'s own embedded claims were never recomputed and
+  compared** against the pack files they describe -- only the manifest file's own bytes
+  were pinned, never its content's continued truth. A new test recomputes both file
+  hashes, the item count, the scored-row count and the family breakdown against the
+  manifest's own text.
+- **`tests/test_enterprise_experiments.py` could not run standalone** -- it had no
+  `sys.path.insert`, unlike every other test file, and only worked by accident of
+  collection order in a full-suite run. Found by trying to run it in isolation.
+- Two stale line-number cross-references in `EXPERIMENTS.md`'s Verdict-bands section
+  (`:183-189` and `:91-93`), both pointing at the wrong passage after an earlier
+  insertion shifted everything after it without updating the citations. Both now point
+  at the content they actually describe.
 
 - The full-run runtime gate no longer requires usage/reasoning metadata from failed
   calls. It validates successful responses and reported identities while reliability

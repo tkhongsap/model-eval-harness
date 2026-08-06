@@ -71,6 +71,7 @@ from evalgen.console import configure_stdout
 from evalgen.config import ENV_FILES, find_api_key, load_env_file
 from evalgen.decoding import decoding_schema
 from evalgen.flatten import named_no_product, to_rows
+from evalgen.judge import find_disagreements, run_judge
 from evalgen.experiments import (
     PlanError,
     arm_by_id,
@@ -2278,6 +2279,130 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return EXIT_PROBLEMS if verdicts & {"FAIL", "FLAKY"} else EXIT_OK
 
 
+def cmd_judge(args: argparse.Namespace) -> int:
+    """Independent-model adjudication of scorer disagreements. Diagnostic only.
+
+    Reuses `_refuse_incomparable` -- the same gate `compare` applies -- because a judge
+    run over two arms that were not comparable in the first place (different testset,
+    ground truth or scorer version) would adjudicate disagreements that are artifacts of
+    the mismatch, not of either model. This command never prints a verdict, a net, or
+    anything `report.render`'s mechanism table would recognise: see `evalgen.judge`'s
+    module docstring for how that separation is enforced rather than only claimed.
+    """
+    incumbent = load_run(Path(args.incumbent))
+    candidate = load_run(Path(args.candidate))
+    _refuse_incomparable(incumbent, candidate)
+
+    testset_path = Path(args.testset) if args.testset else Path(incumbent.meta["testset_path"])
+    gt_path = Path(args.gt) if args.gt else Path(incumbent.meta["gt_path"])
+    testset = _load_testset(testset_path, app=incumbent.meta.get("app", "retention"))
+    gt = _load_gt(gt_path)
+
+    per_replicate = {
+        loaded.arm: replicate_records(loaded.result, testset.items)
+        for loaded in (incumbent, candidate)
+    }
+    inc_rows = per_replicate[incumbent.arm][0]
+    cand_rows = per_replicate[candidate.arm][0]
+
+    dimensions = args.dimension if args.dimension else ["call_result", "reason", "product"]
+
+    if args.dry_run:
+        total = sum(len(find_disagreements(gt, inc_rows, cand_rows, d)) for d in dimensions)
+        print(
+            f"dry run: {total} disagreement item(s) across {dimensions} would be sent "
+            f"to {args.model} on {args.provider}. No call made."
+        )
+        return EXIT_OK
+
+    api_key = _api_key()
+    client = build_client(api_key, timeout=args.timeout)
+
+    report = run_judge(
+        testset=testset,
+        gt=gt,
+        incumbent=inc_rows,
+        candidate=cand_rows,
+        dimensions=dimensions,
+        client=client,
+        model=args.model,
+        provider=args.provider,
+        max_items=args.max_items,
+    )
+    report["incumbent_arm"] = incumbent.arm
+    report["candidate_arm"] = candidate.arm
+
+    text = _render_judge_report(report)
+    print()
+    print(text)
+
+    if args.out:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(
+            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
+        )
+        print(f"wrote {out_path}")
+    if args.report:
+        report_path = Path(args.report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(text, encoding="utf-8", newline="\n")
+        print(f"wrote {report_path}")
+    return EXIT_OK
+
+
+def _render_judge_report(report: dict[str, Any]) -> str:
+    """A short, honest summary. No net, no verdict, no headline -- see the module
+    docstring on `evalgen.judge` for why that is a structural constraint here, not a
+    style choice."""
+    summary = report["summary"]
+    lines = [
+        "=" * 78,
+        "INDEPENDENT JUDGE -- DIAGNOSTIC ONLY, NOT A SCORED DIMENSION",
+        "=" * 78,
+        f"incumbent   {report['incumbent_arm']}",
+        f"candidate   {report['candidate_arm']}",
+        f"judge model {report['model_requested']} on {report['provider_requested']}",
+        f"dimensions  {', '.join(report['dimensions'])}",
+        "",
+        f"disagreement items found: {report['candidates_found']}"
+        + ("  (TRUNCATED by --max-items)" if report["truncated"] else ""),
+        f"items adjudicated:        {summary['total']}",
+        "",
+    ]
+    for verdict in ("ground_truth_correct", "defensible_disagreement", "ground_truth_error", "unclear"):
+        lines.append(
+            f"  {verdict:<26} {summary['counts'][verdict]:>4}  "
+            f"({summary[f'{verdict}_rate']:.1%})"
+        )
+    lines.append(
+        f"  of which parse_error=True {summary['parse_error_count']:>4}  "
+        f"({summary['parse_error_rate']:.1%})"
+    )
+    if summary["counts"]["ground_truth_error"]:
+        lines += [
+            "",
+            "Items the judge flagged as a likely GROUND TRUTH ERROR (review these by hand,",
+            "the same way RET-11 was found -- this is an opinion from one model, not a",
+            "correction applied to any fixture):",
+        ]
+        for row in report["items"]:
+            if row["verdict"] == "ground_truth_error":
+                lines.append(
+                    f"    {row['item_id']} [{row['dimension']}] gt={row['gt_label']!r} "
+                    f"incumbent={row['incumbent_label']!r} candidate={row['candidate_label']!r}"
+                )
+                lines.append(f"      judge: {row['rationale']}")
+    lines += [
+        "",
+        "This is one model's opinion about a disputed label, recorded once per item at",
+        "temperature 0. It does not change any score, does not join any verdict, and is",
+        "not itself RECONCILED against anything. Read it the way you would read a second",
+        "reviewer's comment, not a second scorer's number.",
+    ]
+    return "\n".join(lines)
+
+
 def _observed_model_id(loaded: LoadedRun) -> str:
     """The model that answered, or a visible statement that more than one did."""
     observed = loaded.result.observed_models()
@@ -2433,6 +2558,36 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--gt", default=None, help="override the recorded path")
     compare.add_argument("--report", default=None, help="also write the report here")
     compare.set_defaults(handler=cmd_compare)
+
+    judge = subparsers.add_parser(
+        "judge",
+        help="independent-model adjudication of scorer disagreements (diagnostic only)",
+    )
+    judge.add_argument("--incumbent", required=True, help="a run directory")
+    judge.add_argument("--candidate", required=True, help="a run directory")
+    judge.add_argument("--testset", default=None, help="override the recorded path")
+    judge.add_argument("--gt", default=None, help="override the recorded path")
+    judge.add_argument(
+        "--dimension",
+        action="append",
+        choices=("call_result", "reason", "product"),
+        default=None,
+        help="repeatable; default is all three",
+    )
+    judge.add_argument("--model", required=True, help="OpenRouter model id for the judge")
+    judge.add_argument(
+        "--provider", required=True, help="pin the judge to one backend, same as baseline/compare"
+    )
+    judge.add_argument("--max-items", type=int, default=None)
+    judge.add_argument("--timeout", type=float, default=120.0)
+    judge.add_argument("--out", default=None, help="write the full JSON report here")
+    judge.add_argument("--report", default=None, help="also write the text summary here")
+    judge.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="count disagreement items and exit. No call, no key required.",
+    )
+    judge.set_defaults(handler=cmd_judge)
 
     experiment_check = subparsers.add_parser(
         "experiment-check",

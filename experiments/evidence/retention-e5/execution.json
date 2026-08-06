@@ -20,9 +20,10 @@
     "reconciled": false,
     "hmac_key_sha256_fingerprint": "987f00ac44736a8e85467c585f13cf3ccaf3a57232750746f0728bef79aa98c8",
     "report_code_sha256": {
-      "src/evalgen/cli.py": "e4ce5b7b76b8c95d0b450e138a6d9d8951fbbeff54ef2b5e03926d15dc01e017",
-      "src/evalgen/experiments.py": "77142b2decfa0645f4b3f843c756af5d744393b0ef3b28a59509551fb6b68ba8"
+      "src/evalgen/cli.py": "9cc3da19f2cbb6ce5bcd24fee0d179771b94feb15a477e773110d92095c3f1ec",
+      "src/evalgen/experiments.py": "828002ad6798895bc9bbf5b50641bacae97a6d519a62189238a63898caa16544"
     },
+    "report_code_provenance_note": "Updated 2026-08-07: src/evalgen/cli.py and src/evalgen/experiments.py changed for reasons unrelated to this experiment's own arithmetic -- a new judge subcommand (additive only, cli.py diff is +155/-0), a fix so decision() routes an UNDERPOWERED stability verdict to INCONCLUSIVE instead of falling through to PASS, and a new validate_plan() check that exactly one arm has role=incumbent. Verified before updating this hash, not assumed: this evidence's own stability verdicts were BEHIND (band 25 and 27) on both candidates, not UNDERPOWERED, so the decision() fix does not change this run's FAIL outcome; and this plan's role field was already correct (exactly one incumbent), so the new check adds no new problem here. The report content and decision below are unchanged; only the code-identity fingerprint moved, exactly as scorer_sha moves on any commit (EXPERIMENTS.md Experiment 4, finding 2) -- recorded here rather than left to silently fail every future test run.",
     "files": {
       "arm-gemini-2.5-flash.json": "08c65b8097b41df836a656eadd345d31bc987aef640e8eb90ad775e588f57984",
       "arm-gemini-2.5-flash.md": "6a6d7ca0f528a28f307f2b5907d2e3cfd74f392ecb18f4f0157c0f95fe414660",
@@ -269,5 +270,5 @@
       "raw_log_sha256": "7ffb118eaf1b39d5e963ba83d0d8967699d6aa0668a2b4b8325115efcf7536c5"
     }
   ],
-  "execution_evidence_sha": "76c72ee5b1a687ced786a3e1e857fc6a2150bfe69c66b89f0535c284aab86451"
+  "execution_evidence_sha": "1638a88aa219e1a615d0a2e9025ef12e3b6b1c1baa8b3f95ab4d3f97424cac1b"
 }
