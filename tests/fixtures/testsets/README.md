@@ -264,7 +264,7 @@ citation; a reason span must be customer speech; UTF-8, no BOM, LF only.
 |---|---:|---:|
 | items | 20 | 100 |
 | scored rows | 22 | 108 |
-| `call_id` | 5001–5020 | 5001–5099, 5100 |
+| `call_id` | 5001–5020 | 5001–5100 |
 | `phone_number` | `0810000001`–`0810000020` | `0810000000`–`0810000099` |
 
 **v2 spent the whole `08100000xx` block — all 100 numbers that pattern could spell.** So

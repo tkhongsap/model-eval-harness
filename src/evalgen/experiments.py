@@ -196,6 +196,32 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
     }
     expect("arms", observed_models, expected_models)
 
+    # `role` decides which arm is the reference for every paired comparison
+    # (`cli.py`'s `incumbent_id = next(arm["id"] for arm in plan["arms"] if
+    # arm.get("role") == "incumbent")`), and nothing checked it before this line --
+    # not here, and not in the locked-status re-audit below, which otherwise re-verifies
+    # `selected_provider`/`availability`/`qualification_sha` against evidence artifacts.
+    # A transposed role (copy/paste before locking, or an edit `validate_plan` did not
+    # yet enumerate) flips the sign of `net` for every dimension silently: AHEAD and
+    # BEHIND swap, and `decision()` turns a flipped BEHIND straight into a FAIL/PASS
+    # flip with no error anywhere in the pipeline (audit finding, 2026-08-07).
+    observed_roles = {
+        arm.get("id"): arm.get("role") for arm in arms if isinstance(arm, Mapping)
+    }
+    incumbent_ids = [aid for aid, role in observed_roles.items() if role == "incumbent"]
+    if len(incumbent_ids) != 1:
+        problems.append(
+            f"arms[].role: expected exactly one arm with role 'incumbent', found "
+            f"{incumbent_ids!r} among {observed_roles!r}. Every paired comparison "
+            "binds to this arm by role alone; zero or more than one makes the binding "
+            "ambiguous or wrong rather than merely undocumented."
+        )
+    unexpected_roles = {
+        aid: role for aid, role in observed_roles.items() if role not in ("incumbent", "candidate")
+    }
+    if unexpected_roles:
+        problems.append(f"arms[].role: expected 'incumbent' or 'candidate', found {unexpected_roles!r}")
+
     qualification_plan = plan.get("qualification", {})
     expect("qualification.item_ids", qualification_plan.get("item_ids"), [
         "RET-01", "RET-109", "RET-138"
@@ -899,9 +925,17 @@ def decision(
         reasons.append("stability is BEHIND")
     if reasons:
         return Decision("FAIL", tuple(reasons))
+    # A stability comparison with too few discordant items (d < 6 at this alpha) gets
+    # the same UNDERPOWERED treatment as a quality dimension: it is a real result --
+    # "no verdict was possible" -- not a tie, and PASS must not fall through underneath
+    # it. `paired_verdict` already refuses to call this a tie for quality dimensions;
+    # stability uses the identical `paired_verdict`/`exact_band` machinery and was
+    # missing the matching check here (audit finding, 2026-08-07).
+    inconclusive: list[str] = []
     if underpowered:
-        return Decision(
-            "INCONCLUSIVE",
-            (f"quality UNDERPOWERED on {', '.join(underpowered)}",),
-        )
+        inconclusive.append(f"quality UNDERPOWERED on {', '.join(underpowered)}")
+    if stability_verdict.verdict == "UNDERPOWERED":
+        inconclusive.append("stability UNDERPOWERED (too few discordant items for a verdict)")
+    if inconclusive:
+        return Decision("INCONCLUSIVE", tuple(inconclusive))
     return Decision("PASS", ("all preregistered quality gates passed",))

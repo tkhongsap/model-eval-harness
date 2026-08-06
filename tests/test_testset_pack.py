@@ -107,8 +107,10 @@ to rewrite the pack. The narrow assertion is the one production licenses.
 
 from __future__ import annotations
 
+import csv
 import functools
 import hashlib
+import json
 import re
 import sys
 from collections import Counter
@@ -657,3 +659,66 @@ def test_each_pack_begins_with_its_predecessor_byte_for_byte(older: Path, newer:
         "them is now a comparison between two different items with the same id. Work out "
         "which pack moved before changing anything here."
     )
+
+
+# ---------------------------------------------------------------- dataset manifest
+
+
+def test_dataset_manifest_content_matches_the_files_it_describes():
+    """Audit finding, 2026-08-07: `retention_v3.manifest.json`'s own embedded claims --
+    `testset.sha256`, `ground_truth.sha256`, `testset.items`, `ground_truth.scored_rows`,
+    and the `phase_one`/`phase_two` family breakdowns -- were never recomputed and
+    compared against the actual pack files by any test. The only existing check
+    (`experiments.py`'s generic asset loop) recomputes the sha256 of the MANIFEST FILE
+    ITSELF and compares it to a value pinned in `retention-e5.plan.json`; that proves the
+    manifest's bytes have not changed since the plan was locked, never that the claims
+    written inside those bytes are still true of `retention_v3.jsonl` and
+    `retention_v3.gt.csv`. This is the missing recompute-and-compare, in the same spirit
+    as `WORKED-COMPUTATION.md` for the metrics fixture: an edit to the testset that also
+    updates the plan's asset hash (satisfying that check) but forgets this manifest's own
+    embedded fields would previously have passed every gate in the repository.
+    """
+    manifest_path = TESTSETS / "retention_v3.manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    testset_path = TESTSETS / manifest["testset"]["path"]
+    gt_path = TESTSETS / manifest["ground_truth"]["path"]
+
+    actual_testset_sha = hashlib.sha256(testset_path.read_bytes()).hexdigest()
+    assert actual_testset_sha == manifest["testset"]["sha256"], (
+        f"{testset_path.name} hashes to {actual_testset_sha}, but "
+        f"{manifest_path.name} claims {manifest['testset']['sha256']}. The manifest's "
+        "own embedded sha is stale relative to the file it describes."
+    )
+
+    actual_gt_sha = hashlib.sha256(gt_path.read_bytes()).hexdigest()
+    assert actual_gt_sha == manifest["ground_truth"]["sha256"], (
+        f"{gt_path.name} hashes to {actual_gt_sha}, but {manifest_path.name} claims "
+        f"{manifest['ground_truth']['sha256']}."
+    )
+
+    testset = load_testset(testset_path, app=APP)
+    assert len(testset.items) == manifest["testset"]["items"]
+
+    with gt_path.open(encoding="utf-8") as handle:
+        actual_scored_rows = sum(1 for _ in csv.DictReader(handle))
+    assert actual_scored_rows == manifest["ground_truth"]["scored_rows"]
+
+    actual_families = Counter(item.family for item in testset.items)
+    claimed_families = {
+        **manifest["phase_one"]["families"],
+        **manifest["phase_two"]["families"],
+    }
+    assert dict(actual_families) == claimed_families, (
+        f"actual family counts {dict(actual_families)} do not match the manifest's "
+        f"phase_one + phase_two claim {claimed_families}"
+    )
+
+    phase_one_ids = {
+        item.item_id for item in testset.items if item.family in manifest["phase_one"]["families"]
+    }
+    phase_two_ids = {
+        item.item_id for item in testset.items if item.family in manifest["phase_two"]["families"]
+    }
+    assert phase_one_ids and phase_two_ids, "both phases must be non-empty to mean anything"
+    assert not (phase_one_ids & phase_two_ids), "a family cannot belong to both phases"

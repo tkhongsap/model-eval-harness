@@ -21,7 +21,7 @@ Every experiment records four things: what was run, what came out, what to do ne
   **SUPERSEDED 2026-08-06 — re-derived immediately below.** Kept visible and struck
   through, not deleted, because Experiments 1-4 were each read against it. This file
   corrects in place; the precedent is the withdrawn next step 4 at the foot of
-  Experiment 1 (:183-189).
+  Experiment 1 (:391-397).
 
 ### Verdict bands, re-derived from sample size and the null (2026-08-06)
 
@@ -36,7 +36,7 @@ cost.
 runs. It does **not** use the observed nets from any experiment. The extraction that
 produced the rate table sums `inc only + cand only` and discards the split before
 printing, so the direction was not available to the person choosing the rule. This is
-the same discipline :91-93 already applied in writing when it refused to move the AHEAD
+the same discipline :298-301 already applied in writing when it refused to move the AHEAD
 line to admit a result; a rule chosen to fit the numbers it will judge is not a rule.
 
 **The discordance rate, measured** from every committed comparison report in
@@ -1136,7 +1136,241 @@ Actual full/load reported cost was US$1.507460937 for all 1,458 authorized calls
 
 ---
 
-## Experiment 6 — *not started*
+## Experiment 6 — an independent judge, and a night spent auditing everything that came before it
 
-The next experiment must be preregistered before any model call. Production-shaped
-ground truth and live-report reconciliation remain the highest-value next evidence.
+**Date:** 2026-08-07
+**Question:** Two things, deliberately bundled because the second motivated the first.
+(1) Does an automated, independent second opinion on scorer disagreements find anything
+this project's ground truth got wrong -- the same class of defect RET-11 was, found by a
+human reading a transcript by hand? (2) What did a full audit of the ~2,500 lines that
+merged in overnight (Experiment 5B's enterprise framework) miss, that a fresh adversarial
+pass would catch?
+
+### Part A: the audit
+
+A multi-agent workflow mapped `experiments.py`, `cli.py`, `report.py`,
+`evalharness/compare.py` and `evalharness/manifest.py` (the two `CONTRIBUTING.md`-flagged
+final layers), cross-checked every numeric claim in `docs/experiment5-results.md` and
+`docs/enterprise-evaluation-framework.md` against the committed evidence JSON byte for
+byte, then hunted for correctness, statistical, data-integrity and test-coverage defects
+across the result. 21 agents, 12 candidate findings, all 12 adversarially verified by an
+independent skeptic reading the actual cited code before counting a finding as real. Zero
+refuted.
+
+**Every numeric claim checked against raw evidence matched exactly** -- the Morph
+54-transport-error count, the $1.507460937 total across 1,458 calls, every BEHIND
+net/band pair in the 27B and 35B-A3B tables. `compare.exact_band(d)` was independently
+re-run against `EXPERIMENTS.md`'s own `band()` reference at d=6,11,29,40 and matched at
+every point. No arithmetic was wrong anywhere the audit looked.
+
+**What was wrong was gate logic that never fires on the shipped data, and coverage gaps
+around it:**
+
+1. **`decision()` never routed an UNDERPOWERED stability verdict to INCONCLUSIVE.**
+   Quality dimensions get this treatment; stability -- computed by the identical
+   `paired_verdict`/`exact_band` machinery -- did not, and fell through to PASS. Confirmed
+   live: three clean quality verdicts plus a stability comparison with `d=2` (genuinely
+   underpowered) returned `Decision('PASS', ...)`. Did not affect Experiment 5B's actual
+   FAIL verdicts -- both candidates' stability was `BEHIND` (band 25 and 27), well clear
+   of the gap -- but the gap was real and untested. **Fixed**, with two regression tests
+   (the failing case, and a check that a genuinely BEHIND stability verdict still wins).
+2. **`role` (which arm is "incumbent" for every paired comparison) was never validated**
+   -- not in the always-run schema checks, not in the locked-status deep audit that
+   otherwise re-verifies `selected_provider`/`qualification_sha` against evidence. A
+   transposed role flips AHEAD/BEHIND, and therefore PASS/FAIL, for every dimension with
+   no error anywhere in the pipeline. The committed plan's roles are correct, so this
+   never fired -- but nothing was checking. **Fixed**: `validate_plan` now requires
+   exactly one `incumbent` and every other role to be `candidate`, with three regression
+   tests (transposed, duplicated, and a role outside the closed set).
+3. **`retention_v3.manifest.json`'s own embedded claims** (its sha256 of the testset and
+   ground truth, item counts, family breakdowns) **were never recomputed and compared**
+   against the actual pack files by any test -- the only existing check re-hashes the
+   manifest FILE itself against the plan's pin, which proves the manifest's bytes have
+   not moved, never that its claims are still true of `retention_v3.jsonl`. Currently
+   correct (independently verified), but undetectable drift. **Fixed**: a new test
+   recomputes both file hashes, the item count, the scored-row count and the full family
+   breakdown, and asserts them against the manifest's own text.
+4. **`cmd_qualify` (spends real API calls, decides QUALIFIED/INCOMPATIBLE) has zero test
+   coverage.** **`cmd_experiment_run`'s three safety gates** (`--confirm-plan-sha`
+   mismatch, an `UNAVAILABLE` arm, an out-of-list `--concurrency-level`) **are only ever
+   exercised with a passing value** -- no test supplies a wrong sha, an unavailable arm,
+   or a bad concurrency level. **`manifest.workload_sha`'s forbidden-field guard and the
+   era-mixing checks in `_refuse_incomparable`** are similarly untested. **Not fixed
+   tonight** -- these need either a mocked client or deliberately-broken fixtures for a
+   code path that spends real money when it works correctly, and building that
+   scaffolding at 2 a.m. risked being the thing that introduced a real bug. Recorded as
+   the top of the next session's list, not silently left for someone to rediscover.
+5. **`_disagreement_section` (the paired-verdict table a human reads to approve or
+   reject a migration) has its rendered TEXT asserted by nothing** -- `test_report.py`'s
+   fixture feeds it real objects but never checks the output, and `test_cli.py`'s compare
+   tests literally discard everything before that section via a string split before
+   asserting anything. A column-swap or mislabeled verdict here would be invisible to the
+   suite. **Not fixed tonight**, same reasoning as above -- recorded.
+6. **Two stale cross-references in this file's own Verdict-bands section**, both caused
+   by the same ~205-line insertion shifting everything after it without updating two
+   parenthetical line citations (`:183-189` and `:91-93`, both now pointing at unrelated
+   passages). **Fixed** -- both now point at the content they actually describe
+   (`:391-397` and `:298-301`).
+7. **`tests/test_enterprise_experiments.py` had no `sys.path.insert`**, unlike every
+   other test file in this repo, and only ran because an alphabetically-earlier test
+   module happened to add `src/` to `sys.path` first during full-suite collection --
+   `pytest tests/test_enterprise_experiments.py` in isolation raised `ModuleNotFoundError`.
+   Found by trying to run it in isolation, not by the audit workflow. **Fixed.**
+
+One resolution cost more than a line edit: fixing #1 and #2 changed `src/evalgen/cli.py`
+and `src/evalgen/experiments.py`, and the committed Experiment 5B evidence self-hashes
+both files (`report_code_sha256`) as tamper-evidence. Editing either file for **any**
+reason -- including a brand-new, unrelated `judge` subcommand -- breaks that pin. This is
+the identical shape of the `scorer_sha`-is-repo-HEAD defect Experiment 4 found and
+Experiment 5A hit again: a hash pinned to "current HEAD" rather than to "the code that
+actually matters" breaks on unrelated commits. Verified before touching anything, not
+assumed: the cli.py diff is additive only (+155/-0, a new subcommand, nothing in the
+existing call paths), and Experiment 5B's actual committed decision (`FAIL` on both
+candidates via `BEHIND` stability, not the newly-guarded `UNDERPOWERED` path; a plan whose
+roles were already correct) is unaffected by either fix. The two hashes and the derived
+`execution_evidence_sha` were updated with a dated provenance note explaining exactly why
+and what was verified first -- not silently, and not by weakening the check.
+
+### Part B: the judge
+
+`src/evalgen/judge.py` -- an independent model adjudicates every item where the harness's
+own scorer says an arm disagrees with ground truth. Built the way every metric in this
+project is built: a hand-computed expectation
+(`tests/fixtures/judge/HAND-COMPUTED.md`, ten constructed raw responses and their exact
+aggregate, fixed before the module existed) governs the parsing/aggregation arithmetic,
+checked byte-for-byte with no network call. 20 tests, including one this project's other
+diagnostics do not have: an AST-based check that `report.py` and `evalharness/compare.py`
+never import `judge` at all, enforcing "diagnostic, never a scored dimension" rather than
+only asserting it in a docstring the way `evidence.py` does today.
+
+**Judge model:** `google/gemma-4-31b-it`, reasoning disabled, pinned to CoreWeave. Neither
+arm's family -- an independent third model, to avoid the judge favouring its own outputs
+or a rival's. A pre-implementation probe found the identical temperature-0 request
+returned different verdicts from CoreWeave/Novita versus DeepInfra -- the judge is not
+immune to the endpoint-changes-the-answer lesson Experiment 4 taught about the primary
+arms, so it gets the same discipline: one provider, pinned, recorded.
+
+**What it reviewed.** Experiment 5B's raw run logs are not on this machine -- `out/` is
+gitignored and that run executed in a different environment; only its safe, no-payload
+evidence JSON is committed. Experiment 6 therefore ran against Experiment 5A's raw data
+instead (still on disk locally): all three pairwise comparisons across the reasoning-
+enabled `retention_v3` runs. A rerun against 5B once its logs are reachable is a natural
+next step, not a design preference.
+
+### Result
+
+262 items adjudicated across three independent pairings, one call per item at
+temperature 0, **zero parse failures**:
+
+| Pairing | items | ground_truth_correct | defensible_disagreement | ground_truth_error | unclear |
+|---|---:|---:|---:|---:|---:|
+| Gemini vs Qwen27B | 83 | 48 (57.8%) | 29 (34.9%) | 6 (7.2%) | 0 |
+| Gemini vs Qwen35B | 100 | 66 (66.0%) | 28 (28.0%) | 6 (6.0%) | 0 |
+| Qwen27B vs Qwen35B | 79 | 50 (63.3%) | 23 (29.1%) | 6 (7.6%) | 0 |
+
+**None of this is a verdict.** `ground_truth_error_rate` is not a headline the way
+`net`/`band` is -- there is no code path anywhere that lets this module's output move a
+`PairedVerdict` or a `Decision`, checked by the AST test above, not only claimed here.
+
+**Deduplicated across all three pairings, nine distinct (item, dimension) flags, four
+cross-validated by all three independent comparisons reaching the same conclusion about
+the same ground-truth cell**: `RET-85 [call_result]`, `RET-94 [call_result]`,
+`RET-100 [call_result]`, `RET-59 [reason]`. The other five surfaced in only one pairing
+each, which is expected -- an item only becomes a disagreement to review when the two
+arms being compared don't already agree, so a flag's absence from a pairing is not
+evidence against it.
+
+**The strongest candidate, on inspection: `RET-85`.** All three pairings, same argument,
+independently reasoned each time: ground truth is `save`, but the customer cancels the
+home internet and TV box outright and only the mobile line is left undecided -- "the
+agent did not save any service that was being cancelled." This is the same shape of catch
+RET-11 was: a plausible, specific, transcript-grounded objection to a label, worth a
+human reading it before anything about the fixture moves. **Nothing was changed on the
+strength of this** -- that is the entire point of keeping the judge a diagnostic.
+
+**`RET-59 [reason]`'s flag looks like a judge miss, not a ground-truth defect.** Ground
+truth is `customer reason`; the judge argues the customer explicitly declines to give one
+so the label is wrong. But `customer reason` reads, from every other place it appears in
+this pack's vocabulary, as the residual class for exactly a customer who declines to
+state a specific reason -- the judge has no access to `VOCABULARIES.md`'s class-boundary
+arbitrations and re-derived the boundary from the transcript alone, incorrectly. Recorded
+as a concrete limitation: **this judge knows the transcript and the cited production
+rule, and nothing else about this pack's own settled conventions.**
+
+**The judge is not perfectly self-consistent, and that is visible in the raw output, not
+hidden.** `RET-129`'s rationale reasons through the transcript, writes *"the ground truth
+correctly identifies that the attempt to downsell to prevent cancellation failed to
+close. Therefore, the ground truth is correct,"* and then reports
+`verdict: ground_truth_error` anyway -- the enum field and the model's own prose disagree
+within one response. `RET-98`'s rationale is similarly tangled, arguing both that the
+ground truth is "the most erroneous" and that a rival label "might be incorrect" in the
+same breath. **The lesson: read the rationale before trusting the verdict field.** A
+future version that scored the judge only on its enum output would silently launder this
+kind of self-contradiction into a clean-looking count.
+
+### Recommended next steps
+
+1. **Have a human read `RET-85` against the transcript and `prompt.py:4392`/`:4394-4395`
+   before anything is decided.** Falsified if a native reading finds the mobile line was
+   already at risk of cancellation too, which would make `save` defensible after all.
+2. **Build the mocked-client test coverage for `cmd_qualify` and `cmd_experiment_run`'s
+   three untested gates** before either is relied on again for a real qualification run.
+   Falsified if a deliberately-broken gate (inverted lock check, wrong sha) is shown to
+   already fail loudly some other way this audit missed.
+3. **Add a content assertion to `test_report.py` for `_disagreement_section`'s rendered
+   text**, not just that `render()` does not crash. Falsified if the existing tests are
+   shown to already cover this some other way this audit missed.
+4. **Re-run the judge against Experiment 5B once its raw logs are reachable.** The
+   reasoning-off, production-shaped comparison is the more decision-relevant one; tonight's
+   run against 5A's reasoning-enabled data is what was available, not what was preferred.
+5. Everything else still waits on `RECONCILED`.
+
+### Output files
+
+| What | Path |
+|---|---|
+| Judge module, hand-computed fixture, 20 tests | `src/evalgen/judge.py`, `tests/fixtures/judge/HAND-COMPUTED.md`, `tests/test_judge.py` |
+| Judge reports, all three pairings | `out/reports/judge-e6-gemini-vs-27b.{json,txt}`, `judge-e6-gemini-vs-35b.{json,txt}`, `judge-e6-27b-vs-35b.{json,txt}` |
+| Full audit findings and verification transcripts | this file, and the workflow journal referenced in the session log |
+| Regression tests for every fixed audit finding | `tests/test_enterprise_experiments.py`, `tests/test_testset_pack.py` |
+
+**Cost of Experiment 6: ~$0.02** (262 judge calls at $0.00005-0.00008 each). The audit
+itself spent no API budget -- 21 agents reading and re-deriving from the committed
+repository, zero model calls against OpenRouter.
+
+Item keys used a local placeholder `EVAL_HARNESS_KEY_HMAC`; they do not resolve inside
+True's systems.
+
+---
+
+## Experiment 7 — *not started*
+
+Use this template:
+
+```
+## Experiment N — <one-line title>
+
+**Date:**
+**Question:** <what this experiment decides, phrased so it can come out either way>
+
+### What was run
+<table: run, model, provider, prompt, result>
+<decoding settings, replicate count, what was held constant>
+
+### Result
+<what happened, including what did NOT work>
+<the verdict against the pre-registered bands>
+<anything that turned out to be about the harness or the test set rather than a model>
+
+### Recommended next steps
+<ordered, each with what would falsify it>
+
+### Output files
+<table: what, path>
+<spreadsheet sheet list if one was produced>
+<cost>
+```
+
+**Before running Experiment 2**, state the prediction: which items should move, in which
+direction, and which must not move. An edit that improves the aggregate by moving items you
+did not predict is indistinguishable from luck at n=20.

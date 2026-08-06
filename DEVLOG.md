@@ -14,7 +14,9 @@ are in `docs/experiment5-results.md`.
 
 Real production-shaped ground truth is still the decision blocker. `RECONCILED: NO` is
 what stands between synthetic-text results and a migration verdict, and no code in this
-repository can lift it.
+repository can lift it. **2026-08-07**: an audit of the merged framework and an
+independent-judge diagnostic (Experiment 6) both landed the same night; neither touches
+this blocker -- see History below and `docs/overnight-audit-and-experiment-6-report.md`.
 
 **Morph was request-compatible at qualification scale but unreliable at full scale.**
 It returned 6/6 object-root, zero-reasoning qualification responses, so the old
@@ -98,8 +100,40 @@ kept in place and corrected, because the wrong inference is the useful part:
 
 ## 🐛 Known Bugs
 
-**No known limitations in this repository as of 2026-08-06.** The one entry this
-section carried, below, was resolved the same day it was predicted would matter most:
+**Four test-coverage gaps recorded 2026-08-07**, found by a full audit of the merged
+enterprise framework and deliberately not patched the same night they were found -- real
+safety-gate coverage deserves daylight review, not a rushed 2 a.m. edit:
+
+- [ ] `cmd_qualify` (spends real API calls, decides QUALIFIED/INCOMPATIBLE) has zero test
+      coverage anywhere in the suite. (Priority: High -- it is the gate between an
+      unvetted provider and a paid qualification run. Needs a mocked client.)
+- [ ] `cmd_experiment_run`'s three safety gates -- `--confirm-plan-sha` mismatch, an
+      `UNAVAILABLE` arm, an out-of-list `--concurrency-level` -- are each only ever
+      exercised with a value that passes. No test supplies a wrong sha, an unavailable
+      arm, or a bad concurrency level, so a broken gate would not be caught.
+      (Priority: High -- this is the human-approval gate stopping a stale or tampered
+      plan from spending real, paid calls.)
+- [ ] `manifest.workload_sha`'s forbidden-field guard and `_refuse_incomparable`'s
+      era-mixing/mismatch checks for `outcome_contract_sha`/`workload_sha` are untested.
+      (Priority: Med -- these are the checks stopping two genuinely incompatible runs
+      from being silently compared.)
+- [ ] `_disagreement_section` (the paired-verdict table a human reads to approve or
+      reject a migration) has its rendered text asserted by nothing -- existing tests
+      discard everything before that section via a string split before checking
+      anything. A formatting bug (wrong column, mislabeled verdict, swapped fields)
+      would be invisible to the suite. (Priority: Med -- reporting only, not gate logic,
+      but it is the exact table a human reads to make the call.)
+- [ ] `reliability_gate`'s 0.99 threshold is a hardcoded Python default, not read from
+      the plan's own `quality_gates.minimum_parse_valid_rate` field that `validate_plan`
+      computes and displays as authoritative. Currently harmless (both are 0.99).
+      (Priority: Low today, real if a future plan sets a different value.)
+
+**Two gate-logic gaps found by the same audit were fixed the same night** (both were
+mechanical, well-scoped, and safe to verify before merging): `decision()` silently
+passing a candidate whose stability comparison was UNDERPOWERED, and `validate_plan()`
+never checking which arm's `role` was `incumbent`. See CHANGELOG.md, Fixed.
+
+**Resolved earlier, kept for the record:**
 
 - [x] ~~**The mechanism table stops discriminating as the pack grows, and at 100 items it
       carries no information.**~~ **RESOLVED (2026-08-06).** `MechanismRow` gained
@@ -137,6 +171,23 @@ but the reason some code looks odd):
 
 ## ✅ History
 
+- **2026-08-07**: Full audit of the merged enterprise framework (~2,500 lines, never
+  before code-reviewed line by line) -- 21 agents, 12 candidate findings, all
+  independently verified, zero refuted. Two real gate-logic gaps fixed (`decision()`
+  silently passing an UNDERPOWERED stability comparison; `role` never validated), four
+  test-coverage gaps recorded (see Known Bugs), two stale `EXPERIMENTS.md` line
+  citations corrected, one `sys.path` bug in `test_enterprise_experiments.py` found by
+  hand and fixed. Every numeric claim checked against committed evidence matched
+  exactly -- no arithmetic was wrong anywhere the audit looked.
+- **2026-08-07**: Experiment 6. `src/evalgen/judge.py` -- an independent model
+  (`google/gemma-4-31b-it`, reasoning off, pinned to CoreWeave) adjudicates every scorer
+  disagreement, diagnostic only, isolation from the verdict path enforced by an AST test
+  rather than only claimed in a docstring. 262 items across three pairings, zero parse
+  failures: 62.6% ground-truth-correct, 30.5% defensible, 6.9% flagged as a possible
+  ground-truth error. Four flags cross-validated by all three independent comparisons;
+  `RET-85` is the strongest candidate, same shape as the original RET-11 catch. Nothing
+  changed on the strength of any flag. Full report:
+  `docs/overnight-audit-and-experiment-6-report.md`.
 - **2026-08-06**: Experiment 5A (parallel historical reasoning-regime run).
   `retention_v3` (138 items) scored on all three arms
   under the re-derived bands, 1,242 calls, ~$9.49. Both Qwen arms are **AHEAD** of the

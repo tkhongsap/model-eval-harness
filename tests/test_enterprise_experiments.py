@@ -3,12 +3,16 @@ from __future__ import annotations
 from dataclasses import replace
 import hashlib
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from evalgen import cli
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
+from evalgen import cli  # noqa: E402
 from evalgen.cli import EXIT_OK, EXIT_REFUSED, _write_experiment_xlsx, main
 from evalgen.experiments import (
     canonical_sha,
@@ -31,7 +35,6 @@ from evalgen.runner import ItemResult, RunConfig, RunResult
 from evalgen.testsets import load_testset
 from evalharness.compare import Disagreement, exact_band, paired_verdict
 
-ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "experiments" / "retention-e5.plan.json"
 EVIDENCE = ROOT / "experiments" / "evidence" / "retention-e5"
 
@@ -255,6 +258,41 @@ def test_locked_plan_requires_evidence_for_unselected_candidates(tmp_path):
         "qualification_evidence must cover every candidate provider" in problem
         for problem in problems
     )
+
+
+def test_validate_plan_refuses_a_transposed_incumbent_role():
+    """Audit finding, 2026-08-07: nothing checked `role` anywhere, not in the always-run
+    schema block and not in the locked-status deep audit that otherwise re-verifies
+    `selected_provider`/`availability`/`qualification_sha` against evidence. `role`
+    decides which arm `cmd_experiment_report` treats as the reference for every paired
+    comparison (`cli.py`'s `incumbent_id = next(... if arm.get("role") == "incumbent")`),
+    so a transposed role silently flips AHEAD/BEHIND -- and therefore PASS/FAIL -- for
+    every dimension with no error anywhere in the pipeline. This is the regression test.
+    """
+    plan = json.loads(json.dumps(load_plan(PLAN)))
+    plan["arms"][0]["role"] = "candidate"  # was "incumbent" -- now there are zero
+
+    problems = validate_plan(plan, root=ROOT)
+
+    assert any("role" in problem and "incumbent" in problem for problem in problems)
+
+
+def test_validate_plan_refuses_two_arms_both_claiming_incumbent():
+    plan = json.loads(json.dumps(load_plan(PLAN)))
+    plan["arms"][1]["role"] = "incumbent"  # now there are two
+
+    problems = validate_plan(plan, root=ROOT)
+
+    assert any("role" in problem and "incumbent" in problem for problem in problems)
+
+
+def test_validate_plan_refuses_a_role_outside_the_closed_set():
+    plan = json.loads(json.dumps(load_plan(PLAN)))
+    plan["arms"][1]["role"] = "reference"  # not "incumbent" or "candidate"
+
+    problems = validate_plan(plan, root=ROOT)
+
+    assert any("role" in problem for problem in problems)
 
 
 def test_explicit_reasoning_off_is_in_the_exact_pinned_request():
@@ -529,6 +567,51 @@ def test_decision_applies_quality_before_operations_and_keeps_underpowered_visib
 
     assert result.status == "INCONCLUSIVE"
     assert "product" in result.reasons[0]
+
+
+def test_decision_does_not_let_an_underpowered_stability_verdict_fall_through_to_pass():
+    """Audit finding, 2026-08-07: `decision()` only collected UNDERPOWERED from the
+    three quality dimensions. A stability comparison with too few discordant items
+    (d < 6 at alpha=1/64, exactly `compare.exact_band`'s documented floor) returned
+    verdict='UNDERPOWERED' from the identical `paired_verdict` machinery, but nothing
+    routed that to INCONCLUSIVE -- with three clean quality verdicts and no BEHIND
+    anywhere, execution fell through to `Decision('PASS', ...)` despite there being no
+    statistical evidence that stability held. Reproduced directly before the fix: this
+    exact input returned PASS.
+    """
+    indistinguishable = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    underpowered_stability = paired_verdict(Disagreement("stability", 90, 0, 1, 1))  # d=2
+    assert underpowered_stability.verdict == "UNDERPOWERED"
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=[indistinguishable, indistinguishable, indistinguishable],
+        stability_verdict=underpowered_stability,
+    )
+
+    assert result.status == "INCONCLUSIVE"
+    assert any("stability" in reason for reason in result.reasons)
+
+
+def test_decision_still_fails_on_a_behind_stability_verdict_ahead_of_underpowered():
+    """The existing BEHIND-stability path must still win over the new UNDERPOWERED
+    check -- a candidate that is both unstable AND underpowered elsewhere is a FAIL,
+    not an INCONCLUSIVE, and this must not regress when the branch above it changes."""
+    indistinguishable = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    behind_stability = paired_verdict(Disagreement("stability", 90, 30, 33, 3))
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=[indistinguishable, indistinguishable, indistinguishable],
+        stability_verdict=behind_stability,
+    )
+
+    assert result.status == "FAIL"
+    assert any("stability" in reason.lower() for reason in result.reasons)
 
 
 def test_experiment_workbook_carries_quality_regressions_and_load(tmp_path):
