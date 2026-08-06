@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "gemini-2.5-flash",
+  "model": "google/gemini-2.5-flash",
+  "provider": "Google",
+  "qualification_contract_sha": "c90cd6915c2e4c81246f084efc89557d5005980d3dd382ecd5b0f184d69ea4b3",
+  "run_id": "20260806-055527Z-qual-gemini-2.5-flash-Google",
+  "qualification": {
+    "status": "QUALIFIED",
+    "passed": true,
+    "calls": 6,
+    "parse_ok": 6,
+    "observed_models": {
+      "google/gemini-2.5-flash": 6
+    },
+    "observed_providers": {
+      "Google": 6
+    },
+    "reasoning_tokens": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "calls_without_prompt_usage": 0,
+    "split_items": {},
+    "http_statuses": {},
+    "reasons": []
+  },
+  "qualification_sha": "00f1cf2379469fdcaf203803ca6853dde08d25cdb8bce503e0e43e90ecb5e67c"
+}

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-27b",
+  "model": "qwen/qwen3.6-27b",
+  "provider": "Alibaba",
+  "qualification_contract_sha": "fca19002a87fc11a37644e81a5803f946e9d46ba8d6a534c3a14597527772c6c",
+  "run_id": "20260806-060150Z-qual-qwen3.6-27b-Alibaba",
+  "qualification": {
+    "status": "QUALIFIED",
+    "passed": true,
+    "calls": 6,
+    "parse_ok": 6,
+    "observed_models": {
+      "qwen/qwen3.6-27b": 6
+    },
+    "observed_providers": {
+      "Alibaba": 6
+    },
+    "reasoning_tokens": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "calls_without_prompt_usage": 0,
+    "split_items": {},
+    "http_statuses": {},
+    "reasons": []
+  },
+  "qualification_sha": "eb3ee9dfd0f350d7c43ed498ed6451318a7278553744b2566a95837526426273"
+}

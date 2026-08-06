@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-27b",
+  "model": "qwen/qwen3.6-27b",
+  "provider": "Chutes",
+  "qualification_contract_sha": "58d55d603b2b17a020bae4465e17e412db7bb6850cef022a2d682d000f487793",
+  "run_id": "20260806-055821Z-qual-qwen3.6-27b-Chutes",
+  "qualification": {
+    "status": "QUALIFIED",
+    "passed": true,
+    "calls": 6,
+    "parse_ok": 6,
+    "observed_models": {
+      "qwen/qwen3.6-27b": 6
+    },
+    "observed_providers": {
+      "Chutes": 6
+    },
+    "reasoning_tokens": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "calls_without_prompt_usage": 0,
+    "split_items": {},
+    "http_statuses": {},
+    "reasons": []
+  },
+  "qualification_sha": "a6b2a27d211a67ad2499a7fce5d5a02871a98865b6e14b4d0a3363a2f2f450b9"
+}

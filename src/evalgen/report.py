@@ -114,7 +114,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from evalgen.testsets import TestItem
-from evalharness.compare import Disagreement, RegressionRow
+from evalharness.compare import Disagreement, RegressionRow, paired_verdict
 from evalharness.metrics import DimensionResult
 from evalharness.records import Record
 
@@ -860,15 +860,25 @@ def _disagreement_section(
         "2. PER-ITEM DISAGREEMENT",
         _SECTION,
         f"  {'dimension':<12} {'both right':>10} {'both wrong':>10} "
-        f"{'inc only':>9} {'cand only':>9} {'net':>5}",
+        f"{'inc only':>9} {'cand only':>9} {'d':>4} {'net':>5} "
+        f"{'exact band':>12}  verdict",
     ]
     for d in disagreements:
+        verdict = paired_verdict(d)
+        band = "--" if verdict.band is None else f"+/-{verdict.band}"
         lines.append(
             f"  {d.dimension:<12} {d.both_right:>10} {d.both_wrong:>10} "
-            f"{d.incumbent_only_right:>9} {d.candidate_only_right:>9} {d.net:>+5}"
+            f"{d.incumbent_only_right:>9} {d.candidate_only_right:>9} "
+            f"{verdict.discordant:>4} {d.net:>+5} {band:>12}  {verdict.verdict}"
         )
 
     lines += [
+        "",
+        "  The exact band is the smallest absolute net that crosses alpha=1/64 per",
+        "  side, computed from the discordant pairs only. A net at or beyond that",
+        "  threshold is AHEAD or BEHIND; a smaller net is INDISTINGUISHABLE.",
+        "  Fewer than six discordant pairs is UNDERPOWERED: the data cannot cross the",
+        "  preregistered threshold even if every discordance points one way.",
         "",
         "  Items the incumbent got RIGHT and the candidate got WRONG:",
     ]

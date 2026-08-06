@@ -155,6 +155,7 @@ class FakeClient:
         seed=None,
         response_format=None,
         provider=None,
+        reasoning_effort="provider-default",
     ) -> FakeCompletion:
         assert messages[0]["role"] == "system"
         assert messages[1]["role"] == "user"
@@ -170,6 +171,7 @@ class FakeClient:
                     "seed": seed,
                     "response_format": response_format,
                     "provider": provider,
+                    "reasoning_effort": reasoning_effort,
                 }
             )
             nth = sum(1 for call in self.calls if call["item_id"] == item_id)
@@ -422,6 +424,26 @@ def test_a_persistent_transport_error_stops_at_the_attempt_cap(prompt, tmp_path)
     assert len(client.calls) == runner.MAX_ATTEMPTS == 3
     assert result.results[0].outcome == "transport_error"
     assert "after 3 attempts" in result.results[0].error
+
+
+def test_enterprise_one_attempt_records_http_status_and_does_not_recover(prompt, tmp_path):
+    testset = slice_testset(tmp_path, 1)
+
+    def always_fails(_item_id, _nth):
+        raise FakeTransportError("BadRequest: 400", status_code=400)
+
+    client = FakeClient(always_fails, testset=testset)
+    result = run(
+        testset,
+        client=client,
+        prompt=prompt,
+        config=config(max_attempts=1, reasoning_effort="none"),
+    )
+
+    assert client.calls_for("RET-01") == 1
+    assert client.calls[0]["reasoning_effort"] == "none"
+    assert result.results[0].attempt_count == 1
+    assert result.results[0].http_status == 400
 
 
 def test_an_auth_failure_is_not_retried(prompt, tmp_path):
@@ -911,6 +933,24 @@ def test_prompt_token_spread_keeps_an_item_whose_calls_all_died(prompt, tmp_path
 
     assert result.prompt_token_spread() == {"RET-01": (), "RET-02": (99,)}
     assert result.split_items() == {}
+
+
+def test_zero_usage_failure_cannot_manufacture_a_tokenizer_split(prompt, tmp_path):
+    testset = slice_testset(tmp_path, 1)
+
+    def responder(_item_id, nth):
+        return answer(prompt_tokens=0 if nth == 1 else 2791)
+
+    result = run(
+        testset,
+        client=FakeClient(responder, testset=testset),
+        prompt=prompt,
+        config=config(repeats=2),
+    )
+
+    assert result.prompt_token_spread() == {"RET-01": (2791,)}
+    assert result.split_items() == {}
+    assert result.calls_without_prompt_usage() == 1
 
 
 def test_a_pinned_run_that_did_hold_reports_one_value_per_item(prompt, tmp_path):

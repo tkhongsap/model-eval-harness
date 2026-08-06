@@ -18,6 +18,7 @@ about it moves.
 | `retention_v3.jsonl` | The 138-item pack, `RET-01` … `RET-138`. Its first 100 items are byte-identical to `retention_v2.jsonl`. See [The v3 pack](#the-v3-pack--retention_v3). |
 | `retention_v3.gt.csv` | v3 ground truth at the same grain. 150 rows. |
 | `ASR-EXPECTATION.md` | Hand-derived expectation for the ten `asr_noise` artifact classes in v3, derived before any model was scored on them. |
+| `retention_v3.manifest.json` | Versioned dataset contract: hashes, row counts, slice ids, provenance and review status. |
 | `VOCABULARIES.md` | Label vocabularies, provenance and the D1–D14 divergence register. The authority for what a label means. |
 | `block_a_clear.jsonl`, `block_b_thai.jsonl`, `block_c_tiebreak.jsonl`, `block_d_escape.jsonl` | The pre-merge drafts. Superseded by `retention_v1.jsonl`; kept only for diff history. **Do not score against them** — they were never run through the loader and fail `validate()` in 155 places. |
 

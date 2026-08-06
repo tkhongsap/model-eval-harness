@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-35b-a3b",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "provider": "Phala",
+  "qualification_contract_sha": "61e539f04d81f469e4f6b7026ffcb6c8a449be6741290a3fb6227769b9561d69",
+  "run_id": "20260806-060609Z-qual-qwen3.6-35b-a3b-Phala",
+  "qualification": {
+    "status": "QUALIFIED",
+    "passed": true,
+    "calls": 6,
+    "parse_ok": 6,
+    "observed_models": {
+      "qwen/qwen3.6-35b-a3b": 6
+    },
+    "observed_providers": {
+      "Phala": 6
+    },
+    "reasoning_tokens": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "calls_without_prompt_usage": 0,
+    "split_items": {},
+    "http_statuses": {},
+    "reasons": []
+  },
+  "qualification_sha": "c0f95a842bb63e1f3fa737ad1e00adaba5705000ad4f238971113382d44e5a99"
+}

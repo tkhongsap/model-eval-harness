@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-27b",
+  "model": "qwen/qwen3.6-27b",
+  "provider": "Venice",
+  "qualification_contract_sha": "08eb18f2f87565646a266ddaec9dda435e46aacb5578e68da469f614bf3a5018",
+  "run_id": "20260806-060146Z-qual-qwen3.6-27b-Venice",
+  "qualification": {
+    "status": "REQUEST_INCOMPATIBLE",
+    "passed": false,
+    "calls": 6,
+    "parse_ok": 0,
+    "observed_models": {},
+    "observed_providers": {},
+    "reasoning_tokens": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "calls_without_prompt_usage": 6,
+    "split_items": {},
+    "http_statuses": {
+      "404": 6
+    },
+    "reasons": [
+      "parse_ok was 0/6",
+      "observed model set [] != ['qwen/qwen3.6-27b']",
+      "observed provider set [] != ['Venice']",
+      "reasoning_tokens was not exactly zero on every call",
+      "6 calls had no positive prompt token count",
+      "exact request rejected with HTTP statuses {'404': 6}"
+    ]
+  },
+  "qualification_sha": "be45bb188ce7a1ba36c2589ffd5f4f2f950ff06ebd491b58115c207dbfcab243"
+}

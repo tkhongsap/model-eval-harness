@@ -51,6 +51,7 @@ scored a model on.
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -67,12 +68,14 @@ __all__ = [
     "Edit",
     "Prompt",
     "PromptError",
+    "PROMPT_MANIFEST_PATH",
     "Variant",
     "WRAPPER_PATH",
     "build_base",
     "build_messages",
     "build_variant",
     "get",
+    "validate_manifest",
 ]
 
 # `prompts.py` and `prompts/` are siblings, which is legal but worth knowing about: a
@@ -81,6 +84,7 @@ __all__ = [
 # `__init__.py` to `prompts/` would turn it into a regular package, regular packages win,
 # and this module becomes unimportable. Keep the asset directory a plain data folder.
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+PROMPT_MANIFEST_PATH = PROMPTS_DIR / "manifest.json"
 WRAPPER_PATH = PROMPTS_DIR / "retention_wrapper.txt"
 BODY_PATH = PROMPTS_DIR / "retention_v9_16_body.txt"
 
@@ -160,6 +164,11 @@ class Prompt:
     system_text: str
     sha: str
     notes: str = ""
+    app: str = "retention"
+    version: str = ""
+    parent_id: str | None = None
+    target_models: tuple[str, ...] = ("*",)
+    phase: str = "phase_one_fixed"
 
 
 def _sha(text: str) -> str:
@@ -233,6 +242,7 @@ def build_base() -> Prompt:
             "Example JSON repaired (valid JSON, schema-declared `keyword` key, one "
             "product); audio references rewritten to transcript per AUDIO_TO_TRANSCRIPT."
         ),
+        version="9.16-harness.1",
     )
 
 
@@ -295,7 +305,15 @@ def build_variant(variant: Variant, base: Prompt) -> Prompt:
             f"variant {variant.id} produced text identical to {base.id}. A variant that "
             "changes nothing is two arms on one prompt."
         )
-    return Prompt(id=variant.id, system_text=text, sha=_sha(text), notes=variant.notes)
+    return Prompt(
+        id=variant.id,
+        system_text=text,
+        sha=_sha(text),
+        notes=variant.notes,
+        version="9.16-e1-harness.1" if variant.id == "v9_16_e1" else "variant",
+        parent_id=base.id,
+        phase="historical_ablation",
+    )
 
 
 # The three reason values the base's worked example fills in. Named here because two
@@ -376,6 +394,40 @@ _BASE = build_base()
 PROMPTS: dict[str, Prompt] = {
     p.id: p for p in (_BASE, *(build_variant(v, _BASE) for v in VARIANTS.values()))
 }
+
+
+def validate_manifest(path: Path = PROMPT_MANIFEST_PATH) -> list[str]:
+    """Return drift between the executable prompt registry and its library metadata."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"cannot read prompt manifest {path}: {exc}"]
+    entries = value.get("prompts", []) if isinstance(value, dict) else []
+    if not isinstance(entries, list):
+        return [f"{path}: `prompts` must be a list"]
+    by_id = {
+        entry.get("id"): entry for entry in entries if isinstance(entry, dict)
+    }
+    problems: list[str] = []
+    if set(by_id) != set(PROMPTS):
+        problems.append(
+            f"prompt ids differ: registry={sorted(PROMPTS)} manifest={sorted(by_id)}"
+        )
+    for prompt_id, prompt in PROMPTS.items():
+        entry = by_id.get(prompt_id, {})
+        for field, actual, expected in (
+            ("sha256", entry.get("sha256"), prompt.sha),
+            ("app", entry.get("app"), prompt.app),
+            ("version", entry.get("version"), prompt.version),
+            ("parent_id", entry.get("parent_id"), prompt.parent_id),
+            ("phase", entry.get("phase"), prompt.phase),
+            ("target_models", tuple(entry.get("target_models", ())), prompt.target_models),
+        ):
+            if actual != expected:
+                problems.append(
+                    f"{prompt_id}.{field}: manifest={actual!r}, registry={expected!r}"
+                )
+    return problems
 
 
 def get(prompt_id: str) -> Prompt:

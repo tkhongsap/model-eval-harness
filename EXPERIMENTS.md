@@ -758,6 +758,11 @@ contact with per-call cost.
 Both belong to layers `CONTRIBUTING.md:57` calls final. They are written down for
 argument, not patched mid-experiment.
 
+**Addressed before Experiment 5:** zero/non-usage rows no longer enter the tokenizer
+fingerprint, and run provenance now hashes the classification contract, scoring surface
+and common workload separately instead of using repository HEAD. Experiment 4 remains
+unchanged because those fixes were not present when it ran.
+
 ### Verdict
 
 **No. `qwen/qwen3.6-35b-a3b` is not a viable candidate.** It loses to the 27B on all
@@ -803,7 +808,16 @@ True's systems.
 
 ---
 
-## Experiment 5 — retention_v3, the re-derived bands' first live test, and a length failure that turns out to belong to one model
+## Experiment 5 — two parallel v3 evaluations, disambiguated after merge
+
+Two branches used the Experiment 5 label independently on 2026-08-06. The merged
+history calls the earlier reasoning-enabled robustness run **5A** and the preregistered
+explicit-reasoning-off enterprise run **5B**. Their original run ids, machine experiment
+id (`retention-e5`) and committed evidence remain unchanged. The distinction is
+load-bearing: 5A measured reasoning-enabled Qwen arms, while 5B measured provider-pinned
+reasoning-off arms and reached the opposite quality result.
+
+## Experiment 5A — reasoning-enabled v3 robustness and a model-specific length failure
 
 **Date:** 2026-08-06
 **Question:** With `retention_v3` (138 items: the 100-item v2 pack byte-identical, plus 38
@@ -981,34 +995,148 @@ placeholder `EVAL_HARNESS_KEY_HMAC`; they do not resolve inside True's systems.
 
 ---
 
+## Experiment 5B — enterprise Retention baseline and robustness (EXECUTED)
+
+**Pre-registered:** 2026-08-06
+
+**Status:** complete; both Qwen candidates `FAIL`; `RECONCILED: NO`.
+
+**Machine plan:** `experiments/retention-e5.plan.json` (the CLI prints its current SHA).
+**Question:** Can either Qwen candidate match Gemini on Retention under an explicitly
+non-reasoning, provider-pinned regime, then remain reliable and operationally viable on
+production-robustness cases and under load?
+
+### Arms and common workload
+
+| Arm | Model | Provider | Reasoning | Prompt |
+|---|---|---|---|---|
+| incumbent | `google/gemini-2.5-flash` | Google | explicit `none` | `v9_16_base` |
+| candidate | `qwen/qwen3.6-27b` | Morph | explicit `none` | `v9_16_base` |
+| candidate | `qwen/qwen3.6-35b-a3b` | AkashML | explicit `none` | `v9_16_base` |
+
+Full run: `retention_v3`, 138 items / 150 scored rows, three identical replicates,
+concurrency four, temperature/top-p/seed `0/0/0`, 8,000 maximum tokens, and **one API
+attempt per logical call**. Phase one is the frozen `RET-01..RET-100` prefix; phase two
+is `RET-101..RET-138` (long context, ASR-shaped noise, Thai-English code switching and
+regressions). Primary quality is the full pack; both slices are reported.
+
+### Qualification before selection
+
+For each current provider candidate, run `RET-01`, `RET-109`, and `RET-138` twice with
+the exact prompt/schema request, fallback disabled and `reasoning.effort=none`. Pass is
+6/6 parsed object-root responses, expected observed model/provider, zero reasoning
+tokens, positive usage and one prompt-token fingerprint per item.
+
+A repeated Morph HTTP 400 is `REQUEST_INCOMPATIBLE`, not a transient retry target. A
+bare scalar from Alibaba is `SCHEMA_INCOMPATIBLE`. Neither is fixed by changing the
+message layout or weakening the schema, because that defines a new workload. If no 27B
+provider qualifies with reasoning disabled, the production-like 27B arm is
+`UNAVAILABLE`; reasoning-enabled CoreWeave may be a separately labelled diagnostic and
+cannot stand in for it.
+
+### Gate 1 result: qualification complete
+
+Gate 1 was approved for at most 400 calls / US$15; the tighter preregistered bound
+controlled execution. All 18 provider names received exactly three items × two
+replicates with one attempt, for **108 calls** and **US$0.109184588** reported cost.
+Twelve providers qualified and six returned 404 `No endpoints found` under the exact
+required-parameter request. Those six are `REQUEST_INCOMPATIBLE`, not identity
+mismatches: no endpoint ran and therefore none could report an identity.
+
+Morph and Alibaba both qualified 6/6 with zero reasoning tokens. Their earlier failures
+were real but did not reproduce: Morph no longer rejected the two-message prompt and
+Alibaba no longer returned a scalar root. This is evidence of endpoint change, not a
+reason to trust catalog status without probing.
+
+Provider selection used historical continuity, not the three probe outputs: Google for
+the incumbent, Morph for 27B and AkashML for 35B-A3B. The plan is locked at SHA
+`2823d3359f6ca6dee601f27b84672ef100971b609bdf38368a56990f2e323c8e`.
+All self-hashed results, selection rationale and the failure-classifier correction are
+recorded in `docs/experiment5-qualification.md`. No full or load call had been made at
+the point the plan was locked; Gate 2 approval and execution followed without changing
+that reviewed plan SHA.
+
+### Gate 2 result: neither Qwen candidate qualifies
+
+The user approved the immutable plan SHA above for exactly **1,458 calls** and a
+conservative **US$50.13** ceiling. Execution made all 1,458 calls with one attempt per
+logical call. OpenRouter-reported cost was **US$1.507460937**, retained as a lower bound
+because missing cost is never turned into zero.
+
+| Candidate | Parse valid | Call result | Reason | Product | Stability | Decision |
+|---|---:|---|---|---|---|---|
+| Qwen3.6 27B / Morph | 359/414 | BEHIND (-19; band 13) | BEHIND (-19; band 17) | UNDERPOWERED | BEHIND (-121; band 25) | **FAIL** |
+| Qwen3.6 35B-A3B / AkashML | 414/414 | BEHIND (-11; band 11) | BEHIND (-24; band 16) | BEHIND (-10; band 8) | BEHIND (-131; band 27) | **FAIL** |
+
+Morph passed the six-call qualification but failed under the full workload: 54 HTTP
+429 transport failures and one empty response. This supersedes the claim that it is
+permanently broken by the old multi-turn 400. The endpoint accepted the exact request,
+then proved operationally unreliable at the required scale. No failure was retried.
+
+The first offline report also exposed a runtime-gate defect: failed calls legitimately
+lack token metadata, so requiring usage on every logical call counted an allowed
+reliability failure twice and silently made the 99% rule a 100% rule. The gate now
+requires usage and zero reasoning on successful responses while failures remain in the
+reliability denominator. A regression test pins the correction; no model call was
+rerun, and the same raw logs were reported deterministically.
+
+The result does not authorize migration. It rejects these two Qwen arms under the
+locked synthetic-text workload while retaining `RECONCILED: NO`. Full evidence,
+operations tables and limitations are in `docs/experiment5-results.md`; safe reports
+are committed under `experiments/evidence/retention-e5/report/`.
+
+### Pre-registered decision rule
+
+1. Reliability: at least **410/414** calls must be `parse_ok` (unrounded rate ≥99%).
+2. Quality: call result, reason and product remain separate. On replicate one, compute
+   the exact directional threshold from observed discordant pairs at alpha `1/64` per
+   side. A candidate must not be `BEHIND` in any dimension. `UNDERPOWERED` means
+   `INCONCLUSIVE`, never a tie or a pass.
+3. Stability: pair items by whether their classified payload is identical across all
+   three replicates. Candidate must not be `BEHIND` Gemini.
+4. Operations: only quality-eligible arms are ranked on cost and load. No weighted score
+   trades cheaper calls for a failed quality gate.
+
+Load uses the 12 ids fixed in the machine plan, twice each at concurrency 1, 4 and 8:
+72 calls per arm. Report throughput, p50/p95/p99/max latency, reliability, token usage,
+reported cost and missing-cost calls.
+
+### Approval and budget
+
+- Gate 1: review current provider inventory and maximum bounded probe cost before any
+  qualification call.
+- Gate 2: record qualification artifacts, select providers, add their hashes, lock the
+  plan, rerun offline checks, and review exact projected cost before full/load calls.
+  **Complete:** external self-hashed approval preserved the already-reviewed plan SHA.
+
+Full plus load budget is **1,458 calls** across three arms (1,242 + 216). The 18 eligible
+provider names currently listed add at most 108 qualification calls, for a current
+maximum of **1,566**. At prices checked 2026-08-06, the deliberately conservative
+qualification ceiling is **$3.47** (twice the UTF-8 content bytes for input and every
+call spending all 8,000 output tokens). Refreshing inventory or price changes that
+maximum and requires draft review.
+
+After provider selection, the deliberately extreme full/load bound is **$50.13**:
+Gemini/Google $28.32, 27B/Morph $15.12 and 35B-A3B/AkashML $6.69. Including the original
+$3.47 qualification ceiling gives a grand planning maximum of **$53.60**.
+`evalgen experiment-budget` recalculates it from the locked plan. This is not expected
+spend; it is the conservative planning ceiling under recorded prices and token caps.
+Actual full/load reported cost was US$1.507460937 for all 1,458 authorized calls.
+
+### What would change the decision
+
+- A candidate that qualifies, clears 410/414, is not `BEHIND` on any quality dimension
+  or stability, and has preferable operational trade-offs becomes the recommended
+  Retention candidate for production-shaped validation.
+- A `BEHIND` or reliability result rejects that candidate under this workload.
+- An underpowered primary dimension produces no migration recommendation until a more
+  informative labelled pack or production-shaped truth resolves it.
+- No synthetic-text outcome overrides `RECONCILED: NO`; live-report reconciliation and
+  the production audio gap remain decision blockers.
+
+---
+
 ## Experiment 6 — *not started*
 
-Use this template:
-
-```
-## Experiment N — <one-line title>
-
-**Date:**
-**Question:** <what this experiment decides, phrased so it can come out either way>
-
-### What was run
-<table: run, model, provider, prompt, result>
-<decoding settings, replicate count, what was held constant>
-
-### Result
-<what happened, including what did NOT work>
-<the verdict against the pre-registered bands>
-<anything that turned out to be about the harness or the test set rather than a model>
-
-### Recommended next steps
-<ordered, each with what would falsify it>
-
-### Output files
-<table: what, path>
-<spreadsheet sheet list if one was produced>
-<cost>
-```
-
-**Before running Experiment 2**, state the prediction: which items should move, in which
-direction, and which must not move. An edit that improves the aggregate by moving items you
-did not predict is indistinguishable from luck at n=20.
+The next experiment must be preregistered before any model call. Production-shaped
+ground truth and live-report reconciliation remain the highest-value next evidence.

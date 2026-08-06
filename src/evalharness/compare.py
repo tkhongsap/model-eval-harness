@@ -16,6 +16,8 @@ Two refusals are built in rather than left to the caller:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import comb
+from typing import Literal
 
 from .metrics import DimensionResult, outer_join
 from .records import Record
@@ -51,6 +53,72 @@ class Disagreement:
     def net(self) -> int:
         """Positive means the candidate won more items than it lost."""
         return self.candidate_only_right - self.incumbent_only_right
+
+
+PairedVerdictName = Literal[
+    "AHEAD", "BEHIND", "INDISTINGUISHABLE", "UNDERPOWERED"
+]
+
+
+@dataclass(frozen=True)
+class PairedVerdict:
+    """Exact directional verdict over the discordant pairs only."""
+
+    dimension: str
+    discordant: int
+    net: int
+    band: int | None
+    alpha_per_side: float
+    verdict: PairedVerdictName
+
+
+def _p_net_at_least(discordant: int, net: int) -> float:
+    """P(candidate net >= `net`) under X~Binomial(discordant, 1/2)."""
+    first_candidate_wins = (discordant + net + 1) // 2
+    return sum(
+        comb(discordant, wins)
+        for wins in range(first_candidate_wins, discordant + 1)
+    ) / (2**discordant)
+
+
+def exact_band(discordant: int, *, alpha_per_side: float = 1 / 64) -> int | None:
+    """Smallest parity-compatible net whose one-sided null tail is within alpha.
+
+    None is the result when even a clean sweep cannot meet the evidence threshold.
+    At alpha 1/64 that is every d below six.
+    """
+    if discordant < 0:
+        raise ValueError("discordant count cannot be negative")
+    if not 0 < alpha_per_side < 0.5:
+        raise ValueError("alpha_per_side must be between 0 and 0.5")
+    for band in range(discordant % 2, discordant + 1, 2):
+        if _p_net_at_least(discordant, band) <= alpha_per_side:
+            return band
+    return None
+
+
+def paired_verdict(
+    table: Disagreement, *, alpha_per_side: float = 1 / 64
+) -> PairedVerdict:
+    """Classify one disagreement table without treating no evidence as a tie."""
+    discordant = table.incumbent_only_right + table.candidate_only_right
+    band = exact_band(discordant, alpha_per_side=alpha_per_side)
+    if band is None:
+        verdict: PairedVerdictName = "UNDERPOWERED"
+    elif table.net >= band:
+        verdict = "AHEAD"
+    elif table.net <= -band:
+        verdict = "BEHIND"
+    else:
+        verdict = "INDISTINGUISHABLE"
+    return PairedVerdict(
+        dimension=table.dimension,
+        discordant=discordant,
+        net=table.net,
+        band=band,
+        alpha_per_side=alpha_per_side,
+        verdict=verdict,
+    )
 
 
 @dataclass(frozen=True)

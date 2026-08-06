@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -37,17 +36,63 @@ def file_hash(path: str | Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _repository_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _tree_hash(paths: list[Path], *, root: Path) -> str:
+    """Content address a declared code surface, independent of git history.
+
+    Relative names are included so moving code is a contract change even when its bytes
+    are not. Documentation, commit messages and unrelated files cannot move the hash.
+    """
+    digest = hashlib.sha256()
+    for path in sorted(paths, key=lambda p: p.as_posix()):
+        relative = path.resolve().relative_to(root.resolve()).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def outcome_contract_sha(*, root: Path | None = None) -> str:
+    """Code that made the run-time `parse_ok` decision."""
+    repo = (root or _repository_root()).resolve()
+    return _tree_hash([repo / "src" / "evalgen" / "outcomes.py"], root=repo)
+
+
+def scoring_code_sha(*, root: Path | None = None) -> str:
+    """Code that turns classified payloads into paired scores and verdicts.
+
+    `cli.py` is intentionally included because it chooses replicate 1 and performs the
+    grain-changing wiring. The digest is narrower than repository HEAD while retaining
+    the one orchestration file capable of silently changing the reported number.
+    """
+    repo = (root or _repository_root()).resolve()
+    paths = list((repo / "src" / "evalharness").rglob("*.py"))
+    paths.extend(
+        repo / "src" / "evalgen" / name
+        for name in ("cli.py", "flatten.py", "report.py")
+    )
+    return _tree_hash(paths, root=repo)
+
+
 def scorer_sha() -> str:
-    """Which version of THIS harness produced the numbers."""
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=Path(__file__).resolve().parent,
-            capture_output=True, text=True, timeout=5, check=False,
+    """Backward-compatible name for content-addressed scoring code provenance."""
+    return scoring_code_sha()
+
+
+def workload_sha(contract: dict) -> str:
+    """Hash the canonical workload contract; model and provider must be absent."""
+    forbidden = {"model", "model_id", "provider", "provider_requested", "arm"}
+    present = forbidden.intersection(contract)
+    if present:
+        raise ValueError(
+            f"workload identity cannot contain arm-specific field(s): {sorted(present)}"
         )
-        return out.stdout.strip() or "unknown"
-    except Exception:  # pragma: no cover
-        return "unknown"
+    encoded = json.dumps(contract, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return _sha(encoded)
 
 
 class ManifestMismatch(RuntimeError):

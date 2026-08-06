@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "49ae4874e0d503fdfb66e1440830190ae46ab8276996053380bd7d7b0e865ea2",
+  "arm": "qwen3.6-35b-a3b",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "provider": "AtlasCloud",
+  "qualification_contract_sha": "0d3a95ebeb6ba1d012c93a3b9807c6ff72c7019d1d1c8f2d68098a23d814d04f",
+  "run_id": "20260806-060606Z-qual-qwen3.6-35b-a3b-AtlasCloud",
+  "qualification": {
+    "status": "REQUEST_INCOMPATIBLE",
+    "passed": false,
+    "calls": 6,
+    "parse_ok": 0,
+    "observed_models": {},
+    "observed_providers": {},
+    "reasoning_tokens": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "calls_without_prompt_usage": 6,
+    "split_items": {},
+    "http_statuses": {
+      "404": 6
+    },
+    "reasons": [
+      "parse_ok was 0/6",
+      "observed model set [] != ['qwen/qwen3.6-35b-a3b']",
+      "observed provider set [] != ['AtlasCloud']",
+      "reasoning_tokens was not exactly zero on every call",
+      "6 calls had no positive prompt token count",
+      "exact request rejected with HTTP statuses {'404': 6}"
+    ]
+  },
+  "qualification_sha": "b3b071478db5a2fbe02d1d32f12ecd62d7fc5efce4e9cabb0ad6ffda6b11f436"
+}

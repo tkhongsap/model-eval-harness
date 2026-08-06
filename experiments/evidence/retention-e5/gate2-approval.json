@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e5",
+  "plan_sha": "2823d3359f6ca6dee601f27b84672ef100971b609bdf38368a56990f2e323c8e",
+  "recorded_utc": "2026-08-06T06:27:30Z",
+  "source": "interactive user approval",
+  "scope": "three full quality/stability arms and nine fixed load profiles",
+  "authorized_logical_calls": 1458,
+  "authorized_maximum_usd": 50.13,
+  "full_calls": 1242,
+  "load_calls": 216,
+  "max_attempts_per_logical_call": 1,
+  "approval_sha": "e35655410e4c73bc57a195b52600189f63dcf4819520ea520892bc429b2f4632"
+}

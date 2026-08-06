@@ -66,11 +66,11 @@ jobs:
       # ground-truth CSV, and it proves the prompt still assembles from its committed
       # assets. Neither is covered for these packs anywhere else.
       #
-      # Both packs are named explicitly, including v1, which is already the CLI default
+      # All three packs are named explicitly, including v1, which is the CLI default
       # (cli.py:131-132). Relying on the default would leave CI checking whichever pack
       # that constant happens to point at, and silently checking one pack twice the day
-      # it moves. If a `retention_v3` is ever added it needs a line here -- until then
-      # it is still gated, because `test_testset_pack.py` discovers packs by glob.
+      # it moves. `test_testset_pack.py` also discovers packs by glob, while these calls
+      # exercise the full CLI/ground-truth/prompt-assembly check for each version.
       - name: Validate the committed testset packs
         run: |
           python scripts/evalgen.py check \
@@ -79,6 +79,9 @@ jobs:
           python scripts/evalgen.py check \
             --testset tests/fixtures/testsets/retention_v2.jsonl \
             --gt tests/fixtures/testsets/retention_v2.gt.csv
+          python scripts/evalgen.py check \
+            --testset tests/fixtures/testsets/retention_v3.jsonl \
+            --gt tests/fixtures/testsets/retention_v3.gt.csv
 
       - name: Run tests
         run: pytest tests/ -q -rs

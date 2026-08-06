@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "dataset_id": "retention_v3",
+  "app": "retention",
+  "language": [
+    "th",
+    "th-en"
+  ],
+  "modality": "synthetic transcript text",
+  "testset": {
+    "path": "retention_v3.jsonl",
+    "sha256": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+    "items": 138
+  },
+  "ground_truth": {
+    "path": "retention_v3.gt.csv",
+    "sha256": "a7fddd189a98710576cc70a258e5eb7f4a74df0fbae83e21344c9248a4d92d14",
+    "scored_rows": 150,
+    "grain": "one row per (call_id, phone_number, product)"
+  },
+  "phase_one": {
+    "item_range": "RET-01..RET-100",
+    "purpose": "fixed-prompt apples-to-apples baseline",
+    "families": {
+      "clear": 30,
+      "thai_linguistic": 30,
+      "tiebreak": 17,
+      "multislot": 10,
+      "escape": 13
+    }
+  },
+  "phase_two": {
+    "item_range": "RET-101..RET-138",
+    "purpose": "production robustness additions",
+    "families": {
+      "long_context": 12,
+      "asr_noise": 10,
+      "code_switch": 10,
+      "regression": 6
+    }
+  },
+  "label_method": {
+    "type": "synthetic evidence-and-rule adjudication",
+    "required_item_fields": [
+      "mechanism",
+      "why_it_matters",
+      "expected_failure",
+      "evidence",
+      "rules"
+    ],
+    "quality_controls": [
+      "every evidence span must occur verbatim in its transcript",
+      "every scored label must cite the production rule that decides it",
+      "embedded item labels must match the independent CSV ground truth",
+      "synthetic identifiers are restricted to committed safe patterns"
+    ]
+  },
+  "known_limits": [
+    "No real customer calls or production audio.",
+    "Synthetic Thai has not received native-speaker sign-off.",
+    "No result is a migration verdict until reconciled against the live Gemini fact-check report."
+  ]
+}

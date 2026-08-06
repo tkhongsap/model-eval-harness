@@ -1,0 +1,549 @@
+{
+  "incumbent": "gemini-2.5-flash",
+  "slices": {
+    "phase_one": [
+      {
+        "dimension": "call_result",
+        "discordant": 22,
+        "net": -18,
+        "band": 12,
+        "alpha_per_side": 0.015625,
+        "verdict": "BEHIND"
+      },
+      {
+        "dimension": "reason",
+        "discordant": 34,
+        "net": -14,
+        "band": 14,
+        "alpha_per_side": 0.015625,
+        "verdict": "BEHIND"
+      },
+      {
+        "dimension": "product",
+        "discordant": 3,
+        "net": 1,
+        "band": null,
+        "alpha_per_side": 0.015625,
+        "verdict": "UNDERPOWERED"
+      }
+    ],
+    "phase_two": [
+      {
+        "dimension": "call_result",
+        "discordant": 1,
+        "net": -1,
+        "band": null,
+        "alpha_per_side": 0.015625,
+        "verdict": "UNDERPOWERED"
+      },
+      {
+        "dimension": "reason",
+        "discordant": 13,
+        "net": -5,
+        "band": 9,
+        "alpha_per_side": 0.015625,
+        "verdict": "INDISTINGUISHABLE"
+      },
+      {
+        "dimension": "product",
+        "discordant": 1,
+        "net": -1,
+        "band": null,
+        "alpha_per_side": 0.015625,
+        "verdict": "UNDERPOWERED"
+      }
+    ],
+    "full": [
+      {
+        "dimension": "call_result",
+        "discordant": 23,
+        "net": -19,
+        "band": 13,
+        "alpha_per_side": 0.015625,
+        "verdict": "BEHIND"
+      },
+      {
+        "dimension": "reason",
+        "discordant": 47,
+        "net": -19,
+        "band": 17,
+        "alpha_per_side": 0.015625,
+        "verdict": "BEHIND"
+      },
+      {
+        "dimension": "product",
+        "discordant": 4,
+        "net": 0,
+        "band": null,
+        "alpha_per_side": 0.015625,
+        "verdict": "UNDERPOWERED"
+      }
+    ]
+  },
+  "stability": {
+    "dimension": "stability",
+    "discordant": 121,
+    "net": -121,
+    "band": 25,
+    "alpha_per_side": 0.015625,
+    "verdict": "BEHIND"
+  },
+  "decision": {
+    "status": "FAIL",
+    "reasons": [
+      "parse reliability 359/414 is below 99%",
+      "quality BEHIND on call_result, reason",
+      "stability is BEHIND"
+    ]
+  },
+  "regressions": [
+    {
+      "item_key": "ce895067afe77452",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "e3caff81083c5f96",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "48e54217e1dd264b",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "bd0541ea4b93ecb9",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "1d8ab7497aedd269",
+      "dimension": "call_result",
+      "gt_label": "unknown",
+      "incumbent_label": "unknown",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "44bac0542217ca28",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "d0267c8b3e71825d",
+      "dimension": "call_result",
+      "gt_label": "unknown",
+      "incumbent_label": "unknown",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0e563ac30d956674",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "d215928fbabac123",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "e73fac7e754355a6",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "145c6e0cdd595470",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "48d8be89aafaf103",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "8c15ef07575ca469",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "ea6e753cab977992",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "f62ccfa2c1e58ca5",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0392b94975fde71f",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "19ac4acc1901db71",
+      "dimension": "call_result",
+      "gt_label": "unknown",
+      "incumbent_label": "unknown",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0954c6a3bc9520ab",
+      "dimension": "call_result",
+      "gt_label": "undefined",
+      "incumbent_label": "undefined",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0c36aba91d727501",
+      "dimension": "call_result",
+      "gt_label": "save",
+      "incumbent_label": "save",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "e0b491b0f9d18873",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<no prediction>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "79a58f8e07174bdb",
+      "dimension": "call_result",
+      "gt_label": "churn",
+      "incumbent_label": "churn",
+      "candidate_label": "<no prediction>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "334dd97404cd2340",
+      "dimension": "reason",
+      "gt_label": "save cost",
+      "incumbent_label": "save cost",
+      "candidate_label": "promotion related, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "2c060e92814d0ea7",
+      "dimension": "reason",
+      "gt_label": "dissatisfied service, network",
+      "incumbent_label": "dissatisfied service, network",
+      "candidate_label": "dissatisfied service, network, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "48e54217e1dd264b",
+      "dimension": "reason",
+      "gt_label": "save cost",
+      "incumbent_label": "save cost",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "bd0541ea4b93ecb9",
+      "dimension": "reason",
+      "gt_label": "save cost",
+      "incumbent_label": "save cost",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "44bac0542217ca28",
+      "dimension": "reason",
+      "gt_label": "dissatisfied service, network, promotion related",
+      "incumbent_label": "dissatisfied service, network, promotion related",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "d0267c8b3e71825d",
+      "dimension": "reason",
+      "gt_label": "contract end, network, promotion related",
+      "incumbent_label": "contract end, network, promotion related",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0e563ac30d956674",
+      "dimension": "reason",
+      "gt_label": "device promotion related",
+      "incumbent_label": "device promotion related",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "d215928fbabac123",
+      "dimension": "reason",
+      "gt_label": "network",
+      "incumbent_label": "network",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "d3798b95ff997861",
+      "dimension": "reason",
+      "gt_label": "contract end",
+      "incumbent_label": "contract end",
+      "candidate_label": "contract end, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "b2122a3912142832",
+      "dimension": "reason",
+      "gt_label": "promotion related",
+      "incumbent_label": "promotion related",
+      "candidate_label": "promotion related, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "f1f1ce60abc1855b",
+      "dimension": "reason",
+      "gt_label": "other",
+      "incumbent_label": "other",
+      "candidate_label": "other, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "145c6e0cdd595470",
+      "dimension": "reason",
+      "gt_label": "device promotion related",
+      "incumbent_label": "device promotion related",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "c36f0e37f5a024b5",
+      "dimension": "reason",
+      "gt_label": "device promotion related",
+      "incumbent_label": "device promotion related",
+      "candidate_label": "device promotion related, promotion related",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "9768e3ca1589a871",
+      "dimension": "reason",
+      "gt_label": "customer reason",
+      "incumbent_label": "customer reason",
+      "candidate_label": "customer reason, other",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "b5b68ded5d412ead",
+      "dimension": "reason",
+      "gt_label": "other",
+      "incumbent_label": "other",
+      "candidate_label": "other, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "180f8337de5fc80b",
+      "dimension": "reason",
+      "gt_label": "device promotion related",
+      "incumbent_label": "device promotion related",
+      "candidate_label": "device promotion related, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "43b03029b2685006",
+      "dimension": "reason",
+      "gt_label": "sale upsell problem",
+      "incumbent_label": "sale upsell problem",
+      "candidate_label": "dissatisfied service, sale upsell problem",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "eb59d1c4bd91be99",
+      "dimension": "reason",
+      "gt_label": "dissatisfied service",
+      "incumbent_label": "dissatisfied service",
+      "candidate_label": "dissatisfied service, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "ea6e753cab977992",
+      "dimension": "reason",
+      "gt_label": "other",
+      "incumbent_label": "other",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "f62ccfa2c1e58ca5",
+      "dimension": "reason",
+      "gt_label": "device promotion related",
+      "incumbent_label": "device promotion related",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0392b94975fde71f",
+      "dimension": "reason",
+      "gt_label": "other",
+      "incumbent_label": "other",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "19ac4acc1901db71",
+      "dimension": "reason",
+      "gt_label": "device promotion related",
+      "incumbent_label": "device promotion related",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "0c36aba91d727501",
+      "dimension": "reason",
+      "gt_label": "sale upsell problem",
+      "incumbent_label": "sale upsell problem",
+      "candidate_label": "<empty>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "e0b491b0f9d18873",
+      "dimension": "reason",
+      "gt_label": "other",
+      "incumbent_label": "other",
+      "candidate_label": "<no prediction>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "f634e4897c1a6083",
+      "dimension": "reason",
+      "gt_label": "network",
+      "incumbent_label": "network",
+      "candidate_label": "network, other, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "867a1f675a80b4e6",
+      "dimension": "reason",
+      "gt_label": "dissatisfied service, network, promotion related",
+      "incumbent_label": "dissatisfied service, network, promotion related",
+      "candidate_label": "dissatisfied service, network, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "774b618bc52a1ee3",
+      "dimension": "reason",
+      "gt_label": "promotion related",
+      "incumbent_label": "promotion related",
+      "candidate_label": "promotion related, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "1bb1d936aca6f84d",
+      "dimension": "reason",
+      "gt_label": "contract end",
+      "incumbent_label": "contract end",
+      "candidate_label": "contract end, save cost",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "b9ee10c48ac9e6b1",
+      "dimension": "reason",
+      "gt_label": "sale upsell problem",
+      "incumbent_label": "sale upsell problem",
+      "candidate_label": "dissatisfied service, sale upsell problem",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "b6de5097b837733e",
+      "dimension": "reason",
+      "gt_label": "network",
+      "incumbent_label": "network",
+      "candidate_label": "dissatisfied service, network",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "478ae7c84dc9cdac",
+      "dimension": "reason",
+      "gt_label": "down sell not success",
+      "incumbent_label": "down sell not success",
+      "candidate_label": "dissatisfied service, down sell not success",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "79a58f8e07174bdb",
+      "dimension": "reason",
+      "gt_label": "customer reason",
+      "incumbent_label": "customer reason",
+      "candidate_label": "<no prediction>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "919545f9e0e62a34",
+      "dimension": "reason",
+      "gt_label": "promotion related",
+      "incumbent_label": "promotion related",
+      "candidate_label": "promotion related, sale upsell problem",
+      "error_type": "wrong_label"
+    },
+    {
+      "item_key": "e0b491b0f9d18873",
+      "dimension": "product",
+      "gt_label": "unknown",
+      "incumbent_label": "unknown",
+      "candidate_label": "<no prediction>",
+      "error_type": "missing_output"
+    },
+    {
+      "item_key": "79a58f8e07174bdb",
+      "dimension": "product",
+      "gt_label": "unknown",
+      "incumbent_label": "unknown",
+      "candidate_label": "<no prediction>",
+      "error_type": "missing_output"
+    }
+  ]
+}

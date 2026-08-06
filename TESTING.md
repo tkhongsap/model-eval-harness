@@ -9,9 +9,10 @@ python -m venv .venv
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected: **491 passed, 11 skipped**.
+Expected in a fresh checkout: **498 passed, 33 skipped**.
 
-The 11 skips are correct and expected standalone. See "Two modes" below.
+The skips are correct: 11 need production source/pins and 22 integration checks need
+historical gitignored `out/` run directories that a fresh checkout does not contain.
 
 ## Two modes, two different counts
 
@@ -20,8 +21,12 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Expected |
 |---|---|---|
-| **Standalone** | `pytest tests/ -q` | **491 passed, 11 skipped** |
-| **With production source** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | **502 passed, 0 skipped** |
+| **Fresh standalone checkout** | `pytest tests/ -q` | **498 passed, 33 skipped** |
+| **With production source and historical local `out/`** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | environment-dependent; report the observed count |
+
+For the Experiment 5 implementation audit, the focused production differential,
+dependency-pin and boundary selection passed **18/18** with `TRUE_SOURCE_ROOT` set to
+the tracked `production-reference/sentiment-batch-retention-main` tree.
 
 ```bash
 # Windows, pointing at the vendored archive in life-os
@@ -35,12 +40,37 @@ As of 2026-08-05 a reference copy is also tracked in this repo at `production-re
 identically; `tests/production_ref.py`'s own default still resolves to a directory
 *outside* the repo, so standalone `pytest tests/ -q` keeps skipping the differential
 tests unless `TRUE_SOURCE_ROOT` is set explicitly -- that default was left alone
-deliberately rather than widened to auto-discover the in-repo copy, so the documented
-"491 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
+deliberately rather than widened to auto-discover the in-repo copy. Historical-run
+integration tests also skip in a fresh clone because `out/` is deliberately uncommitted.
 
 The skipped tests are the differential check against production's real scorer, and the
 cross-check of our pins against production's `requirements.txt`. **The version pin gate
 itself always runs**, in both modes: it depends on nothing outside this repository.
+
+## Enterprise Experiment 5 — offline gate
+
+```bash
+.venv/Scripts/python scripts/evalgen.py experiment-check
+.venv/Scripts/python scripts/evalgen.py experiment-budget
+.venv/Scripts/python -m pytest tests/test_enterprise_experiments.py -q
+```
+
+The first command validates the plan, asset hashes, fixed slices, prompt registry, call
+budget, reliability threshold and lock requirements. It makes no network call and reads
+no API key. The budget command uses the committed provider-price snapshot and worst-case
+token caps; it also makes no call. The unit suite pins explicit reasoning-off request shape, exact bands,
+provider failure classifications, complete committed qualification evidence, the
+410/414 gate, paired item stability, operational accounting, committed Gate 2
+approval/execution/report hashes, raw-output exclusion, and refusal to run a full arm
+while a plan is draft.
+
+`qualification-report` is the no-network path for deterministically reclassifying a
+recorded qualification run after a classifier correction; it reads no key and never
+reruns paid rows. `qualify` and `experiment-run` are intentionally absent from offline
+verification because they make paid calls. Gate 1 qualification is complete. Full/load
+execution is also complete: the separately self-hashed Gate 2 approval preserves the
+immutable plan SHA, and the committed execution ledger plus report set are verified
+without reading a key or making a network call.
 
 ## Verification Scripts
 
@@ -320,13 +350,16 @@ be measuring the grammar rather than the example. Both facts are pinned:
 `test_e1_example_is_legal_under_the_grammar_that_is_actually_sent` and
 `test_e1_example_fails_the_committed_port_schema_at_exactly_the_blanked_slots`.
 
-### 9. The pack is an argument, and there are two of them
+### 9. The pack is an argument, and there are three of them
 
 ```bash
 .venv/Scripts/python scripts/evalgen.py check          # retention_v1, the default
 .venv/Scripts/python scripts/evalgen.py check \
     --testset tests/fixtures/testsets/retention_v2.jsonl \
     --gt tests/fixtures/testsets/retention_v2.gt.csv
+.venv/Scripts/python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_v3.jsonl \
+    --gt tests/fixtures/testsets/retention_v3.gt.csv
 ```
 
 `--testset` / `--gt` default to `retention_v1.*` (`cli.py:131-132`), so a command with
@@ -336,11 +369,12 @@ neither flag scores the 20-item pack. The same pair is accepted by `baseline` an
 | Pack | Items | Scored rows | Status |
 |---|---:|---:|---|
 | `retention_v1` | 20 | 22 | **Frozen.** Experiments 1 and 2 cite it, so it does not move. |
-| `retention_v2` | 100 | 108 | Current. `RET-01`…`RET-20` byte-identical to v1; `RET-21`…`RET-100` new. |
+| `retention_v2` | 100 | 108 | **Frozen.** Experiment 3 and 4 cite it; `RET-01`…`RET-20` are byte-identical to v1. |
+| `retention_v3` | 138 | 150 | Experiment 5. v2 prefix plus 38 versioned robustness items. |
 
-Verified above by running `check` against each: 100 items, 108 rows, `OK. No problem
-found.` The scored row is `(call_id, phone_number, product)` in both packs, which is why
-neither row count equals its item count.
+Verified above by running `check` against each. The scored row is
+`(call_id, phone_number, product)` in every pack, which is why the v1/v2/v3 row counts
+do not always equal their item counts.
 
 What v2 buys: the six reason classes sitting at **support 1** in v1 are gone — v2's
 minimum reason-class support is **6**, across the same 11 classes, so a single miss no

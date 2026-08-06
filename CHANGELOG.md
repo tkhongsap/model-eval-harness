@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Committed Experiment 5 execution and decision evidence.** Gate 2 ran the three
+  full arms and nine fixed load profiles: exactly 1,458 approved one-attempt calls for
+  a US$1.507460937 reported-cost lower bound. A self-hashed ledger records raw-log
+  identities without committing model text; safe per-arm, paired and summary
+  JSON/Markdown/XLSX reports retain both Qwen `FAIL` decisions and item regressions.
+- **Committed Experiment 5 qualification evidence.** Gate 1 exercised all 18 named
+  providers in 108 one-attempt calls, retained every outcome as a safe self-hashed
+  artifact, selected Google/Morph/AkashML by historical continuity, and locked the
+  plan while leaving full/load approval pending. `qualification-report` deterministically
+  reclassifies recorded qualification rows without a key or model call.
+
+- **Experiment 5 enterprise evaluation workflow.** A machine-checkable draft plan pins
+  Retention v3, three arms, fixed prompt, explicit reasoning-off regime, three
+  replicates, one attempt, exact paired decision rule, 99% reliability gate, and the
+  fixed concurrency 1/4/8 load slice. `experiment-check`, `qualify`, `experiment-run`
+  and `experiment-report` enforce draft/qualification/lock approval stages;
+  `experiment-budget` calculates the no-network current-inventory cost ceiling.
+- **Provider qualification evidence instead of provider blacklists.** Six-call probes
+  classify request, schema, regime, identity and provenance incompatibility. A repeated
+  Morph 400 and Alibaba scalar JSON have distinct, reviewable outcomes; neither triggers
+  a prompt-layout workaround or schema weakening.
+- **Versioned enterprise assets.** `retention_v3.manifest.json` describes phase-one and
+  robustness slices, while the prompt manifest records prompt version, parent, target
+  models, SHA, decoding regime and the controlled phase-two tuning protocol.
+- **Quality-first experiment reports** in JSON, Markdown and XLSX, with phase-one,
+  phase-two and full paired verdicts, item-level replicate stability, parse reliability,
+  missing-cost counts and concurrency load results.
+- **Exact discordance-calibrated paired verdicts:** `AHEAD`, `BEHIND`,
+  `INDISTINGUISHABLE`, and `UNDERPOWERED`, recomputed per dimension from observed
+  discordant pairs at alpha 1/64 per side.
 - Canon-aligned documentation set: `AGENTS.md`, `CLAUDE.md`, `DEVLOG.md`,
   `TESTING.md`, `CONTRIBUTING.md`, and this changelog.
 - CI workflow running the test suite on push and pull request.
@@ -182,6 +212,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 ### Fixed
+
+- The full-run runtime gate no longer requires usage/reasoning metadata from failed
+  calls. It validates successful responses and reported identities while reliability
+  keeps every failure in its denominator, preserving the preregistered 99% rule instead
+  of silently turning it into 100%.
+- `prompt_token_spread` no longer treats zero-usage failure rows as a second tokenizer;
+  calls with absent or non-positive prompt usage are counted separately.
+- Scoring provenance no longer uses repository HEAD. Classification, scoring and common
+  workload have separate content hashes, so documentation-only commits do not invalidate
+  a paid comparison and scoring changes still do.
+- HTTP status and attempt count survive onto failure rows, making repeatable provider
+  request failures distinguishable from transient transport faults.
 
 - **An arm could be served by two backends with nothing in the log to show it.**
   MEASURED: a 60-call `qwen/qwen3.6-27b` run split across two builds -- one with
