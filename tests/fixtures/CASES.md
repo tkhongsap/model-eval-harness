@@ -13,7 +13,11 @@ per product (`fact_checker.py:603-631`) and the scorer merges on
   `customer reason`, `down sell not success`
 - `product` (`:971`): `postpaid`, `tol`, `tvs`, `unknown`
 
-No real customer data. All `call_id` values are `5xxx`, all phone numbers are `08100000xx`.
+No real customer data. All `call_id` values are `5xxx`, and every phone number comes from the
+synthetic block `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`, widened from
+`^08100000[0-9]{2}$` on 2026-08-06 once `retention_v2` had used all 100 of the old block).
+Measured here: nine distinct values in `0810000001`–`0810000010`, all inside the old hundred and
+so unchanged by the widening. The gap at `...005` is C5, whose phone is `0` on purpose.
 
 ---
 

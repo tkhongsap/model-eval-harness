@@ -16,8 +16,216 @@ Every experiment records four things: what was run, what came out, what to do ne
 - **Production sends AUDIO. This sends pre-tagged Thai TEXT.** Agent-speech misattribution,
   ASR error and diarisation are invisible here.
 - The Thai was **drafted by an LLM** and has no native-speaker sign-off.
-- 22 scored rows: **one row is 4.5 points.** Verdict bands were fixed before any run:
-  net `<= -2` BEHIND, `-1..+5` INDISTINGUISHABLE, `>= +6` AHEAD.
+- ~~22 scored rows: **one row is 4.5 points.** Verdict bands were fixed before any run:
+  net `<= -2` BEHIND, `-1..+5` INDISTINGUISHABLE, `>= +6` AHEAD.~~
+  **SUPERSEDED 2026-08-06 — re-derived immediately below.** Kept visible and struck
+  through, not deleted, because Experiments 1-4 were each read against it. This file
+  corrects in place; the precedent is the withdrawn next step 4 at the foot of
+  Experiment 1 (:183-189).
+
+### Verdict bands, re-derived from sample size and the null (2026-08-06)
+
+This re-derivation was pre-registered as a hard prerequisite twice — in
+`docs/testset-v2-plan.md` and again in `docs/eval-improvement-plan.md` — and skipped
+both times. The pack has since gone 22 -> 108 scored rows and is heading to ~150, so
+the bands have been carried across a 5x change in n without anyone checking what they
+cost.
+
+**What was allowed as input, and what was refused.** The derivation below uses the
+*discordance rate* — how often the two arms disagree at all — and nothing else from the
+runs. It does **not** use the observed nets from any experiment. The extraction that
+produced the rate table sums `inc only + cand only` and discards the split before
+printing, so the direction was not available to the person choosing the rule. This is
+the same discipline :91-93 already applied in writing when it refused to move the AHEAD
+line to admit a result; a rule chosen to fit the numbers it will judge is not a rule.
+
+**The discordance rate, measured** from every committed comparison report in
+`out/reports/compare-*.txt`. `compare-A-gemini-vs-27b.txt` is byte-identical to
+`compare-v2-100items.txt` (same MD5) and was deduplicated, or the 108-row rows would
+have been double-counted.
+
+| dimension | 22-row reports | 108-row reports | pooled |
+|---|---|---|---|
+| `reason` | 27/132 = **0.205** | 101/432 = **0.234** | 0.227 |
+| `call_result` | 6/132 = 0.045 | 33/432 = 0.076 | 0.069 |
+| `product` | **0/132 = 0.000** | 14/432 = 0.032 | 0.025 |
+
+Two things this table settles. The rate is roughly **stable across the 5x growth in n**
+(0.205 -> 0.234 on `reason`), so projecting it to ~150 rows is defensible. And it differs
+by **10x between dimensions**, which alone kills any single fixed band shared by all
+three — `reason` discords about nine times as often as `product`, so the same net means
+completely different things on the two. Caveat on the estimate itself: the six 22-row
+reports are repeat passes over the same 20 items and the 108-row reports share a testset,
+so these are overlapping samples, not independent ones, and the rate is also a property
+of *which two arms* are being compared. It is used below only to project d for planning.
+The band that governs a verdict is computed from the d that run actually produced.
+
+**The null.** This is McNemar's setup. Concordant pairs (both arms right, both wrong)
+carry no information about which arm is better and drop out. Among the **d** pairs where
+exactly one arm is right, the null hypothesis "the two arms are equally good" makes each
+pair a fair coin. With `X ~ Binomial(d, 1/2)` the pairs favouring the candidate:
+
+```
+net = X - (d - X) = 2X - d        E[net] = 0        sd(net) = sqrt(d)
+```
+
+`net` therefore has the same parity as `d`, and — this is the whole result — its spread
+under the null grows as **sqrt(d)**, not as d and not as a constant.
+
+**What the pre-registered bands actually cost.** `P(net >= +6)` and `P(net <= -2)` under
+the null, exactly:
+
+| d | max abs net | P(net >= +6) | P(net <= -2) | P(either fires) |
+|---:|---:|---:|---:|---:|
+| 3 | 3 | **0 — unreachable** | 0.1250 | 0.1250 |
+| 4 | 4 | **0 — unreachable** | 0.3125 | 0.3125 |
+| 5 | 5 | **0 — unreachable** | 0.1875 | 0.1875 |
+| 6 | 6 | 0.0156 | 0.3438 | 0.3594 |
+| 24 (n=108) | | 0.1537 | 0.4194 | **0.5731** |
+| 34 (n=150) | | 0.1958 | 0.4321 | **0.6278** |
+
+**The two bands were never the same test.** AHEAD at `>= +6` was a 1-in-64 gate when it
+was reachable at all; BEHIND at `<= -2` fires **one time in three** on two identical
+models. They were written on the same line as if they were a matched pair.
+
+**AHEAD was arithmetically unreachable on most of the 22-row passes.** The 22-row
+`reason` d values are 3, 3, 4, 5, 6, 6 — so on **four of the six passes** no result
+whatsoever could have produced `net >= +6`. On `call_result` d was 1 on every 22-row
+pass, and on `product` d was **0 on all six** — that dimension had no discordant pairs at
+all at 22 rows, so its net was not a tie, it was an empty measurement.
+
+**Carried unchanged to the current pack, the rule is worse than useless.** At n=108 the
+pre-registered bands return a directional verdict on two identical models **57% of the
+time**, and at n=150, **63%**. A rule that calls a coin flip 57% of the time is not a
+conservative rule that occasionally misfires; it is closer to a coin flip about a coin
+flip.
+
+**Absolute counts or a proportion of discordant pairs? Neither — and that is the answer.**
+
+- **A fixed absolute count** (`>= +6` forever) holds the *threshold* constant while
+  `sd(net) = sqrt(d)` grows underneath it. Measured cost: alpha inflates 0.0156 -> 0.1537
+  -> 0.1958 across d = 6, 24, 34. The test silently loosens every time the pack grows.
+- **A fixed proportion** (`net/d >= c`) holds the *effect size* constant while the
+  evidence needed to establish it gets cheaper. Measured cost at c = 0.5: alpha collapses
+  0.109 -> 0.0113 -> 0.0015 across the same d. The test silently tightens every time the
+  pack grows — you pay for rows and lose the power to spend them. At c = 1.0 it demands a
+  clean sweep of 34 pairs, `P = 5.8e-11`, which nothing will ever satisfy.
+
+Both are wrong in the same way and in opposite directions: each holds fixed a quantity
+that is not the one the null constrains. The band must scale as **sqrt(d)**. In practice
+it is still an integer count — `net` is a count and the verdict reads on it — but the
+count is a **function of the d that run produced**, recomputed at scoring time, not a
+constant carried between runs. d is observed, not projected, so this rule is
+self-calibrating and immune to the rate drifting between arm pairs.
+
+**The invariant being held: alpha = 1/64 = 0.0156 per side.** That is the false-verdict
+rate the AHEAD gate actually enforced at the only d where it could fire at 22 rows.
+Reasons for choosing that one of the two available rates:
+
+1. It is the gate that would **authorise the migration** — the verdict with a cost
+   attached. The rate that guards the expensive action is the rate worth preserving.
+2. It is the only one of the two that was ever enforced against data rather than merely
+   written down.
+3. It is the stricter, so holding it makes **both** sides at least as strict as the
+   strictest thing the pre-registered rule ever did.
+
+**The BEHIND rate is deliberately not preserved, and this is a change, stated as one.**
+Holding 0.34 constant would mean deliberately reproducing a one-in-three false BEHIND
+forever. A 34% false-alarm rate is not an invariant; it is the defect this re-derivation
+was pre-registered to find. The bands below are symmetric, which is itself the correction:
+there is no argument for the evidence needed to say "worse" being weaker than the evidence
+needed to say "better" when the null is symmetric. Two-sided, the new bands sit at
+0.006-0.031 depending on where d lands on the parity lattice.
+
+**The bands.** `band(d)` = the smallest k, matching the parity of d, with
+`P(net >= k) <= 1/64`:
+
+| d | 6 | 7 | 8 | 9 | 10 | 12 | 16 | 20 | 24 | 26 | 30 | 34 | 40 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **band** | ±6 | ±7 | ±8 | ±9 | ±8 | ±10 | ±10 | ±12 | ±12 | ±12 | ±14 | ±14 | ±16 |
+| alpha | .0156 | .0078 | .0039 | .0020 | .0107 | .0032 | .0106 | .0059 | .0113 | .0145 | .0081 | .0122 | .0083 |
+
+Verdict: `net >= +band(d)` AHEAD, `net <= -band(d)` BEHIND, otherwise INDISTINGUISHABLE.
+The band is not monotone in d — it steps on the parity lattice — which is why the table
+governs and not a formula. If d falls outside the table, `ceil(2.4 * sqrt(d))` lifted to
+the parity of d was measured never to be looser than exact over d = 6..200, at the cost
+of being one step stricter than necessary at about two thirds of values. Reproduce with:
+
+```python
+from math import comb
+def p_ge(d, k):                       # P(net >= k) under H0, k >= 0
+    return sum(comb(d, x) for x in range((d + k + 1) // 2, d + 1)) / 2 ** d
+def band(d, alpha=1/64):              # None => no verdict is available at this d
+    k = d % 2
+    while k <= d:
+        if p_ge(d, k) <= alpha: return k
+        k += 2
+    return None
+```
+
+**Design points at the measured rates**, for planning only — the governing band is always
+computed from the run's own d:
+
+| n | `reason` | `call_result` | `product` |
+|---|---|---|---|
+| 22 | d~5, **no verdict possible** | d~1, **no verdict possible** | d~1, **no verdict possible** |
+| 108 | d~24, ±12 | d~7, ±7 | d~3, **no verdict possible** |
+| 150 | d~34, ±14 | d~10, ±8 | d~4, **no verdict possible** |
+
+**There is a floor below which no band exists.** The strongest possible evidence at a
+given d is a clean sweep, `P = 2^-d`, so alpha = 1/64 requires **d >= 6** before any
+AHEAD or BEHIND verdict is available at all. Below it the correct output is not
+INDISTINGUISHABLE — that word claims a measurement was made and came out level — but
+**UNDERPOWERED: NO VERDICT**.
+
+`product` is where this bites, and the honest statement of it is per run rather than per
+pack. **Measured d across the four 108-row comparisons: 6, 0, 6, 2.** The pooled-rate
+projection of ~3 is an average no single run realised, and an earlier draft of this
+paragraph used that projection to claim `product` "cannot deliver a verdict at any alpha
+this file would accept, at either size." **That was wrong**, and it was wrong in the way
+this whole derivation exists to prevent — it applied a projection where the governing rule
+says to use the d the run actually produced. Corrected in place rather than deleted:
+
+- Two of the four runs reached the `d >= 6` floor and were therefore scorable. Both
+  returned `net = -4`, so they land INDISTINGUISHABLE — a real measurement that came out
+  level, not an absence of one.
+- The other two (d = 0 and d = 2) are **UNDERPOWERED: NO VERDICT**. `d = 0` in particular
+  is not a tie at all: the two arms never disagreed on a single product row, so there was
+  nothing to test.
+
+So `product` is scorable on some runs and not others, decided per run at scoring time.
+Growing the pack raises the expected d but guarantees nothing for any particular pair —
+which is the argument for computing the band from observed d rather than from a projection.
+
+**A band derived for one n does not transfer to another n. This is the whole point.**
+Not as a caution — as arithmetic. The threshold that holds alpha fixed moves with
+sqrt(d), so quoting `±12` at 108 rows and `±12` at 150 rows are different tests, and
+quoting the n=22 `+6` at 108 rows is a tenfold loosening (0.0156 -> 0.1537) performed
+silently by doing nothing. **Any change to pack size, and any change to the arm pair
+(which moves the discordance rate), invalidates the band and requires recomputing it.**
+The same applies dimension by dimension within a single run: three dimensions with d of
+24, 7 and 3 get three different bands, and one of them gets none.
+
+**What this does not do.** It does not restate any verdict in Experiments 1-4. Those were
+read against a rule now measured to be miscalibrated, and re-reading them against this one
+is a separate piece of work with its own write-up — deliberately not done here, in the
+same session that chose the rule, and deliberately not previewed above.
+
+**Minimum detectable effect, so the cost of the new bands is on the record.** With p the
+true probability a discordant pair favours the candidate:
+
+| d | band | p for 50% power | p for 80% power |
+|---:|---:|---:|---:|
+| 6 | ±6 | 0.891 | 0.964 |
+| 24 (n=108) | ±12 | 0.726 | 0.797 |
+| 34 (n=150) | ±14 | 0.690 | 0.753 |
+
+This is the honest bill. At 108 rows the design detects a real difference 80% of the time
+only if roughly **4 in 5** discordant pairs genuinely favour one arm — a very large effect.
+Growing 108 -> 150 rows moves that from 0.797 to 0.753, which is a small return for 39%
+more rows and 39% more cost. **If the goal is to detect a modest true difference, more rows
+of this pack is not the lever**; a pack with a higher discordance rate, or scoring more than
+replicate 1 (Experiment 2, next step 2), buys more per row than length does.
 
 ---
 

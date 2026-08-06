@@ -97,12 +97,42 @@ class TestsetError(ValueError):
 
 
 # Synthetic identifiers, enforced rather than trusted. NO real customer data reaches
-# this repository: call ids live in 5000-5999 and phone numbers in the 08100000xx
+# this repository: call ids live in 5000-5999 and phone numbers in the 0810000xxx
 # block, both outside anything True's systems issue. `src/evalharness/paths.py` refuses
 # a data directory inside a git worktree for the same reason; this is that refusal
 # applied to the one dataset that IS committed.
+#
+# WIDENED 2026-08-06, `^08100000[0-9]{2}$` -> `^0810000[0-9]{3}$`, because the old block
+# was FULL. MEASURED across `tests/fixtures/testsets/`: 100 distinct phone numbers in
+# use, which is all 100 that `08100000xx` can spell, and `retention_v2.jsonl` alone
+# accounts for every one of them. The next item added had nowhere to draw a phone from.
+# Capacity is now 1000, so 900 are free.
+#
+# Why this widening and not some other one. Each point below was checked by running it,
+# not by reading the regex:
+#
+#   * **It is a strict superset, so no fixture moves.** `0810000` + `001` is the same
+#     string as `08100000` + `01`: the change drops one fixed digit from the prefix and
+#     lengthens the tail to match, rather than sliding the block somewhere new. All 100
+#     numbers already in use still match, and `validate()` returns an IDENTICAL problem
+#     list — empty, on both — for `retention_v1.jsonl` and `retention_v2.jsonl` under
+#     the old pattern and the new one. Those two files are frozen, four experiments
+#     cite them, and that is the constraint that chose this widening over a tidier one.
+#   * **Every existing negative case still fails, unedited.** `0812345678` (wrong
+#     prefix), `08100000` and `081000000` (too short), `0810000001x` (trailing junk)
+#     and `""` are all still rejected, and the parametrised test guarding them in
+#     `tests/test_testsets.py` needed no change to stay green. That was a requirement,
+#     not a happy result: a widening that forces an edit to the test guarding it cannot
+#     be reviewed, because the edit and the thing under review are the same act.
+#   * **The control's rationale survives.** Still one contiguous, enumerable, obviously
+#     synthetic block under the same `0810000` prefix. What this control has always
+#     rested on is that prefix, not the last two digits, so lengthening the tail asserts
+#     nothing new about the numbering plan that the old block did not already assert.
+#
+# The block is wider; it is still a block. `0810001000` is outside it and stays outside
+# it, which is what the new negative cases in `tests/test_testsets.py` pin down.
 CALL_ID_PATTERN = re.compile(r"^5[0-9]{3}$")
-PHONE_PATTERN = re.compile(r"^08100000[0-9]{2}$")
+PHONE_PATTERN = re.compile(r"^0810000[0-9]{3}$")
 
 # The scored columns, exactly (main.py:970-974, :1016-1020, :1033-1043).
 GT_COLUMNS = frozenset({"product", "call_result", "main", "secondary", "third"})
@@ -392,10 +422,13 @@ def _validate_item(item: TestItem, space: LabelSpace | None) -> list[str]:
     if item.phone_number is not None and not PHONE_PATTERN.fullmatch(item.phone_number):
         problems.append(
             f"{ident}: phone_number {item.phone_number!r} is outside the synthetic block. "
-            "It must match ^08100000[0-9]{2}$ or be null. A null phone is legal and has a "
-            "consequence worth intending: production groups on ['call_id','phone_number'] "
-            "without dropna=False (fact_checker.py:1080), so the row never reaches the "
-            "product metric."
+            # Quoted from PHONE_PATTERN rather than retyped. The block was widened once
+            # already (2026-08-06) and a hardcoded copy here would have gone stale in
+            # the one place a reviewer reads it: the message telling them what to fix.
+            f"It must match {PHONE_PATTERN.pattern} or be null. A null phone is legal and "
+            "has a consequence worth intending: production groups on "
+            "['call_id','phone_number'] without dropna=False (fact_checker.py:1080), so "
+            "the row never reaches the product metric."
         )
 
     if not item.transcript_th.strip():

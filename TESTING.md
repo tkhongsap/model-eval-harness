@@ -93,11 +93,34 @@ done
 
 .venv/Scripts/python -m pytest tests/test_paths.py tests/test_compare.py -q -k "refus or shareable or worktree"
 
-git grep -ohE "\b0[689][0-9]{8}\b" | sort -u        # must be 08100000xx only
+git grep -ohE "\b0[689][0-9]{8}\b" -- . ':!production-reference/' | sort -u   # 0810000xxx only
 ```
 
 Three independent controls: directory-level ignores, a runtime refusal of any data
 directory inside a git worktree, and a writer that raises on customer columns.
+
+The grep is the cheap fourth check, and reading its output needs two facts.
+`production-reference/` is excluded because it is True's own committed source: its tests
+carry numbers this repository never issued and never drew from its block, so including
+them makes the check noisy rather than safer. And the block is `^0810000[0-9]{3}$` —
+`0810000000`–`0810000999`, `src/evalgen/testsets.py:135` — widened from
+`^08100000[0-9]{2}$` on 2026-08-06, when `retention_v2` used the last of the old 100.
+
+Measured 2026-08-06: 100 numbers are allocated to fixtures, all of them in
+`0810000000`–`0810000099`, leaving 900 of the block free. The remaining hits are all test
+inputs rather than fixtures, and they split two ways, which matters because a reader
+checking this list needs to know which ones are *supposed* to be outside the block:
+
+  * **Inside the block, asserted to be accepted** — the two `PHONE_PATTERN` positive cases
+    at `tests/test_testsets.py:412` pinning the first and last of the 900 the widening
+    bought. These are in-block by construction; they are not leaks and not exceptions.
+  * **Outside the block, asserted to be refused** — the `PHONE_PATTERN` negative cases in
+    `tests/test_testsets.py`, and the hallucinated payload phone at
+    `tests/test_flatten.py:237` that `to_rows` must discard in favour of the item's own.
+
+Deliberately no literal out-of-block number is quoted in this paragraph: doing so would
+put it in the grep's own output and teach the reader to skip a line. Anything outside the
+block that is not one of those refusal cases is a leak.
 
 ### 5. The generation pipeline runs end to end, with no network
 

@@ -52,8 +52,10 @@ kept in place and corrected, because the wrong inference is the useful part:
       with `retention_v1.*` frozen so Experiments 1-2 stay reproducible. The need did not
       go away. That pack holds v1's family proportions rather than production's
       (`docs/testset-v2-plan.md`), so it still cannot say whether a class that matters in
-      production is under-tested here, and the synthetic phone block `08100000xx` is
-      fully consumed at 100 items.
+      production is under-tested here. That pack also consumed the synthetic phone block
+      whole: all 100 numbers `08100000xx` could spell. The block was widened to
+      `0810000xxx` on 2026-08-06 (`src/evalgen/testsets.py:135`) so the next item has a
+      number to take -- 100 in use, 900 free, and no existing number moved.
 - [ ] Receive the count of rows whose `phone_number` is null, blank or `0`. That
       number is the size of a blind spot in the current product metric.
 - [ ] Implement `load_workbook()` once the header layout is known.

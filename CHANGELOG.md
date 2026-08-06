@@ -36,9 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   verbatim, and `retention_v1.jsonl` / `retention_v1.gt.csv` are frozen byte-identical so
   Experiments 1 and 2 stay reproducible. Reason-class support goes from six classes at
   n=1 to a minimum of 6 each, which is what stopped per-class metrics separating two
-  models. The synthetic phone block is now exhausted: `^08100000[0-9]{2}$` admits exactly
-  100 numbers and all 100 are used, so a 101st item is a reviewed change to one of the
-  identifier controls. Objections to the expansion, and four known limitations, are kept
+  models. It also spent the synthetic phone block: `^08100000[0-9]{2}$` admits exactly 100
+  numbers and all 100 went into this pack, which is what forced the widening recorded
+  under Security below. Objections to the expansion, and four known limitations, are kept
   in `docs/testset-v2-plan.md` rather than discarded.
 - **"Side by side" sheet in `scripts/export_xlsx.py`**: one row per item, every arm's
   whole answer against the ground truth, OK/MISMATCH per arm and a flips marker.
@@ -155,6 +155,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   skipped regardless. The block is recorded rather than dropped: it was reversed by owner
   decision on 2026-08-05, after a credential scan, and the tree is now tracked as
   `production-reference/` (see Added).
+- **The synthetic phone block was widened, `^08100000[0-9]{2}$` → `^0810000[0-9]{3}$`**
+  (`src/evalgen/testsets.py:135`). This is a reviewed change to one of the three controls
+  that keep customer identifiers out of git, not a convenience: `retention_v2` used all
+  100 numbers the old pattern could spell (see Added), so the next item added had no phone
+  number left to draw. The new block is a **strict superset** — one digit moves from the
+  fixed prefix to the variable tail, `0810000` + `001` being the same string as `08100000`
+  + `01` — so **no fixture number moved**. `retention_v1.*` and `retention_v2.*` stay
+  byte-identical, `validate()` returns the same empty problem list on both under either
+  pattern, and every existing negative case is still rejected unedited; that last point
+  was a requirement rather than a happy result, because a widening that forces an edit to
+  the test guarding it cannot be reviewed. Capacity 100 → 1000,
+  `0810000000`–`0810000999`, of which 100 are in use and 900 are free. What the control
+  has always rested on is the `0810000` prefix, and that did not change. The reasoning is
+  kept at the pattern itself (`src/evalgen/testsets.py:99-133`); every document that
+  quoted the old range moved with it, with one deliberate exception — the `08100000xx` in
+  the 0.1.0 Security entry below is left as written, because it records what had been
+  committed at that release and every number it describes is still inside the new block.
+  Rewriting a released entry to match today's pattern would edit a record rather than
+  correct one.
 
 ---
 

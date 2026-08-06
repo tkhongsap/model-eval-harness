@@ -29,11 +29,14 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from evalgen.testsets import (  # noqa: E402
+    PHONE_PATTERN,
     TestsetError,
     load_testset,
     testset_sha,
     validate,
 )
+
+TESTSETS = ROOT / "tests" / "fixtures" / "testsets"
 
 # ---------------------------------------------------------------------------
 # Fixtures: three items, each a claim with evidence and a citation.
@@ -393,6 +396,100 @@ def test_numeric_phone_is_refused_at_load(tmp_path):
     """A JSON number would drop the leading zero before anything could check it."""
     with pytest.raises(TestsetError, match="phone_number must be a string"):
         load(tmp_path, [mutate(ITEM_NETWORK_CHURN, phone_number=810000001)])
+
+
+# ---------------------------------------------------------------------------
+# The 2026-08-06 widening: 08100000xx -> 0810000xxx.
+#
+# The old block was full — all 100 numbers it could spell were in use, all 100 of them
+# by `retention_v2.jsonl`. The tests above are deliberately untouched by the widening:
+# every negative case in `test_phone_outside_the_synthetic_block_is_rejected` still
+# fails for the same reason it always did, and needing no edit there is what makes this
+# change reviewable. The tests below add the new boundary, they do not move the old one.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("phone", ["0810000100", "0810000999"])
+def test_the_widened_block_accepts_its_new_numbers(tmp_path, phone):
+    """The 900 numbers the widening bought. `0810000100` is the first of them and
+    `0810000999` the last, so between them they pin both ends of what was added.
+
+    Asserting `== []` rather than "no phone problem": a number inside the block must
+    leave the item completely clean, otherwise the widening has bought capacity that
+    nothing can actually use.
+    """
+    assert validate(load(tmp_path, [mutate(ITEM_NETWORK_CHURN, phone_number=phone)])) == []
+
+
+@pytest.mark.parametrize("phone", ["0810001000", "0810000"])
+def test_numbers_outside_the_widened_block_are_still_rejected(tmp_path, phone):
+    """A wider block is still a block, and these are the two ways out of it.
+
+    `0810001000` is the number immediately after the widened range and the one a
+    generator that counts past 999 reaches first — it is ten digits, it starts `08100`,
+    and it is outside. `0810000` is the block's own prefix with the tail missing, which
+    is what a truncated write produces. Both would be accepted by a widening done as
+    `^0810000[0-9]*$`, which is the mistake this test exists to catch.
+    """
+    problems = validate(load(tmp_path, [mutate(ITEM_NETWORK_CHURN, phone_number=phone)]))
+    assert any("phone_number" in problem for problem in problems), problems
+
+
+def test_the_widening_kept_every_number_the_old_block_could_spell():
+    """The strict-superset property, enumerated rather than argued.
+
+    The whole reason this widening was safe to make against frozen fixtures is that
+    `0810000` + `001` is the same string as `08100000` + `01`. Enumerating all 100 of
+    the old block proves it for every member instead of for the one example anyone
+    would think to check by hand.
+    """
+    old_block = ["08100000%02d" % n for n in range(100)]
+    rejected = [number for number in old_block if not PHONE_PATTERN.fullmatch(number)]
+    assert rejected == [], (
+        f"the widened pattern no longer accepts {len(rejected)} number(s) the old block "
+        f"could spell, e.g. {rejected[:3]}. Every one of them is in a frozen fixture."
+    )
+
+
+def test_the_committed_packs_still_fit_the_block_and_leave_headroom():
+    """The alarm that would have caught the exhaustion before it blocked anyone.
+
+    MEASURED 2026-08-06: `retention_v1.jsonl` and `retention_v2.jsonl` hold 100 distinct
+    phone numbers between them, which was 100/100 of the old block and is 100/1000 of
+    the widened one. The point is not the exact count — packs grow — it is that running
+    out is a thing that happens silently until an author cannot write the next item.
+    This test says so out loud while there is still room to act on it.
+    """
+    used = set()
+    for name in ("retention_v1.jsonl", "retention_v2.jsonl"):
+        for item in load_testset(TESTSETS / name, app="retention").items:
+            if item.phone_number is not None:
+                used.add(item.phone_number)
+
+    outside = sorted(n for n in used if not PHONE_PATTERN.fullmatch(n))
+    assert outside == [], f"committed packs use phone numbers outside the block: {outside}"
+
+    capacity = 1000  # 0810000000 .. 0810000999
+    assert len(used) < capacity, (
+        f"the synthetic phone block is EXHAUSTED: {len(used)} of {capacity} in use. "
+        "Widen it the same way it was widened on 2026-08-06 — one digit of prefix "
+        "traded for one digit of tail, so the change stays a strict superset and no "
+        "committed fixture has to move."
+    )
+
+
+def test_the_rejection_message_names_the_pattern_actually_enforced(tmp_path):
+    """The message is the only place a reviewer learns what a legal number looks like.
+
+    It used to retype the regex, which meant the widening could have left it telling
+    authors to write numbers the validator had already stopped requiring. It now quotes
+    `PHONE_PATTERN`; this test is what keeps that true.
+    """
+    problems = validate(load(tmp_path, [mutate(ITEM_NETWORK_CHURN, phone_number="0899999999")]))
+
+    assert len(problems) == 1, problems
+    assert PHONE_PATTERN.pattern in problems[0], problems[0]
+    assert "08100000[0-9]{2}" not in problems[0], "the message still quotes the old block"
 
 
 def test_empty_transcript_is_rejected(tmp_path):

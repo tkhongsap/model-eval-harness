@@ -262,9 +262,15 @@ citation; a reason span must be customer speech; UTF-8, no BOM, LF only.
 | `call_id` | 5001–5020 | 5001–5099, 5100 |
 | `phone_number` | `0810000001`–`0810000020` | `0810000000`–`0810000099` |
 
-**The `08100000xx` block is fully consumed at 100 items.** A 101st item requires widening
-`PHONE_PATTERN`, which is one of the three controls keeping customer identifiers out of
-git — a deliberate, reviewed change, never a convenience.
+**v2 spent the whole `08100000xx` block — all 100 numbers that pattern could spell.** So
+`PHONE_PATTERN` was widened to `^0810000[0-9]{3}$` on 2026-08-06
+(`src/evalgen/testsets.py:135`). It is one of the three controls keeping customer
+identifiers out of git, so that was a deliberate, reviewed change and never a
+convenience. The new block is a strict superset of the old one — a digit moved from the
+fixed prefix to the variable tail — so every value in the table above still matches, both
+packs stay byte-identical, and `validate()` returns the same empty problem list under
+either pattern. Capacity is now 1000, `0810000000`–`0810000999`: 100 in use, 900 free for
+a v3.
 
 ### What it buys: the support-1 classes are gone
 

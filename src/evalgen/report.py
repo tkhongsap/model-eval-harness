@@ -47,6 +47,47 @@ before anyone argues about the model at all.
 `n_flip` measures the same instability without reference to the labels, so it stays
 meaningful on a run where both arms are wrong.
 
+The verdict letter saturates as a group grows. The rate does not
+-----------------------------------------------------------------
+The ternary is a statement about the **worst** item in a group: FAIL if ANY item is
+wrong on every replicate. That rule is monotone decreasing in group size -- adding an
+item can move a row toward FAIL and can never move it back -- so the letter degrades as
+the pack grows even when the arm has not.
+
+Measured, not argued. Experiment 3 ran `retention_v2` (100 items, 108 scored rows) and
+whole-item correctness on replicate 1 came out **43/100 for the incumbent and 35/100 for
+the candidate** (`EXPERIMENTS.md`, Experiment 3). "Correct on EVERY replicate" is a
+subset of that, so those two figures are ceilings, not estimates. Treating items as
+independent -- which they are not, since a family groups items that stress the same
+thing, and that correlation is why the arithmetic below is an illustration rather than a
+prediction -- a group of n reads PASS with probability at most 0.43^n: 0.08 at n=3, 0.006
+at n=6. What actually happened matches the direction: at 100 items **all five families
+read FAIL/FAIL on both arms**, and `multislot` -- the one row still separating the arms
+at 20 items, FAIL/PASS -- went from 2 items to 10 and collapsed to FAIL/FAIL. The table
+that is this pack's designed headline carried zero information about either model.
+
+So `MechanismRow.always_correct` and `MechanismRow.rate`: how many items in the group
+were correct on every replicate, out of the group size. A rate is not monotone in group
+size. One more correct item raises it, one more wrong item lowers it, so growing the pack
+measures the same quantity more precisely instead of driving every row to one value.
+
+**The verdict is kept, not replaced,** for two reasons that are not sentiment. At small n
+the letter says something the rate does not: FLAKY and FAIL are the same fraction wrong
+and a different decision -- FAIL needs a prompt or a model change, FLAKY needs decoding
+discipline and more replicates before the model is argued about at all -- and a rate
+cannot express that, because it counts the item that never works and the item that flips
+identically. And four experiments in `EXPERIMENTS.md` quote these letters; deleting them
+would silently rewrite what those records mean.
+
+The two are printed on the same row so a reader gets both without a second table. 9/10
+and 1/10 are both FAIL and the letter is right in both cases -- there is an item here
+that never works -- but one arm has a single bad item and the other is broken, and until
+the rate was printed the report could not tell them apart.
+
+`EXPERIMENTS.md` next step 3 of Experiment 3 asked for this in those terms ("a
+group-level rule that is monotone in group size cannot survive growth"), and
+`docs/eval-improvement-plan.md` finding 1 states the monotonicity.
+
 What this module refuses to do
 -------------------------------
 It never computes `parse_ok` (that is `outcomes.classify`, and only there), never
@@ -136,6 +177,16 @@ class MechanismRow:
     question is "which items do I open", and splitting that across two fields makes it
     two questions. `detail` says which is which.
 
+    `always_correct` is how many items in the group were correct on every replicate. It
+    is the numerator of `rate`, and it is stored rather than derived from
+    `len(item_ids) - len(failing_items)` so that a reader of one row can check the
+    subtraction instead of reconstructing it -- the same reason `ArmSummary` carries both
+    halves of `cost_per_correct_usd`.
+
+    Read `rate` beside `verdict`, never instead of it. See the module docstring: the
+    letter saturates as a group grows and the rate does not, and the letter distinguishes
+    an item that never works from one that flips, which the rate cannot.
+
     `detail` may be multi-line. Lines after the first carry the `expected_failure` prose
     of each item that failed on every replicate, verbatim from the testset. Verbatim, not
     summarised: a paraphrase of a prediction is not a prediction anyone can check.
@@ -144,8 +195,23 @@ class MechanismRow:
     mechanism: str
     item_ids: tuple[str, ...]
     verdict: Verdict
+    always_correct: int
     failing_items: tuple[str, ...]
     detail: str
+
+    @property
+    def rate(self) -> float:
+        """`always_correct` over the group size, in [0, 1].
+
+        The empty group returns 0.0 and not 1.0. `mechanism_table` cannot build one -- a
+        group exists only once an item has joined it -- so this branch is reachable only
+        by a caller constructing the row by hand, and of the two arithmetically defensible
+        answers for 0/0 the vacuous 100% is the one this table must never be able to
+        print. `ReportError` exists for exactly that class of input.
+        """
+        if not self.item_ids:
+            return 0.0
+        return self.always_correct / len(self.item_ids)
 
 
 @dataclass(frozen=True)
@@ -343,6 +409,11 @@ def mechanism_table(
     failure is the finding, and reporting FLAKY would let a reader believe another
     replicate might clear it.
 
+    Every row also carries `always_correct` out of `len(item_ids)`, the rate the
+    verdict cannot express once a group is large. The ternary above is monotone
+    decreasing in group size and the rate is not; the module docstring has the
+    measurement that made this necessary.
+
     Raises `ReportError` rather than scoring an item with no ground-truth row, or a run
     with no replicates. Both would score PASS by vacuity -- an empty comparison against
     an empty truth -- which is the one output this table must never be able to produce.
@@ -396,15 +467,23 @@ def _mechanism_row(
     correct: Mapping[str, Sequence[bool]],
     n_replicates: int,
 ) -> MechanismRow:
-    """Fold one group's item x replicate grid into a verdict and an explanation."""
+    """Fold one group's item x replicate grid into a verdict, a rate and an explanation.
+
+    Two summaries of the same grid, because neither survives alone. The verdict reports
+    the worst item and saturates as the group grows; the rate counts the items and does
+    not. The module docstring carries the measurement.
+    """
     hard: list[TestItem] = []
     flaky: list[TestItem] = []
+    always_correct = 0
     for item in group_items:
         hits = sum(correct[item.item_id])
         if hits == 0:
             hard.append(item)
         elif hits < n_replicates:
             flaky.append(item)
+        else:
+            always_correct += 1
 
     if hard:
         verdict: Verdict = "FAIL"
@@ -413,7 +492,14 @@ def _mechanism_row(
     else:
         verdict = "PASS"
 
-    parts: list[str] = []
+    # The rate leads the detail rather than following the failing item ids, so it reaches
+    # every consumer that prints only the first line of `detail` (`cli.py:1286`) or that
+    # renders the detail column without the table above it (the xlsx Mechanisms sheet).
+    # Those two would otherwise show a FAIL/FAIL column and nothing that separates it.
+    parts: list[str] = [
+        f"{always_correct}/{len(group_items)} items correct on all {n_replicates} "
+        f"replicate{'s' if n_replicates != 1 else ''}"
+    ]
     if hard:
         parts.append(
             "wrong on every replicate: " + ", ".join(i.item_id for i in hard)
@@ -424,11 +510,6 @@ def _mechanism_row(
             + ", ".join(
                 f"{i.item_id} ({sum(correct[i.item_id])}/{n_replicates})" for i in flaky
             )
-        )
-    if not parts:
-        parts.append(
-            f"all {len(group_items)} items correct on all {n_replicates} "
-            f"replicate{'s' if n_replicates != 1 else ''}"
         )
 
     lines = ["; ".join(parts)]
@@ -441,6 +522,7 @@ def _mechanism_row(
         mechanism=mechanism,
         item_ids=tuple(i.item_id for i in group_items),
         verdict=verdict,
+        always_correct=always_correct,
         failing_items=tuple(i.item_id for i in hard + flaky),
         detail="\n".join(lines),
     )
@@ -669,22 +751,55 @@ def _mechanism_section(
     candidate: ArmSummary,
     mechanisms: Mapping[str, Sequence[MechanismRow]],
 ) -> list[str]:
+    """Section 1: a verdict AND a rate per mechanism, per arm.
+
+    The columns are grouped by quantity -- both rates, then both verdicts -- rather than
+    by arm, for two reasons.
+
+    The comparison a reader actually makes is within a quantity: 9/10 against 1/10, FAIL
+    against FLAKY. Grouping puts the two things being compared next to each other instead
+    of one cell apart, which matters most in the case this column exists for, where every
+    letter on the row is the same and only the rates differ.
+
+    And it keeps the verdict pair as the last two whitespace-separated fields of the row.
+    `tests/test_cli.py:204-210` reads a mechanism's verdicts positionally out of the
+    rendered report (`line.split()[-2:]`), so a layout that interleaved rate and verdict
+    would have changed what that parser returns without changing anything it asserts --
+    it would have compared ["1/10", "FAIL"] against ["PASS", "FAIL"] and failed for a
+    reason that has nothing to do with either model.
+    """
     inc_rows = list(mechanisms[incumbent.arm])
     cand_by_name = {row.mechanism: row for row in mechanisms[candidate.arm]}
 
     width = max([len("mechanism")] + [len(r.mechanism) for r in inc_rows])
+    # One width for every arm cell, sized off the widest group, so a 100-item pack's
+    # "9/100" does not rag against a 6-item pack's "1/6" in the same column.
+    digits = max([1] + [len(str(len(r.item_ids))) for r in inc_rows])
+    cell = max(len("candidate"), 2 * digits + 1)
+
     lines = [
         _SECTION,
         "1. MECHANISM TABLE - which mechanisms each arm passes",
         _SECTION,
-        f"  {'mechanism':<{width}}  {'n':>2}  {'incumbent':<9}  {'candidate':<9}",
+        # The spanning label is kept shorter than its two columns (2 * cell + 2 >= 20 for
+        # any pack) so that "verdict" stays over the verdict columns. It is also the name
+        # of the field it prints, `MechanismRow.always_correct`, so a reader moving
+        # between the report and the code is not translating.
+        f"  {'':<{width}}  {'':>{digits}}  "
+        f"{'always correct':<{2 * cell + 2}}  verdict",
+        f"  {'mechanism':<{width}}  {'n':>{digits}}  "
+        f"{'incumbent':>{cell}}  {'candidate':>{cell}}  "
+        f"{'incumbent':<{cell}}  {'candidate':<{cell}}",
     ]
 
     for inc in inc_rows:
         cand = cand_by_name[inc.mechanism]
+        inc_rate = f"{inc.always_correct}/{len(inc.item_ids)}"
+        cand_rate = f"{cand.always_correct}/{len(cand.item_ids)}"
         lines.append(
-            f"  {inc.mechanism:<{width}}  {len(inc.item_ids):>2}  "
-            f"{inc.verdict:<9}  {cand.verdict:<9}"
+            f"  {inc.mechanism:<{width}}  {len(inc.item_ids):>{digits}}  "
+            f"{inc_rate:>{cell}}  {cand_rate:>{cell}}  "
+            f"{inc.verdict:<{cell}}  {cand.verdict:<{cell}}"
         )
         for arm, row in ((incumbent.arm, inc), (candidate.arm, cand)):
             if row.verdict == "PASS":
@@ -695,9 +810,27 @@ def _mechanism_section(
 
     lines += [
         "",
+        "  Two summaries of the same item x replicate grid, and they answer different",
+        "  questions. Read both; neither is sound on its own.",
+        "",
         "  PASS  every item in the mechanism correct on EVERY replicate.",
         "  FLAKY some item correct on some replicates and wrong on others.",
         "  FAIL  some item wrong on EVERY replicate. FAIL outranks FLAKY in one group.",
+        "",
+        "  The `always correct` rate is how many items in the group were correct on EVERY",
+        "  replicate, out of the group size. Read it FIRST wherever a column is all FAIL,",
+        "  because the letter SATURATES as a group grows and the rate does not. The letter",
+        "  describes the WORST item in the group -- FAIL if ANY item is wrong on every",
+        "  replicate -- so adding items can only push a row toward FAIL and never back.",
+        "  Measured: whole-item correctness on one replicate ran 43/100 and 35/100 on the",
+        "  100-item pack (EXPERIMENTS.md, Experiment 3), and at that size all five rows",
+        "  read FAIL/FAIL on both arms. The row that still separated the arms at 20 items",
+        "  went from 2 items to 10 and collapsed with the rest. A rate has no such",
+        "  ceiling: one more correct item raises it, one more wrong item lowers it, so",
+        "  9/10 and 1/10 stay different numbers at any pack size. Both of those are FAIL",
+        "  and both letters are right -- each group holds an item that never works -- and",
+        "  that is the whole reason the rate is printed beside the letter rather than",
+        "  instead of it.",
         "",
         "  Why verdicts and not a percentage: 22 scored rows means one row is 4.5 points,",
         "  and McNemar on the paired discordant cells needs SIX items discordant in one",
@@ -708,7 +841,11 @@ def _mechanism_section(
         "  FLAKY is a first-class result, not a rounding problem. It is where model",
         "  nondeterminism lands, and it is a different decision from FAIL: FAIL needs a",
         "  prompt or a model change, FLAKY needs decoding discipline and more replicates",
-        "  before the model is argued about at all.",
+        "  before the model is argued about at all. That distinction is what the rate",
+        "  cannot carry -- an item that never works and an item that flips are the same",
+        "  fraction wrong and two different pieces of work -- which is why the letter",
+        "  stays on the row at every pack size, and why the detail below each non-PASS",
+        "  row still names which items are which.",
         "",
     ]
     return lines
