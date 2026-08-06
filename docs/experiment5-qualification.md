@@ -90,9 +90,16 @@ CoreWeave also accepted explicit reasoning off in this probe, but it is not subs
 for Morph. The historical CoreWeave 27B result used extensive reasoning and remains a
 separately labelled diagnostic, not evidence for the locked Morph arm.
 
-## Gate 2 remains closed
+## Gate 2 outcome
 
 The selected-provider conservative ceiling is **US$50.13 for 1,458 full and load
 calls**: US$28.32 Gemini/Google, US$15.12 Qwen 27B/Morph and US$6.69 Qwen
 35B-A3B/AkashML. The machine plan is locked so those choices cannot drift, but its Gate
-2 approval record remains `PENDING`. No full or load call is authorized by Gate 1.
+2 field intentionally remains the preregistered `PENDING`: editing it would change the
+plan SHA after approval. The user approval is instead recorded in the separately
+self-hashed `experiments/evidence/retention-e5/gate2-approval.json`.
+
+Gate 2 subsequently made exactly 1,458 calls for a reported-cost lower bound of
+US$1.507460937. Morph failed the full reliability gate with 359/414 valid calls, while
+both Qwen candidates failed the quality/stability decision. See
+`docs/experiment5-results.md`.

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Committed Experiment 5 execution and decision evidence.** Gate 2 ran the three
+  full arms and nine fixed load profiles: exactly 1,458 approved one-attempt calls for
+  a US$1.507460937 reported-cost lower bound. A self-hashed ledger records raw-log
+  identities without committing model text; safe per-arm, paired and summary
+  JSON/Markdown/XLSX reports retain both Qwen `FAIL` decisions and item regressions.
 - **Committed Experiment 5 qualification evidence.** Gate 1 exercised all 18 named
   providers in 108 one-attempt calls, retained every outcome as a safe self-hashed
   artifact, selected Google/Morph/AkashML by historical continuity, and locked the
@@ -123,6 +128,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The full-run runtime gate no longer requires usage/reasoning metadata from failed
+  calls. It validates successful responses and reported identities while reliability
+  keeps every failure in its denominator, preserving the preregistered 99% rule instead
+  of silently turning it into 100%.
 - `prompt_token_spread` no longer treats zero-usage failure rows as a second tokenizer;
   calls with absent or non-positive prompt usage are counted separately.
 - Scoring provenance no longer uses repository HEAD. Classification, scoring and common

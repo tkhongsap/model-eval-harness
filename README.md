@@ -31,6 +31,7 @@ boundary is enforced rather than asserted.
 | Enterprise phase-one/phase-two objectives, gates and workflow | [docs/enterprise-evaluation-framework.md](./docs/enterprise-evaluation-framework.md) |
 | Machine-checkable Experiment 5 preregistration | [experiments/retention-e5.plan.json](./experiments/retention-e5.plan.json) |
 | Experiment 5 provider qualification results | [docs/experiment5-qualification.md](./docs/experiment5-qualification.md) |
+| Experiment 5 decision, operations and safe report set | [docs/experiment5-results.md](./docs/experiment5-results.md) |
 | Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |

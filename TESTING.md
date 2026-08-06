@@ -9,7 +9,7 @@ python -m venv .venv
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected in a fresh checkout: **493 passed, 33 skipped**.
+Expected in a fresh checkout: **498 passed, 33 skipped**.
 
 The skips are correct: 11 need production source/pins and 22 integration checks need
 historical gitignored `out/` run directories that a fresh checkout does not contain.
@@ -21,7 +21,7 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Expected |
 |---|---|---|
-| **Fresh standalone checkout** | `pytest tests/ -q` | **493 passed, 33 skipped** |
+| **Fresh standalone checkout** | `pytest tests/ -q` | **498 passed, 33 skipped** |
 | **With production source and historical local `out/`** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | environment-dependent; report the observed count |
 
 For the Experiment 5 implementation audit, the focused production differential,
@@ -60,14 +60,17 @@ budget, reliability threshold and lock requirements. It makes no network call an
 no API key. The budget command uses the committed provider-price snapshot and worst-case
 token caps; it also makes no call. The unit suite pins explicit reasoning-off request shape, exact bands,
 provider failure classifications, complete committed qualification evidence, the
-410/414 gate, paired item stability, operational accounting, and refusal to run a full
-arm while a plan is draft.
+410/414 gate, paired item stability, operational accounting, committed Gate 2
+approval/execution/report hashes, raw-output exclusion, and refusal to run a full arm
+while a plan is draft.
 
 `qualification-report` is the no-network path for deterministically reclassifying a
 recorded qualification run after a classifier correction; it reads no key and never
 reruns paid rows. `qualify` and `experiment-run` are intentionally absent from offline
 verification because they make paid calls. Gate 1 qualification is complete. Full/load
-execution still requires the locked plan SHA and explicit Gate 2 approval.
+execution is also complete: the separately self-hashed Gate 2 approval preserves the
+immutable plan SHA, and the committed execution ledger plus report set are verified
+without reading a key or making a network call.
 
 ## Verification Scripts
 

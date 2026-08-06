@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -32,6 +33,7 @@ from evalharness.compare import Disagreement, exact_band, paired_verdict
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "experiments" / "retention-e5.plan.json"
+EVIDENCE = ROOT / "experiments" / "evidence" / "retention-e5"
 
 
 def _row(
@@ -168,6 +170,58 @@ def test_committed_experiment_plan_and_prompt_library_are_in_sync():
     assert cost["full_calls_per_arm"] == 414
     assert cost["load_calls_per_arm"] == 72
     assert cost["grand_maximum_usd"] > cost["full_load_maximum_usd"] > 0
+
+
+def test_committed_gate2_execution_and_reports_are_complete_and_untampered():
+    approval = json.loads(
+        (EVIDENCE / "gate2-approval.json").read_text(encoding="utf-8")
+    )
+    approval_sha = approval.pop("approval_sha")
+    assert approval_sha == canonical_sha(approval)
+
+    evidence = json.loads((EVIDENCE / "execution.json").read_text(encoding="utf-8"))
+    evidence_sha = evidence.pop("execution_evidence_sha")
+    assert evidence_sha == canonical_sha(evidence)
+    assert evidence["plan_sha"] == canonical_sha(load_plan(PLAN))
+    assert evidence["gate2_approval_sha"] == approval_sha
+
+    execution = evidence["execution"]
+    assert execution == {
+        "logical_calls": 1458,
+        "full_calls": 1242,
+        "load_calls": 216,
+        "run_count": 12,
+        "reported_cost_usd_lower_bound": pytest.approx(1.507460937),
+        "wall_time_s_sum": pytest.approx(1480.425995700003),
+        "maximum_api_attempts_per_logical_call": 1,
+        "raw_model_output_committed": False,
+        "raw_logs_retained_locally": True,
+        "reported_cost_is_lower_bound": True,
+    }
+
+    runs = evidence["runs"]
+    assert sum(run["logical_calls"] for run in runs) == 1458
+    assert sum(run["logical_calls"] for run in runs if run["mode"] == "full") == 1242
+    assert sum(run["logical_calls"] for run in runs if run["mode"] == "load") == 216
+    assert {run["concurrency"] for run in runs if run["mode"] == "load"} == {1, 4, 8}
+    assert all(run["max_attempts"] == 1 for run in runs)
+
+    report_dir = EVIDENCE / "report"
+    assert {path.name for path in report_dir.iterdir()} == set(
+        evidence["reporting"]["files"]
+    )
+    for name, expected_sha in evidence["reporting"]["files"].items():
+        actual_sha = hashlib.sha256((report_dir / name).read_bytes()).hexdigest()
+        assert actual_sha == expected_sha
+    for name, expected_sha in evidence["reporting"]["report_code_sha256"].items():
+        actual_sha = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+        assert actual_sha == expected_sha
+    assert not list(EVIDENCE.rglob("run.jsonl"))
+
+    summary = json.loads((report_dir / "summary.json").read_text(encoding="utf-8"))
+    assert summary["reconciled"] is False
+    assert summary["comparisons"]["qwen3.6-27b"]["decision"]["status"] == "FAIL"
+    assert summary["comparisons"]["qwen3.6-35b-a3b"]["decision"]["status"] == "FAIL"
 
 
 def test_locked_plan_requires_untampered_qualified_artifacts(tmp_path):
@@ -439,6 +493,26 @@ def test_full_runtime_gate_rechecks_identity_reasoning_and_usage_after_qualifica
         expected_model="qwen/qwen3.6-27b",
         expected_provider="CoreWeave",
     )[0]
+
+    failed = replace(
+        run.results[0],
+        outcome="transport_error",
+        parse_ok=False,
+        payload=None,
+        observed_model=None,
+        provider=None,
+        prompt_tokens=None,
+        completion_tokens=None,
+        reasoning_tokens=None,
+        cost=None,
+        raw_content=None,
+        error="transport",
+    )
+    assert runtime_gate(
+        replace(run, results=(failed, *run.results[1:])),
+        expected_model="qwen/qwen3.6-27b",
+        expected_provider="CoreWeave",
+    ) == ()
 
 
 def test_decision_applies_quality_before_operations_and_keeps_underpowered_visible():

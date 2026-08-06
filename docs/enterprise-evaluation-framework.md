@@ -181,7 +181,9 @@ Gate 1 completed all 108 probes for US$0.109184588 reported cost. Twelve provide
 qualified and six were request incompatible. After selecting Google, Morph and AkashML,
 the same deliberately extreme assumption produces a **$50.13** full/load ceiling and a
 **$53.60** all-stage planning ceiling (`experiment-budget`). These are approval caps,
-not expected spend. Full results remain behind Gate 2.
+not expected spend. Gate 2 was approved and made exactly 1,458 calls for a reported-cost
+lower bound of US$1.507460937. Both Qwen candidates failed; see
+`docs/experiment5-results.md`.
 
 ## Approval gates and engineer workflow
 
@@ -192,10 +194,12 @@ not expected spend. Full results remain behind Gate 2.
    calls; see `docs/experiment5-qualification.md`.**
 3. Lock approval: select qualified providers, copy qualification hashes into the plan,
    set status `locked`, rerun offline checks, review exact projected cost, and approve
-   full/load calls. **Plan lock and checks are complete; paid-call approval is pending.**
-   The command requires the reviewed plan SHA.
+   full/load calls. **Complete: the user approved exactly 1,458 calls and US$50.13
+   against the locked plan SHA.** The approval is recorded outside the immutable plan
+   in `experiments/evidence/retention-e5/gate2-approval.json`.
 4. Report review: examine item regressions and phase slices before aggregates.
-   Operations rank only quality-eligible arms.
+   Operations rank only quality-eligible arms. **Complete: both candidates are `FAIL`,
+   so load results remain diagnostic rather than a ranking.**
 5. Reconciliation: compare against production-shaped truth and the live Gemini report.
    Until then, retain `RECONCILED: NO`.
 

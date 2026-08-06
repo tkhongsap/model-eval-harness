@@ -808,11 +808,11 @@ True's systems.
 
 ---
 
-## Experiment 5 — enterprise Retention baseline and robustness (PRE-REGISTERED)
+## Experiment 5 — enterprise Retention baseline and robustness (EXECUTED)
 
 **Pre-registered:** 2026-08-06
 
-**Status:** DRAFT; no Experiment 5 model calls have been made.
+**Status:** complete; both Qwen candidates `FAIL`; `RECONCILED: NO`.
 
 **Machine plan:** `experiments/retention-e5.plan.json` (the CLI prints its current SHA).
 **Question:** Can either Qwen candidate match Gemini on Retention under an explicitly
@@ -865,8 +865,38 @@ Provider selection used historical continuity, not the three probe outputs: Goog
 the incumbent, Morph for 27B and AkashML for 35B-A3B. The plan is locked at SHA
 `2823d3359f6ca6dee601f27b84672ef100971b609bdf38368a56990f2e323c8e`.
 All self-hashed results, selection rationale and the failure-classifier correction are
-recorded in `docs/experiment5-qualification.md`. Gate 2 remains pending; no full or
-load call has been made.
+recorded in `docs/experiment5-qualification.md`. No full or load call had been made at
+the point the plan was locked; Gate 2 approval and execution followed without changing
+that reviewed plan SHA.
+
+### Gate 2 result: neither Qwen candidate qualifies
+
+The user approved the immutable plan SHA above for exactly **1,458 calls** and a
+conservative **US$50.13** ceiling. Execution made all 1,458 calls with one attempt per
+logical call. OpenRouter-reported cost was **US$1.507460937**, retained as a lower bound
+because missing cost is never turned into zero.
+
+| Candidate | Parse valid | Call result | Reason | Product | Stability | Decision |
+|---|---:|---|---|---|---|---|
+| Qwen3.6 27B / Morph | 359/414 | BEHIND (-19; band 13) | BEHIND (-19; band 17) | UNDERPOWERED | BEHIND (-121; band 25) | **FAIL** |
+| Qwen3.6 35B-A3B / AkashML | 414/414 | BEHIND (-11; band 11) | BEHIND (-24; band 16) | BEHIND (-10; band 8) | BEHIND (-131; band 27) | **FAIL** |
+
+Morph passed the six-call qualification but failed under the full workload: 54 HTTP
+429 transport failures and one empty response. This supersedes the claim that it is
+permanently broken by the old multi-turn 400. The endpoint accepted the exact request,
+then proved operationally unreliable at the required scale. No failure was retried.
+
+The first offline report also exposed a runtime-gate defect: failed calls legitimately
+lack token metadata, so requiring usage on every logical call counted an allowed
+reliability failure twice and silently made the 99% rule a 100% rule. The gate now
+requires usage and zero reasoning on successful responses while failures remain in the
+reliability denominator. A regression test pins the correction; no model call was
+rerun, and the same raw logs were reported deterministically.
+
+The result does not authorize migration. It rejects these two Qwen arms under the
+locked synthetic-text workload while retaining `RECONCILED: NO`. Full evidence,
+operations tables and limitations are in `docs/experiment5-results.md`; safe reports
+are committed under `experiments/evidence/retention-e5/report/`.
 
 ### Pre-registered decision rule
 
@@ -890,6 +920,7 @@ reported cost and missing-cost calls.
   qualification call.
 - Gate 2: record qualification artifacts, select providers, add their hashes, lock the
   plan, rerun offline checks, and review exact projected cost before full/load calls.
+  **Complete:** external self-hashed approval preserved the already-reviewed plan SHA.
 
 Full plus load budget is **1,458 calls** across three arms (1,242 + 216). The 18 eligible
 provider names currently listed add at most 108 qualification calls, for a current
@@ -903,6 +934,7 @@ Gemini/Google $28.32, 27B/Morph $15.12 and 35B-A3B/AkashML $6.69. Including the 
 $3.47 qualification ceiling gives a grand planning maximum of **$53.60**.
 `evalgen experiment-budget` recalculates it from the locked plan. This is not expected
 spend; it is the conservative planning ceiling under recorded prices and token caps.
+Actual full/load reported cost was US$1.507460937 for all 1,458 authorized calls.
 
 ### What would change the decision
 

@@ -4,12 +4,12 @@
 
 **Scope:** the active enterprise Retention Phase 1/2 goal
 
-**Overall status:** qualification evidence complete; full/load evidence pending Gate 2
+**Overall status:** complete; both Qwen candidates failed; `RECONCILED: NO`
 
 This table is the requirement-by-requirement completion record. `Implemented` means the
-current checkout and tests prove the capability exists. `Pending gate` means the code is
-ready but the required external evidence cannot exist until the named approval permits
-paid model calls. A pending gate is not reported as completion.
+current checkout and tests prove the capability exists. `Complete` means the paid
+evidence and deterministic reports now exist. Production/audio reconciliation remains
+explicitly outside this phase and is not reported as completion.
 
 | Requirement | Authoritative evidence | Status |
 |---|---|---|
@@ -27,26 +27,30 @@ paid model calls. A pending gate is not reported as completion.
 | Versioned v3 dataset | `retention_v3.manifest.json`, SHA-pinned by the experiment plan | Implemented |
 | Versioned prompt/config library | prompt manifest and executable-registry drift test | Implemented |
 | Experiment 5 preregistered before calls | commit `d96845d`, draft SHA `49ae4874…`, and pre-call dry-run audit precede Gate 1 artifacts | Implemented |
-| Full workload: 138 × 3 per arm, one attempt | locked runner derives 414 calls from the validated plan | Implemented; real outputs pending gate 2 |
+| Full workload: 138 × 3 per arm, one attempt | execution ledger: three 414-call full runs | Complete |
 | Parse-valid gate ≥99% (410/414) | unrounded reliability function and boundary tests | Implemented |
 | Exact paired quality verdicts | observed-discordance exact bands at alpha 1/64 per side and calibration tests | Implemented |
 | Paired replicate stability | item-level identical-payload flags and paired exact verdict | Implemented |
-| Load: fixed 12 items × two at concurrency 1/4/8 | locked load runner, plan validation, report completeness refusal | Implemented; real outputs pending gate 2 |
+| Load: fixed 12 items × two at concurrency 1/4/8 | execution ledger: nine 24-call load runs | Complete |
 | Quality-first operations ranking | candidate decision runs reliability/runtime/quality/stability before operations | Implemented |
 | Machine and human per-model/pairwise reports | deterministic JSON/Markdown plus XLSX Overview/Quality/Regressions/Load | Implemented |
 | Item-level regressions retained | HMAC-keyed rows in pairwise JSON, Markdown summary and XLSX | Implemented |
 | Reproducible report generation | end-to-end fake test executes 1,458 full/load calls and compares two generated JSON/Markdown reports byte-for-byte | Implemented |
 | Pack validation | `evalgen check` passes v1, v2 and v3 | Implemented |
-| Full standalone verification | 497 passed / 33 expected skips in isolated checkout | Implemented |
+| Full standalone verification | 498 passed / 33 expected skips in isolated checkout | Implemented |
 | Production differential and pin verification | `TRUE_SOURCE_ROOT=production-reference/sentiment-batch-retention-main`; differential/requirements/boundary selection: 18 passed | Implemented |
 | Qualification evidence from current providers | 18 committed self-hashed artifacts; 108 calls; 12 qualified / 6 request incompatible; US$0.109184588 reported cost | Implemented |
-| Full/load real model results and recommendation | approval gate 2 after qualification selection/lock | Pending gate 2 |
+| Full/load real model results and recommendation | `docs/experiment5-results.md`; committed report set and execution ledger | Complete: both candidates `FAIL` |
 | Production/audio reconciliation | explicitly excluded from this phase; every report remains `RECONCILED: NO` | Intentionally unavailable |
 
-## Approval boundary
+## Approval and evidence boundary
 
-Gate 1 is complete. It does not authorize full/load execution. Selected providers and
-all 18 qualification artifacts are now committed, the plan is locked, and offline checks
-verify exact candidate coverage, self-hashes, contracts, call totals and status totals.
-Gate 2 remains separate: the locked plan SHA and US$50.13 full/load ceiling must be
-reviewed and explicitly approved before any `experiment-run` command is allowed.
+Gate 1 and Gate 2 are complete. Gate 2 approval authorized the immutable locked plan SHA,
+exactly 1,458 calls and a US$50.13 ceiling. The separate self-hashed approval preserves
+that plan SHA instead of editing the preregistration after approval. Execution used all
+1,458 calls, one attempt each, for a US$1.507460937 reported-cost lower bound.
+
+The safe report set and its hashes are committed. Raw model response logs remain
+gitignored because they contain model text and provider account metadata; their hashes
+are recorded in `experiments/evidence/retention-e5/execution.json`. This is enough to
+identify the local raw evidence without publishing it.

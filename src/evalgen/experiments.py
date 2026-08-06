@@ -709,8 +709,17 @@ def reliability_gate(ok: int, total: int, *, minimum: float = 0.99) -> bool:
 def runtime_gate(
     result: RunResult, *, expected_model: str, expected_provider: str
 ) -> tuple[str, ...]:
-    """Prove the selected identity and explicit-off regime held for the paid run."""
+    """Prove identity/regime on responses without making failures fail twice.
+
+    Reliability deliberately permits up to four non-parse-valid rows in a 414-call
+    full arm.  A transport/provider failure normally has no reasoning or usage
+    metadata, so requiring those fields on *every logical call* would silently turn
+    the 99% reliability gate into a 100% gate.  Identity is still checked on every row
+    that reports it; reasoning is checked wherever reported and required on every
+    successful response; tokenizer usage is required only on successful responses.
+    """
     problems: list[str] = []
+    successful = [row for row in result.results if row.outcome == "ok"]
     if set(result.observed_models()) != {expected_model}:
         problems.append(
             f"observed models {sorted(result.observed_models())} != {[expected_model]}"
@@ -720,11 +729,32 @@ def runtime_gate(
             f"observed providers {sorted(result.observed_providers())} != "
             f"{[expected_provider]}"
         )
-    if any(row.reasoning_tokens != 0 for row in result.results):
-        problems.append("reasoning_tokens was not exactly zero on every call")
-    if result.calls_without_prompt_usage():
+    successful_models = sum(
+        row.observed_model is not None for row in successful
+    )
+    successful_providers = sum(row.provider is not None for row in successful)
+    if successful_models != len(successful):
         problems.append(
-            f"{result.calls_without_prompt_usage()} calls lacked positive prompt usage"
+            f"{len(successful) - successful_models} successful calls lacked model identity"
+        )
+    if successful_providers != len(successful):
+        problems.append(
+            f"{len(successful) - successful_providers} successful calls lacked provider identity"
+        )
+    if any(
+        row.reasoning_tokens is not None and row.reasoning_tokens != 0
+        for row in result.results
+    ) or any(row.reasoning_tokens is None for row in successful):
+        problems.append(
+            "reasoning_tokens was not exactly zero on every successful response"
+        )
+    successful_without_usage = sum(
+        row.prompt_tokens is None or row.prompt_tokens <= 0
+        for row in successful
+    )
+    if successful_without_usage:
+        problems.append(
+            f"{successful_without_usage} successful calls lacked positive prompt usage"
         )
     if result.split_items():
         problems.append(
