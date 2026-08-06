@@ -28,6 +28,9 @@ boundary is enforced rather than asserted.
 | How to run the tests, and what they prove | [TESTING.md](./TESTING.md) |
 | What changed, and when | [CHANGELOG.md](./CHANGELOG.md) |
 | What is being worked on now, and what is next | [DEVLOG.md](./DEVLOG.md) |
+| Enterprise phase-one/phase-two objectives, gates and workflow | [docs/enterprise-evaluation-framework.md](./docs/enterprise-evaluation-framework.md) |
+| Machine-checkable Experiment 5 preregistration | [experiments/retention-e5.plan.json](./experiments/retention-e5.plan.json) |
+| Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |
 | The arithmetic every expectation comes from | [WORKED-COMPUTATION.md](./tests/fixtures/WORKED-COMPUTATION.md) |
@@ -61,14 +64,14 @@ the same numbers. Any one of them could be wrong; all three being wrong identica
 is not plausible.
 
 ```
-451 passed, 11 skipped   # .venv (pandas 2.3.3, production's pin), standalone
-462 passed, 0 skipped    # same venv, TRUE_SOURCE_ROOT set: the differential runs
+493 passed, 33 skipped   # fresh isolated checkout; historical out/ is intentionally absent
 ```
 
-The 11 skips are the differential test and the pin cross-check against production's
-`requirements.txt`. Both refuse to run without `TRUE_SOURCE_ROOT` rather than pass
-without checking anything, so **a green standalone run does not prove point 3**. Set it
-and rerun before believing the three derivations still agree.
+Eleven skips are the differential/pin checks that require `TRUE_SOURCE_ROOT`; 22 more
+require historical gitignored `out/` run directories and therefore skip in a fresh
+checkout. All refuse visibly rather than pass without their evidence, so **a green
+standalone run does not prove point 3**. Set the source root and report the count your
+environment actually ran.
 
 ## What it cannot prove
 
@@ -148,7 +151,7 @@ src/evalharness/
   manifest.py      blocking vs recorded fields, RECONCILED stamp
   adapters/        per-app parsing. THE ONLY THING THAT CHANGES when real data lands.
 src/evalgen/       the generator half. Calls models on purpose, so the scorer may never import it.
-  cli.py           the only place the pieces are wired together
+  cli.py           the only place the pieces are wired together; includes locked experiment stages
   client.py        the only file in this package that imports `openai`
   request.py       the OpenRouter request body, built in exactly one place
   prompts.py       the retention system prompt, assembled from committed assets
@@ -156,9 +159,10 @@ src/evalgen/       the generator half. Calls models on purpose, so the scorer ma
   outcomes.py      the single place that decides whether a response counts as parsed
   flatten.py       one model payload becomes the rows the scorer merges on. This changes the grain.
   report.py        the per-mechanism verdict table, not a percentage
+  experiments.py   machine plans, provider qualification, reliability and decision gates
   (also config, console, evidence, fabrication, testsets)
 scripts/
-  evalgen.py       the CLI entry point: check | baseline | stability | compare
+  evalgen.py       CLI: check/baseline/stability/compare plus experiment check/budget/qualify/run/report
   run_index.py     regenerates RUNS.md from each run's `run.json` provenance, never its payload
   run_report.py    everything one run directory has to answer for, in one place
   export_xlsx.py   the comparison as a workbook, with its caveats on the first sheet

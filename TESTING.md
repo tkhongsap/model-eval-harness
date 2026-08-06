@@ -9,9 +9,10 @@ python -m venv .venv
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected: **451 passed, 11 skipped**.
+Expected in a fresh checkout: **493 passed, 33 skipped**.
 
-The 11 skips are correct and expected standalone. See "Two modes" below.
+The skips are correct: 11 need production source/pins and 22 integration checks need
+historical gitignored `out/` run directories that a fresh checkout does not contain.
 
 ## Two modes, two different counts
 
@@ -20,8 +21,12 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Expected |
 |---|---|---|
-| **Standalone** | `pytest tests/ -q` | **451 passed, 11 skipped** |
-| **With production source** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | **462 passed, 0 skipped** |
+| **Fresh standalone checkout** | `pytest tests/ -q` | **493 passed, 33 skipped** |
+| **With production source and historical local `out/`** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | environment-dependent; report the observed count |
+
+For the Experiment 5 implementation audit, the focused production differential,
+dependency-pin and boundary selection passed **18/18** with `TRUE_SOURCE_ROOT` set to
+the tracked `production-reference/sentiment-batch-retention-main` tree.
 
 ```bash
 # Windows, pointing at the vendored archive in life-os
@@ -35,12 +40,32 @@ As of 2026-08-05 a reference copy is also tracked in this repo at `production-re
 identically; `tests/production_ref.py`'s own default still resolves to a directory
 *outside* the repo, so standalone `pytest tests/ -q` keeps skipping the differential
 tests unless `TRUE_SOURCE_ROOT` is set explicitly -- that default was left alone
-deliberately rather than widened to auto-discover the in-repo copy, so the documented
-"451 passed, 11 skipped" standalone count stays true for anyone who clones this repo.
+deliberately rather than widened to auto-discover the in-repo copy. Historical-run
+integration tests also skip in a fresh clone because `out/` is deliberately uncommitted.
 
 The skipped tests are the differential check against production's real scorer, and the
 cross-check of our pins against production's `requirements.txt`. **The version pin gate
 itself always runs**, in both modes: it depends on nothing outside this repository.
+
+## Enterprise Experiment 5 — offline gate
+
+```bash
+.venv/Scripts/python scripts/evalgen.py experiment-check
+.venv/Scripts/python scripts/evalgen.py experiment-budget
+.venv/Scripts/python -m pytest tests/test_enterprise_experiments.py -q
+```
+
+The first command validates the plan, asset hashes, fixed slices, prompt registry, call
+budget, reliability threshold and lock requirements. It makes no network call and reads
+no API key. The budget command uses the committed provider-price snapshot and worst-case
+token caps; it also makes no call. The unit suite pins explicit reasoning-off request shape, exact bands,
+provider failure classifications, the 410/414 gate, paired item stability, operational
+accounting, and refusal to run a full arm while the plan is draft.
+
+`qualify` and `experiment-run` are intentionally absent from offline verification: they
+make paid calls. Qualification requires the first approval gate; full/load execution
+requires a locked plan, qualification hashes, exact current plan SHA and the second
+approval gate.
 
 ## Verification Scripts
 

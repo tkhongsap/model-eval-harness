@@ -2,10 +2,27 @@
 
 ## 🔴 Active Task
 
-**Current Focus**: Waiting on real ground-truth data. Nothing in the harness is
-blocked on code -- `src/evalgen/` calls both arms end to end, and Experiments 1, 2 and 3
-are run and written up in `EXPERIMENTS.md`. `RECONCILED: NO` is what stands between
-those numbers and a migration verdict, and no code in this repository can lift it.
+**Current Focus (2026-08-06): Experiment 5 is pre-registered and awaiting the first
+approval gate.** The offline implementation is complete on its isolated branch:
+explicit reasoning-off requests, content-addressed classification/scoring/workload
+provenance, one-attempt experiment reliability, exact discordance-calibrated verdicts,
+provider qualification, locked full/load execution, and structured JSON/Markdown/XLSX
+reporting. `experiments/retention-e5.plan.json` remains `draft`; no Experiment 5 model
+call has been made. Next is team review of provider inventory and bounded qualification
+cost, not an automatic run.
+
+Real production-shaped ground truth is still the decision blocker. `RECONCILED: NO` is
+what stands between synthetic-text results and a migration verdict, and no code in this
+repository can lift it.
+
+**Morph/27B status is now a qualification result, not a code special case.** The team's
+fresh probe repeated HTTP 400 `Multi-turn conversations are not supported`; Alibaba
+repeated its scalar-JSON decoder failure. The Experiment 5 probe sends the unchanged
+two-message request with explicit reasoning off and classifies those outcomes as
+`REQUEST_INCOMPATIBLE` and `SCHEMA_INCOMPATIBLE`. It neither retries a deterministic
+400 nor changes message layout to make Morph pass. If no provider qualifies for 27B
+with reasoning off, that arm is `UNAVAILABLE`; reasoning-enabled CoreWeave is a separate
+diagnostic, not a substitute.
 
 **~~Blocking the Qwen candidate arm (2026-08-05).~~ RESOLVED the same day, before
 Experiment 1 closed.** The arm was never blocked. One endpoint was broken, and the entry
@@ -117,6 +134,15 @@ but the reason some code looks odd):
 
 ## ✅ History
 
+- **2026-08-06**: Experiment 5 enterprise framework pre-registered, with zero model
+  calls. Added v3 dataset and prompt manifests, the machine plan, provider qualification
+  taxonomy, explicit reasoning controls, one-attempt reliability, exact paired verdicts,
+  workload/scoring/classification hashes, locked approval gates, load levels 1/4/8 and
+  quality-first reports. Offline verification in the isolated worktree: 493 passed / 33
+  skipped; 22 skips require deliberately unshared gitignored historical `out/`
+  directories, and 11 are the documented production-source checks. Pointing
+  `TRUE_SOURCE_ROOT` at the tracked production reference made the differential,
+  requirement-pin and boundary selection pass 18/18.
 - **2026-08-05**: Run index. `scripts/run_index.py` generates `RUNS.md` from `out/runs/`,
   a committed index of every run with the provenance needed to cite one: model, provider,
   prompt sha, decoding, outcomes, pin proof, cost. `out/` is gitignored because run

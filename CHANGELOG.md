@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Experiment 5 enterprise evaluation workflow.** A machine-checkable draft plan pins
+  Retention v3, three arms, fixed prompt, explicit reasoning-off regime, three
+  replicates, one attempt, exact paired decision rule, 99% reliability gate, and the
+  fixed concurrency 1/4/8 load slice. `experiment-check`, `qualify`, `experiment-run`
+  and `experiment-report` enforce draft/qualification/lock approval stages;
+  `experiment-budget` calculates the no-network current-inventory cost ceiling.
+- **Provider qualification evidence instead of provider blacklists.** Six-call probes
+  classify request, schema, regime, identity and provenance incompatibility. A repeated
+  Morph 400 and Alibaba scalar JSON have distinct, reviewable outcomes; neither triggers
+  a prompt-layout workaround or schema weakening.
+- **Versioned enterprise assets.** `retention_v3.manifest.json` describes phase-one and
+  robustness slices, while the prompt manifest records prompt version, parent, target
+  models, SHA, decoding regime and the controlled phase-two tuning protocol.
+- **Quality-first experiment reports** in JSON, Markdown and XLSX, with phase-one,
+  phase-two and full paired verdicts, item-level replicate stability, parse reliability,
+  missing-cost counts and concurrency load results.
+- **Exact discordance-calibrated paired verdicts:** `AHEAD`, `BEHIND`,
+  `INDISTINGUISHABLE`, and `UNDERPOWERED`, recomputed per dimension from observed
+  discordant pairs at alpha 1/64 per side.
 - Canon-aligned documentation set: `AGENTS.md`, `CLAUDE.md`, `DEVLOG.md`,
   `TESTING.md`, `CONTRIBUTING.md`, and this changelog.
 - CI workflow running the test suite on push and pull request.
@@ -97,6 +116,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 ### Fixed
+
+- `prompt_token_spread` no longer treats zero-usage failure rows as a second tokenizer;
+  calls with absent or non-positive prompt usage are counted separately.
+- Scoring provenance no longer uses repository HEAD. Classification, scoring and common
+  workload have separate content hashes, so documentation-only commits do not invalidate
+  a paid comparison and scoring changes still do.
+- HTTP status and attempt count survive onto failure rows, making repeatable provider
+  request failures distinguishable from transient transport faults.
 
 - **An arm could be served by two backends with nothing in the log to show it.**
   MEASURED: a 60-call `qwen/qwen3.6-27b` run split across two builds -- one with

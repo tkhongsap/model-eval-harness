@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "library": "enterprise-eval-prompts",
+  "prompts": [
+    {
+      "id": "v9_16_base",
+      "app": "retention",
+      "version": "9.16-harness.1",
+      "parent_id": null,
+      "phase": "phase_one_fixed",
+      "target_models": ["*"],
+      "sha256": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+      "temperature": 0.0,
+      "top_p": 0.0,
+      "reasoning_effort": "none",
+      "change_policy": "Any text or configuration change creates a new prompt version; all phase-one arms use byte-identical text."
+    },
+    {
+      "id": "v9_16_e1",
+      "app": "retention",
+      "version": "9.16-e1-harness.1",
+      "parent_id": "v9_16_base",
+      "phase": "historical_ablation",
+      "target_models": ["*"],
+      "sha256": "143d34c97fbd943cbb4698a2eb9d1095778571860cda98030e94d2a68628d380",
+      "temperature": 0.0,
+      "top_p": 0.0,
+      "reasoning_effort": "provider-default",
+      "change_policy": "The edit list in prompts.py is the change history; it must remain an exact transformation of the parent."
+    }
+  ],
+  "phase_two_protocol": {
+    "status": "protocol only; no model-specific tuning is authorized in Experiment 5",
+    "requirements": [
+      "Create a new prompt id with parent_id and target_models.",
+      "Document every text and decoding change before running it.",
+      "Keep the fixed phase-one prompt result as the untuned baseline.",
+      "Use a development slice for tuning and preserve a locked holdout for comparison.",
+      "Never compare tuned and untuned arms as though prompt identity were held constant."
+    ]
+  }
+}

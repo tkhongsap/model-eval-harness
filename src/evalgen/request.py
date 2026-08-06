@@ -56,7 +56,15 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-__all__ = ["build_request"]
+__all__ = ["REASONING_EFFORTS", "build_request"]
+
+
+# `provider-default` preserves historical requests by omitting the field. Every other
+# value is explicit and therefore belongs in the workload identity. OpenRouter's
+# normalized gateway accepts `none` as the portable spelling for reasoning disabled.
+REASONING_EFFORTS = frozenset(
+    {"provider-default", "none", "minimal", "low", "medium", "high", "max", "xhigh"}
+)
 
 
 def build_request(
@@ -71,6 +79,7 @@ def build_request(
     tool_choice: Any | None = None,
     response_format: Mapping[str, Any] | None = None,
     provider: str | None = None,
+    reasoning_effort: str = "provider-default",
 ) -> dict[str, Any]:
     """The kwargs for one `chat.completions.create` call, as a plain dict.
 
@@ -103,6 +112,12 @@ def build_request(
     so the returned dict is safe to serialise into a dry-run file that claims to
     describe the call that was made.
     """
+    if reasoning_effort not in REASONING_EFFORTS:
+        raise ValueError(
+            f"unknown reasoning effort {reasoning_effort!r}; expected one of "
+            f"{sorted(REASONING_EFFORTS)}"
+        )
+
     request: dict[str, Any] = {
         "model": model,
         "messages": [dict(message) for message in messages],
@@ -142,4 +157,9 @@ def build_request(
             "allow_fallbacks": False,
             "require_parameters": True,
         }
+    if reasoning_effort != "provider-default":
+        # Written inside `extra_body` because the OpenAI SDK does not own OpenRouter's
+        # normalized reasoning extension. `none` is deliberately sent as an effort,
+        # not inferred from an absent field: Qwen 3.6 currently defaults reasoning on.
+        request["extra_body"]["reasoning"] = {"effort": reasoning_effort}
     return request

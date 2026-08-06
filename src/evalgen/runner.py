@@ -168,6 +168,7 @@ class ClientLike(Protocol):
         seed: int | None = None,
         response_format: Mapping[str, Any] | None = None,
         provider: str | None = None,
+        reasoning_effort: str = "provider-default",
     ) -> CompletionLike:
         ...  # pragma: no cover - a shape, never executed
 
@@ -220,6 +221,11 @@ class RunConfig:
     repeats: int = 3
     concurrency: int = 4
     provider: str | None = None
+    reasoning_effort: str = "provider-default"
+    # Historical runs retried failures that provably emitted no generation. Enterprise
+    # experiments set this to one so logical calls and API attempts are identical and
+    # provider reliability is measured rather than recovered invisibly.
+    max_attempts: int = MAX_ATTEMPTS
 
 
 @dataclass(frozen=True)
@@ -279,6 +285,8 @@ class ItemResult:
     reasoning_tokens: int | None
     cost: float | None
     error: str | None
+    http_status: int | None = None
+    attempt_count: int = 1
 
 
 @dataclass(frozen=True)
@@ -359,7 +367,10 @@ class RunResult:
         spread: dict[str, set[int]] = {}
         for item in self.results:
             seen = spread.setdefault(item.item_id, set())
-            if item.prompt_tokens is not None:
+            # A failed OpenRouter row has been observed with prompt_tokens=0. Zero is
+            # not a tokenizer fingerprint for this non-empty request; admitting it
+            # manufactured a false two-tokenizer split beside the real positive count.
+            if item.prompt_tokens is not None and item.prompt_tokens > 0:
                 seen.add(item.prompt_tokens)
         return {name: tuple(sorted(spread[name])) for name in sorted(spread)}
 
@@ -375,6 +386,19 @@ class RunResult:
             for item_id, values in self.prompt_token_spread().items()
             if len(values) > 1
         }
+
+    def calls_without_prompt_usage(self) -> int:
+        """Calls that cannot contribute a tokenizer fingerprint.
+
+        Missing and zero are counted together here but never converted into a fake
+        token value. The count keeps a clean-looking fingerprint honest about how many
+        calls supplied no evidence at all.
+        """
+        return sum(
+            1
+            for item in self.results
+            if item.prompt_tokens is None or item.prompt_tokens <= 0
+        )
 
     def outcome_counts(self) -> dict[str, int]:
         """How many rows landed in each outcome. Sums to `len(results)`, always.
@@ -563,6 +587,7 @@ def _result_from_completion(
     replicate: int,
     completion: CompletionLike,
     required_keys: tuple[str, ...],
+    attempts: int = 1,
 ) -> ItemResult:
     """Turn one response into one row. `parse_ok` comes from `classify` and nowhere else.
 
@@ -602,6 +627,8 @@ def _result_from_completion(
         reasoning_tokens=completion.reasoning_tokens,
         cost=completion.cost,
         error=None,
+        http_status=None,
+        attempt_count=attempts,
     )
 
 
@@ -653,6 +680,8 @@ def _result_from_failure(
         reasoning_tokens=None,
         cost=None,
         error=detail,
+        http_status=_status_code(exc),
+        attempt_count=attempts,
     )
 
 
@@ -690,7 +719,7 @@ def _run_one(
         attempts += 1
         start = time.monotonic()
         try:
-            completion = client.complete(
+            call_kwargs: dict[str, Any] = dict(
                 model=config.model,
                 messages=messages,
                 max_tokens=config.max_tokens,
@@ -700,6 +729,9 @@ def _run_one(
                 response_format=response_format,
                 provider=config.provider,
             )
+            if config.reasoning_effort != "provider-default":
+                call_kwargs["reasoning_effort"] = config.reasoning_effort
+            completion = client.complete(**call_kwargs)
         except _PROGRAMMING_ERRORS:
             raise
         except Exception as exc:  # noqa: BLE001 - any failed request is one outcome
@@ -710,15 +742,15 @@ def _run_one(
             measured = getattr(exc, "latency_s", None)
             latency_s = measured if isinstance(measured, (int, float)) else time.monotonic() - start
 
-            if attempts < MAX_ATTEMPTS and _is_retryable(exc):
+            if attempts < config.max_attempts and _is_retryable(exc):
                 time.sleep(_backoff_delay(attempts))
                 continue
             return _result_from_failure(item, replicate, exc, attempts, float(latency_s))
 
-        if attempts < MAX_ATTEMPTS and _is_abandoned_generation(completion):
+        if attempts < config.max_attempts and _is_abandoned_generation(completion):
             time.sleep(_backoff_delay(attempts))
             continue
-        return _result_from_completion(item, replicate, completion, required_keys)
+        return _result_from_completion(item, replicate, completion, required_keys, attempts)
 
 
 def run(
@@ -762,6 +794,8 @@ def run(
         )
     if config.concurrency < 1:
         raise RunError(f"concurrency={config.concurrency} would start no workers.")
+    if config.max_attempts < 1:
+        raise RunError(f"max_attempts={config.max_attempts} would make no API attempt.")
     if not testset.items:
         raise RunError(
             f"{testset.path} has no items. An empty run scores 0 of 0 on every dimension "
@@ -860,6 +894,7 @@ def write_run_log(result: RunResult, path: Path) -> None:
                 "model_requested": result.config.model,
                 "observed_model": item.observed_model,
                 "provider_requested": result.config.provider,
+                "reasoning_effort": result.config.reasoning_effort,
                 "provider": item.provider,
                 "generation_id": item.generation_id,
                 "prompt_id": result.config.prompt_id,
@@ -874,6 +909,8 @@ def write_run_log(result: RunResult, path: Path) -> None:
                 "finish_reason": item.finish_reason,
                 "repairs": list(item.repairs),
                 "error": item.error,
+                "http_status": item.http_status,
+                "attempt_count": item.attempt_count,
                 "latency_s": item.latency_s,
                 "prompt_tokens": item.prompt_tokens,
                 "completion_tokens": item.completion_tokens,

@@ -758,6 +758,11 @@ contact with per-call cost.
 Both belong to layers `CONTRIBUTING.md:57` calls final. They are written down for
 argument, not patched mid-experiment.
 
+**Addressed before Experiment 5:** zero/non-usage rows no longer enter the tokenizer
+fingerprint, and run provenance now hashes the classification contract, scoring surface
+and common workload separately instead of using repository HEAD. Experiment 4 remains
+unchanged because those fixes were not present when it ran.
+
 ### Verdict
 
 **No. `qwen/qwen3.6-35b-a3b` is not a viable candidate.** It loses to the 27B on all
@@ -803,34 +808,87 @@ True's systems.
 
 ---
 
-## Experiment 5 — *not started*
+## Experiment 5 — enterprise Retention baseline and robustness (PRE-REGISTERED)
 
-Use this template:
+**Pre-registered:** 2026-08-06
 
-```
-## Experiment N — <one-line title>
+**Status:** DRAFT; no Experiment 5 model calls have been made.
 
-**Date:**
-**Question:** <what this experiment decides, phrased so it can come out either way>
+**Machine plan:** `experiments/retention-e5.plan.json` (the CLI prints its current SHA).
+**Question:** Can either Qwen candidate match Gemini on Retention under an explicitly
+non-reasoning, provider-pinned regime, then remain reliable and operationally viable on
+production-robustness cases and under load?
 
-### What was run
-<table: run, model, provider, prompt, result>
-<decoding settings, replicate count, what was held constant>
+### Arms and common workload
 
-### Result
-<what happened, including what did NOT work>
-<the verdict against the pre-registered bands>
-<anything that turned out to be about the harness or the test set rather than a model>
+| Arm | Model | Provider | Reasoning | Prompt |
+|---|---|---|---|---|
+| incumbent | `google/gemini-2.5-flash` | selected only after qualification | explicit `none` | `v9_16_base` |
+| candidate | `qwen/qwen3.6-27b` | selected only after qualification | explicit `none` | `v9_16_base` |
+| candidate | `qwen/qwen3.6-35b-a3b` | selected only after qualification | explicit `none` | `v9_16_base` |
 
-### Recommended next steps
-<ordered, each with what would falsify it>
+Full run: `retention_v3`, 138 items / 150 scored rows, three identical replicates,
+concurrency four, temperature/top-p/seed `0/0/0`, 8,000 maximum tokens, and **one API
+attempt per logical call**. Phase one is the frozen `RET-01..RET-100` prefix; phase two
+is `RET-101..RET-138` (long context, ASR-shaped noise, Thai-English code switching and
+regressions). Primary quality is the full pack; both slices are reported.
 
-### Output files
-<table: what, path>
-<spreadsheet sheet list if one was produced>
-<cost>
-```
+### Qualification before selection
 
-**Before running Experiment 2**, state the prediction: which items should move, in which
-direction, and which must not move. An edit that improves the aggregate by moving items you
-did not predict is indistinguishable from luck at n=20.
+For each current provider candidate, run `RET-01`, `RET-109`, and `RET-138` twice with
+the exact prompt/schema request, fallback disabled and `reasoning.effort=none`. Pass is
+6/6 parsed object-root responses, expected observed model/provider, zero reasoning
+tokens, positive usage and one prompt-token fingerprint per item.
+
+A repeated Morph HTTP 400 is `REQUEST_INCOMPATIBLE`, not a transient retry target. A
+bare scalar from Alibaba is `SCHEMA_INCOMPATIBLE`. Neither is fixed by changing the
+message layout or weakening the schema, because that defines a new workload. If no 27B
+provider qualifies with reasoning disabled, the production-like 27B arm is
+`UNAVAILABLE`; reasoning-enabled CoreWeave may be a separately labelled diagnostic and
+cannot stand in for it.
+
+### Pre-registered decision rule
+
+1. Reliability: at least **410/414** calls must be `parse_ok` (unrounded rate ≥99%).
+2. Quality: call result, reason and product remain separate. On replicate one, compute
+   the exact directional threshold from observed discordant pairs at alpha `1/64` per
+   side. A candidate must not be `BEHIND` in any dimension. `UNDERPOWERED` means
+   `INCONCLUSIVE`, never a tie or a pass.
+3. Stability: pair items by whether their classified payload is identical across all
+   three replicates. Candidate must not be `BEHIND` Gemini.
+4. Operations: only quality-eligible arms are ranked on cost and load. No weighted score
+   trades cheaper calls for a failed quality gate.
+
+Load uses the 12 ids fixed in the machine plan, twice each at concurrency 1, 4 and 8:
+72 calls per arm. Report throughput, p50/p95/p99/max latency, reliability, token usage,
+reported cost and missing-cost calls.
+
+### Approval and budget
+
+- Gate 1: review current provider inventory and maximum bounded probe cost before any
+  qualification call.
+- Gate 2: record qualification artifacts, select providers, add their hashes, lock the
+  plan, rerun offline checks, and review exact projected cost before full/load calls.
+
+Full plus load budget is **1,458 calls** across three arms (1,242 + 216). The 18 eligible
+provider names currently listed add at most 108 qualification calls, for a current
+maximum of **1,566**. At prices checked 2026-08-06, the deliberately conservative
+qualification ceiling is **$3.47** (twice the UTF-8 content bytes for input and every
+call spending all 8,000 output tokens). Refreshing inventory or price changes that
+maximum and requires draft review.
+
+The same deliberately extreme bound over qualification plus all full/load calls is
+**$68.04** at the snapshot: Gemini $28.32, 27B $26.02, 35B-A3B $10.23, qualification
+$3.47. `evalgen experiment-budget` recalculates it from the plan. This is not expected
+spend; it is the conservative planning ceiling under recorded prices and token caps.
+
+### What would change the decision
+
+- A candidate that qualifies, clears 410/414, is not `BEHIND` on any quality dimension
+  or stability, and has preferable operational trade-offs becomes the recommended
+  Retention candidate for production-shaped validation.
+- A `BEHIND` or reliability result rejects that candidate under this workload.
+- An underpowered primary dimension produces no migration recommendation until a more
+  informative labelled pack or production-shaped truth resolves it.
+- No synthetic-text outcome overrides `RECONCILED: NO`; live-report reconciliation and
+  the production audio gap remain decision blockers.

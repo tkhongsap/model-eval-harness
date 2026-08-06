@@ -60,8 +60,9 @@ import argparse
 import json
 import statistics
 import sys
+import time
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -70,10 +71,26 @@ from evalgen.console import configure_stdout
 from evalgen.config import ENV_FILES, find_api_key, load_env_file
 from evalgen.decoding import decoding_schema
 from evalgen.flatten import named_no_product, to_rows
+from evalgen.experiments import (
+    PlanError,
+    arm_by_id,
+    canonical_sha,
+    decision as experiment_decision,
+    load_plan,
+    logical_call_budget,
+    operational_summary,
+    projected_execution_budget,
+    qualification as assess_qualification,
+    qualification_contract_sha,
+    runtime_gate,
+    stability_disagreement,
+    validate_plan,
+)
 from evalgen.prompts import Prompt, PromptError
 from evalgen.prompts import get as get_prompt
+from evalgen.prompts import validate_manifest as validate_prompt_manifest
 from evalgen.report import ArmSummary, ReportError, mechanism_table, n_flip, render
-from evalgen.request import build_request
+from evalgen.request import REASONING_EFFORTS, build_request
 from evalgen.runner import (
     ItemResult,
     RunConfig,
@@ -96,6 +113,7 @@ from evalharness.compare import (
     CoverageMismatch,
     check_coverage,
     disagreement,
+    paired_verdict,
     regressions,
 )
 from evalharness.keys import hmac_key
@@ -131,6 +149,7 @@ REPO_ROOT = PACKAGE_DIR.parent.parent
 DEFAULT_TESTSET = REPO_ROOT / "tests" / "fixtures" / "testsets" / "retention_v1.jsonl"
 DEFAULT_GT = REPO_ROOT / "tests" / "fixtures" / "testsets" / "retention_v1.gt.csv"
 SCHEMA_PATH = PACKAGE_DIR / "schemas" / "retention.json"
+DEFAULT_EXPERIMENT_PLAN = REPO_ROOT / "experiments" / "retention-e5.plan.json"
 
 # `out/` is ignored by .gitignore as a directory, which is the second line of defence
 # described in that file's header. Run artifacts carry model output verbatim, so they
@@ -404,6 +423,8 @@ def _item_result_from_log(row: dict[str, Any]) -> ItemResult:
         reasoning_tokens=row["reasoning_tokens"],
         cost=row["cost"],
         error=row["error"],
+        http_status=row.get("http_status"),
+        attempt_count=row.get("attempt_count", 1),
     )
 
 
@@ -461,6 +482,10 @@ def load_run(path: Path) -> LoadedRun:
             repeats=meta["repeats"],
             concurrency=meta["concurrency"],
             provider=meta.get("provider_requested"),
+            reasoning_effort=meta.get("decoding", {}).get(
+                "reasoning_effort", meta.get("reasoning_effort", "provider-default")
+            ),
+            max_attempts=meta.get("max_attempts", 3),
         )
         result = RunResult(
             config=config,
@@ -810,6 +835,7 @@ class _DryRunClient:
         seed: int | None = None,
         response_format: dict[str, Any] | None = None,
         provider: str | None = None,
+        reasoning_effort: str = "provider-default",
     ) -> _NoCall:
         item = self._by_transcript[messages[1]["content"]]
         self.requests.append(
@@ -825,6 +851,7 @@ class _DryRunClient:
                     seed=seed,
                     response_format=response_format,
                     provider=provider,
+                    reasoning_effort=reasoning_effort,
                 ),
             }
         )
@@ -1005,6 +1032,8 @@ def _execute_run(
         repeats=args.repeats,
         concurrency=args.concurrency,
         provider=args.provider,
+        reasoning_effort=args.reasoning_effort,
+        max_attempts=args.max_attempts,
     )
 
     print(f"arm          {config.arm}")
@@ -1024,7 +1053,8 @@ def _execute_run(
     print(f"  sha        {prompt.sha}")
     print(
         f"decoding     temperature={config.temperature} top_p={config.top_p} "
-        f"seed={config.seed} max_tokens={config.max_tokens}"
+        f"seed={config.seed} max_tokens={config.max_tokens} "
+        f"reasoning={config.reasoning_effort}"
     )
     print(f"repeats      {config.repeats}   concurrency {config.concurrency}")
     print(f"out          {directory}")
@@ -1049,6 +1079,7 @@ def _execute_run(
             f"{row.outcome:<16} {row.latency_s:6.2f}s"
         )
 
+    started = time.perf_counter()
     try:
         result = run(
             testset,
@@ -1060,8 +1091,28 @@ def _execute_run(
         )
     except RunError as exc:
         raise CliError(str(exc)) from exc
+    wall_time_s = time.perf_counter() - started
 
     write_run_log(result, directory / "run.jsonl")
+    gt_sha = manifest_mod.file_hash(gt_path)
+    schema_sha = manifest_mod.file_hash(SCHEMA_PATH)
+    workload_contract = {
+        "app": args.app,
+        "testset_sha": result.testset_sha,
+        "gt_sha": gt_sha,
+        "prompt_sha": prompt.sha,
+        "schema_sha": schema_sha,
+        "temperature": config.temperature,
+        "top_p": config.top_p,
+        "seed": config.seed,
+        "max_tokens": config.max_tokens,
+        "reasoning_effort": config.reasoning_effort,
+        "repeats": config.repeats,
+        "max_attempts": config.max_attempts,
+    }
+    experiment_plan_sha = getattr(args, "experiment_plan_sha", None)
+    if experiment_plan_sha:
+        workload_contract["experiment_plan_sha"] = experiment_plan_sha
     meta = {
         "run_id": directory.name,
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -1078,14 +1129,27 @@ def _execute_run(
         "testset_path": str(testset.path.resolve()),
         "testset_sha": result.testset_sha,
         "gt_path": str(Path(gt_path).resolve()),
-        "gt_sha": manifest_mod.file_hash(gt_path),
-        "scorer_sha": manifest_mod.scorer_sha(),
+        "gt_sha": gt_sha,
+        # New runs separate the code that classified responses from the code that
+        # scores them. `scorer_sha` remains as a compatibility alias for readers of
+        # historical run.json files.
+        "outcome_contract_sha": manifest_mod.outcome_contract_sha(),
+        "scoring_code_sha": manifest_mod.scoring_code_sha(),
+        "scorer_sha": manifest_mod.scoring_code_sha(),
+        "schema_sha": schema_sha,
+        "workload_contract": workload_contract,
+        "workload_sha": manifest_mod.workload_sha(workload_contract),
+        "experiment_plan_sha": experiment_plan_sha,
+        "experiment_mode": getattr(args, "experiment_mode", None),
+        "qualification_sha": getattr(args, "qualification_sha", None),
         "decoding": {
             "temperature": config.temperature,
             "top_p": config.top_p,
             "seed": config.seed,
             "max_tokens": config.max_tokens,
+            "reasoning_effort": config.reasoning_effort,
         },
+        "max_attempts": config.max_attempts,
         "repeats": config.repeats,
         "concurrency": config.concurrency,
         "items": len(testset.items),
@@ -1098,6 +1162,9 @@ def _execute_run(
         # kept in full beside it so the claim can be checked rather than believed.
         "prompt_token_spread": {k: list(v) for k, v in result.prompt_token_spread().items()},
         "split_items": {k: list(v) for k, v in result.split_items().items()},
+        "calls_without_prompt_usage": result.calls_without_prompt_usage(),
+        "wall_time_s": wall_time_s,
+        "throughput_calls_per_s": len(result.results) / wall_time_s,
         "truncated_rate": result.truncated_rate(),
         # A LOWER BOUND, not a total: OpenRouter reports usage.cost only for providers
         # that supply it, and a missing value stays None rather than becoming zero.
@@ -1287,6 +1354,687 @@ def cmd_stability(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+# =========================================================== enterprise experiment
+
+
+def _checked_plan(path: Path) -> tuple[dict[str, Any], str]:
+    """Load and validate a plan against the current checkout, returning its SHA."""
+    try:
+        plan = load_plan(path)
+        problems = validate_plan(plan, root=REPO_ROOT)
+    except PlanError as exc:
+        raise CliError(str(exc)) from exc
+    if problems:
+        raise CliError(
+            f"{path} has {len(problems)} problem(s); first: {problems[0]}. "
+            "Run `evalgen experiment-check --plan ...` for the complete list."
+        )
+    return plan, canonical_sha(plan)
+
+
+def cmd_experiment_check(args: argparse.Namespace) -> int:
+    """Validate the preregistration, assets and prompt registry without a key."""
+    path = Path(args.plan)
+    try:
+        plan = load_plan(path)
+        problems = validate_plan(plan, root=REPO_ROOT)
+    except PlanError as exc:
+        print(f"1 PROBLEM:\n  - {exc}")
+        return EXIT_PROBLEMS
+    problems.extend(validate_prompt_manifest())
+    print(f"experiment   {plan.get('experiment_id', '<missing>')}")
+    print(f"status       {plan.get('status', '<missing>')}")
+    print(f"plan sha     {canonical_sha(plan)}")
+    try:
+        budget = logical_call_budget(plan)
+    except (KeyError, TypeError, ValueError) as exc:
+        problems.append(f"cannot compute call budget: {exc}")
+    else:
+        print(
+            f"call budget  qualification<={budget['qualification_max']} "
+            f"full={budget['full']} load={budget['load']} total<="
+            f"{budget['grand_total_max']} for current inventory"
+        )
+    if problems:
+        print(f"\n{len(problems)} PROBLEM(S):")
+        for problem in problems:
+            print(f"  - {problem}")
+        return EXIT_PROBLEMS
+    print("\nOK. The plan and its committed assets are internally consistent.")
+    print("No model call was made; provider availability has not been asserted.")
+    return EXIT_OK
+
+
+def cmd_experiment_budget(args: argparse.Namespace) -> int:
+    """Print the current no-network approval ceiling from snapshotted prices."""
+    plan, plan_sha = _checked_plan(Path(args.plan))
+    try:
+        budget = projected_execution_budget(plan, root=REPO_ROOT)
+    except (KeyError, TypeError, ValueError, OSError, PlanError) as exc:
+        raise CliError(f"cannot calculate experiment budget: {exc}") from exc
+    print(f"experiment   {plan['experiment_id']}")
+    print(f"plan sha     {plan_sha}")
+    print(f"prices       snapshot {budget['price_snapshot_utc']}")
+    print("\nfull + load ceiling (every call spends all 8,000 output tokens):")
+    for arm_id, facts in budget["arms"].items():
+        if facts["availability"] == "UNAVAILABLE":
+            print(f"  {arm_id:<22} UNAVAILABLE  $0.00")
+            continue
+        print(
+            f"  {arm_id:<22} ${facts['maximum_usd']:.2f}  "
+            f"{facts['provider']} ({facts['provider_selection']})"
+        )
+    print(f"  {'full + load':<22} ${budget['full_load_maximum_usd']:.2f}")
+    print(f"  {'qualification':<22} ${budget['qualification_maximum_usd']:.2f}")
+    print(f"  {'grand maximum':<22} ${budget['grand_maximum_usd']:.2f}")
+    print(
+        "\nThis is a conservative approval ceiling, not likely spend. Refresh inventory "
+        "and prices before approval; a change amends the plan and its SHA."
+    )
+    return EXIT_OK
+
+
+def _plan_asset(plan: Mapping[str, Any], name: str) -> Path:
+    return REPO_ROOT / str(plan["assets"][name]["path"])
+
+
+def _planned_args(
+    source: argparse.Namespace,
+    *,
+    plan: Mapping[str, Any],
+    plan_sha: str,
+    arm: Mapping[str, Any],
+    provider: str,
+    repeats: int,
+    concurrency: int,
+    max_attempts: int,
+    reasoning_effort: str,
+    mode: str,
+    qualification_sha: str | None = None,
+) -> argparse.Namespace:
+    workload = plan["workload"]
+    return argparse.Namespace(
+        model=arm["model"],
+        arm=arm["id"],
+        app=plan["app"],
+        prompt_id=plan["assets"]["prompt"]["id"],
+        provider=provider,
+        repeats=repeats,
+        concurrency=concurrency,
+        timeout=source.timeout,
+        temperature=workload["temperature"],
+        top_p=workload["top_p"],
+        seed=workload["seed"],
+        max_tokens=workload["max_tokens"],
+        reasoning_effort=reasoning_effort,
+        max_attempts=max_attempts,
+        dry_run=source.dry_run,
+        experiment_plan_sha=plan_sha,
+        experiment_mode=mode,
+        qualification_sha=qualification_sha,
+    )
+
+
+def cmd_qualify(args: argparse.Namespace) -> int:
+    """Run one bounded, pinned provider qualification probe (six logical calls)."""
+    plan, plan_sha = _checked_plan(Path(args.plan))
+    if plan.get("status") == "locked":
+        raise CliError(
+            "the plan is locked. Additional provider evidence requires returning it "
+            "to draft/qualified status and a new review, not changing the approved arm."
+        )
+    try:
+        arm = arm_by_id(plan, args.arm)
+    except PlanError as exc:
+        raise CliError(str(exc)) from exc
+    candidates = arm.get("provider_candidates", [])
+    if args.provider not in candidates:
+        raise CliError(
+            f"provider {args.provider!r} is not preregistered for {args.arm}; "
+            f"candidates are {candidates}. Refresh the inventory and amend the draft "
+            "plan before probing a newly listed endpoint."
+        )
+    qualification_plan = plan["qualification"]
+    full = _load_testset(_plan_asset(plan, "testset"), app=plan["app"])
+    directory = new_run_dir(Path(args.out), f"qual-{args.arm}-{args.provider}")
+    testset = _subset_testset(full, qualification_plan["item_ids"], directory)
+    run_args = _planned_args(
+        args,
+        plan=plan,
+        plan_sha=plan_sha,
+        arm=arm,
+        provider=args.provider,
+        repeats=qualification_plan["replicates"],
+        concurrency=1,
+        max_attempts=qualification_plan["max_attempts"],
+        reasoning_effort=qualification_plan["reasoning_effort"],
+        mode="qualification",
+    )
+    code, loaded = _execute_run(
+        run_args,
+        testset=testset,
+        gt_path=_plan_asset(plan, "ground_truth"),
+        directory=directory,
+    )
+    if code != EXIT_OK or loaded is None:
+        return code
+    result = assess_qualification(
+        loaded.result,
+        expected_model=str(arm["model"]),
+        expected_provider=args.provider,
+    )
+    artifact = {
+        "schema_version": 1,
+        "experiment_id": plan["experiment_id"],
+        "plan_sha": plan_sha,
+        "arm": args.arm,
+        "model": arm["model"],
+        "provider": args.provider,
+        "qualification_contract_sha": qualification_contract_sha(
+            plan, arm_id=args.arm, provider=args.provider
+        ),
+        "run_id": directory.name,
+        "qualification": result.to_dict(),
+    }
+    artifact["qualification_sha"] = canonical_sha(artifact)
+    target = directory / "qualification.json"
+    target.write_text(
+        json.dumps(artifact, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    print(f"\nqualification  {result.status}")
+    for reason in result.reasons:
+        print(f"  - {reason}")
+    print(f"qualification sha  {artifact['qualification_sha']}")
+    print(f"wrote {target}")
+    return EXIT_OK if result.passed else EXIT_PROBLEMS
+
+
+def cmd_experiment_run(args: argparse.Namespace) -> int:
+    """Execute one locked full or load arm; never infer provider selection."""
+    plan, plan_sha = _checked_plan(Path(args.plan))
+    if plan.get("status") != "locked":
+        raise CliError(
+            f"plan status is {plan.get('status')!r}, not 'locked'. Qualification does "
+            "not authorize the full run; record selected providers and qualification "
+            "hashes, review cost, then lock the plan."
+        )
+    if args.confirm_plan_sha != plan_sha:
+        raise CliError(
+            f"--confirm-plan-sha is {args.confirm_plan_sha!r}, but the current plan is "
+            f"{plan_sha}. Review the changed plan rather than executing an old approval."
+        )
+    try:
+        arm = arm_by_id(plan, args.arm)
+    except PlanError as exc:
+        raise CliError(str(exc)) from exc
+    if arm.get("availability") == "UNAVAILABLE":
+        raise CliError(
+            f"{args.arm} is locked as UNAVAILABLE in the production-like regime; "
+            "there is deliberately no provider to run."
+        )
+    provider = str(arm["selected_provider"])
+    qualification_sha = str(arm["qualification_sha"])
+    full = _load_testset(_plan_asset(plan, "testset"), app=plan["app"])
+    workload = plan["workload"]
+    if args.mode == "full":
+        testset = full
+        repeats = workload["replicates"]
+        concurrency = workload["concurrency"]
+        max_attempts = workload["max_attempts"]
+        directory = new_run_dir(Path(args.out), f"e5-full-{args.arm}")
+    else:
+        allowed = plan["operations"]["concurrency_levels"]
+        if args.concurrency_level not in allowed:
+            raise CliError(
+                f"load concurrency must be one of {allowed}, found "
+                f"{args.concurrency_level!r}"
+            )
+        concurrency = args.concurrency_level
+        repeats = plan["operations"]["replicates_per_level"]
+        max_attempts = plan["operations"]["max_attempts"]
+        directory = new_run_dir(
+            Path(args.out), f"e5-load-c{concurrency}-{args.arm}"
+        )
+        testset = _subset_testset(full, plan["operations"]["item_ids"], directory)
+    run_args = _planned_args(
+        args,
+        plan=plan,
+        plan_sha=plan_sha,
+        arm=arm,
+        provider=provider,
+        repeats=repeats,
+        concurrency=concurrency,
+        max_attempts=max_attempts,
+        reasoning_effort=workload["reasoning_effort"],
+        mode=args.mode,
+        qualification_sha=qualification_sha,
+    )
+    code, _ = _execute_run(
+        run_args,
+        testset=testset,
+        gt_path=_plan_asset(plan, "ground_truth"),
+        directory=directory,
+    )
+    return code
+
+
+def _parse_run_assignments(values: Sequence[str], *, separator: str = "=") -> dict[str, Path]:
+    parsed: dict[str, Path] = {}
+    for value in values:
+        if separator not in value:
+            raise CliError(f"run assignment must be NAME{separator}PATH, found {value!r}")
+        name, raw_path = value.split(separator, 1)
+        if not name or name in parsed:
+            raise CliError(f"run assignment has blank or duplicate name: {value!r}")
+        parsed[name] = Path(raw_path)
+    return parsed
+
+
+def _slice_disagreements(
+    gt: Sequence[Record],
+    incumbent: Sequence[Record],
+    candidate: Sequence[Record],
+    *,
+    call_ids: set[str],
+) -> list[dict[str, Any]]:
+    scoped_gt = [row for row in gt if row.call_id in call_ids]
+    scoped_inc = [row for row in incumbent if row.call_id in call_ids]
+    scoped_cand = [row for row in candidate if row.call_id in call_ids]
+    return [
+        asdict(paired_verdict(disagreement(scoped_gt, scoped_inc, scoped_cand, name)))
+        for name in ("call_result", "reason", "product")
+    ]
+
+
+def cmd_experiment_report(args: argparse.Namespace) -> int:
+    """Assemble machine-readable and Markdown quality-first experiment reports."""
+    plan, plan_sha = _checked_plan(Path(args.plan))
+    if plan.get("status") != "locked":
+        raise CliError("experiment-report requires the same locked plan that ran the arms")
+    assignments = _parse_run_assignments(args.run)
+    expected_arms = {
+        arm["id"] for arm in plan["arms"] if arm.get("availability") == "QUALIFIED"
+    }
+    if set(assignments) != expected_arms:
+        raise CliError(
+            f"full run assignments must equal qualified arms; expected "
+            f"{sorted(expected_arms)}, found {sorted(assignments)}"
+        )
+    incumbent_id = next(
+        arm["id"] for arm in plan["arms"] if arm.get("role") == "incumbent"
+    )
+    if incumbent_id not in assignments:
+        raise CliError(f"--run must include incumbent assignment {incumbent_id}=PATH")
+    loaded = {name: load_run(path) for name, path in assignments.items()}
+    load_assignments = _parse_run_assignments(args.load_run)
+    for name, run_data in loaded.items():
+        if run_data.meta.get("experiment_plan_sha") != plan_sha:
+            raise CliError(
+                f"{name} records plan {run_data.meta.get('experiment_plan_sha')!r}, "
+                f"not current {plan_sha}"
+            )
+        if run_data.meta.get("experiment_mode") != "full":
+            raise CliError(f"{name} is not an Experiment 5 full run")
+    allowed_levels = set(plan["operations"]["concurrency_levels"])
+    expected_load_names = {
+        f"{arm_id}@{level}" for arm_id in assignments for level in allowed_levels
+    }
+    if set(load_assignments) != expected_load_names:
+        missing = sorted(expected_load_names - set(load_assignments))
+        extra = sorted(set(load_assignments) - expected_load_names)
+        raise CliError(
+            "load report requires every full arm at every preregistered concurrency; "
+            f"missing={missing}, extra={extra}"
+        )
+    loaded_load = {name: load_run(path) for name, path in load_assignments.items()}
+    for name, run_data in loaded_load.items():
+        arm_id, raw_level = name.rsplit("@", 1)
+        level = int(raw_level)
+        if run_data.meta.get("experiment_plan_sha") != plan_sha:
+            raise CliError(f"load run {name} records a different experiment plan")
+        if run_data.meta.get("experiment_mode") != "load":
+            raise CliError(f"{name} is not an Experiment 5 load run")
+        if run_data.arm != arm_id or run_data.result.config.concurrency != level:
+            raise CliError(
+                f"{name} identity does not match its run: arm={run_data.arm}, "
+                f"concurrency={run_data.result.config.concurrency}"
+            )
+    incumbent = loaded[incumbent_id]
+    gt = _load_gt(_plan_asset(plan, "ground_truth"))
+    testset = _load_testset(_plan_asset(plan, "testset"), app=plan["app"])
+    per_rep = {
+        name: replicate_records(run_data.result, testset.items)
+        for name, run_data in loaded.items()
+    }
+    item_call = {item.item_id: item.call_id for item in testset.items}
+    planned_arms = {arm["id"]: arm for arm in plan["arms"]}
+    runtime_problems = {
+        name: runtime_gate(
+            run_data.result,
+            expected_model=str(planned_arms[name]["model"]),
+            expected_provider=str(planned_arms[name]["selected_provider"]),
+        )
+        for name, run_data in loaded.items()
+    }
+    arm_facts = {
+        name: {
+            **operational_summary(run_data.result),
+            "wall_time_s": run_data.meta.get("wall_time_s"),
+            "throughput_calls_per_s": run_data.meta.get("throughput_calls_per_s"),
+            "runtime_gate_problems": runtime_problems[name],
+        }
+        for name, run_data in loaded.items()
+    }
+    load_facts: dict[str, dict[str, Any]] = {name: {} for name in assignments}
+    for assignment, run_data in loaded_load.items():
+        arm_id, level = assignment.rsplit("@", 1)
+        load_facts[arm_id][level] = {
+            **operational_summary(run_data.result),
+            "wall_time_s": run_data.meta.get("wall_time_s"),
+            "throughput_calls_per_s": run_data.meta.get("throughput_calls_per_s"),
+        }
+    summary: dict[str, Any] = {
+        "schema_version": 1,
+        "experiment_id": plan["experiment_id"],
+        "plan_sha": plan_sha,
+        "reconciled": False,
+        "unavailable_arms": [
+            arm["id"] for arm in plan["arms"] if arm.get("availability") == "UNAVAILABLE"
+        ],
+        "arms": arm_facts,
+        "load": load_facts,
+        "comparisons": {},
+    }
+    try:
+        regression_key = hmac_key()
+    except RuntimeError as exc:
+        raise CliError(
+            f"{exc} Experiment reports retain hashed item-level regressions; refusing "
+            "to replace that deliverable with an empty list."
+        ) from exc
+    incumbent_ok = sum(row.outcome == "ok" for row in incumbent.result.results)
+    for name, candidate in loaded.items():
+        if name == incumbent_id:
+            continue
+        _refuse_incomparable(incumbent, candidate)
+        slices: dict[str, Any] = {}
+        for slice_name, slice_plan in plan["slices"].items():
+            call_ids = {item_call[item_id] for item_id in slice_plan["item_ids"]}
+            slices[slice_name] = _slice_disagreements(
+                gt,
+                per_rep[incumbent_id][0],
+                per_rep[name][0],
+                call_ids=call_ids,
+            )
+        stability = paired_verdict(
+            stability_disagreement(incumbent.result, candidate.result)
+        )
+        quality = [
+            paired_verdict(
+                disagreement(
+                    gt,
+                    per_rep[incumbent_id][0],
+                    per_rep[name][0],
+                    dimension,
+                )
+            )
+            for dimension in ("call_result", "reason", "product")
+        ]
+        ok = sum(row.outcome == "ok" for row in candidate.result.results)
+        verdict = experiment_decision(
+            qualification_status="QUALIFIED",
+            parse_ok=ok,
+            total=len(candidate.result.results),
+            quality_verdicts=quality,
+            stability_verdict=stability,
+            runtime_problems=runtime_problems[name],
+            reference_parse_ok=incumbent_ok,
+            reference_total=len(incumbent.result.results),
+            reference_runtime_problems=runtime_problems[incumbent_id],
+        )
+        regression_rows = [
+            row
+            for dimension in ("call_result", "reason", "product")
+            for row in regressions(
+                gt,
+                per_rep[incumbent_id][0],
+                per_rep[name][0],
+                dimension,
+                regression_key,
+            )
+        ]
+        summary["comparisons"][name] = {
+            "incumbent": incumbent_id,
+            "slices": slices,
+            "stability": asdict(stability),
+            "decision": asdict(verdict),
+            "regressions": [asdict(row) for row in regression_rows],
+        }
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, facts in summary["arms"].items():
+        (out / f"arm-{name}.json").write_text(
+            json.dumps(facts, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        (out / f"arm-{name}.md").write_text(
+            "\n".join([
+                f"# {name}",
+                "",
+                "**RECONCILED: NO.**",
+                "",
+                f"Parse valid: {facts['parse_ok']}/{facts['calls']} "
+                f"({facts['parse_valid_rate']:.3%})",
+                f"Latency p50/p95/p99/max: {facts['latency_s']['p50']:.3f}s / "
+                f"{facts['latency_s']['p95']:.3f}s / {facts['latency_s']['p99']:.3f}s / "
+                f"{facts['latency_s']['max']:.3f}s",
+                f"Cost lower bound: ${facts['cost_usd']['lower_bound']:.6f}; "
+                f"missing on {facts['cost_usd']['calls_missing']} calls.",
+                "Runtime gate: " + (
+                    "PASS" if not facts["runtime_gate_problems"]
+                    else "; ".join(facts["runtime_gate_problems"])
+                ),
+                "",
+            ]),
+            encoding="utf-8",
+            newline="\n",
+        )
+    for name, facts in summary["comparisons"].items():
+        (out / f"comparison-{incumbent_id}-vs-{name}.json").write_text(
+            json.dumps(facts, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        comparison_lines = [
+            f"# {incumbent_id} vs {name}",
+            "",
+            "**RECONCILED: NO.**",
+            "",
+            f"Decision: **{facts['decision']['status']}** — "
+            + "; ".join(facts["decision"]["reasons"]),
+            "",
+            "| Slice | Dimension | d | Net | Band | Verdict |",
+            "|---|---|---:|---:|---:|---|",
+        ]
+        for slice_name, rows in facts["slices"].items():
+            for row in rows:
+                comparison_lines.append(
+                    f"| {slice_name} | {row['dimension']} | {row['discordant']} | "
+                    f"{row['net']:+d} | {row['band'] if row['band'] is not None else '—'} | "
+                    f"{row['verdict']} |"
+                )
+        comparison_lines += [
+            "",
+            f"Item-level regressions: {len(facts['regressions'])}. See the paired JSON "
+            "artifact for every hashed regression row.",
+            "",
+        ]
+        (out / f"comparison-{incumbent_id}-vs-{name}.md").write_text(
+            "\n".join(comparison_lines), encoding="utf-8", newline="\n"
+        )
+    json_path = out / "summary.json"
+    json_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    lines = [
+        "# Experiment 5 summary",
+        "",
+        "**RECONCILED: NO. This is harness output, not a migration verdict.**",
+        "",
+        f"Plan: `{plan_sha}`",
+        "",
+        "| Arm | Parse valid | p50 latency | p95 latency | Cost lower bound |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for name, facts in summary["arms"].items():
+        latency = facts["latency_s"]
+        lines.append(
+            f"| {name} | {facts['parse_ok']}/{facts['calls']} | "
+            f"{latency['p50']:.3f}s | {latency['p95']:.3f}s | "
+            f"${facts['cost_usd']['lower_bound']:.6f} |"
+        )
+    for name, comparison in summary["comparisons"].items():
+        lines += [
+            "",
+            f"## {name} vs {incumbent_id}",
+            "",
+            f"Decision: **{comparison['decision']['status']}** — "
+            + "; ".join(comparison["decision"]["reasons"]),
+            "",
+            "| Slice | Dimension | d | Net | Band | Verdict |",
+            "|---|---|---:|---:|---:|---|",
+        ]
+        for slice_name, rows in comparison["slices"].items():
+            for row in rows:
+                lines.append(
+                    f"| {slice_name} | {row['dimension']} | {row['discordant']} | "
+                    f"{row['net']:+d} | {row['band'] if row['band'] is not None else '—'} | "
+                    f"{row['verdict']} |"
+                )
+        lines += [
+            "",
+            f"Item-level regressions: {len(comparison['regressions'])}",
+            "",
+        ]
+        if comparison["regressions"]:
+            lines += [
+                "| Item key | Dimension | Ground truth | Incumbent | Candidate | Error |",
+                "|---|---|---|---|---|---|",
+            ]
+            for row in comparison["regressions"]:
+                lines.append(
+                    f"| {row['item_key']} | {row['dimension']} | {row['gt_label']} | "
+                    f"{row['incumbent_label']} | {row['candidate_label']} | "
+                    f"{row['error_type']} |"
+                )
+    lines += [
+        "",
+        "## Load",
+        "",
+        "| Arm | Concurrency | Parse valid | Calls/s | p50 | p95 | p99 |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for name, levels in summary["load"].items():
+        for level in sorted(levels, key=int):
+            facts = levels[level]
+            latency = facts["latency_s"]
+            throughput = facts["throughput_calls_per_s"]
+            lines.append(
+                f"| {name} | {level} | {facts['parse_ok']}/{facts['calls']} | "
+                f"{throughput:.3f} | {latency['p50']:.3f}s | "
+                f"{latency['p95']:.3f}s | {latency['p99']:.3f}s |"
+            )
+    md_path = out / "summary.md"
+    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    xlsx_path = out / "summary.xlsx"
+    _write_experiment_xlsx(summary, xlsx_path)
+    print(f"wrote {json_path}, {md_path}, and {xlsx_path}")
+    return EXIT_OK
+
+
+def _write_experiment_xlsx(summary: Mapping[str, Any], path: Path) -> None:
+    """Write a compact workbook; import openpyxl only on the reporting path."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font
+    except ImportError as exc:  # pragma: no cover - generation environment defect
+        raise CliError(
+            "experiment-report requires the root pinned openpyxl dependency"
+        ) from exc
+
+    workbook = Workbook()
+    overview = workbook.active
+    overview.title = "Overview"
+    overview.append(["RECONCILED", "NO"])
+    overview.append(["Experiment", summary["experiment_id"]])
+    overview.append(["Plan SHA", summary["plan_sha"]])
+    overview.append([])
+    overview.append([
+        "Arm", "Parse valid", "Calls", "Rate", "p50 s", "p95 s",
+        "Cost lower bound", "Missing cost",
+    ])
+    for name, facts in summary["arms"].items():
+        overview.append([
+            name, facts["parse_ok"], facts["calls"], facts["parse_valid_rate"],
+            facts["latency_s"]["p50"], facts["latency_s"]["p95"],
+            facts["cost_usd"]["lower_bound"], facts["cost_usd"]["calls_missing"],
+        ])
+
+    quality = workbook.create_sheet("Quality")
+    quality.append([
+        "Candidate", "Slice", "Dimension", "Discordant", "Net", "Band",
+        "Verdict", "Decision",
+    ])
+    for candidate, comparison in summary["comparisons"].items():
+        for slice_name, rows in comparison["slices"].items():
+            for row in rows:
+                quality.append([
+                    candidate, slice_name, row["dimension"], row["discordant"],
+                    row["net"], row["band"], row["verdict"],
+                    comparison["decision"]["status"],
+                ])
+
+    regression_sheet = workbook.create_sheet("Regressions")
+    regression_sheet.append([
+        "Candidate", "Item key", "Dimension", "Ground truth", "Incumbent",
+        "Candidate output", "Error type",
+    ])
+    for candidate, comparison in summary["comparisons"].items():
+        for row in comparison["regressions"]:
+            regression_sheet.append([
+                candidate, row["item_key"], row["dimension"], row["gt_label"],
+                row["incumbent_label"], row["candidate_label"], row["error_type"],
+            ])
+
+    load_sheet = workbook.create_sheet("Load")
+    load_sheet.append([
+        "Arm", "Concurrency", "Parse valid", "Calls", "Calls/s", "p50 s",
+        "p95 s", "p99 s", "Max s", "Cost lower bound", "Missing cost",
+    ])
+    for name, levels in summary["load"].items():
+        for level in sorted(levels, key=int):
+            facts = levels[level]
+            load_sheet.append([
+                name, int(level), facts["parse_ok"], facts["calls"],
+                facts["throughput_calls_per_s"], facts["latency_s"]["p50"],
+                facts["latency_s"]["p95"], facts["latency_s"]["p99"],
+                facts["latency_s"]["max"], facts["cost_usd"]["lower_bound"],
+                facts["cost_usd"]["calls_missing"],
+            ])
+    for sheet in workbook.worksheets:
+        for cell in sheet[1]:
+            cell.font = Font(bold=True)
+        sheet.freeze_panes = "A2"
+        sheet.auto_filter.ref = sheet.dimensions
+    workbook.save(path)
+
+
 def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
     """Every mismatch that would still produce a full, plausible-looking table."""
     if incumbent.arm == candidate.arm:
@@ -1296,6 +2044,16 @@ def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
             "entry and the paired comparison silently becomes an arm compared with "
             "itself. Re-run one of them with a different --arm."
         )
+    for loaded in (incumbent, candidate):
+        current = loaded.meta.get("scoring_code_sha")
+        legacy = loaded.meta.get("scorer_sha")
+        if current is not None and legacy is not None and current != legacy:
+            raise CliError(
+                f"{loaded.arm} records conflicting scoring hashes: "
+                f"scoring_code_sha={current} but scorer_sha={legacy}. The compatibility "
+                "alias must identify the same code; refusing a tampered or partial "
+                "manifest."
+            )
     for field, label in (
         ("testset_sha", "testset"),
         ("gt_sha", "ground truth"),
@@ -1306,6 +2064,23 @@ def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
                 f"the arms ran against different {label} files ({field}: {left} vs "
                 f"{right}). A paired comparison requires the same items and the same "
                 "labels; the arm that ran the easier set would look better for it."
+            )
+
+    # New-contract runs must have been classified by the same code and must represent
+    # the same common workload. Historical pairs retain their legacy scorer_sha gate;
+    # mixing eras is refused because no safe equivalence can be inferred.
+    new_fields = ("outcome_contract_sha", "workload_sha")
+    for field in new_fields:
+        left, right = incumbent.meta.get(field), candidate.meta.get(field)
+        if (left is None) != (right is None):
+            raise CliError(
+                f"one arm predates {field} provenance ({left!r} vs {right!r}). Refusing "
+                "to mix a legacy run with a content-addressed enterprise run."
+            )
+        if left is not None and left != right:
+            raise CliError(
+                f"the arms differ on {field} ({left} vs {right}). A common-prompt "
+                "comparison requires identical classification code and workload."
             )
 
 
@@ -1349,7 +2124,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
             items_sha=manifest_mod.items_hash(gt),
             labels_sha=loaded.meta["gt_sha"],
             item_count=len(gt),
-            scorer_sha=loaded.meta["scorer_sha"],
+            scorer_sha=loaded.meta.get("scoring_code_sha", loaded.meta["scorer_sha"]),
             arm=loaded.arm,
             backend=loaded.meta.get("backend", "openrouter"),
             model_id=_observed_model_id(loaded),
@@ -1524,6 +2299,24 @@ def _add_run_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max-tokens", type=int, default=8000)
     parser.add_argument(
+        "--reasoning-effort",
+        choices=sorted(REASONING_EFFORTS),
+        default="provider-default",
+        help=(
+            "OpenRouter normalized reasoning effort. 'none' explicitly disables "
+            "reasoning; 'provider-default' omits the field for historical compatibility."
+        ),
+    )
+    parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=3,
+        help=(
+            "maximum API attempts for failures that emitted no generation; enterprise "
+            "experiments use 1 so provider reliability is measured directly"
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="write the exact request bodies and the prompt sha, making ZERO API calls",
@@ -1573,6 +2366,68 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--gt", default=None, help="override the recorded path")
     compare.add_argument("--report", default=None, help="also write the report here")
     compare.set_defaults(handler=cmd_compare)
+
+    experiment_check = subparsers.add_parser(
+        "experiment-check",
+        help="validate a preregistered enterprise experiment; no network or key",
+    )
+    experiment_check.add_argument("--plan", default=str(DEFAULT_EXPERIMENT_PLAN))
+    experiment_check.set_defaults(handler=cmd_experiment_check)
+
+    experiment_budget = subparsers.add_parser(
+        "experiment-budget",
+        help="print the current no-network qualification/full/load cost ceiling",
+    )
+    experiment_budget.add_argument("--plan", default=str(DEFAULT_EXPERIMENT_PLAN))
+    experiment_budget.set_defaults(handler=cmd_experiment_budget)
+
+    qualify = subparsers.add_parser(
+        "qualify",
+        help="run one six-call explicit-regime provider qualification probe",
+    )
+    qualify.add_argument("--plan", default=str(DEFAULT_EXPERIMENT_PLAN))
+    qualify.add_argument("--arm", required=True)
+    qualify.add_argument("--provider", required=True)
+    qualify.add_argument("--out", default=str(DEFAULT_OUT))
+    qualify.add_argument("--timeout", type=float, default=120.0)
+    qualify.add_argument("--dry-run", action="store_true")
+    qualify.set_defaults(handler=cmd_qualify)
+
+    experiment_run = subparsers.add_parser(
+        "experiment-run",
+        help="run one arm from a locked experiment plan",
+    )
+    experiment_run.add_argument("--plan", default=str(DEFAULT_EXPERIMENT_PLAN))
+    experiment_run.add_argument("--arm", required=True)
+    experiment_run.add_argument("--mode", choices=("full", "load"), default="full")
+    experiment_run.add_argument("--concurrency-level", type=int, default=None)
+    experiment_run.add_argument("--confirm-plan-sha", required=True)
+    experiment_run.add_argument("--out", default=str(DEFAULT_OUT))
+    experiment_run.add_argument("--timeout", type=float, default=120.0)
+    experiment_run.add_argument("--dry-run", action="store_true")
+    experiment_run.set_defaults(handler=cmd_experiment_run)
+
+    experiment_report = subparsers.add_parser(
+        "experiment-report",
+        help="assemble quality-first JSON and Markdown reports from full runs",
+    )
+    experiment_report.add_argument("--plan", default=str(DEFAULT_EXPERIMENT_PLAN))
+    experiment_report.add_argument(
+        "--run",
+        action="append",
+        required=True,
+        metavar="ARM=PATH",
+        help="repeat once per full arm",
+    )
+    experiment_report.add_argument(
+        "--load-run",
+        action="append",
+        default=[],
+        metavar="ARM@CONCURRENCY=PATH",
+        help="repeat for each completed load arm; all three levels are required per arm",
+    )
+    experiment_report.add_argument("--out", required=True)
+    experiment_report.set_defaults(handler=cmd_experiment_report)
 
     return parser
 

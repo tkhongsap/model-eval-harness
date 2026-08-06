@@ -160,6 +160,7 @@ class OpenRouterClient:
         tool_choice: Any | None = None,
         response_format: Mapping[str, Any] | None = None,
         provider: str | None = None,
+        reasoning_effort: str = "provider-default",
     ) -> Completion:
         """Make exactly one call and report what came back.
 
@@ -227,6 +228,7 @@ class OpenRouterClient:
             tool_choice=tool_choice,
             response_format=response_format,
             provider=provider,
+            reasoning_effort=reasoning_effort,
         )
 
         start = time.monotonic()
