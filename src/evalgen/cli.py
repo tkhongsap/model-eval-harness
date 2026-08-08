@@ -2635,7 +2635,7 @@ def cmd_experiment_run(args: argparse.Namespace) -> int:
         repeats = workload["replicates"]
         concurrency = workload["concurrency"]
         max_attempts = workload["max_attempts"]
-        directory = _run_directory(args, f"e5-full-{args.arm}")
+        directory = _run_directory(args, f"{plan['experiment_id']}-full-{args.arm}")
     else:
         allowed = plan["operations"]["concurrency_levels"]
         if args.concurrency_level not in allowed:
@@ -2726,16 +2726,20 @@ def cmd_experiment_report(args: argparse.Namespace) -> int:
                 f"not current {plan_sha}"
             )
         if run_data.meta.get("experiment_mode") != "full":
-            raise CliError(f"{name} is not an Experiment 5 full run")
+            raise CliError(f"{name} is not a full run for {plan['experiment_id']}")
     allowed_levels = set(plan["operations"]["concurrency_levels"])
     expected_load_names = {
         f"{arm_id}@{level}" for arm_id in assignments for level in allowed_levels
     }
-    if set(load_assignments) != expected_load_names:
+    # Load probes are an operational diagnostic, not an input to the quality
+    # decision.  A full-arm-only experiment may omit them; once any load run is
+    # supplied, however, require the complete matrix so a partial benchmark cannot
+    # masquerade as a cross-arm operations comparison.
+    if load_assignments and set(load_assignments) != expected_load_names:
         missing = sorted(expected_load_names - set(load_assignments))
         extra = sorted(set(load_assignments) - expected_load_names)
         raise CliError(
-            "load report requires every full arm at every preregistered concurrency; "
+            "a load report requires every full arm at every preregistered concurrency; "
             f"missing={missing}, extra={extra}"
         )
     loaded_load = {name: load_run(path) for name, path in load_assignments.items()}
@@ -2944,7 +2948,7 @@ def cmd_experiment_report(args: argparse.Namespace) -> int:
         newline="\n",
     )
     lines = [
-        "# Experiment 5 summary",
+        f"# {plan['experiment_id']} summary",
         "",
         "**RECONCILED: NO. This is harness output, not a migration verdict.**",
         "",

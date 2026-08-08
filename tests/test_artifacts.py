@@ -57,6 +57,28 @@ def test_shareable_payload_is_recursive():
             assert_shareable_payload({private_key: "private but no phone"})
 
 
+def test_shareable_payload_accepts_phone_like_digits_inside_exact_sha256_fields():
+    digest = "a" * 20 + "0812345678" + "b" * 34
+
+    assert_shareable_payload({"request_sha256": digest})
+
+    with pytest.raises(ArtifactError, match="phone-like"):
+        assert_shareable_payload({"notes": digest})
+    with pytest.raises(ArtifactError, match="phone-like"):
+        assert_shareable_payload({"request_sha256": "0812345678"})
+
+
+def test_shareable_payload_accepts_phone_like_digits_inside_judgment_unit_hmac():
+    judgment_unit_id = "ju_" + "a" * 7 + "0812345678" + "b" * 7
+
+    assert_shareable_payload({"judgment_unit_id": judgment_unit_id})
+
+    with pytest.raises(ArtifactError, match="phone-like"):
+        assert_shareable_payload({"other_id": judgment_unit_id})
+    with pytest.raises(ArtifactError, match="phone-like"):
+        assert_shareable_payload({"judgment_unit_id": "ju_0812345678"})
+
+
 def test_atomic_write_replaces_complete_file(tmp_path):
     target = tmp_path / "run.json"
     atomic_write_text(target, "old\n")

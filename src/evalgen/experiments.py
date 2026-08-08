@@ -99,9 +99,12 @@ def _ids(first: int, last: int) -> list[str]:
 def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
     """Return every preregistration defect without making a network call.
 
-    Experiment 5 is intentionally specific.  A generic validator would accept a plan
-    that has the right fields but silently changes the approved sample size, retry
-    policy or load subset.  These checks pin the decisions that determine its meaning.
+    The Retention enterprise experiment contract is intentionally specific.  A generic
+    validator would accept a plan that has the right fields but silently changes the
+    approved sample size, retry policy or load subset.  These checks pin the decisions
+    that determine its meaning while allowing a new, explicitly named repeat of the
+    same contract.  ``retention-e5`` remains the historical legacy-policy run;
+    ``retention-e7`` is the decision-grade repeat.
     """
     problems: list[str] = []
 
@@ -110,7 +113,12 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
             problems.append(f"{path}: expected {expected!r}, found {actual!r}")
 
     expect("schema_version", plan.get("schema_version"), 1)
-    expect("experiment_id", plan.get("experiment_id"), "retention-e5")
+    experiment_id = plan.get("experiment_id")
+    if experiment_id not in {"retention-e5", "retention-e7"}:
+        problems.append(
+            "experiment_id: expected 'retention-e5' or 'retention-e7', "
+            f"found {experiment_id!r}"
+        )
     expect("app", plan.get("app"), "retention")
     if plan.get("status") not in {"draft", "qualified", "locked"}:
         problems.append("status: expected draft, qualified, or locked")

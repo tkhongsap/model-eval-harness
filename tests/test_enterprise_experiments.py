@@ -175,6 +175,27 @@ def test_committed_experiment_plan_and_prompt_library_are_in_sync():
     assert cost["grand_maximum_usd"] > cost["full_load_maximum_usd"] > 0
 
 
+def test_experiment_7_can_repeat_the_pinned_retention_contract():
+    plan = json.loads(json.dumps(load_plan(PLAN)))
+    plan["experiment_id"] = "retention-e7"
+    plan["status"] = "draft"
+
+    assert validate_plan(plan, root=ROOT) == []
+
+
+def test_enterprise_plan_refuses_an_unregistered_experiment_id():
+    plan = json.loads(json.dumps(load_plan(PLAN)))
+    plan["experiment_id"] = "retention-e8"
+    plan["status"] = "draft"
+
+    problems = validate_plan(plan, root=ROOT)
+
+    assert problems == [
+        "experiment_id: expected 'retention-e5' or 'retention-e7', "
+        "found 'retention-e8'"
+    ]
+
+
 def test_committed_gate2_execution_and_reports_are_complete_and_untampered():
     approval = json.loads(
         (EVIDENCE / "gate2-approval.json").read_text(encoding="utf-8")
@@ -972,14 +993,15 @@ def test_locked_experiment_runs_and_reports_are_reproducible_without_network(
                 ]
             )
 
-    def report_arguments(output: Path) -> list[str]:
+    def report_arguments(output: Path, *, include_load: bool = True) -> list[str]:
         arguments = [
             "experiment-report", "--plan", str(plan_path), "--out", str(output)
         ]
         for arm_id, path in full_runs.items():
             arguments += ["--run", f"{arm_id}={path}"]
-        for name, path in load_runs.items():
-            arguments += ["--load-run", f"{name}={path}"]
+        if include_load:
+            for name, path in load_runs.items():
+                arguments += ["--load-run", f"{name}={path}"]
         return arguments
 
     first = tmp_path / "report-first"
@@ -1004,6 +1026,14 @@ def test_locked_experiment_runs_and_reports_are_reproducible_without_network(
     assert all(
         set(levels) == {"1", "4", "8"} for levels in summary["load"].values()
     )
+
+    full_only = tmp_path / "report-full-only"
+    assert main(report_arguments(full_only, include_load=False)) == EXIT_OK
+    capsys.readouterr()
+    full_only_summary = json.loads(
+        (full_only / "summary.json").read_text(encoding="utf-8")
+    )
+    assert all(levels == {} for levels in full_only_summary["load"].values())
 
     from openpyxl import load_workbook
 

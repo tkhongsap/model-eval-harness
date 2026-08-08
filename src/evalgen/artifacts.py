@@ -66,6 +66,8 @@ _PRIVATE_KEYS = frozenset(
     }
 )
 _PHONE_LIKE = re.compile(r"(?<!\d)(?:\+?66|0)\d{8,9}(?!\d)")
+_SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+_JUDGMENT_UNIT_ID = re.compile(r"ju_[0-9a-f]{24}")
 
 
 class ArtifactError(RuntimeError):
@@ -186,6 +188,22 @@ def assert_shareable_payload(value: Any, *, path: str = "$") -> None:
                     f"shareable artifact contains private field {child_path}. Store it "
                     "in the private bundle and expose only a hash or HMAC identifier."
                 )
+            # A cryptographic digest is explicitly the safe replacement for private
+            # request/response material. Its random hex can contain a Thai-phone-like
+            # digit run by chance; only exempt a correctly named, exact SHA-256 value,
+            # never arbitrary free text or a malformed pseudo-hash.
+            if (
+                key.endswith("_sha256")
+                and isinstance(child, str)
+                and _SHA256_HEX.fullmatch(child) is not None
+            ):
+                continue
+            if (
+                key == "judgment_unit_id"
+                and isinstance(child, str)
+                and _JUDGMENT_UNIT_ID.fullmatch(child) is not None
+            ):
+                continue
             assert_shareable_payload(child, path=child_path)
         return
     if isinstance(value, (list, tuple)):
