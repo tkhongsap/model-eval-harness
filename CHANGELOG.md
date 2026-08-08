@@ -14,9 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   team handoff covering three-model F1, paired quality/stability gates, operations,
   token/cost accounting, the 360-opinion advisory judge, limitations and next gates.
   The executed locked plan remains with ignored runtime evidence; its SHA is recorded.
+  Run independently of Experiment 5B, on a different provider pin for the 27B arm
+  (Chutes, not Morph or CoreWeave), and reached the same decision: retain Gemini.
 - **Canon-aligned repository governance.** Added CODEOWNERS and a project-specific pull
   request template with evidence, privacy, decision-grain and reconciliation checks.
-
+- **`docs/migration-decision-2026-08-07.md`: the migration recommendation, written
+  down.** Synthesizes Experiments 1-6 into one answer to the question this whole
+  project exists to decide: **do not migrate** to `qwen/qwen3.6-27b` or
+  `qwen/qwen3.6-35b-a3b`. Every apparent Qwen advantage measured across this project's
+  history traces to the reasoning-regime confound Experiment 4 found; with reasoning
+  off (Experiment 5B, production's actual `thinkingBudget: 0` regime), both candidates
+  **FAIL** a pre-registered decision rule. Experiment 6's independent-judge review of
+  the ground truth (6.9% of 262 disagreements flagged) does not change this -- nine
+  possibly-wrong labels on one synthetic pack cannot outweigh a result reproduced
+  across four experiments and two candidate models. Explicitly a recommendation, not
+  `RECONCILED: YES`; no code path in this repository prints that, and the memo does
+  not either. Independently corroborated the next day by Experiment 7 (above).
 - **Committed Experiment 5 execution and decision evidence.** Gate 2 ran the three
   full arms and nine fixed load profiles: exactly 1,458 approved one-attempt calls for
   a US$1.507460937 reported-cost lower bound. A self-hashed ledger records raw-log

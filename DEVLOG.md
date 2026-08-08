@@ -2,19 +2,29 @@
 
 ## 🔴 Active Task
 
-**Current focus (2026-08-08): turn Experiment 7 into a production-shaped, internal-GPU
-decision.** The synthetic repeat itself completed successfully: all three arms returned
-414/414 parse-valid calls, and the advisory judge completed 360 opinions with no
-transport or identity failures. The decision remains to retain Gemini as the reference.
-Qwen3.6 27B failed stability (129/138 calls changed exact answer across replicates);
-Qwen3.6 35B-A3B failed all three paired quality gates and stability (130/138 unstable).
-See `docs/experiment7-results.md` and
-`experiments/evidence/retention-e7/summary.json`.
+**Current focus (2026-08-08): the recommendation is written down, and a second,
+independently executed experiment reached the same answer.** `docs/migration-decision-
+2026-08-07.md` synthesizes Experiments 1-6: every apparent Qwen advantage this project
+ever measured was bought with a reasoning budget production does not grant it
+(Experiment 4's confound); with that budget removed (Experiment 5B, the
+production-shaped regime), both `qwen/qwen3.6-27b` and `qwen/qwen3.6-35b-a3b` **FAIL** a
+pre-registered decision rule. Experiment 7 then repeated the comparison on a different
+provider pin (Qwen 27B via Chutes, not Morph or CoreWeave) and reached the same
+decision by a different route: 414/414 parse-valid on all three arms, but Qwen 27B
+failed on stability alone (129/138 calls changed their exact answer across replicates)
+and Qwen 35B-A3B failed all three paired quality gates plus stability (130/138
+unstable). Two independently run experiments, two different endpoints for the 27B arm,
+the same conclusion. See `docs/experiment7-results.md` and
+`experiments/evidence/retention-e7/summary.json` for Experiment 7's own evidence.
 
-The active blocker has not changed: `RECONCILED: NO`. This repository still lacks an
-approved production-shaped labelled batch, the two-row workbook header contract, and an
-execution on the company GPU. Experiment 7 is mock-data screening evidence, not a
-migration approval.
+**This is still a recommendation, not `RECONCILED: YES`** -- no code path in this
+repository prints that, and neither document claims it. The active blocker is unchanged:
+this repository still lacks an approved production-shaped labelled batch, the two-row
+workbook header contract, and an execution on the company GPU. Both experiments are
+mock-data screening evidence. The recommended next spend of effort is that
+production-shaped work, or the internal-GPU rerun Experiment 7's own handoff calls for
+-- not more infrastructure built against the same synthetic comparison, which has now
+been decided twice.
 
 - [ ] Retention domain owners review the 38 Experiment 7 possible-ground-truth-error
       flags in the restricted judge bundle; commit decisions, never cited transcript text.
@@ -182,7 +192,15 @@ but the reason some code looks odd):
   call-clustered paired inference, shareable/private judge surfaces, and decision-grade
   completeness checks made the harness ready for an internal-GPU rerun without changing
   the scoring package.
-
+- **2026-08-07**: Migration decision written down.
+  `docs/migration-decision-2026-08-07.md` synthesizes Experiments 1-6 into one
+  recommendation: **do not migrate** to `qwen/qwen3.6-27b` or `qwen/qwen3.6-35b-a3b`.
+  Every apparent Qwen advantage traced back to the reasoning-regime confound Experiment
+  4 found; with reasoning off (Experiment 5B, production's actual regime) both
+  candidates FAIL a pre-registered rule. Experiment 6's ground-truth review does not
+  change this. Explicitly not `RECONCILED: YES` -- still a recommendation, not a
+  verdict, pending production-shaped ground truth. Independently corroborated the
+  next day by Experiment 7, run on a different provider pin, above.
 - **2026-08-07**: Full audit of the merged enterprise framework (~2,500 lines, never
   before code-reviewed line by line) -- 21 agents, 12 candidate findings, all
   independently verified, zero refuted. Two real gate-logic gaps fixed (`decision()`

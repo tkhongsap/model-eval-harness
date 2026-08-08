@@ -34,6 +34,7 @@ or its [safe aggregate JSON](./experiments/evidence/retention-e7/summary.json).
 
 | If you need... | Read this |
 |---|---|
+| **Should we migrate off Gemini? The recommendation, synthesized from every experiment** | [docs/migration-decision-2026-08-07.md](./docs/migration-decision-2026-08-07.md) |
 | Project context, architecture, open items | [AGENTS.md](./AGENTS.md) |
 | Working here with Claude Code | [CLAUDE.md](./CLAUDE.md) |
 | How to run the tests, and what they prove | [TESTING.md](./TESTING.md) |
