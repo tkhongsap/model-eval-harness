@@ -4,7 +4,8 @@ Scores model outputs against human labels for the Gemini to self-hosted migratio
 **Retention app only** for now.
 
 **Two halves, and only one of them calls a model.** `src/evalharness/` scores;
-`src/evalgen/` generates, running an arm through OpenRouter
+`src/evalgen/` generates, running an arm through either OpenRouter or a declared
+OpenAI-compatible runtime such as a company GPU endpoint
 (`scripts/evalgen.py check|baseline|stability|compare`). An earlier version of this line
 read *"It does not run models. The app team runs both arms; this scores what they
 produce."* That was true of the whole repository once, and stopped being true when
@@ -15,9 +16,10 @@ library makes no model calls.** `tests/test_boundary.py` parses every import und
 `src/evalharness/` and fails if one names a networking library or `evalgen`, so the
 boundary is enforced rather than asserted.
 
-> ⚠️ **No number from this harness is a migration verdict yet.** Every report prints
-> `RECONCILED: NO` until a run has been checked against the app's own live Gemini
-> fact-check report. See [What it cannot prove](#what-it-cannot-prove).
+> **Setup status: READY. Migration decision: INCONCLUSIVE.** The team can install,
+> preflight, and run the provider-neutral pipeline now. No real company-GPU arm or
+> real-data reconciliation has run, so every report remains `RECONCILED: NO`. See
+> [What it cannot prove](#what-it-cannot-prove).
 
 ## Documentation
 
@@ -26,6 +28,8 @@ boundary is enforced rather than asserted.
 | Project context, architecture, open items | [AGENTS.md](./AGENTS.md) |
 | Working here with Claude Code | [CLAUDE.md](./CLAUDE.md) |
 | How to run the tests, and what they prove | [TESTING.md](./TESTING.md) |
+| Team setup and migration from OpenRouter to an internal GPU | [docs/TEAM_GPU_RUNBOOK.md](./docs/TEAM_GPU_RUNBOOK.md) |
+| Reviewable local-GPU runtime manifest | [configs/runtime.local-gpu.example.json](./configs/runtime.local-gpu.example.json) |
 | What changed, and when | [CHANGELOG.md](./CHANGELOG.md) |
 | What is being worked on now, and what is next | [DEVLOG.md](./DEVLOG.md) |
 | Enterprise phase-one/phase-two objectives, gates and workflow | [docs/enterprise-evaluation-framework.md](./docs/enterprise-evaluation-framework.md) |
@@ -66,29 +70,35 @@ Two implementations sharing nothing, plus a third derivation on paper, convergin
 the same numbers. Any one of them could be wrong; all three being wrong identically
 is not plausible.
 
+Historical baseline recorded on 2026-08-07, before the runtime, artifact, application
+contract, and decision-grade test additions in this change:
+
 ```
 524 passed, 33 skipped   # fresh checkout; production source and historical out/ absent
-546 passed, 11 skipped   # this environment: production-reference tracked, historical out/ present
-557 passed, 0 skipped    # same environment, TRUE_SOURCE_ROOT set: the differential runs
+546 passed, 11 skipped   # that environment: production-reference and historical out/ present
+557 passed, 0 skipped    # same historical environment, TRUE_SOURCE_ROOT set
 ```
 
-Eleven skips are the differential/pin checks that require `TRUE_SOURCE_ROOT`; 22 more
-require historical gitignored `out/` run directories and therefore skip in a fresh
-checkout. All refuse visibly rather than pass without their evidence, so **a green
-standalone run does not prove point 3**. Set the source root and report the count your
-environment actually ran. The fresh-checkout figure is 498 (2026-08-06's measured count)
-plus the 26 self-contained tests `judge.py` and its regression fixes added on
+Eleven skips were the differential/pin checks that required `TRUE_SOURCE_ROOT`; 22 more
+required historical gitignored `out/` run directories and therefore skipped in a fresh
+checkout in that baseline. All refuse visibly rather than pass without their evidence,
+so **a green standalone run does not prove point 3**. Set the source root and report the
+count your environment actually ran; do not use the historical figures as a current
+expectation. The old fresh-checkout figure was 498 (2026-08-06's measured count) plus
+the 26 self-contained tests `judge.py` and its regression fixes added on
 2026-08-07 (`tests/test_judge.py` plus new cases in `test_enterprise_experiments.py` and
 `test_testset_pack.py`), none of which needs `out/` or `TRUE_SOURCE_ROOT` -- computed,
 not independently re-measured against an actual fresh clone.
 
 ## What it cannot prove
 
-**No number from this harness is a migration verdict yet.** Every report prints
-`RECONCILED: NO` until a run has been checked against the app's own live Gemini
-fact-check report. That gate (framework section 5.3) needs real data and real model
-runs, both out of scope here. The stamp exists so the harness cannot launder its own
-provenance under deadline pressure.
+The implementation is **setup-ready**, not migration-approved. The provider-neutral
+runtime, durable artifacts, paired decision policy, and offline tests are ready for the
+team to use. The migration decision is still **INCONCLUSIVE** because no real
+company-GPU arm has been evaluated on approved real data and no result has been
+reconciled against the app's live Gemini fact-check report. Every report therefore
+prints `RECONCILED: NO`; the stamp prevents synthetic readiness evidence from being
+presented as production migration evidence.
 
 The workbook adapter is also unproven: the real ground truth reconstructs column
 names from a two-row header block (`fact_checker.py:517-525`) that nobody has seen.
@@ -97,9 +107,10 @@ Ask 1: the two header rows settle it, and contain no customer record).
 
 ## Run it
 
-```bash
+```powershell
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt
+$env:PYTHONPATH = 'src'
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
@@ -108,6 +119,12 @@ The pins are not cosmetic. Under pandas 3.x a string column's dtype is `str`, so
 fires, and `call_result` accuracy collapses from 0.75 to 0.25 with all weights zeroed.
 The differential test **skips with that reason** rather than comparing against a
 broken production.
+
+Generation uses a separate environment so the scorer remains network-free and pinned
+to production. Start with a zero-call synthetic preflight, then move the exact workload
+to OpenRouter or an internal OpenAI-compatible GPU runtime. The complete commands,
+private-storage rules, crash-resume contract, and staged migration checklist are in the
+[team GPU runbook](./docs/TEAM_GPU_RUNBOOK.md).
 
 ## Handling data
 
@@ -120,6 +137,14 @@ wholesale (directories, not extensions, because a pandas pipeline emits `.parque
 the product groupby key (`:1080`), so dropping it would break the join. `EVAL_HARNESS_KEY_HMAC`
 holds the key, which never lives in this repository. `assert_shareable()` raises on
 any customer identifier reaching a shareable artifact.
+
+Runs declared `internal` or `customer` must also write below this external data root.
+They snapshot their effective inputs before calls and record authoritative input paths
+relative to the run directory, so a completed run remains verifiable when the whole
+bundle is moved. The journal fsyncs a start event before dispatch and a result event
+after return; an unresolved dispatched call or torn journal record is detected and
+never replayed automatically.
+See [Execute, checkpoint, and resume](./docs/TEAM_GPU_RUNBOOK.md#6-execute-checkpoint-and-resume).
 
 ## Three dimensions, three denominators
 
@@ -155,13 +180,16 @@ src/evalharness/
   labelspaces.py   class lists, verbatim from production, with line citations
   records.py       the normalized record and every normalisation rule
   metrics.py       the three scorers, three denominators
-  compare.py       paired comparison, 2x2 disagreement table, coverage refusal
+  compare.py       call-clustered paired 2x2, exact coverage and orphan-claim handling
   keys.py          HMAC item keys and the PII guard
   manifest.py      blocking vs recorded fields, RECONCILED stamp
   adapters/        per-app parsing. THE ONLY THING THAT CHANGES when real data lands.
 src/evalgen/       the generator half. Calls models on purpose, so the scorer may never import it.
   cli.py           the only place the pieces are wired together; includes locked experiment stages
   client.py        the only file in this package that imports `openai`
+  runtime.py       non-secret OpenRouter/OpenAI-compatible runtime identity and request dialect
+  contracts.py     versioned application meaning: dimensions, grain, assets, adapter, policy
+  artifacts.py     private destinations, atomic writes, integrity hashes and crash-resume journals
   request.py       the OpenRouter request body, built in exactly one place
   prompts.py       the retention system prompt, assembled from committed assets
   decoding.py      the production port as a constrained-decoding grammar, three named deviations

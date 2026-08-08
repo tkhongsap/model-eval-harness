@@ -502,6 +502,71 @@ def test_a_harness_bug_is_raised_not_recorded_as_a_transport_failure(prompt, tmp
         run(testset, client=client, prompt=prompt, config=config(concurrency=1))
 
 
+def test_checkpoint_failure_stops_scheduling_new_calls(prompt, tmp_path):
+    """If paid evidence cannot be journaled, only already-in-flight work may continue."""
+    testset = slice_testset(tmp_path, 3)
+    client = FakeClient(lambda item_id, nth: answer(), testset=testset)
+
+    def broken_checkpoint(done, total, row):
+        raise OSError("disk full")
+
+    with pytest.raises(OSError, match="disk full"):
+        run(
+            testset,
+            client=client,
+            prompt=prompt,
+            config=config(concurrency=1),
+            checkpoint=broken_checkpoint,
+        )
+
+    assert len(client.calls) == 1
+
+
+def test_completed_cells_are_validated_and_not_called_again(prompt, tmp_path):
+    full = slice_testset(tmp_path, 2)
+    first_only = slice_testset(tmp_path, 1)
+    first_client = FakeClient(lambda item_id, nth: answer(), testset=first_only)
+    completed = run(
+        first_only,
+        client=first_client,
+        prompt=prompt,
+        config=config(concurrency=1),
+    ).results
+
+    resumed_client = FakeClient(lambda item_id, nth: answer(), testset=full)
+    checkpoints = []
+    result = run(
+        full,
+        client=resumed_client,
+        prompt=prompt,
+        config=config(concurrency=1),
+        completed=completed,
+        checkpoint=lambda done, total, row: checkpoints.append((done, total, row.item_id)),
+    )
+
+    assert len(result.results) == 2
+    assert [call["item_id"] for call in resumed_client.calls] == [full.items[1].item_id]
+    assert checkpoints == [(2, 2, full.items[1].item_id)]
+
+
+def test_completed_cells_from_another_run_are_refused(prompt, tmp_path):
+    testset = slice_testset(tmp_path, 1)
+    client = FakeClient(lambda item_id, nth: answer(), testset=testset)
+    completed = list(
+        run(testset, client=client, prompt=prompt, config=config(concurrency=1)).results
+    )
+    completed[0] = ItemResult(**{**completed[0].__dict__, "item_id": "OTHER"})
+
+    with pytest.raises(RunError, match="not part"):
+        run(
+            testset,
+            client=FakeClient(lambda item_id, nth: answer(), testset=testset),
+            prompt=prompt,
+            config=config(concurrency=1),
+            completed=completed,
+        )
+
+
 # --------------------------------------------------------------------------- repeats
 
 

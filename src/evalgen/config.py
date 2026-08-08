@@ -21,7 +21,12 @@ all"; this module serves real generation runs. Neither is the other's contract.
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from evalgen.runtime import RuntimeSpec
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = PACKAGE_DIR.parent.parent
@@ -71,3 +76,21 @@ def find_api_key() -> tuple[str | None, str | None]:
         if value:
             return value, name
     return None, None
+
+
+def find_runtime_api_key(
+    runtime: RuntimeSpec,
+    *,
+    environ: Mapping[str, str] | None = None,
+) -> tuple[str | None, str]:
+    """Resolve exactly the credential variable named by ``runtime``.
+
+    Unlike :func:`find_api_key`, this function has no aliases: the selected variable
+    is part of a runtime's fingerprint, so trying another spelling would make the
+    connection behavior differ from the reviewed manifest.  The secret value is
+    returned to the immediate client-construction caller only.  It is never copied
+    into ``RuntimeSpec`` or any provenance object.
+    """
+    source = os.environ if environ is None else environ
+    value = source.get(runtime.api_key_env, "").strip()
+    return (value or None), runtime.api_key_env

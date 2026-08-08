@@ -67,11 +67,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from evalgen.artifacts import (
+    ArtifactError,
+    RunJournal,
+    append_jsonl,
+    assert_shareable_payload,
+    atomic_write_bytes,
+    atomic_write_text,
+    file_sha256,
+    require_private_destination,
+)
+from evalgen.contracts import ApplicationSpec, RETENTION_APPLICATION
 from evalgen.console import configure_stdout
-from evalgen.config import ENV_FILES, find_api_key, load_env_file
+from evalgen.config import ENV_FILES, find_api_key, find_runtime_api_key, load_env_file
 from evalgen.decoding import decoding_schema
 from evalgen.flatten import named_no_product, to_rows
-from evalgen.judge import find_disagreements, run_judge
+from evalgen.judge import find_disagreements, run_judge, shareable_report
 from evalgen.experiments import (
     PlanError,
     arm_by_id,
@@ -91,12 +102,21 @@ from evalgen.prompts import Prompt, PromptError
 from evalgen.prompts import get as get_prompt
 from evalgen.prompts import validate_manifest as validate_prompt_manifest
 from evalgen.report import ArmSummary, ReportError, mechanism_table, n_flip, render
-from evalgen.request import REASONING_EFFORTS, build_request
+from evalgen.request import REASONING_EFFORTS
+from evalgen.runtime import (
+    OPENROUTER_RUNTIME,
+    RuntimeBackend,
+    RuntimeSpec,
+    build_runtime_request,
+    execution_provenance,
+    local_gpu_runtime,
+)
 from evalgen.runner import (
     ItemResult,
     RunConfig,
     RunError,
     RunResult,
+    item_result_to_row,
     run,
     write_run_log,
 )
@@ -151,6 +171,57 @@ DEFAULT_TESTSET = REPO_ROOT / "tests" / "fixtures" / "testsets" / "retention_v1.
 DEFAULT_GT = REPO_ROOT / "tests" / "fixtures" / "testsets" / "retention_v1.gt.csv"
 SCHEMA_PATH = PACKAGE_DIR / "schemas" / "retention.json"
 DEFAULT_EXPERIMENT_PLAN = REPO_ROOT / "experiments" / "retention-e5.plan.json"
+SYNTHETIC_FIXTURE_ROOT = (REPO_ROOT / "tests" / "fixtures").resolve()
+_CLASSIFICATION_RANK = {"synthetic": 0, "internal": 1, "customer": 2}
+
+APPLICATIONS: dict[str, ApplicationSpec] = {
+    RETENTION_APPLICATION.application_id: RETENTION_APPLICATION,
+}
+
+
+def _application_spec(application_id: str) -> ApplicationSpec:
+    """Return the reviewed application contract wired into this executable.
+
+    Adding a label space alone is not enough to make a new application runnable: its
+    adapter, prompt, schema and decision units must move together.  The generic
+    ``ApplicationSpec`` is the extension seam; this registry is the explicit point at
+    which an implementation becomes executable.
+    """
+    try:
+        return APPLICATIONS[application_id]
+    except KeyError as exc:
+        raise CliError(
+            f"application {application_id!r} has no executable application contract. "
+            "Define and review its adapter, prompt, schema, testset reference and "
+            "decision units before running models."
+        ) from exc
+
+
+def _inside(path: Path, root: Path) -> bool:
+    resolved = Path(path).expanduser().resolve(strict=False)
+    return resolved == root or root in resolved.parents
+
+
+def _validate_declared_classification(
+    classification: str, *, testset_path: Path, gt_path: Path
+) -> None:
+    """Prevent the convenient synthetic default from becoming a privacy bypass."""
+    if classification not in _CLASSIFICATION_RANK:
+        raise CliError(f"unknown data classification {classification!r}")
+    if classification != "synthetic":
+        return
+    outside = [
+        str(path)
+        for path in (testset_path, gt_path)
+        if not _inside(path, SYNTHETIC_FIXTURE_ROOT)
+    ]
+    if outside:
+        raise CliError(
+            "--data-classification synthetic is allowed only for committed synthetic "
+            f"fixtures below {SYNTHETIC_FIXTURE_ROOT}; outside path(s): {outside}. "
+            "Classify custom or real inputs as internal/customer and store outputs "
+            "below EVAL_HARNESS_DATA_DIR."
+        )
 
 # `out/` is ignored by .gitignore as a directory, which is the second line of defence
 # described in that file's header. Run artifacts carry model output verbatim, so they
@@ -388,11 +459,138 @@ def new_run_dir(base: Path, arm: str, *, now: datetime | None = None) -> Path:
     )
 
 
+def _output_base(args: argparse.Namespace) -> Path:
+    """Resolve an output root, enforcing the private-data policy before any write."""
+    base = Path(args.out)
+    classification = getattr(args, "data_classification", "synthetic")
+    if classification != "synthetic":
+        try:
+            return require_private_destination(base)
+        except ArtifactError as exc:
+            raise CliError(str(exc)) from exc
+    return base.resolve(strict=False)
+
+
+def _run_directory(args: argparse.Namespace, name: str) -> Path:
+    resume = getattr(args, "resume_run", None)
+    if not resume:
+        return new_run_dir(_output_base(args), name)
+    directory = Path(resume).expanduser().resolve(strict=False)
+    if getattr(args, "data_classification", "synthetic") != "synthetic":
+        try:
+            require_private_destination(directory)
+        except ArtifactError as exc:
+            raise CliError(str(exc)) from exc
+    if not directory.is_dir():
+        raise CliError(f"--resume-run is not an existing run directory: {directory}")
+    meta_path = directory / "run.json"
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise CliError(f"cannot read resume manifest {meta_path}: {exc}") from exc
+        if not isinstance(meta, dict):
+            raise CliError(f"cannot resume {directory}: run.json is not an object")
+        if meta.get("status") == "COMPLETE":
+            raise CliError(
+                f"{directory} is already COMPLETE according to run.json. Finalized "
+                "evidence is immutable even if run.state.json was removed; start a "
+                "new run instead."
+            )
+    state_path = directory / "run.state.json"
+    if state_path.exists():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise CliError(f"cannot read resume state {state_path}: {exc}") from exc
+        if isinstance(state, dict) and state.get("status") == "COMPLETE":
+            raise CliError(
+                f"{directory} is already COMPLETE. Finalized evidence is immutable; "
+                "start a new run instead of resuming and rewriting it."
+            )
+    return directory
+
+
+def _resume_snapshot(directory: Path, name: str) -> Path:
+    """Return one immutable input for a resumed run, independent of source mounts."""
+    path = directory / "inputs" / name
+    if not path.is_file():
+        raise CliError(
+            f"cannot resume {directory}: immutable snapshot {path} is missing. "
+            "Restoring the original source path is not enough because resume is bound "
+            "to the exact bytes captured before the first paid call."
+        )
+    return path
+
+
+def _snapshot_file(source: Path, target: Path) -> str:
+    """Copy one immutable input once; resume refuses changed source bytes."""
+    try:
+        content = Path(source).read_bytes()
+    except OSError as exc:
+        raise CliError(f"cannot snapshot input {source}: {exc}") from exc
+    if target.exists():
+        if target.read_bytes() != content:
+            raise CliError(
+                f"resume source {source} differs from immutable snapshot {target}. "
+                "Start a new run instead of mixing input versions."
+            )
+    else:
+        atomic_write_bytes(target, content)
+    return file_sha256(target)
+
+
+def _snapshot_run_inputs(
+    directory: Path,
+    *,
+    testset: TestSet,
+    gt_path: Path,
+    prompt: Prompt,
+) -> dict[str, Any]:
+    inputs = directory / "inputs"
+    testset_target = inputs / "testset.jsonl"
+    gt_target = inputs / "ground_truth.csv"
+    schema_target = inputs / "response_schema.json"
+    prompt_target = inputs / "prompt.txt"
+    hashes = {
+        "testset_sha": _snapshot_file(testset.path, testset_target),
+        "gt_sha": _snapshot_file(gt_path, gt_target),
+        "schema_sha": _snapshot_file(SCHEMA_PATH, schema_target),
+    }
+    prompt_bytes = prompt.system_text.encode("utf-8")
+    if prompt_target.exists():
+        if prompt_target.read_bytes() != prompt_bytes:
+            raise CliError(
+                f"assembled prompt differs from immutable snapshot {prompt_target}; "
+                "start a new run"
+            )
+    else:
+        atomic_write_bytes(prompt_target, prompt_bytes)
+    hashes["prompt_sha"] = prompt.sha
+    return {
+        **hashes,
+        "testset_path": testset_target,
+        "gt_path": gt_target,
+        "schema_path": schema_target,
+        "prompt_path": prompt_target,
+        "source_testset_path": testset.path.resolve(),
+        "source_gt_path": Path(gt_path).resolve(),
+    }
+
+
+def _write_run_state(directory: Path, payload: Mapping[str, Any]) -> None:
+    atomic_write_text(
+        directory / "run.state.json",
+        json.dumps(dict(payload), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    )
+
+
 def _write_meta(directory: Path, meta: dict[str, Any]) -> Path:
     path = directory / "run.json"
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        json.dump(meta, handle, ensure_ascii=False, indent=2, sort_keys=True)
-        handle.write("\n")
+    atomic_write_text(
+        path,
+        json.dumps(meta, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+    )
     return path
 
 
@@ -426,6 +624,10 @@ def _item_result_from_log(row: dict[str, Any]) -> ItemResult:
         error=row["error"],
         http_status=row.get("http_status"),
         attempt_count=row.get("attempt_count", 1),
+        runtime_id=row.get("runtime_id"),
+        runtime_backend=row.get("runtime_backend"),
+        runtime_fingerprint=row.get("runtime_fingerprint"),
+        system_fingerprint=row.get("system_fingerprint"),
     )
 
 
@@ -437,6 +639,31 @@ def _resolve_run_dir(path: Path) -> Path:
     if path.is_file():
         return path.parent
     raise CliError(f"run not found: {path}")
+
+
+def _recorded_artifact_path(directory: Path, value: object) -> Path:
+    """Resolve portable run-relative paths while retaining legacy absolute paths."""
+    path = Path(str(value))
+    if path.is_absolute():
+        return path
+    root = Path(directory).resolve()
+    resolved = (root / path).resolve(strict=False)
+    if resolved != root and root not in resolved.parents:
+        raise CliError(f"recorded artifact path {value!r} escapes run directory {root}")
+    return resolved
+
+
+def _run_relative_path(directory: Path, path: Path) -> str:
+    """Record a self-contained artifact path relative to its run bundle."""
+    root = Path(directory).resolve()
+    resolved = Path(path).resolve()
+    try:
+        return resolved.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise CliError(
+            f"artifact {resolved} is outside run directory {root}; evidence-grade "
+            "inputs must be copied into the portable run bundle"
+        ) from exc
 
 
 def load_run(path: Path) -> LoadedRun:
@@ -465,11 +692,18 @@ def load_run(path: Path) -> LoadedRun:
             for line in log_path.read_text(encoding="utf-8").split("\n")
             if line.strip()
         ]
-    except ValueError as exc:
+    except (OSError, UnicodeError, ValueError, TypeError) as exc:
         raise CliError(f"{directory} holds unreadable JSON: {exc}") from exc
+
+    if not isinstance(meta, dict):
+        raise CliError(f"{meta_path} must contain a JSON object")
+    if not all(isinstance(row, dict) for row in rows):
+        raise CliError(f"{log_path} must contain one JSON object per non-blank line")
 
     if not rows:
         raise CliError(f"{log_path} has no rows. There is nothing to compare.")
+
+    _validate_run_artifacts(directory, meta, rows, log_path)
 
     try:
         config = RunConfig(
@@ -494,13 +728,362 @@ def load_run(path: Path) -> LoadedRun:
             testset_sha=meta["testset_sha"],
             results=tuple(_item_result_from_log(row) for row in rows),
         )
-    except KeyError as exc:
+    except (KeyError, TypeError, ValueError) as exc:
         raise CliError(
             f"{directory} is missing {exc} in run.json or run.jsonl. Both are written "
             "together by a run; an incomplete pair cannot be scored, and guessing the "
             "missing field would put an invented decoding parameter in the report."
         ) from exc
+    if meta.get("outcome_counts") is not None and result.outcome_counts() != meta["outcome_counts"]:
+        raise CliError(
+            f"{directory} outcome_counts do not match run.jsonl; refusing a summary "
+            "that was not computed from the rows being scored"
+        )
     return LoadedRun(directory=directory, meta=meta, result=result)
+
+
+def _validate_run_artifacts(
+    directory: Path,
+    meta: Mapping[str, Any],
+    rows: Sequence[Mapping[str, Any]],
+    log_path: Path,
+) -> None:
+    """Validate integrity, row identity, and the exact item/replicate matrix."""
+    artifact_version = meta.get("artifact_schema_version")
+    v2_markers = {
+        "run_contract",
+        "run_contract_sha",
+        "run_log_sha256",
+        "journal_sha256",
+        "application_contract_sha",
+    }
+    if artifact_version not in (None, 2):
+        raise CliError(
+            f"{directory} uses unsupported artifact_schema_version "
+            f"{artifact_version!r}; refusing to interpret it as a legacy run"
+        )
+    sibling_v2_artifacts = any(
+        (directory / name).exists()
+        for name in ("run.state.json", "run.journal.jsonl", "inputs")
+    )
+    if artifact_version is None and (
+        v2_markers.intersection(meta) or sibling_v2_artifacts
+    ):
+        raise CliError(
+            f"{directory} has evidence-grade fields but no artifact_schema_version. "
+            "Refusing a metadata downgrade that would bypass integrity checks."
+        )
+    evidence_grade = artifact_version == 2
+    if evidence_grade:
+        required_v2 = {
+            "status",
+            "run_contract",
+            "run_contract_sha",
+            "run_log_sha256",
+            "run_log_bytes",
+            "journal_sha256",
+            "journal_bytes",
+            "application_contract",
+            "application_contract_sha",
+            "runtime",
+            "runtime_fingerprint",
+            "execution_contract",
+            "execution_sha",
+            "arm",
+            "model_requested",
+            "provider_requested",
+            "prompt_id",
+            "decoding",
+            "testset_path",
+            "gt_path",
+            "schema_path",
+            "prompt_path",
+            "testset_sha",
+            "gt_sha",
+            "schema_sha",
+            "prompt_sha",
+            "items",
+            "repeats",
+            "rows",
+        }
+        missing_v2 = sorted(required_v2 - set(meta))
+        if missing_v2:
+            raise CliError(
+                f"{directory} is missing evidence-grade field(s): {missing_v2}"
+            )
+        if meta.get("status") != "COMPLETE":
+            raise CliError(f"{directory} is not finalized COMPLETE")
+        for field in ("items", "repeats", "rows"):
+            value = meta.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise CliError(
+                    f"{directory} evidence-grade {field} must be a positive integer, "
+                    f"found {value!r}"
+                )
+        if meta["rows"] != meta["items"] * meta["repeats"]:
+            raise CliError(
+                f"{directory} declares rows={meta['rows']}, but items x repeats is "
+                f"{meta['items'] * meta['repeats']}"
+            )
+        state_path = directory / "run.state.json"
+        journal_path = directory / "run.journal.jsonl"
+        if not state_path.exists() or not journal_path.exists():
+            raise CliError(
+                f"{directory} is an evidence-grade run but its state or journal is missing"
+            )
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError, TypeError) as exc:
+            raise CliError(f"{state_path} is unreadable: {exc}") from exc
+        if not isinstance(state, dict) or state.get("status") != "COMPLETE":
+            raise CliError(f"{state_path} does not mark the run COMPLETE")
+        if canonical_sha(meta.get("run_contract")) != meta.get("run_contract_sha"):
+            raise CliError(f"{directory} run_contract_sha does not match run.json")
+        if state.get("run_contract_sha") != meta.get("run_contract_sha"):
+            raise CliError(f"{state_path} belongs to a different run contract")
+        if state.get("run_log_sha256") != meta.get("run_log_sha256"):
+            raise CliError(f"{state_path} names a different finalized run log")
+        if file_sha256(journal_path) != meta.get("journal_sha256"):
+            raise CliError(f"{journal_path} does not match journal_sha256 in run.json")
+        if journal_path.stat().st_size != meta.get("journal_bytes"):
+            raise CliError(f"{journal_path} size does not match journal_bytes in run.json")
+        try:
+            application = ApplicationSpec.from_manifest(meta["application_contract"])
+            runtime_block = meta["runtime"]
+            if not isinstance(runtime_block, Mapping):
+                raise ValueError("runtime provenance must be an object")
+            runtime_manifest = runtime_block.get("runtime")
+            if not isinstance(runtime_manifest, Mapping):
+                raise ValueError("runtime provenance has no runtime manifest")
+            runtime = RuntimeSpec.from_manifest(runtime_manifest)
+        except (TypeError, ValueError) as exc:
+            raise CliError(f"{directory} has invalid contract provenance: {exc}") from exc
+        if application.fingerprint() != meta.get("application_contract_sha"):
+            raise CliError(f"{directory} application_contract_sha does not match its manifest")
+        if runtime.fingerprint() != meta.get("runtime_fingerprint"):
+            raise CliError(f"{directory} runtime_fingerprint does not match its manifest")
+        if runtime_block.get("runtime_fingerprint") != meta.get("runtime_fingerprint"):
+            raise CliError(f"{directory} runtime provenance names a different fingerprint")
+        execution_contract = meta.get("execution_contract")
+        if not isinstance(execution_contract, Mapping):
+            raise CliError(f"{directory} execution_contract must be an object")
+        if canonical_sha(execution_contract) != meta.get("execution_sha"):
+            raise CliError(f"{directory} execution_sha does not match execution_contract")
+        if execution_contract.get("runtime_fingerprint") != meta.get(
+            "runtime_fingerprint"
+        ):
+            raise CliError(
+                f"{directory} execution_contract names a different runtime fingerprint"
+            )
+        contract = meta.get("run_contract")
+        if not isinstance(contract, Mapping):
+            raise CliError(f"{directory} run_contract must be an object")
+        for field in (
+            "application_contract_sha",
+            "runtime_fingerprint",
+            "testset_sha",
+            "gt_sha",
+            "schema_sha",
+            "prompt_sha",
+        ):
+            if contract.get(field) != meta.get(field):
+                raise CliError(
+                    f"{directory} run_contract {field} does not match run.json"
+                )
+        for path_field, sha_field in (
+            ("testset_path", "testset_sha"),
+            ("gt_path", "gt_sha"),
+            ("schema_path", "schema_sha"),
+            ("prompt_path", "prompt_sha"),
+        ):
+            snapshot_path = _recorded_artifact_path(directory, meta[path_field])
+            if not snapshot_path.is_file():
+                raise CliError(f"{directory} immutable snapshot is missing: {snapshot_path}")
+            if file_sha256(snapshot_path) != meta[sha_field]:
+                raise CliError(
+                    f"{snapshot_path} does not match {sha_field} in run.json"
+                )
+        try:
+            journal = RunJournal.open(journal_path, contract)
+        except ArtifactError as exc:
+            raise CliError(f"{journal_path} is not a valid run journal: {exc}") from exc
+        if journal.trailing_torn_record:
+            raise CliError(
+                f"{journal_path} ends in a torn record. Prior paid results remain "
+                "recoverable, but a finalized evidence bundle cannot contain an "
+                "ambiguous tail."
+            )
+        unresolved = journal.unresolved_cells()
+        if unresolved:
+            raise CliError(
+                f"{journal_path} has {len(unresolved)} durably started cell(s) with no "
+                f"durable result; first unresolved cell is {unresolved[0]}"
+            )
+    recorded_sha = meta.get("run_log_sha256")
+    if recorded_sha is not None and file_sha256(log_path) != recorded_sha:
+        raise CliError(f"{log_path} does not match run_log_sha256 in run.json")
+    recorded_bytes = meta.get("run_log_bytes")
+    if recorded_bytes is not None and log_path.stat().st_size != recorded_bytes:
+        raise CliError(f"{log_path} size does not match run_log_bytes in run.json")
+    if meta.get("rows") is not None and len(rows) != meta["rows"]:
+        raise CliError(
+            f"{directory} declares {meta['rows']} rows but run.jsonl contains {len(rows)}"
+        )
+
+    identity_fields = {
+        "arm": meta.get("arm"),
+        "model_requested": meta.get("model_requested"),
+        "provider_requested": meta.get("provider_requested"),
+        "prompt_id": meta.get("prompt_id"),
+        "prompt_sha": meta.get("prompt_sha"),
+        "testset_sha": meta.get("testset_sha"),
+        "reasoning_effort": (
+            meta.get("decoding", {}).get("reasoning_effort")
+            if isinstance(meta.get("decoding"), Mapping)
+            else None
+        ),
+    }
+    cells: set[tuple[str, int]] = set()
+    log_rows_by_cell: dict[tuple[str, int], Mapping[str, Any]] = {}
+    calls: dict[str, str] = {}
+    replicates_by_item: dict[str, set[int]] = {}
+    for index, row in enumerate(rows, start=1):
+        if evidence_grade:
+            required_row_fields = {
+                *identity_fields,
+                "item_id",
+                "call_id",
+                "replicate",
+                "outcome",
+                "parse_ok",
+                "runtime_id",
+                "runtime_backend",
+                "runtime_fingerprint",
+            }
+            missing_row = sorted(required_row_fields - set(row))
+            if missing_row:
+                raise CliError(
+                    f"{log_path}:{index} is missing evidence identity field(s): "
+                    f"{missing_row}"
+                )
+        for field, expected in identity_fields.items():
+            if field in row and row[field] != expected:
+                raise CliError(
+                    f"{log_path}:{index} records {field}={row[field]!r}, expected "
+                    f"{expected!r} from run.json"
+                )
+        try:
+            raw_item_id = row["item_id"]
+            raw_replicate = row["replicate"]
+            raw_call_id = row["call_id"]
+        except KeyError as exc:
+            raise CliError(f"{log_path}:{index} has no valid logical-cell identity") from exc
+        if evidence_grade:
+            if not isinstance(raw_item_id, str) or not raw_item_id:
+                raise CliError(f"{log_path}:{index} item_id must be a non-empty string")
+            if not isinstance(raw_call_id, str) or not raw_call_id:
+                raise CliError(f"{log_path}:{index} call_id must be a non-empty string")
+            if (
+                isinstance(raw_replicate, bool)
+                or not isinstance(raw_replicate, int)
+                or raw_replicate < 1
+            ):
+                raise CliError(
+                    f"{log_path}:{index} replicate must be a positive integer, "
+                    f"found {raw_replicate!r}"
+                )
+            if not isinstance(row.get("outcome"), str) or not row["outcome"]:
+                raise CliError(f"{log_path}:{index} outcome must be a non-empty string")
+            if not isinstance(row.get("parse_ok"), bool):
+                raise CliError(f"{log_path}:{index} parse_ok must be boolean")
+            item_id = raw_item_id
+            replicate = raw_replicate
+            call_id = raw_call_id
+        else:
+            try:
+                item_id = str(raw_item_id)
+                replicate = int(raw_replicate)
+                call_id = str(raw_call_id)
+            except (TypeError, ValueError) as exc:
+                raise CliError(
+                    f"{log_path}:{index} has no valid logical-cell identity"
+                ) from exc
+        if replicate < 1:
+            raise CliError(f"{log_path}:{index} has invalid replicate {replicate}")
+        row_runtime = row.get("runtime_fingerprint")
+        if row_runtime is not None and row_runtime != meta.get("runtime_fingerprint"):
+            raise CliError(
+                f"{log_path}:{index} records runtime fingerprint {row_runtime!r}, "
+                f"expected {meta.get('runtime_fingerprint')!r}"
+            )
+        if evidence_grade:
+            expected_runtime = runtime.fingerprint()
+            if row_runtime != expected_runtime:
+                raise CliError(
+                    f"{log_path}:{index} records runtime fingerprint {row_runtime!r}, "
+                    f"expected {expected_runtime!r}"
+                )
+            if row.get("runtime_id") != runtime.runtime_id:
+                raise CliError(
+                    f"{log_path}:{index} records runtime_id {row.get('runtime_id')!r}, "
+                    f"expected {runtime.runtime_id!r}"
+                )
+            if row.get("runtime_backend") != runtime.backend.value:
+                raise CliError(
+                    f"{log_path}:{index} records runtime_backend "
+                    f"{row.get('runtime_backend')!r}, expected {runtime.backend.value!r}"
+                )
+        cell = (item_id, replicate)
+        if cell in cells:
+            raise CliError(f"{log_path} repeats logical cell {cell}")
+        cells.add(cell)
+        log_rows_by_cell[cell] = row
+        previous_call = calls.setdefault(item_id, call_id)
+        if previous_call != call_id:
+            raise CliError(
+                f"{log_path} assigns item {item_id!r} to multiple call ids: "
+                f"{previous_call!r} and {call_id!r}"
+            )
+        replicates_by_item.setdefault(item_id, set()).add(replicate)
+
+    expected_repeats = meta.get("repeats")
+    expected_items = meta.get("items")
+    if evidence_grade and isinstance(expected_repeats, int) and expected_repeats > 0:
+        wanted = set(range(1, expected_repeats + 1))
+        bad = {
+            item_id: sorted(values)
+            for item_id, values in replicates_by_item.items()
+            if values != wanted
+        }
+        if bad:
+            first = next(iter(bad.items()))
+            raise CliError(
+                f"{log_path} does not contain the exact replicate matrix; first "
+                f"mismatch is {first[0]} -> {first[1]}, expected {sorted(wanted)}"
+            )
+    if isinstance(expected_items, int) and len(replicates_by_item) != expected_items:
+        raise CliError(
+            f"{directory} declares {expected_items} items but run.jsonl contains "
+            f"{len(replicates_by_item)} distinct item ids"
+        )
+    if evidence_grade:
+        journal_rows_by_cell = {
+            (row["item_id"], row["replicate"]): row
+            for row in journal.completed_rows()
+        }
+        if set(journal_rows_by_cell) != set(log_rows_by_cell):
+            missing = sorted(set(journal_rows_by_cell) - set(log_rows_by_cell))[:3]
+            extra = sorted(set(log_rows_by_cell) - set(journal_rows_by_cell))[:3]
+            raise CliError(
+                f"{directory} finalized log and paid-call journal contain different "
+                f"logical cells (missing_from_log={missing}, extra_in_log={extra})"
+            )
+        for cell, row in log_rows_by_cell.items():
+            if canonical_sha(row) != canonical_sha(journal_rows_by_cell[cell]):
+                raise CliError(
+                    f"{directory} finalized log differs from the paid-call journal "
+                    f"for logical cell {cell}"
+                )
 
 
 # ==================================================================== the bridge
@@ -548,6 +1131,32 @@ def replicate_records(
         _refuse_colliding_rows(row, flat_rows, records)
         per_replicate.setdefault(row.replicate, []).extend(records)
     return [per_replicate[key] for key in sorted(per_replicate)]
+
+
+def _require_run_matrix(loaded: LoadedRun, testset: TestSet) -> None:
+    """Bind a run log to the exact item/call matrix in the hashed testset."""
+    expected_calls: dict[str, str] = {}
+    for item in testset.items:
+        if item.item_id in expected_calls:
+            raise CliError(f"testset repeats item id {item.item_id!r}")
+        expected_calls[item.item_id] = item.call_id
+    observed: dict[str, set[int]] = {}
+    wrong_calls = 0
+    for row in loaded.result.results:
+        observed.setdefault(row.item_id, set()).add(row.replicate)
+        if expected_calls.get(row.item_id) != row.call_id:
+            wrong_calls += 1
+    missing = set(expected_calls) - set(observed)
+    extra = set(observed) - set(expected_calls)
+    wanted_replicates = set(range(1, loaded.result.config.repeats + 1))
+    bad_replicates = sum(values != wanted_replicates for values in observed.values())
+    if missing or extra or wrong_calls or bad_replicates:
+        raise CliError(
+            f"{loaded.directory} does not match the exact testset task matrix: "
+            f"{len(missing)} missing item id(s), {len(extra)} extra item id(s), "
+            f"{wrong_calls} item/call mismatch(es), {bad_replicates} replicate "
+            "matrix mismatch(es)."
+        )
 
 
 def _refuse_colliding_rows(
@@ -821,9 +1430,10 @@ class _DryRunClient:
     wire, not a reconstruction of it.
     """
 
-    def __init__(self, testset: TestSet) -> None:
+    def __init__(self, testset: TestSet, runtime: RuntimeSpec = OPENROUTER_RUNTIME) -> None:
         self._by_transcript = {item.transcript_th: item for item in testset.items}
         self.requests: list[dict[str, Any]] = []
+        self.runtime = runtime
 
     def complete(
         self,
@@ -839,28 +1449,36 @@ class _DryRunClient:
         reasoning_effort: str = "provider-default",
     ) -> _NoCall:
         item = self._by_transcript[messages[1]["content"]]
+        request = build_runtime_request(
+            self.runtime,
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            seed=seed,
+            response_format=response_format,
+            provider=provider,
+            reasoning_effort=reasoning_effort,
+        )
         self.requests.append(
             {
                 "item_id": item.item_id,
                 "call_id": item.call_id,
-                "request": build_request(
-                    model=model,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    top_p=top_p,
-                    seed=seed,
-                    response_format=response_format,
-                    provider=provider,
-                    reasoning_effort=reasoning_effort,
-                ),
+                "runtime_fingerprint": self.runtime.fingerprint(),
+                "request": request,
             }
         )
         return _NoCall()
 
 
-def build_client(api_key: str, *, timeout: float = 120.0):
-    """Construct the real OpenRouter client.
+def build_client(
+    api_key: str,
+    *,
+    timeout: float = 120.0,
+    runtime: RuntimeSpec = OPENROUTER_RUNTIME,
+):
+    """Construct the real OpenAI-compatible client for a reviewed runtime.
 
     A named module function rather than an inline constructor so a test can substitute
     a fake without a network, and so `openai` is imported only when a real run is
@@ -868,16 +1486,26 @@ def build_client(api_key: str, *, timeout: float = 120.0):
     environment with no SDK installed, which is the environment CI builds (the root
     `requirements.txt` deliberately omits `openai`).
     """
-    from evalgen.client import OpenRouterClient
+    from evalgen.client import OpenAICompatibleClient
 
-    return OpenRouterClient(api_key, timeout=timeout)
+    return OpenAICompatibleClient(api_key, runtime=runtime, timeout=timeout)
 
 
-def _api_key() -> str:
+def _api_key(runtime: RuntimeSpec = OPENROUTER_RUNTIME) -> str:
     for path in ENV_FILES:
         load_env_file(path)
-    value, name = find_api_key()
+    if runtime == OPENROUTER_RUNTIME:
+        value, name = find_api_key()
+    else:
+        value, name = find_runtime_api_key(runtime)
     if not value:
+        if runtime != OPENROUTER_RUNTIME:
+            raise CliError(
+                f"no API key found in {runtime.api_key_env} for runtime "
+                f"{runtime.runtime_id!r}. For a local endpoint with authentication "
+                "disabled, set an explicit documented placeholder value; the SDK "
+                "still requires a non-empty key."
+            )
         raise CliError(
             "no OpenRouter API key found. Set one of "
             f"{', '.join(('OPENROUTER_API_KEY', 'OPEN_ROUTER_API', 'OPENROUTER_KEY'))} "
@@ -886,6 +1514,85 @@ def _api_key() -> str:
         )
     print(f"  api key      loaded from {name}")
     return value
+
+
+def _metadata_pairs(values: Sequence[str] | None) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for value in values or ():
+        if "=" not in value:
+            raise CliError(f"runtime metadata must be KEY=VALUE, found {value!r}")
+        key, raw = value.split("=", 1)
+        if not key.strip() or not raw.strip() or key.strip() in result:
+            raise CliError(f"runtime metadata has blank or duplicate key: {value!r}")
+        result[key.strip()] = raw.strip()
+    return result
+
+
+def _runtime_from_args(args: argparse.Namespace) -> RuntimeSpec:
+    manifest_path = getattr(args, "runtime_manifest", None)
+    backend = getattr(args, "runtime_backend", None) or "openrouter"
+    metadata = _metadata_pairs(getattr(args, "runtime_metadata", None))
+    try:
+        if manifest_path:
+            conflicting = [
+                name
+                for name, value in (
+                    ("--runtime-backend", getattr(args, "runtime_backend", None)),
+                    ("--runtime-id", getattr(args, "runtime_id", None)),
+                    ("--base-url", getattr(args, "base_url", None)),
+                    ("--api-key-env", getattr(args, "api_key_env", None)),
+                    ("--runtime-metadata", metadata),
+                    (
+                        "--allow-insecure-http",
+                        bool(getattr(args, "allow_insecure_http", False)),
+                    ),
+                )
+                if value
+            ]
+            if conflicting:
+                raise CliError(
+                    "--runtime-manifest is the complete runtime contract; do not "
+                    f"combine it with {', '.join(conflicting)}"
+                )
+            path = Path(manifest_path)
+            try:
+                raw_manifest = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                raise CliError(f"cannot read runtime manifest {path}: {exc}") from exc
+            if not isinstance(raw_manifest, dict):
+                raise CliError(f"runtime manifest {path} must contain a JSON object")
+            runtime = RuntimeSpec.from_manifest(raw_manifest)
+        elif backend == "openrouter":
+            runtime = RuntimeSpec.openrouter(
+                runtime_id=getattr(args, "runtime_id", None) or "openrouter",
+                api_key_env=getattr(args, "api_key_env", None) or "OPENROUTER_API_KEY",
+                base_url=getattr(args, "base_url", None) or OPENROUTER_RUNTIME.base_url,
+                build_metadata=metadata,
+            )
+        else:
+            runtime = local_gpu_runtime(
+                runtime_id=getattr(args, "runtime_id", None) or "local-gpu",
+                base_url=getattr(args, "base_url", None) or "http://127.0.0.1:8000/v1",
+                api_key_env=getattr(args, "api_key_env", None) or "EVALGEN_GPU_API_KEY",
+                build_metadata=metadata,
+                allow_insecure_http=bool(getattr(args, "allow_insecure_http", False)),
+            )
+    except CliError:
+        raise
+    except (TypeError, ValueError) as exc:
+        raise CliError(f"invalid runtime configuration: {exc}") from exc
+    if runtime.backend is RuntimeBackend.OPENAI_COMPATIBLE and getattr(
+        args, "provider", None
+    ) is not None:
+        raise CliError("--provider is OpenRouter-only; omit it for an internal GPU runtime")
+    if runtime.backend is RuntimeBackend.OPENAI_COMPATIBLE and getattr(
+        args, "reasoning_effort", "provider-default"
+    ) != "provider-default":
+        raise CliError(
+            "--reasoning-effort is OpenRouter-only for now; identify a GPU reasoning "
+            "variant through --model and immutable runtime metadata"
+        )
+    return runtime
 
 
 # ==================================================================== subcommands
@@ -958,8 +1665,14 @@ def _subset_testset(testset: TestSet, item_ids: Sequence[str], directory: Path) 
         if line.strip() and json.loads(line)["item_id"] in wanted
     ]
     target = directory / "testset.jsonl"
-    with target.open("w", encoding="utf-8", newline="\n") as handle:
-        handle.write("\n".join(lines) + "\n")
+    content = ("\n".join(lines) + "\n").encode("utf-8")
+    if target.exists() and target.read_bytes() != content:
+        raise CliError(
+            f"existing subset {target} differs from the requested items; start a new "
+            "run instead of changing an incomplete run's workload"
+        )
+    if not target.exists():
+        atomic_write_bytes(target, content)
     return _load_testset(target, app=testset.app)
 
 
@@ -1020,8 +1733,9 @@ def _execute_run(
     directory: Path,
 ) -> tuple[int, LoadedRun | None]:
     """Run one arm, or dry-run it. Returns (exit code, the loaded run or None)."""
+    application = _application_spec(args.app)
     prompt = _prompt(args.prompt_id)
-    schema = response_format()
+    runtime = _runtime_from_args(args)
     config = RunConfig(
         model=args.model,
         arm=args.arm,
@@ -1036,12 +1750,23 @@ def _execute_run(
         reasoning_effort=args.reasoning_effort,
         max_attempts=args.max_attempts,
     )
+    classification_testset_path = Path(
+        getattr(args, "classification_testset_path", testset.path)
+    )
+    classification_gt_path = Path(
+        getattr(args, "classification_gt_path", gt_path)
+    )
 
     print(f"arm          {config.arm}")
     print(f"model        {config.model}")
+    print(
+        f"runtime      {runtime.runtime_id} ({runtime.backend.value})\n"
+        f"  endpoint   {runtime.base_url}\n"
+        f"  sha        {runtime.fingerprint()}"
+    )
     if config.provider:
         print(f"provider     {config.provider}  (pinned, allow_fallbacks=false)")
-    else:
+    elif runtime.backend is RuntimeBackend.OPENROUTER:
         print(
             "provider     UNPINNED -- the router may serve this arm from more than one "
             "backend.\n             Check prompt_token_spread afterwards; a 60-call run "
@@ -1064,21 +1789,166 @@ def _execute_run(
         # A dry run spends nothing and produces no score, so it is not gated on the
         # pack validating. Reviewing the prompt is exactly what you want to be able to
         # do while a label is still being argued about.
-        return _dry_run(testset, prompt, config, schema, directory), None
+        _validate_declared_classification(
+            getattr(args, "data_classification", "synthetic"),
+            testset_path=classification_testset_path,
+            gt_path=classification_gt_path,
+        )
+        schema = response_format()
+        return _dry_run(testset, prompt, config, schema, directory, runtime=runtime), None
 
     _preflight(testset, Path(gt_path))
+    _validate_declared_classification(
+        getattr(args, "data_classification", "synthetic"),
+        testset_path=classification_testset_path,
+        gt_path=classification_gt_path,
+    )
 
-    api_key = _api_key()
-    client = build_client(api_key, timeout=args.timeout)
+    # Snapshot every mutable input before credentials are read. The model executes
+    # against these bytes, not against paths that can change during a paid run.
+    snapshot = _snapshot_run_inputs(
+        directory,
+        testset=testset,
+        gt_path=Path(gt_path),
+        prompt=prompt,
+    )
+    testset = _load_testset(Path(snapshot["testset_path"]), app=args.app)
+    gt_path = Path(snapshot["gt_path"])
+    schema = response_format(Path(snapshot["schema_path"]))
+    _preflight(testset, gt_path)
+
+    experiment_plan_sha = getattr(args, "experiment_plan_sha", None)
+    run_contract = {
+        "schema_version": 2,
+        "app": args.app,
+        "application_contract": application.manifest(),
+        "application_contract_sha": application.fingerprint(),
+        "arm": config.arm,
+        "model": config.model,
+        "prompt_id": config.prompt_id,
+        "prompt_sha": prompt.sha,
+        "testset_sha": snapshot["testset_sha"],
+        "gt_sha": snapshot["gt_sha"],
+        "schema_sha": snapshot["schema_sha"],
+        "decoding": {
+            "temperature": config.temperature,
+            "top_p": config.top_p,
+            "seed": config.seed,
+            "max_tokens": config.max_tokens,
+            "reasoning_effort": config.reasoning_effort,
+        },
+        "repeats": config.repeats,
+        "concurrency": config.concurrency,
+        "max_attempts": config.max_attempts,
+        "timeout": args.timeout,
+        "provider": config.provider,
+        "runtime": runtime.manifest(),
+        "runtime_fingerprint": runtime.fingerprint(),
+        "experiment_plan_sha": experiment_plan_sha,
+        "experiment_mode": getattr(args, "experiment_mode", None),
+        "data_classification": getattr(args, "data_classification", "synthetic"),
+    }
+    journal_path = directory / "run.journal.jsonl"
+    try:
+        journal = (
+            RunJournal.open(journal_path, run_contract)
+            if journal_path.exists()
+            else RunJournal.create(journal_path, run_contract)
+        )
+        completed = tuple(_item_result_from_log(row) for row in journal.completed_rows())
+    except (ArtifactError, KeyError, TypeError, ValueError) as exc:
+        raise CliError(f"cannot open resumable run journal: {exc}") from exc
+    unresolved = journal.unresolved_cells()
+    if journal.trailing_torn_record:
+        raise CliError(
+            f"run journal {journal_path} ends in a torn record. Prior completed rows "
+            "remain readable, but automatic continuation cannot prove what the final "
+            "append contained; preserve this run for review and start a new run."
+        )
+    if unresolved:
+        raise CliError(
+            f"run journal has {len(unresolved)} cell(s) that were durably dispatched "
+            "but have no durable result. They may have completed server-side, so "
+            "automatic replay would select a second draw. Preserve this run for "
+            "review and start a new run; the first unresolved cell is "
+            f"{unresolved[0]}."
+        )
+
+    _write_run_state(
+        directory,
+        {
+            "schema_version": 1,
+            "status": "INCOMPLETE",
+            "run_contract": run_contract,
+            "run_contract_sha": canonical_sha(run_contract),
+            "completed_cells": len(completed),
+        },
+    )
 
     total = len(testset.items) * config.repeats
-    print(f"\ncalling {total} times. Failures are recorded, never retried into success.")
+    remaining = total - len(completed)
+    if remaining < 0:
+        raise CliError(
+            f"journal contains {len(completed)} cells for a {total}-cell run contract"
+        )
+    print(
+        f"\ncalling {remaining} remaining logical cell(s) ({len(completed)}/{total} "
+        "already journaled). Transport retries remain visible in attempt_count; parse "
+        "failures are never re-rolled."
+    )
+
+    if remaining:
+        api_key = _api_key(runtime)
+        if runtime == OPENROUTER_RUNTIME:
+            # Preserve the historical monkeypatch/client seam for existing callers.
+            client = build_client(api_key, timeout=args.timeout)
+        else:
+            client = build_client(api_key, timeout=args.timeout, runtime=runtime)
+    else:
+        # `run` validates the recovered exact matrix and submits no request.
+        client = _DryRunClient(testset, runtime)
 
     def progress(done: int, count: int, row: ItemResult) -> None:
         print(
             f"  [{done:>3}/{count}] {row.item_id} rep{row.replicate} "
             f"{row.outcome:<16} {row.latency_s:6.2f}s"
         )
+
+    run_identity = RunResult(
+        config=config,
+        prompt_sha=prompt.sha,
+        testset_sha=str(snapshot["testset_sha"]),
+        results=(),
+    )
+
+    def with_runtime_identity(row: ItemResult) -> ItemResult:
+        if row.runtime_fingerprint not in (None, runtime.fingerprint()):
+            raise CliError(
+                f"{row.item_id} rep{row.replicate} reported runtime fingerprint "
+                f"{row.runtime_fingerprint!r}, expected {runtime.fingerprint()!r}"
+            )
+        if row.runtime_id not in (None, runtime.runtime_id):
+            raise CliError(
+                f"{row.item_id} rep{row.replicate} reported runtime id "
+                f"{row.runtime_id!r}, expected {runtime.runtime_id!r}"
+            )
+        if row.runtime_backend not in (None, runtime.backend.value):
+            raise CliError(
+                f"{row.item_id} rep{row.replicate} reported runtime backend "
+                f"{row.runtime_backend!r}, expected {runtime.backend.value!r}"
+            )
+        return replace(
+            row,
+            runtime_id=row.runtime_id or runtime.runtime_id,
+            runtime_backend=row.runtime_backend or runtime.backend.value,
+            runtime_fingerprint=row.runtime_fingerprint or runtime.fingerprint(),
+        )
+
+    def checkpoint(done: int, count: int, row: ItemResult) -> None:
+        try:
+            journal.append(item_result_to_row(run_identity, with_runtime_identity(row)))
+        except ArtifactError as exc:
+            raise CliError(f"cannot journal paid result {row.item_id} rep{row.replicate}: {exc}") from exc
 
     started = time.perf_counter()
     try:
@@ -1089,37 +1959,87 @@ def _execute_run(
             config=config,
             response_format=schema,
             progress=progress,
+            started=journal.mark_started,
+            checkpoint=checkpoint,
+            completed=completed,
         )
-    except RunError as exc:
+    except (RunError, ArtifactError) as exc:
         raise CliError(str(exc)) from exc
+    result = replace(
+        result,
+        results=tuple(with_runtime_identity(row) for row in result.results),
+    )
     wall_time_s = time.perf_counter() - started
 
-    write_run_log(result, directory / "run.jsonl")
-    gt_sha = manifest_mod.file_hash(gt_path)
-    schema_sha = manifest_mod.file_hash(SCHEMA_PATH)
+    final_rows = [item_result_to_row(result, row) for row in result.results]
+    final_by_cell = {
+        (row["item_id"], row["replicate"]): row for row in final_rows
+    }
+    journal_by_cell = {
+        (row["item_id"], row["replicate"]): row
+        for row in journal.completed_rows()
+    }
+    if set(final_by_cell) != set(journal_by_cell):
+        raise CliError(
+            "refusing to finalize: the completed result matrix differs from the "
+            "fsynced paid-call journal"
+        )
+    for cell, row in final_by_cell.items():
+        if canonical_sha(row) != canonical_sha(journal_by_cell[cell]):
+            raise CliError(
+                f"refusing to finalize: result for logical cell {cell} differs from "
+                "the fsynced paid-call journal"
+            )
+
+    log_path = directory / "run.jsonl"
+    write_run_log(result, log_path)
+    gt_sha = str(snapshot["gt_sha"])
+    schema_sha = str(snapshot["schema_sha"])
+    # The workload is the common evaluation question. Runtime and operational knobs
+    # are deliberately recorded in a separate per-arm contract: OpenRouter and an
+    # internal GPU endpoint need not expose the same reasoning controls, retry policy,
+    # concurrency, or timeout to remain valid arms over the same scored workload.
     workload_contract = {
         "app": args.app,
         "testset_sha": result.testset_sha,
         "gt_sha": gt_sha,
         "prompt_sha": prompt.sha,
         "schema_sha": schema_sha,
-        "temperature": config.temperature,
-        "top_p": config.top_p,
-        "seed": config.seed,
-        "max_tokens": config.max_tokens,
-        "reasoning_effort": config.reasoning_effort,
         "repeats": config.repeats,
-        "max_attempts": config.max_attempts,
+        "application_contract_sha": application.fingerprint(),
     }
-    experiment_plan_sha = getattr(args, "experiment_plan_sha", None)
     if experiment_plan_sha:
         workload_contract["experiment_plan_sha"] = experiment_plan_sha
+    execution_contract = {
+        "runtime_fingerprint": runtime.fingerprint(),
+        "provider": config.provider,
+        "decoding": {
+            "temperature": config.temperature,
+            "top_p": config.top_p,
+            "seed": config.seed,
+            "max_tokens": config.max_tokens,
+            "reasoning_effort": config.reasoning_effort,
+        },
+        "max_attempts": config.max_attempts,
+        "concurrency": config.concurrency,
+        "timeout": args.timeout,
+    }
+    system_fingerprints: dict[str, int] = {}
+    for row in result.results:
+        key = row.system_fingerprint or "<not reported>"
+        system_fingerprints[key] = system_fingerprints.get(key, 0) + 1
     meta = {
+        "artifact_schema_version": 2,
+        "status": "COMPLETE",
         "run_id": directory.name,
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "arm": config.arm,
         "app": args.app,
-        "backend": "openrouter",
+        "application_contract": application.manifest(),
+        "application_contract_sha": application.fingerprint(),
+        "backend": runtime.backend.value,
+        "runtime": execution_provenance(runtime),
+        "runtime_fingerprint": runtime.fingerprint(),
         "model_requested": config.model,
         # The pin as requested, recorded even when it is null. A run.json with no
         # provider key at all would leave "was this pinned?" answerable only by the
@@ -1127,19 +2047,27 @@ def _execute_run(
         "provider_requested": config.provider,
         "prompt_id": prompt.id,
         "prompt_sha": prompt.sha,
-        "testset_path": str(testset.path.resolve()),
+        "testset_path": _run_relative_path(directory, testset.path),
+        "source_testset_path": str(snapshot["source_testset_path"]),
         "testset_sha": result.testset_sha,
-        "gt_path": str(Path(gt_path).resolve()),
+        "gt_path": _run_relative_path(directory, gt_path),
+        "source_gt_path": str(snapshot["source_gt_path"]),
         "gt_sha": gt_sha,
+        "schema_path": _run_relative_path(directory, Path(snapshot["schema_path"])),
+        "prompt_path": _run_relative_path(directory, Path(snapshot["prompt_path"])),
         # New runs separate the code that classified responses from the code that
         # scores them. `scorer_sha` remains as a compatibility alias for readers of
         # historical run.json files.
         "outcome_contract_sha": manifest_mod.outcome_contract_sha(),
+        "generation_contract_sha": manifest_mod.generation_contract_sha(),
+        "decision_policy_sha": manifest_mod.decision_policy_sha(),
         "scoring_code_sha": manifest_mod.scoring_code_sha(),
         "scorer_sha": manifest_mod.scoring_code_sha(),
         "schema_sha": schema_sha,
         "workload_contract": workload_contract,
         "workload_sha": manifest_mod.workload_sha(workload_contract),
+        "execution_contract": execution_contract,
+        "execution_sha": canonical_sha(execution_contract),
         "experiment_plan_sha": experiment_plan_sha,
         "experiment_mode": getattr(args, "experiment_mode", None),
         "qualification_sha": getattr(args, "qualification_sha", None),
@@ -1155,9 +2083,18 @@ def _execute_run(
         "concurrency": config.concurrency,
         "items": len(testset.items),
         "rows": len(result.results),
+        "run_contract": run_contract,
+        "run_contract_sha": canonical_sha(run_contract),
+        "run_log_sha256": file_sha256(log_path),
+        "run_log_bytes": log_path.stat().st_size,
+        "journal_sha256": file_sha256(journal_path),
+        "journal_bytes": journal_path.stat().st_size,
+        "resumed_cells": len(completed),
+        "data_classification": getattr(args, "data_classification", "synthetic"),
         "outcome_counts": result.outcome_counts(),
         "observed_models": result.observed_models(),
         "observed_providers": result.observed_providers(),
+        "system_fingerprints": system_fingerprints,
         # The two facts that decide whether this arm is one system. `split_items` is
         # the measurement (a backend's own tokenizer cannot be echoed); the spread is
         # kept in full beside it so the claim can be checked rather than believed.
@@ -1165,18 +2102,28 @@ def _execute_run(
         "split_items": {k: list(v) for k, v in result.split_items().items()},
         "calls_without_prompt_usage": result.calls_without_prompt_usage(),
         "wall_time_s": wall_time_s,
-        "throughput_calls_per_s": len(result.results) / wall_time_s,
+        "throughput_calls_per_s": remaining / wall_time_s if wall_time_s else None,
         "truncated_rate": result.truncated_rate(),
         # A LOWER BOUND, not a total: OpenRouter reports usage.cost only for providers
         # that supply it, and a missing value stays None rather than becoming zero.
         "total_cost_usd_lower_bound": result.total_cost(),
     }
     _write_meta(directory, meta)
+    _write_run_state(
+        directory,
+        {
+            "schema_version": 1,
+            "status": "COMPLETE",
+            "run_contract_sha": canonical_sha(run_contract),
+            "run_log_sha256": meta["run_log_sha256"],
+            "completed_cells": len(result.results),
+        },
+    )
 
     print("\noutcome counts (every row, failures included):")
     for name, count in result.outcome_counts().items():
         print(f"  {name:<18} {count}")
-    print("observed models (what the router actually served):")
+    print("observed models (what the runtime actually served):")
     for name, count in result.observed_models().items():
         print(f"  {count:>5}  {name}")
     if len(result.observed_models()) > 1:
@@ -1258,6 +2205,8 @@ def _dry_run(
     config: RunConfig,
     schema: dict[str, Any],
     directory: Path,
+    *,
+    runtime: RuntimeSpec = OPENROUTER_RUNTIME,
 ) -> int:
     """Write the exact request bodies and the prompt. Zero API calls, zero key needed.
 
@@ -1267,7 +2216,7 @@ def _dry_run(
     in testset order without a sort that would have to be trusted.
     """
     dry_config = replace(config, repeats=1, concurrency=1)
-    client = _DryRunClient(testset)
+    client = _DryRunClient(testset, runtime)
     run(
         testset,
         client=client,
@@ -1277,15 +2226,17 @@ def _dry_run(
     )
 
     bodies = directory / "requests.jsonl"
-    with bodies.open("w", encoding="utf-8", newline="\n") as handle:
-        for entry in client.requests:
-            handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    atomic_write_text(
+        bodies,
+        "".join(json.dumps(entry, ensure_ascii=False) + "\n" for entry in client.requests),
+    )
     prompt_file = directory / "prompt.txt"
-    prompt_file.write_text(prompt.system_text, encoding="utf-8", newline="\n")
+    atomic_write_text(prompt_file, prompt.system_text)
 
     print("\nDRY RUN. No API call was made and no key was read.")
     print(f"  requests   {len(client.requests)} bodies -> {bodies}")
     print(f"  prompt     {prompt_file}")
+    print(f"  runtime    {runtime.runtime_id} sha={runtime.fingerprint()}")
     print(
         f"  repeats={config.repeats} is configured; every replicate sends this same "
         "body, seed included (RunConfig), so one body per item is the whole set."
@@ -1304,9 +2255,19 @@ def _dry_run(
 
 def cmd_baseline(args: argparse.Namespace) -> int:
     """Run one arm over the whole pack."""
-    testset = _load_testset(Path(args.testset), app=args.app)
-    directory = new_run_dir(Path(args.out), args.arm)
-    code, _ = _execute_run(args, testset=testset, gt_path=Path(args.gt), directory=directory)
+    if getattr(args, "resume_run", None):
+        directory = _run_directory(args, args.arm)
+        args.classification_testset_path = Path(args.testset)
+        args.classification_gt_path = Path(args.gt)
+        testset_path = _resume_snapshot(directory, "testset.jsonl")
+        gt_path = _resume_snapshot(directory, "ground_truth.csv")
+    else:
+        testset_path = Path(args.testset)
+        gt_path = Path(args.gt)
+        testset = _load_testset(testset_path, app=args.app)
+        directory = _run_directory(args, args.arm)
+    testset = _load_testset(testset_path, app=args.app)
+    code, _ = _execute_run(args, testset=testset, gt_path=gt_path, directory=directory)
     return code
 
 
@@ -1319,17 +2280,30 @@ def cmd_stability(args: argparse.Namespace) -> int:
     comparison; a FLAKY verdict argued about afterwards is an argument about the
     replicate count, not about the model.
     """
-    full = _load_testset(Path(args.testset), app=args.app)
-    directory = new_run_dir(Path(args.out), args.arm)
-    testset = _subset_testset(full, args.items.split(","), directory)
+    if getattr(args, "resume_run", None):
+        directory = _run_directory(args, args.arm)
+        args.classification_testset_path = Path(args.testset)
+        args.classification_gt_path = Path(args.gt)
+        testset = _load_testset(
+            _resume_snapshot(directory, "testset.jsonl"), app=args.app
+        )
+        gt_path = _resume_snapshot(directory, "ground_truth.csv")
+    else:
+        full = _load_testset(Path(args.testset), app=args.app)
+        directory = _run_directory(args, args.arm)
+        testset = _subset_testset(full, args.items.split(","), directory)
+        args.classification_testset_path = full.path
+        gt_path = Path(args.gt)
 
     code, loaded = _execute_run(
-        args, testset=testset, gt_path=Path(args.gt), directory=directory
+        args, testset=testset, gt_path=gt_path, directory=directory
     )
     if code != EXIT_OK or loaded is None:
         return code
 
-    gt = _load_gt(Path(args.gt))
+    gt = _load_gt(
+        _recorded_artifact_path(loaded.directory, loaded.meta["gt_path"])
+    )
     call_ids = {item.call_id for item in testset.items}
     scoped_gt = [record for record in gt if record.call_id in call_ids]
     per_replicate = replicate_records(loaded.result, testset.items)
@@ -1479,6 +2453,16 @@ def _planned_args(
         experiment_plan_sha=plan_sha,
         experiment_mode=mode,
         qualification_sha=qualification_sha,
+        data_classification=getattr(source, "data_classification", "synthetic"),
+        resume_run=getattr(source, "resume_run", None),
+        runtime_manifest=getattr(source, "runtime_manifest", None),
+        runtime_backend=getattr(source, "runtime_backend", None),
+        runtime_id=getattr(source, "runtime_id", None),
+        base_url=getattr(source, "base_url", None),
+        api_key_env=getattr(source, "api_key_env", None),
+        runtime_metadata=getattr(source, "runtime_metadata", []),
+        allow_insecure_http=getattr(source, "allow_insecure_http", False),
+        classification_testset_path=_plan_asset(plan, "testset"),
     )
 
 
@@ -1503,7 +2487,7 @@ def cmd_qualify(args: argparse.Namespace) -> int:
         )
     qualification_plan = plan["qualification"]
     full = _load_testset(_plan_asset(plan, "testset"), app=plan["app"])
-    directory = new_run_dir(Path(args.out), f"qual-{args.arm}-{args.provider}")
+    directory = _run_directory(args, f"qual-{args.arm}-{args.provider}")
     testset = _subset_testset(full, qualification_plan["item_ids"], directory)
     run_args = _planned_args(
         args,
@@ -1651,7 +2635,7 @@ def cmd_experiment_run(args: argparse.Namespace) -> int:
         repeats = workload["replicates"]
         concurrency = workload["concurrency"]
         max_attempts = workload["max_attempts"]
-        directory = new_run_dir(Path(args.out), f"e5-full-{args.arm}")
+        directory = _run_directory(args, f"e5-full-{args.arm}")
     else:
         allowed = plan["operations"]["concurrency_levels"]
         if args.concurrency_level not in allowed:
@@ -1662,9 +2646,7 @@ def cmd_experiment_run(args: argparse.Namespace) -> int:
         concurrency = args.concurrency_level
         repeats = plan["operations"]["replicates_per_level"]
         max_attempts = plan["operations"]["max_attempts"]
-        directory = new_run_dir(
-            Path(args.out), f"e5-load-c{concurrency}-{args.arm}"
-        )
+        directory = _run_directory(args, f"e5-load-c{concurrency}-{args.arm}")
         testset = _subset_testset(full, plan["operations"]["item_ids"], directory)
     run_args = _planned_args(
         args,
@@ -1806,6 +2788,16 @@ def cmd_experiment_report(args: argparse.Namespace) -> int:
     summary: dict[str, Any] = {
         "schema_version": 1,
         "experiment_id": plan["experiment_id"],
+        "decision_policy": (
+            "legacy_v1"
+            if plan["experiment_id"] == "retention-e5"
+            else "decision_grade_v2"
+        ),
+        # Policy is bound when the report is produced, not when model outputs are
+        # generated. This permits the same immutable runs to be audited under a fixed
+        # legacy rule or the current decision-grade rule without pretending the
+        # runtime endpoint determines statistical policy.
+        "decision_policy_sha": manifest_mod.decision_policy_sha(),
         "plan_sha": plan_sha,
         "reconciled": False,
         "unavailable_arms": [
@@ -1861,6 +2853,7 @@ def cmd_experiment_report(args: argparse.Namespace) -> int:
             reference_parse_ok=incumbent_ok,
             reference_total=len(incumbent.result.results),
             reference_runtime_problems=runtime_problems[incumbent_id],
+            policy=summary["decision_policy"],
         )
         regression_rows = [
             row
@@ -2134,10 +3127,15 @@ def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
                 "labels; the arm that ran the easier set would look better for it."
             )
 
-    # New-contract runs must have been classified by the same code and must represent
-    # the same common workload. Historical pairs retain their legacy scorer_sha gate;
-    # mixing eras is refused because no safe equivalence can be inferred.
-    new_fields = ("outcome_contract_sha", "workload_sha")
+    # New-contract runs must have been classified by the same outcome code and must
+    # represent the same common evaluation workload. Generation/runtime code and final
+    # decision policy are recorded per arm/report rather than blockers: those are the
+    # very layers an OpenRouter-to-GPU migration is expected to change.
+    new_fields = (
+        "application_contract_sha",
+        "outcome_contract_sha",
+        "workload_sha",
+    )
     for field in new_fields:
         left, right = incumbent.meta.get(field), candidate.meta.get(field)
         if (left is None) != (right is None):
@@ -2155,17 +3153,24 @@ def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
 def cmd_compare(args: argparse.Namespace) -> int:
     """The mechanism report: which mechanisms each arm passes.
 
-    Not a percentage. This pack scores 22 rows, so one row is 4.5 points and McNemar on
-    the paired discordant cells needs six items discordant in one direction before an
-    exact two-sided p falls under 0.05. `report.py` makes that argument in full; this
-    function's job is to hand it two arms it is allowed to compare.
+    Not a percentage. Aggregate production metrics operate on normalized product rows;
+    paired inference operates on independent call clusters. `report.py` states the
+    grain map in full; this function's job is to hand it two arms it may compare.
     """
     incumbent = load_run(Path(args.incumbent))
     candidate = load_run(Path(args.candidate))
     _refuse_incomparable(incumbent, candidate)
 
-    testset_path = Path(args.testset) if args.testset else Path(incumbent.meta["testset_path"])
-    gt_path = Path(args.gt) if args.gt else Path(incumbent.meta["gt_path"])
+    testset_path = (
+        Path(args.testset)
+        if args.testset
+        else _recorded_artifact_path(incumbent.directory, incumbent.meta["testset_path"])
+    )
+    gt_path = (
+        Path(args.gt)
+        if args.gt
+        else _recorded_artifact_path(incumbent.directory, incumbent.meta["gt_path"])
+    )
     if not testset_path.exists():
         raise CliError(
             f"the run names testset {testset_path}, which no longer exists. Pass "
@@ -2179,6 +3184,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
             f"recorded {incumbent.meta['testset_sha']}. Scoring against an edited "
             "testset would compare answers with labels they never saw."
         )
+    _require_run_matrix(incumbent, testset)
+    _require_run_matrix(candidate, testset)
 
     gt = _load_gt(gt_path)
     if manifest_mod.file_hash(gt_path) != incumbent.meta["gt_sha"]:
@@ -2293,10 +3300,84 @@ def cmd_judge(args: argparse.Namespace) -> int:
     candidate = load_run(Path(args.candidate))
     _refuse_incomparable(incumbent, candidate)
 
-    testset_path = Path(args.testset) if args.testset else Path(incumbent.meta["testset_path"])
-    gt_path = Path(args.gt) if args.gt else Path(incumbent.meta["gt_path"])
+    runtime = _runtime_from_args(args)
+    if runtime.backend is RuntimeBackend.OPENROUTER and not args.provider:
+        raise CliError(
+            "the advisory judge must pin one OpenRouter provider; pass --provider, "
+            "or select an openai-compatible internal runtime where provider routing "
+            "does not apply"
+        )
+
+    testset_path = (
+        Path(args.testset)
+        if args.testset
+        else _recorded_artifact_path(incumbent.directory, incumbent.meta["testset_path"])
+    )
+    gt_path = (
+        Path(args.gt)
+        if args.gt
+        else _recorded_artifact_path(incumbent.directory, incumbent.meta["gt_path"])
+    )
+    if not testset_path.is_file():
+        raise CliError(f"judge testset not found: {testset_path}")
+    if not gt_path.is_file():
+        raise CliError(f"judge ground truth not found: {gt_path}")
+    actual_testset_sha = testset_sha(testset_path)
+    if actual_testset_sha != incumbent.meta.get("testset_sha"):
+        raise CliError(
+            f"{testset_path} has changed since the source runs: sha is "
+            f"{actual_testset_sha}, expected {incumbent.meta.get('testset_sha')}"
+        )
+    actual_gt_sha = manifest_mod.file_hash(gt_path)
+    if actual_gt_sha != incumbent.meta.get("gt_sha"):
+        raise CliError(
+            f"{gt_path} has changed since the source runs; refusing to ask a judge "
+            "about labels the arms were not scored against"
+        )
     testset = _load_testset(testset_path, app=incumbent.meta.get("app", "retention"))
     gt = _load_gt(gt_path)
+    _require_run_matrix(incumbent, testset)
+    _require_run_matrix(candidate, testset)
+
+    source_models = {
+        str(value)
+        for value in (
+            incumbent.meta.get("model_requested"),
+            candidate.meta.get("model_requested"),
+            *incumbent.result.observed_models().keys(),
+            *candidate.result.observed_models().keys(),
+        )
+        if value
+    }
+    if args.model in source_models:
+        raise CliError(
+            f"judge model {args.model!r} is one of the evaluated arm models. The "
+            "diagnostic requires a distinct model, not self-review."
+        )
+
+    def recorded_classification(loaded: LoadedRun) -> str:
+        value = loaded.meta.get("data_classification")
+        if value in _CLASSIFICATION_RANK:
+            return str(value)
+        path = _recorded_artifact_path(
+            loaded.directory, loaded.meta.get("testset_path", "")
+        )
+        return "synthetic" if _inside(path, SYNTHETIC_FIXTURE_ROOT) else "customer"
+
+    required_classification = max(
+        (recorded_classification(incumbent), recorded_classification(candidate)),
+        key=_CLASSIFICATION_RANK.__getitem__,
+    )
+    requested_classification = getattr(args, "data_classification", "synthetic")
+    if _CLASSIFICATION_RANK[requested_classification] < _CLASSIFICATION_RANK[required_classification]:
+        raise CliError(
+            f"judge output classification {requested_classification!r} would downgrade "
+            f"source evidence classified {required_classification!r}"
+        )
+    effective_classification = max(
+        (requested_classification, required_classification),
+        key=_CLASSIFICATION_RANK.__getitem__,
+    )
 
     per_replicate = {
         loaded.arm: replicate_records(loaded.result, testset.items)
@@ -2311,12 +3392,67 @@ def cmd_judge(args: argparse.Namespace) -> int:
         total = sum(len(find_disagreements(gt, inc_rows, cand_rows, d)) for d in dimensions)
         print(
             f"dry run: {total} disagreement item(s) across {dimensions} would be sent "
-            f"to {args.model} on {args.provider}. No call made."
+            f"to {args.model} through {runtime.runtime_id}. No call made."
         )
         return EXIT_OK
 
-    api_key = _api_key()
-    client = build_client(api_key, timeout=args.timeout)
+    private_arg = getattr(args, "private_out", None)
+    legacy_out = getattr(args, "out", None)
+    if private_arg and legacy_out and Path(private_arg) != Path(legacy_out):
+        raise CliError("--out is an alias for --private-out; pass only one destination")
+    private_value = private_arg or legacy_out
+    if not private_value:
+        raise CliError(
+            "judge calls require --private-out so exact request/raw-response evidence "
+            "is fsynced after every paid call"
+        )
+    private_path = Path(private_value).expanduser().resolve(strict=False)
+    if effective_classification != "synthetic":
+        try:
+            private_path = require_private_destination(private_path)
+        except ArtifactError as exc:
+            raise CliError(str(exc)) from exc
+    raw_path = private_path.with_name(private_path.name + ".raw.jsonl")
+    for target in (private_path, raw_path):
+        if target.exists():
+            raise CliError(
+                f"refusing to mix or overwrite judge evidence at {target}; choose a "
+                "new --private-out"
+            )
+
+    api_key = _api_key(runtime)
+    append_jsonl(
+        raw_path,
+        {
+            "type": "judge_private_journal",
+            "schema_version": 1,
+            "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "judge_model": args.model,
+            "judge_runtime_fingerprint": runtime.fingerprint(),
+            "incumbent_run_id": incumbent.meta.get("run_id", incumbent.directory.name),
+            "candidate_run_id": candidate.meta.get("run_id", candidate.directory.name),
+        },
+    )
+    if runtime == OPENROUTER_RUNTIME:
+        client = build_client(api_key, timeout=args.timeout)
+    else:
+        client = build_client(api_key, timeout=args.timeout, runtime=runtime)
+
+    source_provenance = {
+        "incumbent_manifest_sha": canonical_sha(incumbent.meta),
+        "candidate_manifest_sha": canonical_sha(candidate.meta),
+        "selected_replicate": 1,
+        "testset_sha": actual_testset_sha,
+        "gt_sha": actual_gt_sha,
+        "application_contract_sha": incumbent.meta.get("application_contract_sha"),
+        "outcome_contract_sha": incumbent.meta.get("outcome_contract_sha"),
+        "generation_contract_sha": incumbent.meta.get("generation_contract_sha"),
+        "scoring_code_sha": incumbent.meta.get(
+            "scoring_code_sha", incumbent.meta.get("scorer_sha")
+        ),
+        "incumbent_run_contract_sha": incumbent.meta.get("run_contract_sha"),
+        "candidate_run_contract_sha": candidate.meta.get("run_contract_sha"),
+    }
 
     report = run_judge(
         testset=testset,
@@ -2327,26 +3463,44 @@ def cmd_judge(args: argparse.Namespace) -> int:
         client=client,
         model=args.model,
         provider=args.provider,
+        reasoning_effort=(
+            "none"
+            if runtime.backend is RuntimeBackend.OPENROUTER
+            else "provider-default"
+        ),
         max_items=args.max_items,
+        source_provenance=source_provenance,
+        private_record_sink=lambda record: append_jsonl(raw_path, record),
     )
     report["incumbent_arm"] = incumbent.arm
     report["candidate_arm"] = candidate.arm
+    report["restricted_source_run_ids"] = {
+        "incumbent": incumbent.meta.get("run_id", incumbent.directory.name),
+        "candidate": candidate.meta.get("run_id", candidate.directory.name),
+    }
 
     text = _render_judge_report(report)
     print()
     print(text)
 
-    if args.out:
-        out_path = Path(args.out)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(
-            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8", newline="\n"
+    atomic_write_text(
+        private_path,
+        json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+    )
+    print(f"wrote restricted review report {private_path}")
+    print(f"wrote restricted raw call journal {raw_path}")
+    safe_report = shareable_report(report)
+    assert_shareable_payload(safe_report)
+    if getattr(args, "shareable_out", None):
+        shareable_path = Path(args.shareable_out)
+        atomic_write_text(
+            shareable_path,
+            json.dumps(safe_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
         )
-        print(f"wrote {out_path}")
+        print(f"wrote shareable judge report {shareable_path}")
     if args.report:
         report_path = Path(args.report)
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(text, encoding="utf-8", newline="\n")
+        atomic_write_text(report_path, text + "\n")
         print(f"wrote {report_path}")
     return EXIT_OK
 
@@ -2356,18 +3510,32 @@ def _render_judge_report(report: dict[str, Any]) -> str:
     docstring on `evalgen.judge` for why that is a structural constraint here, not a
     style choice."""
     summary = report["summary"]
+    items = report.get("items", [])
+    identity_counts: dict[str, int] = {}
+    evidence_counts: dict[str, int] = {}
+    for row in items:
+        identity = str(row.get("identity_status", "unknown"))
+        evidence = str(row.get("evidence_status", "unknown"))
+        identity_counts[identity] = identity_counts.get(identity, 0) + 1
+        evidence_counts[evidence] = evidence_counts.get(evidence, 0) + 1
     lines = [
         "=" * 78,
         "INDEPENDENT JUDGE -- DIAGNOSTIC ONLY, NOT A SCORED DIMENSION",
         "=" * 78,
         f"incumbent   {report['incumbent_arm']}",
         f"candidate   {report['candidate_arm']}",
-        f"judge model {report['model_requested']} on {report['provider_requested']}",
+        f"judge model {report['model_requested']} on "
+        f"{report['provider_requested'] or 'internal runtime'}",
         f"dimensions  {', '.join(report['dimensions'])}",
         "",
         f"disagreement items found: {report['candidates_found']}"
         + ("  (TRUNCATED by --max-items)" if report["truncated"] else ""),
         f"items adjudicated:        {summary['total']}",
+        f"usable opinions:           {summary.get('usable_count', 0)}",
+        f"transport errors:          {summary.get('transport_error_count', 0)}",
+        f"identity/execution errors: {summary.get('execution_error_count', 0)}",
+        f"identity status:           {identity_counts}",
+        f"evidence status:           {evidence_counts}",
         "",
     ]
     for verdict in ("ground_truth_correct", "defensible_disagreement", "ground_truth_error", "unclear"):
@@ -2387,18 +3555,23 @@ def _render_judge_report(report: dict[str, Any]) -> str:
             "correction applied to any fixture):",
         ]
         for row in report["items"]:
-            if row["verdict"] == "ground_truth_error":
+            if (
+                row["verdict"] == "ground_truth_error"
+                and row.get("execution_status") == "completed"
+                and not row.get("parse_error")
+            ):
                 lines.append(
-                    f"    {row['item_id']} [{row['dimension']}] gt={row['gt_label']!r} "
-                    f"incumbent={row['incumbent_label']!r} candidate={row['candidate_label']!r}"
+                    f"    {row['judgment_unit_id']} [{row['dimension']}] "
+                    f"evidence={row.get('evidence_status')} "
+                    f"identity={row.get('identity_status')}"
                 )
-                lines.append(f"      judge: {row['rationale']}")
     lines += [
         "",
         "This is one model's opinion about a disputed label, recorded once per item at",
         "temperature 0. It does not change any score, does not join any verdict, and is",
         "not itself RECONCILED against anything. Read it the way you would read a second",
-        "reviewer's comment, not a second scorer's number.",
+        "reviewer's comment, not a second scorer's number. Transcript spans, rationale,",
+        "and raw responses exist only in the restricted review bundle.",
     ]
     return "\n".join(lines)
 
@@ -2457,13 +3630,76 @@ def _footer(
 # ========================================================================= parser
 
 
+def _add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--runtime-manifest",
+        default=None,
+        metavar="JSON",
+        help=(
+            "complete non-secret RuntimeSpec manifest; mutually exclusive with the "
+            "individual runtime flags"
+        ),
+    )
+    parser.add_argument(
+        "--runtime-backend",
+        choices=("openrouter", "openai-compatible"),
+        default=None,
+        help=(
+            "model gateway: historical OpenRouter behavior, or an internal "
+            "OpenAI-compatible vLLM/TGI/SGLang endpoint"
+        ),
+    )
+    parser.add_argument("--runtime-id", default=None, help="stable deployment/runtime id")
+    parser.add_argument(
+        "--base-url",
+        default=None,
+        help="runtime API root; local GPU default is http://127.0.0.1:8000/v1",
+    )
+    parser.add_argument(
+        "--api-key-env",
+        default=None,
+        help="name of the environment variable holding the runtime key; never serialized",
+    )
+    parser.add_argument(
+        "--runtime-metadata",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help=(
+            "repeatable immutable non-secret deployment fact, e.g. "
+            "image_digest=sha256:... or gpu_type=H100"
+        ),
+    )
+    parser.add_argument(
+        "--allow-insecure-http",
+        action="store_true",
+        help="allow plain HTTP to a non-loopback endpoint on an explicitly trusted network",
+    )
+
+
 def _add_run_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--model", required=True, help="OpenRouter model id")
+    parser.add_argument("--model", required=True, help="model id understood by the selected runtime")
     parser.add_argument("--testset", default=str(DEFAULT_TESTSET))
     parser.add_argument("--gt", default=str(DEFAULT_GT))
     parser.add_argument("--app", default="retention")
     parser.add_argument("--prompt-id", default="v9_16_base")
     parser.add_argument("--out", default=str(DEFAULT_OUT))
+    parser.add_argument(
+        "--data-classification",
+        choices=("synthetic", "internal", "customer"),
+        default="synthetic",
+        help=(
+            "internal/customer artifacts must live below EVAL_HARNESS_DATA_DIR; "
+            "synthetic preserves the committed fixture workflow"
+        ),
+    )
+    parser.add_argument(
+        "--resume-run",
+        default=None,
+        metavar="DIRECTORY",
+        help="resume an incomplete journaled run with the exact same contract",
+    )
+    _add_runtime_arguments(parser)
     # No default, and that is the decision. A default provider would be this file
     # quietly choosing a backend for every model id anyone ever passes in, including
     # ones where the choice is wrong. The pin has to be argued for per model -- which
@@ -2574,14 +3810,36 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="repeatable; default is all three",
     )
-    judge.add_argument("--model", required=True, help="OpenRouter model id for the judge")
+    judge.add_argument("--model", required=True, help="runtime model id for the judge")
     judge.add_argument(
-        "--provider", required=True, help="pin the judge to one backend, same as baseline/compare"
+        "--provider",
+        default=None,
+        help="required OpenRouter provider pin; omit for an internal GPU runtime",
     )
     judge.add_argument("--max-items", type=int, default=None)
     judge.add_argument("--timeout", type=float, default=120.0)
-    judge.add_argument("--out", default=None, help="write the full JSON report here")
-    judge.add_argument("--report", default=None, help="also write the text summary here")
+    judge.add_argument(
+        "--data-classification",
+        choices=("synthetic", "internal", "customer"),
+        default="synthetic",
+    )
+    _add_runtime_arguments(judge)
+    judge.add_argument(
+        "--private-out",
+        default=None,
+        help="restricted JSON review report; a sibling raw JSONL journal is checkpointed",
+    )
+    judge.add_argument(
+        "--shareable-out",
+        default=None,
+        help="sanitized diagnostic JSON with no transcript spans, rationale, raw text, or item ids",
+    )
+    judge.add_argument(
+        "--out",
+        default=None,
+        help="deprecated alias for --private-out",
+    )
+    judge.add_argument("--report", default=None, help="write a shareable text summary here")
     judge.add_argument(
         "--dry-run",
         action="store_true",
@@ -2612,6 +3870,9 @@ def build_parser() -> argparse.ArgumentParser:
     qualify.add_argument("--provider", required=True)
     qualify.add_argument("--out", default=str(DEFAULT_OUT))
     qualify.add_argument("--timeout", type=float, default=120.0)
+    qualify.add_argument("--data-classification", choices=("synthetic", "internal", "customer"), default="synthetic")
+    qualify.add_argument("--resume-run", default=None)
+    _add_runtime_arguments(qualify)
     qualify.add_argument("--dry-run", action="store_true")
     qualify.set_defaults(handler=cmd_qualify)
 
@@ -2639,6 +3900,9 @@ def build_parser() -> argparse.ArgumentParser:
     experiment_run.add_argument("--confirm-plan-sha", required=True)
     experiment_run.add_argument("--out", default=str(DEFAULT_OUT))
     experiment_run.add_argument("--timeout", type=float, default=120.0)
+    experiment_run.add_argument("--data-classification", choices=("synthetic", "internal", "customer"), default="synthetic")
+    experiment_run.add_argument("--resume-run", default=None)
+    _add_runtime_arguments(experiment_run)
     experiment_run.add_argument("--dry-run", action="store_true")
     experiment_run.set_defaults(handler=cmd_experiment_run)
 

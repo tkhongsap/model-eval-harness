@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from math import comb
 from typing import Literal
 
-from .metrics import DimensionResult, outer_join
+from .metrics import DimensionResult
 from .records import Record
 
 # Arms may differ in coverage by at most this fraction before comparison refuses.
@@ -138,17 +138,41 @@ class RegressionRow:
 
 
 def _correct(gt: Record | None, pred: Record | None, dimension: str) -> bool | None:
-    """Item-level correctness. None means the item is not scorable in this dimension."""
+    """Item-level correctness, including absence and invalid-output semantics.
+
+    An absent ground-truth row represents the negative side of an outer join: an arm
+    is right only when it makes no claim in that dimension.  A present prediction
+    whose ``parse_ok`` is false is never evidence of correctness, even if a failure
+    skeleton happens to carry values copied from the ground truth to retain its row
+    shape.
+
+    ``None`` means the ground-truth row itself is outside the dimension's scoring
+    population (currently only a missing ``call_result``).
+    """
     if gt is None:
-        return None
+        if pred is None:
+            return True
+        if not pred.parse_ok:
+            return False
+        if dimension == "call_result":
+            return pred.call_result is None
+        if dimension == "reason":
+            return not pred.reasons
+        if dimension == "product":
+            return pred.product is None
+        raise ValueError(f"unknown dimension {dimension!r}")
     if dimension == "call_result":
         if gt.call_result is None:
             return None
-        return pred is not None and pred.call_result == gt.call_result
+        return (
+            pred is not None
+            and pred.parse_ok
+            and pred.call_result == gt.call_result
+        )
     if dimension == "reason":
-        return pred is not None and pred.reasons == gt.reasons
+        return pred is not None and pred.parse_ok and pred.reasons == gt.reasons
     if dimension == "product":
-        return pred is not None and pred.product == gt.product
+        return pred is not None and pred.parse_ok and pred.product == gt.product
     raise ValueError(f"unknown dimension {dimension!r}")
 
 
@@ -160,6 +184,73 @@ def _label(rec: Record | None, dimension: str) -> str:
     if dimension == "reason":
         return ", ".join(sorted(rec.reasons)) or "<empty>"
     return rec.product or "<empty>"
+
+
+def _unique_by_key(records: list[Record], role: str) -> dict[tuple, Record]:
+    """Index records without silently applying dict's last-row-wins behaviour.
+
+    Merge keys can contain customer identifiers, so refusal messages deliberately
+    report only counts.  The private source data is where a duplicate is resolved.
+    """
+    indexed: dict[tuple, Record] = {}
+    duplicates = 0
+    for record in records:
+        if record.key in indexed:
+            duplicates += 1
+        else:
+            indexed[record.key] = record
+    if duplicates:
+        raise CoverageMismatch(
+            f"{role} contains {duplicates} duplicate prediction/ground-truth merge "
+            "key(s). Paired comparison refuses last-row-wins ambiguity."
+        )
+    return indexed
+
+
+def _identity_set(
+    records: list[Record], dimension: str, role: str
+) -> frozenset[tuple]:
+    indexed = _unique_by_key(records, role)
+    if dimension in {"call_result", "reason"}:
+        return frozenset(indexed)
+    if dimension == "product":
+        return frozenset(
+            record.call_key for record in records if record.phone is not None
+        )
+    raise ValueError(f"unknown dimension {dimension!r}")
+
+
+def check_exact_coverage(
+    gt: list[Record],
+    incumbent: list[Record],
+    candidate: list[Record],
+    dimension: str,
+) -> None:
+    """Refuse unless both arms contain exactly the expected unit identities.
+
+    ``check_coverage`` remains available for historical aggregate results, which
+    expose counts but not identities.  New decision paths should call this helper on
+    normalized records before scoring.  Equal counts are insufficient: one missing
+    expected unit and one unrelated extra unit still make a different population.
+
+    The product dimension compares at call grain and mirrors the production scorer's
+    explicit null-phone drop.  The other dimensions use the normalized merge key.
+    No key values appear in the exception because phone is part of those identities.
+    """
+    expected = _identity_set(gt, dimension, "ground truth")
+    problems: list[str] = []
+    for role, records in (("incumbent", incumbent), ("candidate", candidate)):
+        observed = _identity_set(records, dimension, role)
+        missing = len(expected - observed)
+        extra = len(observed - expected)
+        if missing or extra:
+            problems.append(f"{role}: {missing} missing, {extra} extra")
+    if problems:
+        raise CoverageMismatch(
+            f"{dimension}: exact coverage differs from ground truth ("
+            + "; ".join(problems)
+            + "). Refusing to compare different unit identities."
+        )
 
 
 def check_coverage(
@@ -190,29 +281,295 @@ def check_coverage(
         )
 
 
+@dataclass(frozen=True)
+class ComparisonUnit:
+    """One canonical paired event shared by tables and regression rows."""
+
+    source: Record
+    gt_label: str
+    incumbent_label: str
+    candidate_label: str
+    incumbent_right: bool
+    candidate_right: bool
+    candidate_error_type: str
+    rule_labels: frozenset[str]
+
+
+def _rule_labels(record: Record | None, dimension: str) -> frozenset[str]:
+    if record is None:
+        return frozenset()
+    if dimension == "call_result":
+        return frozenset({record.call_result}) if record.call_result else frozenset()
+    if dimension == "reason":
+        return record.reasons
+    if dimension == "product":
+        return frozenset({record.product}) if record.product else frozenset()
+    raise ValueError(f"unknown dimension {dimension!r}")
+
+
+def _ordered_union(*groups: dict[tuple, object]) -> list[tuple]:
+    ordered: list[tuple] = []
+    seen: set[tuple] = set()
+    for group in groups:
+        for key in group:
+            if key not in seen:
+                seen.add(key)
+                ordered.append(key)
+    return ordered
+
+
+def _record_has_claim(record: Record | None, dimension: str) -> bool:
+    if record is None:
+        return False
+    if not record.parse_ok:
+        return True
+    if dimension == "call_result":
+        return record.call_result is not None
+    if dimension == "reason":
+        return bool(record.reasons)
+    raise ValueError(f"unknown record-grain dimension {dimension!r}")
+
+
+def _record_error_type(
+    gt_record: Record | None, candidate: Record | None, dimension: str
+) -> str:
+    if candidate is None:
+        return "missing_output"
+    if not candidate.parse_ok:
+        return "invalid_output"
+    if gt_record is None and _record_has_claim(candidate, dimension):
+        return "extra_output"
+    return "wrong_label"
+
+
+def _record_units(
+    gt: list[Record],
+    incumbent: list[Record],
+    candidate: list[Record],
+    dimension: str,
+) -> list[ComparisonUnit]:
+    gt_by_key = _unique_by_key(gt, "ground truth")
+    inc_by_key = _unique_by_key(incumbent, "incumbent")
+    cand_by_key = _unique_by_key(candidate, "candidate")
+    units: list[ComparisonUnit] = []
+
+    for key in _ordered_union(gt_by_key, inc_by_key, cand_by_key):
+        g, i, c = gt_by_key.get(key), inc_by_key.get(key), cand_by_key.get(key)
+        if g is not None and dimension == "call_result" and g.call_result is None:
+            continue
+        # An orphan row that makes no claim in either arm is not a unit in this
+        # dimension.  If either arm makes a claim, absence in the other arm is the
+        # correct negative and the false positive becomes a paired event.
+        if g is None and not (
+            _record_has_claim(i, dimension) or _record_has_claim(c, dimension)
+        ):
+            continue
+        i_ok, c_ok = _correct(g, i, dimension), _correct(g, c, dimension)
+        if i_ok is None or c_ok is None:  # guarded above; defensive for new dimensions
+            continue
+        source = g or i or c
+        assert source is not None
+        units.append(
+            ComparisonUnit(
+                source=source,
+                gt_label="<no ground truth>" if g is None else _label(g, dimension),
+                incumbent_label=_label(i, dimension),
+                candidate_label=_label(c, dimension),
+                incumbent_right=i_ok,
+                candidate_right=c_ok,
+                candidate_error_type=_record_error_type(g, c, dimension),
+                rule_labels=(
+                    _rule_labels(g, dimension)
+                    | _rule_labels(i, dimension)
+                    | _rule_labels(c, dimension)
+                ),
+            )
+        )
+    return units
+
+
+def _product_groups(
+    records: list[Record], role: str
+) -> dict[tuple[str, str | None], list[Record]]:
+    _unique_by_key(records, role)
+    groups: dict[tuple[str, str | None], list[Record]] = {}
+    for record in records:
+        # Preserve the scorer's documented production-fidelity null-phone drop.
+        if record.phone is None:
+            continue
+        groups.setdefault(record.call_key, []).append(record)
+    return groups
+
+
+def _product_label(records: list[Record] | None, *, ground_truth: bool = False) -> str:
+    if records is None:
+        return "<no ground truth>" if ground_truth else "<no prediction>"
+    products = sorted(
+        {record.product for record in records if record.product is not None}
+    )
+    return ", ".join(products) or "<empty>"
+
+
+def _product_units(
+    gt: list[Record], incumbent: list[Record], candidate: list[Record]
+) -> list[ComparisonUnit]:
+    gt_groups = _product_groups(gt, "ground truth")
+    inc_groups = _product_groups(incumbent, "incumbent")
+    cand_groups = _product_groups(candidate, "candidate")
+    units: list[ComparisonUnit] = []
+
+    for key in _ordered_union(gt_groups, inc_groups, cand_groups):
+        g, i, c = gt_groups.get(key), inc_groups.get(key), cand_groups.get(key)
+        gt_products = {row.product for row in (g or []) if row.product is not None}
+        inc_products = {row.product for row in (i or []) if row.product is not None}
+        cand_products = {row.product for row in (c or []) if row.product is not None}
+        i_ok = (
+            i is None or all(row.parse_ok for row in i)
+        ) and inc_products == gt_products
+        c_ok = (
+            c is None or all(row.parse_ok for row in c)
+        ) and cand_products == gt_products
+
+        source_row = (g or i or c or [None])[0]
+        assert source_row is not None
+        # Product comparison is call-grain.  Hash a canonical call-level record so
+        # the item key does not depend on which product happened to appear first.
+        source = Record(
+            call_id=source_row.call_id,
+            phone=source_row.phone,
+            product=None,
+            call_result=None,
+        )
+        if c is None:
+            candidate_error_type = "missing_output"
+        elif not all(row.parse_ok for row in c):
+            candidate_error_type = "invalid_output"
+        elif cand_products - gt_products:
+            candidate_error_type = "extra_output"
+        else:
+            candidate_error_type = "wrong_label"
+        units.append(
+            ComparisonUnit(
+                source=source,
+                gt_label=_product_label(g, ground_truth=True),
+                incumbent_label=_product_label(i),
+                candidate_label=_product_label(c),
+                incumbent_right=i_ok,
+                candidate_right=c_ok,
+                candidate_error_type=candidate_error_type,
+                rule_labels=frozenset(
+                    product
+                    for product in (gt_products | inc_products | cand_products)
+                    if product is not None
+                ),
+            )
+        )
+    return units
+
+
+def _comparison_units(
+    gt: list[Record],
+    incumbent: list[Record],
+    candidate: list[Record],
+    dimension: str,
+) -> list[ComparisonUnit]:
+    if dimension in {"call_result", "reason"}:
+        return _record_units(gt, incumbent, candidate, dimension)
+    if dimension == "product":
+        return _product_units(gt, incumbent, candidate)
+    raise ValueError(f"unknown dimension {dimension!r}")
+
+
+@dataclass(frozen=True)
+class ComparisonCluster:
+    """One statistically independent call-level paired event.
+
+    The normalized scorer remains product-row shaped, and regression review keeps
+    that actionable grain.  Inference must not pretend that two products from one
+    call are two independent customers, however.  A cluster is right only when the
+    arm is right on every scored unit from that call.
+    """
+
+    source: Record
+    gt_label: str
+    incumbent_label: str
+    candidate_label: str
+    incumbent_right: bool
+    candidate_right: bool
+    unit_count: int
+    rule_labels: frozenset[str]
+
+
+def _cluster_label(units: list[ComparisonUnit], field: str) -> str:
+    values = [getattr(unit, field) for unit in units]
+    if len(set(values)) == 1:
+        return values[0]
+    tagged = sorted(
+        (
+            unit.source.product or "<call>",
+            getattr(unit, field),
+        )
+        for unit in units
+    )
+    return " | ".join(f"{product}: {label}" for product, label in tagged)
+
+
+def comparison_clusters(
+    gt: list[Record],
+    incumbent: list[Record],
+    candidate: list[Record],
+    dimension: str,
+) -> list[ComparisonCluster]:
+    """Return canonical paired evidence clustered once per call.
+
+    This is the population used by McNemar/exact paired verdicts and by the advisory
+    judge.  Multiple product rows from one transcript therefore move one Bernoulli
+    unit, not several correlated units.  Product-level regression rows are still
+    produced separately by :func:`regressions`.
+    """
+    grouped: dict[tuple[str, str | None], list[ComparisonUnit]] = {}
+    for unit in _comparison_units(gt, incumbent, candidate, dimension):
+        grouped.setdefault(unit.source.call_key, []).append(unit)
+
+    clusters: list[ComparisonCluster] = []
+    for units in grouped.values():
+        first = units[0].source
+        clusters.append(
+            ComparisonCluster(
+                source=Record(
+                    call_id=first.call_id,
+                    phone=first.phone,
+                    product=None,
+                    call_result=None,
+                ),
+                gt_label=_cluster_label(units, "gt_label"),
+                incumbent_label=_cluster_label(units, "incumbent_label"),
+                candidate_label=_cluster_label(units, "candidate_label"),
+                incumbent_right=all(unit.incumbent_right for unit in units),
+                candidate_right=all(unit.candidate_right for unit in units),
+                unit_count=len(units),
+                rule_labels=frozenset().union(
+                    *(unit.rule_labels for unit in units)
+                ),
+            )
+        )
+    return clusters
+
+
 def disagreement(
     gt: list[Record],
     incumbent: list[Record],
     candidate: list[Record],
     dimension: str,
 ) -> Disagreement:
-    """Build the 2x2 over items scorable for BOTH arms."""
-    inc_by_key = {r.key: r for r in incumbent}
-    cand_by_key = {r.key: r for r in candidate}
-
+    """Build the 2x2 over independent call clusters, including orphan claims."""
     br = bw = ior = cor = 0
-    for g, _ in outer_join(gt, []):
-        if g is None:
-            continue
-        i_ok = _correct(g, inc_by_key.get(g.key), dimension)
-        c_ok = _correct(g, cand_by_key.get(g.key), dimension)
-        if i_ok is None or c_ok is None:
-            continue
-        if i_ok and c_ok:
+    for unit in comparison_clusters(gt, incumbent, candidate, dimension):
+        if unit.incumbent_right and unit.candidate_right:
             br += 1
-        elif not i_ok and not c_ok:
+        elif not unit.incumbent_right and not unit.candidate_right:
             bw += 1
-        elif i_ok:
+        elif unit.incumbent_right:
             ior += 1
         else:
             cor += 1
@@ -240,23 +597,18 @@ def regressions(
     """
     from .keys import item_key
 
-    inc_by_key = {r.key: r for r in incumbent}
-    cand_by_key = {r.key: r for r in candidate}
-
     rows: list[RegressionRow] = []
-    for g in gt:
-        i, c = inc_by_key.get(g.key), cand_by_key.get(g.key)
-        i_ok, c_ok = _correct(g, i, dimension), _correct(g, c, dimension)
-        if i_ok is None or c_ok is None or not i_ok or c_ok:
+    for unit in _comparison_units(gt, incumbent, candidate, dimension):
+        if not unit.incumbent_right or unit.candidate_right:
             continue
         rows.append(
             RegressionRow(
-                item_key=item_key(g, hash_key),
+                item_key=item_key(unit.source, hash_key),
                 dimension=dimension,
-                gt_label=_label(g, dimension),
-                incumbent_label=_label(i, dimension),
-                candidate_label=_label(c, dimension),
-                error_type="missing_output" if c is None or not c.parse_ok else "wrong_label",
+                gt_label=unit.gt_label,
+                incumbent_label=unit.incumbent_label,
+                candidate_label=unit.candidate_label,
+                error_type=unit.candidate_error_type,
             )
         )
     return rows

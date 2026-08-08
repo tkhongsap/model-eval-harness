@@ -566,12 +566,12 @@ def test_render_prints_the_provenance_stamps(report_text):
 
 
 def test_render_puts_the_sections_in_the_mandated_order(report_text):
-    """The order is the argument: provenance, verdicts, per-item disagreement, what the
+    """The order is the argument: provenance, verdicts, paired disagreement, what the
     models returned, instability -- and the quotable numbers LAST."""
     order = [
         "RECONCILED: NO",
         "1. MECHANISM TABLE",
-        "2. PER-ITEM DISAGREEMENT",
+        "2. PAIRED DISAGREEMENT",
         "3. WHAT THE MODELS ACTUALLY RETURNED",
         "4. N_flip",
         "5. AGGREGATE METRICS",
@@ -611,7 +611,7 @@ def test_render_shows_both_arms_verdicts_per_mechanism(report_text):
 
 def mechanism_line(text, mechanism):
     """Section 1's row for one mechanism, read the way a reader's eye reads it."""
-    section = text.split("1. MECHANISM TABLE")[1].split("2. PER-ITEM DISAGREEMENT")[0]
+    section = text.split("1. MECHANISM TABLE")[1].split("2. PAIRED DISAGREEMENT")[0]
     return next(
         line for line in section.splitlines()
         if line.strip().startswith(mechanism + " ")
@@ -666,7 +666,7 @@ def test_the_section_says_the_letter_saturates_and_the_rate_does_not(report_text
     FAIL/FAIL from four experiments needs to be told why the column they know changed
     meaning, and told with the measurement rather than an argument from principle."""
     section = report_text.split("1. MECHANISM TABLE")[1].split(
-        "2. PER-ITEM DISAGREEMENT"
+        "2. PAIRED DISAGREEMENT"
     )[0]
 
     assert "always correct" in section, "the rate column is named where it is explained"
@@ -677,6 +677,42 @@ def test_the_section_says_the_letter_saturates_and_the_rate_does_not(report_text
     assert "9/10" in section and "1/10" in section, (
         "the prose names the two rates the letter cannot tell apart"
     )
+
+
+def test_paired_section_names_the_statistical_unit_not_a_vague_item(report_text):
+    section = report_text.split("2. PAIRED DISAGREEMENT")[1].split(
+        "3. WHAT THE MODELS ACTUALLY RETURNED"
+    )[0]
+
+    assert "one Bernoulli pair per call cluster" in report_text
+    assert "Statistical unit: one call cluster per dimension" in section
+    assert "six discordant call clusters" in section
+    assert "PER-ITEM DISAGREEMENT" not in report_text
+    assert "McNemar" not in report_text
+
+
+def test_report_pins_the_three_grains_as_an_exact_snapshot(report_text):
+    """Aggregate, inference, and review rows are intentionally not interchangeable."""
+    lines = report_text.splitlines()
+    start = lines.index("  GRAIN MAP - these outputs answer different questions:")
+
+    assert lines[start : start + 9] == [
+        "  GRAIN MAP - these outputs answer different questions:",
+        "    aggregate metrics (section 5): normalized product-row input; call_result",
+        "      and reason score those rows, while product groups them into a call-level",
+        "      exact product set to mirror the production scorer.",
+        "    paired verdict and advisory judge: one Bernoulli unit per call cluster per",
+        "      dimension; a multi-product transcript cannot inflate inferential n.",
+        "    regression list below: call_result/reason stay at product-row grain; product",
+        "      is one call-level exact-product-set row. These locate failures; they are",
+        "      not additional independent pairs for the verdict above.",
+    ]
+
+    aggregate = report_text.split("5. AGGREGATE METRICS")[1].split(
+        "6. COST, TOKENS AND LATENCY"
+    )[0]
+    assert "Aggregate grain starts from one normalized PRODUCT ROW" in aggregate
+    assert "not the call-cluster" in aggregate
 
 
 def test_render_prints_n_flip_with_its_replicate_count(report_text):

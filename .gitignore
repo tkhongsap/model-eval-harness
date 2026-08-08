@@ -42,6 +42,7 @@ build/
 .env
 .env.*
 !.env.example
+/env
 *.pem
 *.key
 credentials.json

@@ -14,8 +14,10 @@
 #   5. TRUE_SOURCE_ROOT is deliberately unset. True's production source is not
 #      available to CI, so the differential test SKIPS here. CI therefore proves
 #      LESS than a local run: it shows the harness is internally consistent, not
-#      that it agrees with production. Expected: 483 passed, 11 skipped
-#      (MEASURED 2026-08-06; 467 + the 16 pack gates added the same day).
+#      that it agrees with production. Do not hard-code a current pass count here:
+#      the suite grows with each enforced contract. Read the observed count and every
+#      skip reason from the CI job. Historical reference only: 483 passed, 11 skipped
+#      was measured on 2026-08-06 before the current runtime/artifact additions.
 #
 # Items 3 and 4 are real gaps against canon, not decisions. Closing them means
 # adding a pyproject.toml, which is a build change rather than documentation.
@@ -31,6 +33,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # The repository intentionally has no installable package metadata yet; expose
+      # both source packages exactly as the team runbook and local verification do.
+      PYTHONPATH: src
 
     steps:
       - uses: actions/checkout@v4

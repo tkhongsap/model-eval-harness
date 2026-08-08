@@ -3,13 +3,13 @@
 **Why a table and not a number.** This pack scores 22 rows over 20 items
 (`tests/fixtures/testsets/README.md`, "Ground-truth rows: 22 (not 20)"). One row is
 4.5 percentage points, so the smallest thing that can change moves the headline by more
-than most real model differences. Worse, the paired test that would decide whether a
-difference is real -- McNemar on the discordant cells of `compare.disagreement` -- needs
-**six** discordant items in one direction before an exact two-sided p drops under 0.05
-(binomial: 6 of 6 gives p = 0.031, 5 of 5 gives 0.063). Six of twenty-two. A run can
-therefore produce a five-point gap and a p that never approaches significance, and a
-report whose headline is "84.1% vs 79.5%" invites exactly the conclusion the arithmetic
-does not support.
+than most real model differences. Worse, the exact paired-binomial rule implemented by
+`compare.paired_verdict` runs on **call clusters**, not product rows. It needs six
+discordant call clusters in one direction before a clean sweep reaches the preregistered
+per-side tail of 1/64 (6 of 6 is 0.015625 per side, equivalent to 0.03125 two-sided;
+5 of 5 is 0.0625 two-sided). A run can therefore produce a five-point gap and evidence
+that never reaches the decision band, and a report whose headline is "84.1% vs 79.5%"
+invites exactly the conclusion the arithmetic does not support.
 
 So the headline here is which **mechanisms** each arm passes. Every item in
 `retention_v1.jsonl` carries a `mechanism` field naming the capability it isolates and an
@@ -657,10 +657,11 @@ def render(
     **The order of the sections is the argument the report is making,** which is why it is
     fixed here rather than left to the caller. Provenance first, because a reader who
     stops after the header has still learned the one thing that governs everything below
-    it. Then the mechanism verdicts, then the per-item disagreements, then what the models
-    actually returned, then the instability count -- and only then the aggregate numbers,
-    which are the most quotable and the least interpretable at n=22. A report that leads
-    with 84.1% has already lost the argument in its first line, whatever the rest says.
+    it. Then the mechanism verdicts, then the call-cluster paired disagreements, then
+    what the models actually returned, then the instability count -- and only then the
+    aggregate numbers, which are the most quotable and the least interpretable at n=22.
+    A report that leads with 84.1% has already lost the argument in its first line,
+    whatever the rest says.
 
     Cost, tokens and latency come after the aggregates, and that placement follows the
     same rule rather than bending it. Nothing about section 6 moves the aggregates
@@ -833,10 +834,11 @@ def _mechanism_section(
         "  instead of it.",
         "",
         "  Why verdicts and not a percentage: 22 scored rows means one row is 4.5 points,",
-        "  and McNemar on the paired discordant cells needs SIX items discordant in one",
-        "  direction before an exact two-sided p falls under 0.05 (6/6 -> 0.031,",
-        "  5/5 -> 0.063). A five-point gap at this n is compatible with no difference at",
-        "  all, so a percentage here is quotable and not interpretable.",
+        "  while the exact paired-binomial decision runs on CALL CLUSTERS, not rows.",
+        "  It needs SIX discordant call clusters in one direction before a clean sweep",
+        "  reaches the preregistered per-side tail (6/6 -> 1/64; equivalent two-sided",
+        "  0.031, while 5/5 -> 0.063). A five-point aggregate gap at this n is therefore",
+        "  quotable and not decision-grade evidence by itself.",
         "",
         "  FLAKY is a first-class result, not a rounding problem. It is where model",
         "  nondeterminism lands, and it is a different decision from FAIL: FAIL needs a",
@@ -857,8 +859,12 @@ def _disagreement_section(
 ) -> list[str]:
     lines = [
         _SECTION,
-        "2. PER-ITEM DISAGREEMENT",
+        "2. PAIRED DISAGREEMENT - one Bernoulli pair per call cluster",
         _SECTION,
+        "  Statistical unit: one call cluster per dimension. If a call has several",
+        "  product rows, an arm is right only when every scored unit in that call is",
+        "  right; the call contributes one pair, never several correlated pairs.",
+        "",
         f"  {'dimension':<12} {'both right':>10} {'both wrong':>10} "
         f"{'inc only':>9} {'cand only':>9} {'d':>4} {'net':>5} "
         f"{'exact band':>12}  verdict",
@@ -874,13 +880,23 @@ def _disagreement_section(
 
     lines += [
         "",
-        "  The exact band is the smallest absolute net that crosses alpha=1/64 per",
-        "  side, computed from the discordant pairs only. A net at or beyond that",
-        "  threshold is AHEAD or BEHIND; a smaller net is INDISTINGUISHABLE.",
-        "  Fewer than six discordant pairs is UNDERPOWERED: the data cannot cross the",
-        "  preregistered threshold even if every discordance points one way.",
+        "  The exact band is the smallest absolute net whose one-sided binomial tail is",
+        "  at most 1/64, computed from discordant CALL CLUSTERS only. A net at or beyond",
+        "  that threshold is AHEAD or BEHIND; a smaller net is INDISTINGUISHABLE.",
+        "  Fewer than six discordant call clusters is UNDERPOWERED: the data cannot",
+        "  cross the preregistered threshold even if every discordance points one way.",
         "",
-        "  Items the incumbent got RIGHT and the candidate got WRONG:",
+        "  GRAIN MAP - these outputs answer different questions:",
+        "    aggregate metrics (section 5): normalized product-row input; call_result",
+        "      and reason score those rows, while product groups them into a call-level",
+        "      exact product set to mirror the production scorer.",
+        "    paired verdict and advisory judge: one Bernoulli unit per call cluster per",
+        "      dimension; a multi-product transcript cannot inflate inferential n.",
+        "    regression list below: call_result/reason stay at product-row grain; product",
+        "      is one call-level exact-product-set row. These locate failures; they are",
+        "      not additional independent pairs for the verdict above.",
+        "",
+        "  Actionable regressions the incumbent got RIGHT and the candidate got WRONG:",
     ]
     if not regressions:
         lines.append("    none.")
@@ -895,12 +911,14 @@ def _disagreement_section(
                 f"{r.incumbent_label:<24} {r.candidate_label:<24} {r.error_type}"
             )
         lines.append(
-            "    item_key is an HMAC of the merge key, never a call id or a phone number"
+            "    item_key is an HMAC of the applicable row/call key, never a call id or"
         )
         lines.append(
-            "    (keys.py). Resolving one back to a call happens inside True's systems,"
+            "    phone number (keys.py). Resolving one back to a call happens inside"
         )
-        lines.append("    by whoever holds EVAL_HARNESS_KEY_HMAC.")
+        lines.append(
+            "    True's systems, by whoever holds EVAL_HARNESS_KEY_HMAC."
+        )
     lines.append("")
     return lines
 
@@ -982,7 +1000,7 @@ def _flip_section(arms: Sequence[ArmSummary]) -> list[str]:
 def _metrics_section(arms: Sequence[ArmSummary]) -> list[str]:
     lines = [
         _SECTION,
-        "5. AGGREGATE METRICS - read last, and only with sections 1-4 in view",
+        "5. AGGREGATE METRICS - production scorer grain; read with sections 1-4",
         _SECTION,
         f"  {'dimension':<12} {'arm':<12} {'denom':>6} {'joined':>7} {'parse_fail':>11} "
         f"{'w-prec':>7} {'w-recall':>9} {'w-F1':>7}",
@@ -1017,10 +1035,13 @@ def _metrics_section(arms: Sequence[ArmSummary]) -> list[str]:
 
     lines += [
         "",
-        "  Three dimensions, three denominators, and they are meant to differ:",
-        "  call_result drops rows whose GROUND TRUTH outcome is absent, reason drops",
-        "  nothing, product works on call-grain groups after the NaN-phone drop. A single",
-        "  denominator across all three produces three wrong numbers (metrics.py:11-13).",
+        "  Aggregate grain starts from one normalized PRODUCT ROW per",
+        "  (call_id, phone, product). Three dimensions, three denominators, and they are",
+        "  meant to differ: call_result drops rows whose GROUND TRUTH outcome is absent,",
+        "  reason drops nothing, and product groups those rows into call-level exact sets",
+        "  after the NaN-phone drop. A single denominator across all three produces three",
+        "  wrong numbers (metrics.py:11-13). These aggregates are not the call-cluster",
+        "  Bernoulli population used by section 2 and the advisory judge.",
         "",
         "  Accuracy is deliberately absent from this table. It is inflated by an arm whose",
         "  unparseable items were dropped, and one-vs-rest accuracy over an 11-class",

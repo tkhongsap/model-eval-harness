@@ -33,7 +33,7 @@ from evalgen.prompts import validate_manifest
 from evalgen.request import build_request
 from evalgen.runner import ItemResult, RunConfig, RunResult
 from evalgen.testsets import load_testset
-from evalharness.compare import Disagreement, exact_band, paired_verdict
+from evalharness.compare import Disagreement, PairedVerdict, exact_band, paired_verdict
 
 PLAN = ROOT / "experiments" / "retention-e5.plan.json"
 EVIDENCE = ROOT / "experiments" / "evidence" / "retention-e5"
@@ -216,9 +216,22 @@ def test_committed_gate2_execution_and_reports_are_complete_and_untampered():
     for name, expected_sha in evidence["reporting"]["files"].items():
         actual_sha = hashlib.sha256((report_dir / name).read_bytes()).hexdigest()
         assert actual_sha == expected_sha
-    for name, expected_sha in evidence["reporting"]["report_code_sha256"].items():
-        actual_sha = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
-        assert actual_sha == expected_sha
+    # These fingerprints identify the historical code that generated the immutable
+    # report.  Pin those historical values rather than requiring them to equal the
+    # evolving checkout, which would force every later policy fix to rewrite old
+    # evidence.  legacy_v1 tests below preserve the decision semantics explicitly.
+    assert evidence["reporting"]["report_code_sha256"] == {
+        "src/evalgen/cli.py": (
+            "9cc3da19f2cbb6ce5bcd24fee0d179771b94feb15a477e773110d92095c3f1ec"
+        ),
+        "src/evalgen/experiments.py": (
+            "828002ad6798895bc9bbf5b50641bacae97a6d519a62189238a63898caa16544"
+        ),
+    }
+    assert all(
+        (ROOT / name).is_file()
+        for name in evidence["reporting"]["report_code_sha256"]
+    )
     assert not list(EVIDENCE.rglob("run.jsonl"))
 
     summary = json.loads((report_dir / "summary.json").read_text(encoding="utf-8"))
@@ -555,14 +568,15 @@ def test_full_runtime_gate_rechecks_identity_reasoning_and_usage_after_qualifica
 
 def test_decision_applies_quality_before_operations_and_keeps_underpowered_visible():
     underpowered = paired_verdict(Disagreement("product", 100, 0, 0, 0))
-    level = paired_verdict(Disagreement("reason", 100, 0, 6, 6))
+    call_result = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    reason = paired_verdict(Disagreement("reason", 100, 0, 6, 6))
 
     result = decision(
         qualification_status="QUALIFIED",
         parse_ok=414,
         total=414,
-        quality_verdicts=[level, underpowered],
-        stability_verdict=level,
+        quality_verdicts=[call_result, reason, underpowered],
+        stability_verdict=paired_verdict(Disagreement("stability", 100, 0, 6, 6)),
     )
 
     assert result.status == "INCONCLUSIVE"
@@ -579,7 +593,10 @@ def test_decision_does_not_let_an_underpowered_stability_verdict_fall_through_to
     statistical evidence that stability held. Reproduced directly before the fix: this
     exact input returned PASS.
     """
-    indistinguishable = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    quality = [
+        paired_verdict(Disagreement(dimension, 100, 0, 6, 6))
+        for dimension in ("call_result", "reason", "product")
+    ]
     underpowered_stability = paired_verdict(Disagreement("stability", 90, 0, 1, 1))  # d=2
     assert underpowered_stability.verdict == "UNDERPOWERED"
 
@@ -587,7 +604,7 @@ def test_decision_does_not_let_an_underpowered_stability_verdict_fall_through_to
         qualification_status="QUALIFIED",
         parse_ok=414,
         total=414,
-        quality_verdicts=[indistinguishable, indistinguishable, indistinguishable],
+        quality_verdicts=quality,
         stability_verdict=underpowered_stability,
     )
 
@@ -599,19 +616,190 @@ def test_decision_still_fails_on_a_behind_stability_verdict_ahead_of_underpowere
     """The existing BEHIND-stability path must still win over the new UNDERPOWERED
     check -- a candidate that is both unstable AND underpowered elsewhere is a FAIL,
     not an INCONCLUSIVE, and this must not regress when the branch above it changes."""
-    indistinguishable = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    quality = [
+        paired_verdict(Disagreement(dimension, 100, 0, 6, 6))
+        for dimension in ("call_result", "reason", "product")
+    ]
     behind_stability = paired_verdict(Disagreement("stability", 90, 30, 33, 3))
 
     result = decision(
         qualification_status="QUALIFIED",
         parse_ok=414,
         total=414,
-        quality_verdicts=[indistinguishable, indistinguishable, indistinguishable],
+        quality_verdicts=quality,
         stability_verdict=behind_stability,
     )
 
     assert result.status == "FAIL"
     assert any("stability" in reason.lower() for reason in result.reasons)
+
+
+def test_decision_refuses_missing_duplicate_and_unexpected_dimensions():
+    call_result = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    duplicate = paired_verdict(Disagreement("call_result", 100, 0, 6, 6))
+    unexpected = paired_verdict(Disagreement("sentiment", 100, 0, 6, 6))
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=[call_result, duplicate, unexpected],
+        stability_verdict=paired_verdict(Disagreement("stability", 100, 0, 6, 6)),
+    )
+
+    assert result.status == "INCONCLUSIVE"
+    joined = " ".join(result.reasons)
+    assert "duplicate" in joined
+    assert "missing" in joined
+    assert "unexpected" in joined
+
+
+def test_decision_treats_runtime_identity_or_provenance_defects_as_inconclusive():
+    quality = [
+        paired_verdict(Disagreement(dimension, 100, 0, 6, 6))
+        for dimension in ("call_result", "reason", "product")
+    ]
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=quality,
+        stability_verdict=paired_verdict(Disagreement("stability", 100, 0, 6, 6)),
+        runtime_problems=("observed model does not match the locked plan",),
+    )
+
+    assert result.status == "INCONCLUSIVE"
+    assert "invalid candidate runtime/provenance" in result.reasons[0]
+
+
+def test_decision_does_not_pass_an_indistinguishable_material_net_loss():
+    worse = paired_verdict(Disagreement("call_result", 80, 0, 15, 5))
+    assert worse.verdict == "INDISTINGUISHABLE"
+    level = {
+        dimension: paired_verdict(Disagreement(dimension, 80, 0, 10, 10))
+        for dimension in ("reason", "product", "stability")
+    }
+
+    strict = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=[worse, level["reason"], level["product"]],
+        stability_verdict=level["stability"],
+    )
+    legacy = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=[worse, level["reason"], level["product"]],
+        stability_verdict=level["stability"],
+        policy="legacy_v1",
+    )
+
+    assert strict.status == "INCONCLUSIVE"
+    assert "non-inferiority" in strict.reasons[0]
+    assert legacy.status == "PASS"
+
+
+def test_legacy_policy_reproduces_the_committed_experiment_5_decision():
+    comparison = json.loads(
+        (
+            EVIDENCE
+            / "report"
+            / "comparison-gemini-2.5-flash-vs-qwen3.6-27b.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=359,
+        total=414,
+        quality_verdicts=[
+            PairedVerdict(**row) for row in comparison["slices"]["full"]
+        ],
+        stability_verdict=PairedVerdict(**comparison["stability"]),
+        reference_parse_ok=413,
+        reference_total=414,
+        policy="legacy_v1",
+    )
+
+    assert result.status == comparison["decision"]["status"]
+    assert list(result.reasons) == comparison["decision"]["reasons"]
+
+
+def test_decision_net_loss_margin_is_explicit_and_dimension_specific():
+    quality = [
+        paired_verdict(Disagreement("call_result", 80, 0, 15, 5)),
+        paired_verdict(Disagreement("reason", 80, 0, 10, 10)),
+        paired_verdict(Disagreement("product", 80, 0, 10, 10)),
+    ]
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=quality,
+        stability_verdict=paired_verdict(
+            Disagreement("stability", 80, 0, 10, 10)
+        ),
+        maximum_net_losses={"call_result": 10},
+    )
+
+    assert result.status == "PASS"
+
+
+@pytest.mark.parametrize(
+    "forged",
+    [
+        lambda row: replace(row, verdict="AHEAD"),
+        lambda row: replace(row, band=(row.band or 0) + 2),
+        lambda row: replace(row, alpha_per_side=0.10),
+        lambda row: replace(row, discordant=True),
+        lambda row: replace(row, net=0.0),
+    ],
+)
+def test_decision_recomputes_and_refuses_forged_paired_evidence(forged):
+    canonical = {
+        dimension: paired_verdict(Disagreement(dimension, 80, 0, 10, 10))
+        for dimension in ("call_result", "reason", "product", "stability")
+    }
+    quality = [
+        forged(canonical["call_result"]),
+        canonical["reason"],
+        canonical["product"],
+    ]
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=414,
+        total=414,
+        quality_verdicts=quality,
+        stability_verdict=canonical["stability"],
+    )
+
+    assert result.status == "INCONCLUSIVE"
+    assert any(
+        token in " ".join(result.reasons)
+        for token in ("canonical", "alpha_per_side", "integers")
+    )
+
+
+def test_decision_expected_dimensions_are_configurable_for_a_future_application():
+    intent = paired_verdict(Disagreement("intent", 80, 0, 10, 10))
+
+    result = decision(
+        qualification_status="QUALIFIED",
+        parse_ok=100,
+        total=100,
+        quality_verdicts=[intent],
+        stability_verdict=paired_verdict(
+            Disagreement("stability", 80, 0, 10, 10)
+        ),
+        expected_dimensions=("intent",),
+    )
+
+    assert result.status == "PASS"
 
 
 def test_experiment_workbook_carries_quality_regressions_and_load(tmp_path):
@@ -742,10 +930,14 @@ def test_locked_experiment_runs_and_reports_are_reproducible_without_network(
                 provider=provider,
                 prompt_tokens=1000 + len(item.transcript_th),
                 completion_tokens=100,
-                reasoning_tokens=0,
-                cost=0.0001,
-                latency_s=0.001,
-            )
+                    reasoning_tokens=0,
+                    cost=0.0001,
+                    latency_s=0.001,
+                    runtime_id="openrouter",
+                    runtime_backend="openrouter",
+                    runtime_fingerprint=cli.OPENROUTER_RUNTIME.fingerprint(),
+                    system_fingerprint="fake-openrouter-build",
+                )
 
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-fake-not-a-real-key")
     monkeypatch.setenv("EVAL_HARNESS_KEY_HMAC", "deterministic-report-key")

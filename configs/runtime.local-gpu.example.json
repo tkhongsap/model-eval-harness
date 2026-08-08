@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "runtime_id": "true-gpu-staging-v1",
+  "backend": "openai-compatible",
+  "base_url": "https://gpu-gateway.example.internal/v1",
+  "api_key_env": "EVALGEN_GPU_API_KEY",
+  "organization": null,
+  "project": null,
+  "headers": {
+    "X-Eval-Runtime": "model-eval-harness"
+  },
+  "build_metadata": {
+    "gpu_type": "REPLACE_WITH_GPU_TYPE",
+    "image_digest": "sha256:REPLACE_WITH_IMMUTABLE_IMAGE_DIGEST",
+    "model_revision": "REPLACE_WITH_IMMUTABLE_MODEL_REVISION",
+    "server_version": "REPLACE_WITH_SERVER_VERSION"
+  },
+  "allow_insecure_http": false
+}

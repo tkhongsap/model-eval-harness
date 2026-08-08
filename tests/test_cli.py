@@ -28,8 +28,9 @@ regression that started making calls fails here rather than on an invoice.
 from __future__ import annotations
 
 import json
+import shutil
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -203,11 +204,42 @@ def perfect(testset):
 
 def mechanism_row(report: str, mechanism: str) -> list[str]:
     """The verdict pair for one mechanism, read out of section 1's table."""
-    table = report.split("2. PER-ITEM DISAGREEMENT")[0]
+    table = report.split("2. PAIRED DISAGREEMENT")[0]
     line = next(
         line for line in table.splitlines() if line.strip().startswith(mechanism + " ")
     )
     return line.split()[-2:]
+
+
+def rewrite_final_log(directory: Path, rows: list[dict]) -> None:
+    """Rewrite a v2 log while keeping its manifest/state hashes internally valid.
+
+    Tests use this to exercise the next integrity layer instead of stopping at the
+    intentionally earlier raw-file hash gate.
+    """
+    log_path = directory / "run.jsonl"
+    log_path.write_text(
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
+        encoding="utf-8",
+        newline="\n",
+    )
+    meta_path = directory / "run.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta["run_log_sha256"] = cli.file_sha256(log_path)
+    meta["run_log_bytes"] = log_path.stat().st_size
+    meta_path.write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    state_path = directory / "run.state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["run_log_sha256"] = meta["run_log_sha256"]
+    state_path.write_text(
+        json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 # ============================================================================ check
@@ -839,17 +871,16 @@ def test_the_scored_replicate_is_read_off_the_log_not_assumed_to_be_one(
     directory = run_arm("incumbent", perfect, repeats=2)
     capsys.readouterr()
 
-    log = directory / "run.jsonl"
-    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").split("\n") if line.strip()]
-    for row in rows:
-        row["replicate"] += 1                      # the log now starts at replicate 2
-        row["cost"] = 0.001 if row["replicate"] == 2 else 0.002
-    log.write_text(
-        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
-        encoding="utf-8", newline="\n",
-    )
-
     loaded = cli.load_run(directory)
+    shifted_rows = tuple(
+        replace(
+            row,
+            replicate=row.replicate + 1,
+            cost=0.001 if row.replicate == 1 else 0.002,
+        )
+        for row in loaded.result.results
+    )
+    loaded = replace(loaded, result=replace(loaded.result, results=shifted_rows))
     gt = cli._load_gt(GT_PATH)
     summary = cli.arm_summary(loaded, gt, cli.replicate_records(loaded.result, testset.items))
 
@@ -1074,6 +1105,315 @@ def test_an_incomplete_run_directory_is_refused_by_name(run_arm, perfect, capsys
     assert "decoding" in str(exc.value)
 
 
+def test_unknown_and_stripped_evidence_schema_versions_never_fall_back_to_legacy(
+    run_arm, perfect, capsys
+):
+    directory = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    meta_path = directory / "run.json"
+    original = json.loads(meta_path.read_text(encoding="utf-8"))
+
+    unknown = dict(original)
+    unknown["artifact_schema_version"] = 3
+    meta_path.write_text(json.dumps(unknown), encoding="utf-8", newline="\n")
+    with pytest.raises(cli.CliError, match="unsupported artifact_schema_version"):
+        cli.load_run(directory)
+
+    downgraded = dict(original)
+    downgraded.pop("artifact_schema_version")
+    meta_path.write_text(json.dumps(downgraded), encoding="utf-8", newline="\n")
+    with pytest.raises(cli.CliError, match="metadata downgrade"):
+        cli.load_run(directory)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("item_id", 1.5, "item_id must be a non-empty string"),
+        ("call_id", True, "call_id must be a non-empty string"),
+        ("replicate", True, "replicate must be a positive integer"),
+        ("parse_ok", 1, "parse_ok must be boolean"),
+    ],
+)
+def test_evidence_rows_refuse_coerced_identity_types(
+    run_arm, perfect, capsys, field, value, message
+):
+    directory = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    log_path = directory / "run.jsonl"
+    rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+    rows[0][field] = value
+    rewrite_final_log(directory, rows)
+
+    with pytest.raises(cli.CliError, match=message):
+        cli.load_run(directory)
+
+
+def test_evidence_rows_require_repeated_identity_fields(run_arm, perfect, capsys):
+    directory = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    log_path = directory / "run.jsonl"
+    rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+    rows[0].pop("arm")
+    rewrite_final_log(directory, rows)
+
+    with pytest.raises(cli.CliError, match="missing evidence identity field"):
+        cli.load_run(directory)
+
+
+def test_final_log_must_match_the_paid_call_journal(run_arm, perfect, capsys):
+    directory = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    log_path = directory / "run.jsonl"
+    rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+    rows[0]["cost"] = 999.0
+    rewrite_final_log(directory, rows)
+
+    with pytest.raises(cli.CliError, match="differs from the paid-call journal"):
+        cli.load_run(directory)
+
+
+def test_finalized_bundle_refuses_a_torn_journal_tail(run_arm, perfect, capsys):
+    directory = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    journal_path = directory / "run.journal.jsonl"
+    with journal_path.open("ab") as handle:
+        handle.write(b'{"event":"result"')
+    meta_path = directory / "run.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    meta["journal_sha256"] = cli.file_sha256(journal_path)
+    meta["journal_bytes"] = journal_path.stat().st_size
+    meta_path.write_text(json.dumps(meta), encoding="utf-8", newline="\n")
+
+    with pytest.raises(cli.CliError, match="torn record"):
+        cli.load_run(directory)
+
+
+def test_portable_run_bundles_compare_after_the_original_directories_move(
+    run_arm, perfect, env, capsys
+):
+    incumbent = run_arm("incumbent", perfect, repeats=1)
+    candidate = run_arm("candidate", perfect, repeats=1)
+    capsys.readouterr()
+    portable = env / "gpu-node-copy"
+    inc_copy = portable / "incumbent"
+    cand_copy = portable / "candidate"
+    shutil.copytree(incumbent, inc_copy)
+    shutil.copytree(candidate, cand_copy)
+    incumbent.rename(env / "original-incumbent-moved")
+    candidate.rename(env / "original-candidate-moved")
+
+    assert cli.load_run(inc_copy).meta["testset_path"] == "inputs/testset.jsonl"
+    code = main(["compare", "--incumbent", str(inc_copy), "--candidate", str(cand_copy)])
+    assert code == EXIT_OK
+    assert "PAIRED DISAGREEMENT" in capsys.readouterr().out
+
+
+def test_complete_manifest_blocks_resume_even_if_state_was_removed(
+    run_arm, perfect, capsys
+):
+    directory = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    (directory / "run.state.json").unlink()
+
+    code = main([
+        "baseline",
+        "--arm", "incumbent",
+        "--model", "vendor/fake-model",
+        "--resume-run", str(directory),
+    ])
+    assert code == EXIT_REFUSED
+    assert "already COMPLETE according to run.json" in capsys.readouterr().err
+
+
+def test_private_resume_uses_snapshots_and_ignores_the_unused_default_output(
+    env, testset, perfect, monkeypatch, capsys
+):
+    private_root = env / "approved-private-root"
+    source = private_root / "mounted-source"
+    source.mkdir(parents=True)
+    testset_source = source / "testset.jsonl"
+    gt_source = source / "ground_truth.csv"
+    shutil.copyfile(TESTSET_PATH, testset_source)
+    shutil.copyfile(GT_PATH, gt_source)
+    monkeypatch.setenv("EVAL_HARNESS_DATA_DIR", str(private_root))
+
+    client = FakeClient(perfect, testset=testset)
+    monkeypatch.setattr(cli, "build_client", lambda api_key, timeout=120.0: client)
+    out = private_root / "runs"
+    code = main([
+        "baseline", "--arm", "candidate", "--model", "vendor/fake-model",
+        "--testset", str(testset_source), "--gt", str(gt_source),
+        "--out", str(out), "--data-classification", "customer",
+        "--repeats", "1", "--concurrency", "4",
+    ])
+    assert code == EXIT_OK
+    directory = next(out.iterdir())
+    capsys.readouterr()
+
+    # Simulate a process that paid and journaled every cell but died before the final
+    # manifest became authoritative. The original mount then disappears.
+    (directory / "run.json").unlink()
+    (directory / "run.jsonl").unlink()
+    state_path = directory / "run.state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["status"] = "INCOMPLETE"
+    state_path.write_text(json.dumps(state), encoding="utf-8", newline="\n")
+    source.rename(private_root / "mounted-source-unavailable")
+    monkeypatch.setattr(
+        cli,
+        "build_client",
+        lambda *args, **kwargs: pytest.fail("a fully journaled resume makes no call"),
+    )
+
+    code = main([
+        "baseline", "--arm", "candidate", "--model", "vendor/fake-model",
+        "--testset", str(testset_source), "--gt", str(gt_source),
+        "--data-classification", "customer", "--resume-run", str(directory),
+        "--repeats", "1", "--concurrency", "4",
+    ])
+    assert code == EXIT_OK
+    meta = json.loads((directory / "run.json").read_text(encoding="utf-8"))
+    assert meta["resumed_cells"] == 20
+    assert meta["testset_path"] == "inputs/testset.jsonl"
+    assert "calling 0 remaining logical cell" in capsys.readouterr().out
+
+
+def test_common_workload_excludes_runtime_and_operational_execution_knobs(
+    run_arm, perfect, capsys
+):
+    incumbent_dir = run_arm("incumbent", perfect, repeats=1)
+    candidate_dir = run_arm("candidate", perfect, repeats=1)
+    capsys.readouterr()
+    incumbent = cli.load_run(incumbent_dir)
+    candidate = cli.load_run(candidate_dir)
+    common = incumbent.meta["workload_contract"]
+    execution = incumbent.meta["execution_contract"]
+
+    assert not {
+        "runtime_fingerprint", "temperature", "reasoning_effort", "max_attempts",
+        "concurrency", "timeout",
+    }.intersection(common)
+    assert {"runtime_fingerprint", "decoding", "max_attempts", "concurrency", "timeout"} <= set(execution)
+
+    changed = replace(
+        candidate,
+        meta={
+            **candidate.meta,
+            "generation_contract_sha": "different-runtime-code",
+            "decision_policy_sha": "different-report-policy",
+            "execution_sha": "different-arm-execution",
+        },
+    )
+    cli._refuse_incomparable(incumbent, changed)
+
+
+def test_judge_writes_private_evidence_but_shareable_outputs_never_echo_labels(
+    run_arm, perfect, testset, env, monkeypatch, capsys
+):
+    sensitive_label = "คุณสมชาย บ้านเลขที่ 99"
+    by_item = {item.item_id: item for item in testset.items}
+
+    def candidate_answer(item_id, _nth):
+        item = by_item[item_id]
+        payload = payload_for(item)
+        if item_id == "RET-01":
+            payload["product"][sensitive_label] = {
+                "main": {"reason": "other", "keyword": ""},
+                "secondary": {"reason": "", "keyword": ""},
+                "third": {"reason": "", "keyword": ""},
+                "retention_outcome": "other",
+            }
+        return answer(item, payload=payload)
+
+    incumbent = run_arm("incumbent", perfect, repeats=1)
+    candidate = run_arm("candidate", candidate_answer, repeats=1)
+    capsys.readouterr()
+
+    class JudgeClient:
+        runtime = cli.OPENROUTER_RUNTIME
+
+        def __init__(self):
+            self.calls = []
+
+        def complete(self, **request):
+            self.calls.append(request)
+            return FakeCompletion(
+                content=json.dumps(
+                    {
+                        "verdict": "unclear",
+                        "cited_span": "",
+                        "rationale": sensitive_label,
+                    },
+                    ensure_ascii=False,
+                ),
+                observed_model=request["model"],
+                provider=request["provider"],
+            )
+
+    judge_client = JudgeClient()
+    monkeypatch.setattr(cli, "build_client", lambda api_key, timeout=120.0: judge_client)
+    private_path = env / "judge-private.json"
+    shareable_path = env / "judge-shareable.json"
+    report_path = env / "judge-shareable.txt"
+    code = main([
+        "judge", "--incumbent", str(incumbent), "--candidate", str(candidate),
+        "--model", "judge/fake-model", "--provider", "FakeJudgeProvider",
+        "--dimension", "product", "--max-items", "1",
+        "--private-out", str(private_path),
+        "--shareable-out", str(shareable_path), "--report", str(report_path),
+    ])
+    assert code == EXIT_OK
+    assert len(judge_client.calls) == 1
+
+    private_text = private_path.read_text(encoding="utf-8")
+    safe = json.loads(shareable_path.read_text(encoding="utf-8"))
+    public_text = report_path.read_text(encoding="utf-8")
+    stdout = capsys.readouterr().out
+    assert sensitive_label in private_text
+    assert sensitive_label not in json.dumps(safe, ensure_ascii=False)
+    assert sensitive_label not in public_text
+    assert sensitive_label not in stdout
+    assert all(
+        not {"item_id", "product", "gt_label", "incumbent_label", "candidate_label",
+             "rationale", "cited_span"}.intersection(row)
+        for row in safe["items"]
+    )
+    raw_lines = private_path.with_name(private_path.name + ".raw.jsonl").read_text(
+        encoding="utf-8"
+    ).splitlines()
+    assert json.loads(raw_lines[0])["type"] == "judge_private_journal"
+    assert sensitive_label in raw_lines[1]
+
+
+def test_judge_refuses_changed_labels_and_self_review_before_any_call(
+    run_arm, perfect, env, monkeypatch, capsys
+):
+    incumbent = run_arm("incumbent", perfect, repeats=1, model="vendor/incumbent")
+    candidate = run_arm("candidate", perfect, repeats=1, model="vendor/candidate")
+    capsys.readouterr()
+    monkeypatch.setattr(
+        cli, "build_client", lambda *args, **kwargs: pytest.fail("judge must not call")
+    )
+
+    code = main([
+        "judge", "--incumbent", str(incumbent), "--candidate", str(candidate),
+        "--model", "vendor/incumbent", "--provider", "FakeJudgeProvider", "--dry-run",
+    ])
+    assert code == EXIT_REFUSED
+    assert "distinct model" in capsys.readouterr().err
+
+    edited_gt = env / "edited.gt.csv"
+    edited_gt.write_bytes(GT_PATH.read_bytes() + b"\n")
+    code = main([
+        "judge", "--incumbent", str(incumbent), "--candidate", str(candidate),
+        "--model", "judge/fake", "--provider", "FakeJudgeProvider", "--dry-run",
+        "--gt", str(edited_gt),
+    ])
+    assert code == EXIT_REFUSED
+    assert "changed since the source runs" in capsys.readouterr().err
+
+
 def test_a_run_log_naming_an_item_the_testset_does_not_have_is_refused(
     run_arm, perfect, testset, capsys
 ):
@@ -1081,6 +1421,7 @@ def test_a_run_log_naming_an_item_the_testset_does_not_have_is_refused(
     for a different set of items and report the coverage as complete."""
     directory = run_arm("incumbent", perfect, repeats=1)
     capsys.readouterr()
+    loaded = cli.load_run(directory)
 
     log = directory / "run.jsonl"
     lines = [line for line in log.read_text(encoding="utf-8").split("\n") if line.strip()]
@@ -1089,10 +1430,16 @@ def test_a_run_log_naming_an_item_the_testset_does_not_have_is_refused(
     lines[0] = json.dumps(first, ensure_ascii=False)
     log.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
-    loaded = cli.load_run(directory)
-    with pytest.raises(cli.CliError) as exc:
-        cli.replicate_records(loaded.result, testset.items)
-    assert "RET-99" in str(exc.value)
+    with pytest.raises(cli.CliError, match="run_log_sha256"):
+        cli.load_run(directory)
+
+    bad_first = replace(loaded.result.results[0], item_id="RET-99")
+    bad_result = replace(
+        loaded.result,
+        results=(bad_first, *loaded.result.results[1:]),
+    )
+    with pytest.raises(cli.CliError, match="RET-99"):
+        cli.replicate_records(bad_result, testset.items)
 
 
 # ======================================================================== stability
@@ -1345,7 +1692,9 @@ def test_the_new_fields_round_trip_through_the_run_log(pinned_run, by_id):
     assert loaded.result.config.provider == "CoreWeave"
 
 
-def test_a_run_log_written_before_these_fields_existed_still_loads(pinned_run, by_id):
+def test_a_run_log_written_before_these_fields_existed_still_loads(
+    pinned_run, by_id, tmp_path
+):
     """The two 2026-08-04 runs are real runs and must stay readable.
 
     The fix for "the schema violations were undiagnosable" must not begin by making
@@ -1357,24 +1706,44 @@ def test_a_run_log_written_before_these_fields_existed_still_loads(pinned_run, b
         ["--arm", "incumbent", "--model", "vendor/fake-model", "--repeats", "1"],
         lambda item_id, nth: answer(by_id[item_id]),
     )
-    log = directory / "run.jsonl"
-    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").split("\n") if line.strip()]
+    source_log = directory / "run.jsonl"
+    legacy = tmp_path / "legacy-run"
+    legacy.mkdir()
+    log = legacy / "run.jsonl"
+    rows = [
+        json.loads(line)
+        for line in source_log.read_text(encoding="utf-8").split("\n")
+        if line.strip()
+    ]
     for row in rows:
         for key in ("provider", "provider_requested", "generation_id", "finish_reason",
-                    "raw_content"):
+                    "raw_content", "runtime_id", "runtime_backend",
+                    "runtime_fingerprint", "system_fingerprint"):
             row.pop(key)
     log.write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
         encoding="utf-8", newline="\n",
     )
-    meta_path = directory / "run.json"
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    source_meta = directory / "run.json"
+    meta_path = legacy / "run.json"
+    meta = json.loads(source_meta.read_text(encoding="utf-8"))
     for key in ("provider_requested", "observed_providers", "prompt_token_spread",
                 "split_items"):
         meta.pop(key)
+    for key in (
+        "artifact_schema_version", "status", "run_contract", "run_contract_sha",
+        "run_log_sha256", "run_log_bytes", "journal_sha256", "journal_bytes",
+        "application_contract", "application_contract_sha", "generation_contract_sha",
+        "decision_policy_sha", "outcome_contract_sha", "execution_contract",
+        "execution_sha", "workload_contract", "workload_sha", "runtime",
+        "runtime_fingerprint", "schema_path",
+        "prompt_path", "source_testset_path", "source_gt_path", "system_fingerprints",
+        "resumed_cells", "data_classification",
+    ):
+        meta.pop(key, None)
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8", newline="\n")
 
-    loaded = cli.load_run(directory)
+    loaded = cli.load_run(legacy)
     assert len(loaded.result.results) == 20
     assert loaded.result.results[0].provider is None
     assert loaded.result.results[0].raw_content is None
@@ -1386,4 +1755,4 @@ def test_a_run_log_written_before_these_fields_existed_still_loads(pinned_run, b
         encoding="utf-8", newline="\n",
     )
     with pytest.raises(cli.CliError):
-        cli.load_run(directory)
+        cli.load_run(legacy)

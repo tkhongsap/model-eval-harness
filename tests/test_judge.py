@@ -23,6 +23,7 @@ each checked rather than trusted:
 from __future__ import annotations
 
 import ast
+import json
 import sys
 from pathlib import Path
 
@@ -37,9 +38,11 @@ from evalgen.judge import (  # noqa: E402
     JudgeError,
     build_judge_prompt,
     find_disagreements,
+    judgment_unit_id,
     judge_response_schema,
     parse_judge_response,
     run_judge,
+    shareable_report,
     summarize_judgments,
 )
 from evalharness.compare import disagreement  # noqa: E402
@@ -102,12 +105,13 @@ def test_summarize_judgments_matches_the_hand_computed_aggregate_exactly():
         "ground_truth_correct": 4,
         "defensible_disagreement": 2,
         "ground_truth_error": 1,
-        "unclear": 3,
+        "unclear": 1,
     }
-    assert summary["ground_truth_correct_rate"] == pytest.approx(0.4)
-    assert summary["defensible_disagreement_rate"] == pytest.approx(0.2)
-    assert summary["ground_truth_error_rate"] == pytest.approx(0.1)
-    assert summary["unclear_rate"] == pytest.approx(0.3)
+    assert summary["all_response_counts"]["unclear"] == 3
+    assert summary["ground_truth_correct_rate"] == pytest.approx(0.5)
+    assert summary["defensible_disagreement_rate"] == pytest.approx(0.25)
+    assert summary["ground_truth_error_rate"] == pytest.approx(0.125)
+    assert summary["unclear_rate"] == pytest.approx(0.125)
     assert summary["parse_error_count"] == 2
     assert summary["parse_error_rate"] == pytest.approx(0.2)
 
@@ -125,6 +129,73 @@ def test_parse_judge_response_never_raises_on_hostile_input():
         result = parse_judge_response(hostile)
         assert result.verdict == "unclear"
         assert result.parse_error is True
+
+
+@pytest.mark.parametrize(
+    ("raw", "error_fragment"),
+    [
+        (
+            '{"verdict":"ground_truth_error","cited_span":"quoted"}',
+            "missing required field",
+        ),
+        (
+            '{"verdict":"ground_truth_error","cited_span":"quoted",'
+            '"rationale":"why","extra":true}',
+            "unexpected field",
+        ),
+        (
+            '{"verdict":"ground_truth_error","cited_span":123,"rationale":"why"}',
+            "cited_span must be a string",
+        ),
+        (
+            '{"verdict":"ground_truth_error","cited_span":"quoted","rationale":[]}',
+            "rationale must be a string",
+        ),
+        (
+            '{"verdict":"ground_truth_error","cited_span":"quoted","rationale":"  "}',
+            "rationale must be non-empty",
+        ),
+        (
+            '{"verdict":"ground_truth_error","cited_span":"","rationale":"why"}',
+            "require a non-empty cited_span",
+        ),
+    ],
+)
+def test_parse_judge_response_enforces_the_local_contract(raw, error_fragment):
+    result = parse_judge_response(raw, transcript="the quoted evidence")
+
+    assert result.verdict == "unclear"
+    assert result.parse_error is True
+    assert any(error_fragment in error for error in result.validation_errors)
+
+
+def test_parse_judge_response_checks_cited_span_byte_for_byte_against_transcript():
+    raw = (
+        '{"verdict":"ground_truth_error","cited_span":"หลักฐาน",'
+        '"rationale":"the quote decides the label"}'
+    )
+
+    exact = parse_judge_response(raw, transcript="ลูกค้า: หลักฐาน อยู่ตรงนี้")
+    changed_case = parse_judge_response(raw, transcript="ลูกค้า: evidence only")
+
+    assert exact.parse_error is False
+    assert exact.evidence_status == "exact"
+    assert changed_case.parse_error is True
+    assert changed_case.evidence_status == "not_in_transcript"
+    assert any(
+        "cited_span is not an exact substring" in error
+        for error in changed_case.validation_errors
+    )
+
+
+def test_a_genuine_unclear_may_abstain_without_manufacturing_evidence():
+    raw = '{"verdict":"unclear","cited_span":"","rationale":"not enough evidence"}'
+
+    result = parse_judge_response(raw, transcript="short transcript")
+
+    assert result.verdict == "unclear"
+    assert result.parse_error is False
+    assert result.evidence_status == "not_required"
 
 
 # ---------------------------------------------------------------- disagreement population
@@ -201,6 +272,23 @@ def test_find_disagreements_rejects_an_unknown_dimension():
         find_disagreements(gt, incumbent, candidate, "issue_type")
 
 
+def test_judgment_unit_id_is_stable_and_includes_product_grain_and_dimension():
+    first = judgment_unit_id("RET-16", "postpaid", "reason")
+
+    assert first == judgment_unit_id("RET-16", "postpaid", "reason")
+    assert first != judgment_unit_id("RET-16", "tvs", "reason")
+    assert first != judgment_unit_id("RET-16", "postpaid", "call_result")
+    assert first.startswith("ju_") and len(first) == 27
+    assert "RET-16" not in first and "postpaid" not in first
+
+
+def test_judgment_unit_id_rejects_inputs_that_cannot_name_a_unit():
+    with pytest.raises(JudgeError):
+        judgment_unit_id("", "postpaid", "reason")
+    with pytest.raises(JudgeError):
+        judgment_unit_id("RET-1", "postpaid", "issue_type")
+
+
 # ---------------------------------------------------------------- prompt construction / blinding
 
 
@@ -228,6 +316,33 @@ def test_build_judge_prompt_is_deterministic_and_blinds_by_item_not_by_run():
     first = build_judge_prompt("t", item, [])
     second = build_judge_prompt("t", item, [])
     assert first == second  # same item -> same blind order, every time
+
+
+def test_swapping_the_arms_only_swaps_the_blinded_answer_slots():
+    """Metamorphic gate: arm identity must not leak through some second prompt field."""
+    original = _item()
+    swapped = DisagreementItem(
+        key=original.key,
+        dimension=original.dimension,
+        gt_label=original.gt_label,
+        incumbent_label=original.candidate_label,
+        candidate_label=original.incumbent_label,
+        population=original.population,
+    )
+
+    def answer_slots(item):
+        user = build_judge_prompt("same transcript", item, ["same rule"])[1]["content"]
+        lines = user.splitlines()
+        return tuple(
+            next(line for line in lines if line.startswith(f"Answer {slot}:"))
+            for slot in ("A", "B")
+        )
+
+    before = answer_slots(original)
+    after = answer_slots(swapped)
+    assert [line.split(": ", 1)[1] for line in after] == [
+        line.split(": ", 1)[1] for line in reversed(before)
+    ]
 
 
 def test_build_judge_prompt_shows_both_labels_and_the_ground_truth():
@@ -282,6 +397,15 @@ class _FakeTestSet:
         self.items = items
 
 
+def _fake_testset():
+    return _FakeTestSet(
+        [
+            _FakeItem(f"RET-{n}", str(n), "p", f"t{n}", {})
+            for n in range(1, 7)
+        ]
+    )
+
+
 class _FakeCompletion:
     def __init__(self, content):
         self.content = content
@@ -295,14 +419,22 @@ class _FakeCompletion:
 class _FakeClient:
     """Returns a fixed verdict per call, records every request it was asked to make."""
 
-    def __init__(self, verdict="ground_truth_correct"):
+    def __init__(self, verdict="ground_truth_correct", *, cited_span="t", rationale="y"):
         self.calls = []
         self._verdict = verdict
+        self._cited_span = cited_span
+        self._rationale = rationale
 
     def complete(self, **kwargs):
         self.calls.append(kwargs)
         return _FakeCompletion(
-            f'{{"verdict":"{self._verdict}","cited_span":"x","rationale":"y"}}'
+            json.dumps(
+                {
+                    "verdict": self._verdict,
+                    "cited_span": self._cited_span,
+                    "rationale": self._rationale,
+                }
+            )
         )
 
 
@@ -336,6 +468,10 @@ def test_run_judge_calls_once_per_disagreement_item_and_reports_a_clean_summary(
     assert report["truncated"] is False
     assert report["summary"]["total"] == 3
     assert report["summary"]["ground_truth_correct_rate"] == pytest.approx(1.0)
+    assert report["summary"]["usable_count"] == 3
+    assert {row["evidence_status"] for row in report["items"]} == {"exact"}
+    assert all(row["judgment_unit_id"].startswith("ju_") for row in report["items"])
+    assert {row["product"] for row in report["items"]} == {None}
     for call_kwargs in client.calls:
         assert call_kwargs["provider"] == "CoreWeave"
         assert call_kwargs["reasoning_effort"] == "none"
@@ -364,6 +500,232 @@ def test_run_judge_truncates_deterministically_and_says_so():
     assert report["candidates_found"] == 3
     assert len(report["items"]) == 1
     assert report["truncated"] is True
+
+
+def test_run_judge_deduplicates_dimensions_before_any_call():
+    gt, incumbent, candidate = _synthetic_arms()
+    client = _FakeClient()
+
+    report = run_judge(
+        testset=_fake_testset(),
+        gt=gt,
+        incumbent=incumbent,
+        candidate=candidate,
+        dimensions=["call_result", "call_result"],
+        client=client,
+        model="google/gemma-4-31b-it",
+        provider="CoreWeave",
+    )
+
+    assert report["dimensions"] == ["call_result"]
+    assert report["candidates_found"] == 3
+    assert len(client.calls) == 3
+
+
+@pytest.mark.parametrize("bad_max", [-1, True, 1.5, "1"])
+def test_run_judge_rejects_invalid_max_items_before_any_call(bad_max):
+    gt, incumbent, candidate = _synthetic_arms()
+    client = _FakeClient()
+
+    with pytest.raises(JudgeError, match="max_items"):
+        run_judge(
+            testset=_fake_testset(),
+            gt=gt,
+            incumbent=incumbent,
+            candidate=candidate,
+            dimensions=["call_result"],
+            client=client,
+            model="google/gemma-4-31b-it",
+            provider="CoreWeave",
+            max_items=bad_max,
+        )
+    assert client.calls == []
+
+
+def test_run_judge_allows_an_explicit_zero_item_diagnostic():
+    gt, incumbent, candidate = _synthetic_arms()
+    client = _FakeClient()
+
+    report = run_judge(
+        testset=_fake_testset(),
+        gt=gt,
+        incumbent=incumbent,
+        candidate=candidate,
+        dimensions=["call_result"],
+        client=client,
+        model="google/gemma-4-31b-it",
+        provider="CoreWeave",
+        max_items=0,
+    )
+
+    assert report["candidates_found"] == 3
+    assert report["items"] == []
+    assert report["summary"]["total"] == 0
+    assert report["truncated"] is True
+    assert client.calls == []
+
+
+def test_run_judge_applies_evidence_validation_to_live_orchestrated_responses():
+    gt, incumbent, candidate = _synthetic_arms()
+    client = _FakeClient(cited_span="not present in any transcript")
+
+    report = run_judge(
+        testset=_fake_testset(),
+        gt=gt,
+        incumbent=incumbent,
+        candidate=candidate,
+        dimensions=["call_result"],
+        client=client,
+        model="google/gemma-4-31b-it",
+        provider="CoreWeave",
+    )
+
+    assert report["summary"]["parse_error_count"] == 3
+    assert report["summary"]["usable_count"] == 0
+    assert {row["verdict"] for row in report["items"]} == {"unclear"}
+    assert {row["evidence_status"] for row in report["items"]} == {"not_in_transcript"}
+
+
+def test_raw_responses_leave_only_through_the_private_sink_and_shareable_view_is_redacted():
+    gt, incumbent, candidate = _synthetic_arms()
+    private_records = []
+    provenance = {
+        "incumbent_run_id": "inc-1",
+        "candidate_run_id": "cand-1",
+        "replicate": 1,
+        "testset_sha": "abc",
+        "gt_sha": "def",
+    }
+
+    report = run_judge(
+        testset=_fake_testset(),
+        gt=gt,
+        incumbent=incumbent,
+        candidate=candidate,
+        dimensions=["call_result"],
+        client=_FakeClient(),
+        model="google/gemma-4-31b-it",
+        provider="CoreWeave",
+        source_provenance=provenance,
+        private_record_sink=private_records.append,
+    )
+    safe = shareable_report(report)
+
+    assert report["schema_version"] == 2
+    assert report["source_provenance"] == provenance
+    assert len(private_records) == 3
+    assert all(row["raw_response_text"] for row in private_records)
+    assert all("messages" in row["request"] for row in private_records)
+    assert "raw_response_text" not in json.dumps(report)
+    assert all("raw" not in row for row in report["items"])
+    assert report["items"][0]["rationale"] == "y"  # retained for restricted human review
+    assert "rationale" not in safe["items"][0]
+    assert "cited_span" not in safe["items"][0]
+    assert safe["items"][0]["raw_response_sha256"]
+    assert safe["source_provenance"] == provenance
+
+
+class _FakeTransportError(RuntimeError):
+    def __init__(self, message, *, latency_s):
+        super().__init__(message)
+        self.latency_s = latency_s
+
+
+class _TransportFailingClient:
+    def __init__(self):
+        self.calls = []
+
+    def complete(self, **kwargs):
+        self.calls.append(kwargs)
+        raise _FakeTransportError("endpoint unavailable", latency_s=0.25)
+
+
+def test_transport_failures_are_recorded_and_never_dropped_or_called_parse_errors():
+    gt, incumbent, candidate = _synthetic_arms()
+    client = _TransportFailingClient()
+    private_records = []
+
+    report = run_judge(
+        testset=_fake_testset(),
+        gt=gt,
+        incumbent=incumbent,
+        candidate=candidate,
+        dimensions=["call_result"],
+        client=client,
+        model="google/gemma-4-31b-it",
+        provider="CoreWeave",
+        private_record_sink=private_records.append,
+    )
+
+    assert len(client.calls) == 3
+    assert report["summary"]["total"] == 3
+    assert report["summary"]["counts"]["unclear"] == 0
+    assert report["summary"]["all_response_counts"]["unclear"] == 3
+    assert report["summary"]["transport_error_count"] == 3
+    assert report["summary"]["parse_error_count"] == 0
+    assert report["summary"]["usable_count"] == 0
+    assert {row["execution_status"] for row in report["items"]} == {"transport_error"}
+    assert {row["latency_s"] for row in report["items"]} == {0.25}
+    assert all(row["raw_response_sha256"] is None for row in report["items"])
+    assert all(row["transport_error"] for row in private_records)
+
+
+def test_unexpected_client_programming_errors_still_raise():
+    class BrokenClient:
+        def complete(self, **kwargs):
+            raise RuntimeError("bug in fake client")
+
+    gt, incumbent, candidate = _synthetic_arms()
+    with pytest.raises(RuntimeError, match="bug in fake client"):
+        run_judge(
+            testset=_fake_testset(),
+            gt=gt,
+            incumbent=incumbent,
+            candidate=candidate,
+            dimensions=["call_result"],
+            client=BrokenClient(),
+            model="google/gemma-4-31b-it",
+            provider="CoreWeave",
+        )
+
+
+def test_duplicate_ground_truth_units_refuse_before_model_calls():
+    gt, incumbent, candidate = _synthetic_arms()
+    client = _FakeClient()
+    duplicated_gt = [*gt, gt[1]]  # RET-2 is a disagreement and would be called twice
+
+    with pytest.raises(JudgeError, match="duplicate"):
+        run_judge(
+            testset=_fake_testset(),
+            gt=duplicated_gt,
+            incumbent=incumbent,
+            candidate=candidate,
+            dimensions=["call_result"],
+            client=client,
+            model="google/gemma-4-31b-it",
+            provider="CoreWeave",
+        )
+    assert client.calls == []
+
+
+def test_duplicate_testset_lookup_keys_refuse_before_model_calls():
+    gt, incumbent, candidate = _synthetic_arms()
+    testset = _fake_testset()
+    testset.items.append(_FakeItem("RET-2-copy", "2", "p", "different", {}))
+    client = _FakeClient()
+
+    with pytest.raises(JudgeError, match="duplicate call/phone lookup key"):
+        run_judge(
+            testset=testset,
+            gt=gt,
+            incumbent=incumbent,
+            candidate=candidate,
+            dimensions=["call_result"],
+            client=client,
+            model="google/gemma-4-31b-it",
+            provider="CoreWeave",
+        )
+    assert client.calls == []
 
 
 def test_run_judge_raises_if_a_disagreement_key_matches_no_testset_item():
@@ -423,16 +785,18 @@ def _imports(path: Path) -> set[str]:
     "path",
     [
         ROOT / "src" / "evalgen" / "report.py",
+        ROOT / "src" / "evalgen" / "experiments.py",
         ROOT / "src" / "evalharness" / "compare.py",
         ROOT / "src" / "evalharness" / "manifest.py",
     ],
 )
 def test_judge_is_never_imported_by_the_verdict_path(path):
-    """`report.render()` and `evalharness.compare`'s verdict machinery must never import
-    this module. `evalharness/` is already covered transitively by
+    """Report, comparison, and experiment-decision code must never import this module.
+
+    `evalharness/` is already covered transitively by
     `test_boundary.py::test_evalharness_never_imports_evalgen` (judge.py lives in
-    evalgen), so this test's real job is `report.py`, which lives in evalgen itself and
-    is therefore NOT caught by that boundary check.
+    evalgen), so this test's real job is the evalgen verdict path, which that package
+    boundary cannot catch.
     """
     offenders = [name for name in _imports(path) if "judge" in name.split(".")]
     assert not offenders, f"{path} imports judge.py: {offenders}"

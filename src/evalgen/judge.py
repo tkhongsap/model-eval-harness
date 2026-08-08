@@ -87,10 +87,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
-from typing import Any, Sequence
+from dataclasses import dataclass, field, replace
+from typing import Any, Callable, Mapping, Sequence
 
+from evalharness.compare import CoverageMismatch, comparison_clusters
 from evalharness.records import Record
+from evalgen.runtime import RuntimeSpec, build_runtime_request
 
 __all__ = [
     "JUDGE_VERDICTS",
@@ -102,6 +104,8 @@ __all__ = [
     "judge_response_schema",
     "parse_judge_response",
     "summarize_judgments",
+    "judgment_unit_id",
+    "shareable_report",
     "run_judge",
 ]
 
@@ -111,6 +115,19 @@ JUDGE_VERDICTS: tuple[str, ...] = (
     "ground_truth_error",
     "unclear",
 )
+
+JUDGE_DIMENSIONS: tuple[str, ...] = ("call_result", "reason", "product")
+_RESPONSE_KEYS = frozenset({"verdict", "cited_span", "rationale"})
+
+# Evidence is deliberately a separate status from parse validity. A response can be
+# perfectly valid JSON and still cite text that the transcript does not contain.
+EVIDENCE_EXACT = "exact"
+EVIDENCE_UNCHECKED = "unchecked"
+EVIDENCE_NOT_REQUIRED = "not_required"
+EVIDENCE_MISSING = "missing"
+EVIDENCE_NOT_IN_TRANSCRIPT = "not_in_transcript"
+EVIDENCE_INVALID_RESPONSE = "invalid_response"
+EVIDENCE_NOT_EVALUATED = "not_evaluated"
 
 
 class JudgeError(ValueError):
@@ -140,50 +157,26 @@ class DisagreementItem:
     incumbent_label: str
     candidate_label: str
     population: str  # "both_wrong" | "incumbent_only_right" | "candidate_only_right"
+    rule_labels: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)
 class JudgeVerdict:
-    """One parsed judge response. `raw` is kept so a re-run can be replayed without a call."""
+    """One locally validated judge response.
+
+    `raw` remains available to the in-process caller. `run_judge` never places it in the
+    ordinary report: callers that are allowed to retain raw model text must provide a
+    separate `private_record_sink`, while the shareable record carries only its SHA.
+    """
 
     verdict: str
     cited_span: str
     rationale: str
     parse_error: bool
     raw: str
-
-
-def _is_correct(gt: Record, pred: Record | None, dimension: str) -> bool | None:
-    """Item-level correctness. Deliberately mirrors `evalharness.compare._correct`.
-
-    Not imported from there -- `compare.py` is a `CONTRIBUTING.md`-flagged final layer,
-    and this module must not add a second reason to touch it. Mirroring risks the two
-    definitions drifting apart silently, so `tests/test_judge.py` cross-checks this
-    function's own item-level counts against `compare.disagreement()`'s aggregate totals
-    on the same data and fails loudly the moment they part.
-    """
-    if gt is None:
-        return None
-    if dimension == "call_result":
-        if gt.call_result is None:
-            return None
-        return pred is not None and pred.call_result == gt.call_result
-    if dimension == "reason":
-        return pred is not None and pred.reasons == gt.reasons
-    if dimension == "product":
-        return pred is not None and pred.product == gt.product
-    raise JudgeError(f"unknown dimension {dimension!r}")
-
-
-def _label(rec: Record | None, dimension: str) -> str:
-    """Mirrors `evalharness.compare._label`, for the same reason as `_is_correct` above."""
-    if rec is None:
-        return "<no prediction>"
-    if dimension == "call_result":
-        return rec.call_result or "<empty>"
-    if dimension == "reason":
-        return ", ".join(sorted(rec.reasons)) or "<empty>"
-    return rec.product or "<empty>"
+    evidence_status: str = EVIDENCE_UNCHECKED
+    validation_errors: tuple[str, ...] = ()
+    execution_status: str = "completed"
 
 
 def find_disagreements(
@@ -192,41 +185,40 @@ def find_disagreements(
     candidate: Sequence[Record],
     dimension: str,
 ) -> list[DisagreementItem]:
-    """Every item in `both_wrong`, `incumbent_only_right` or `candidate_only_right`.
+    """Every non-both-right call cluster from the canonical paired population.
 
-    Deliberately excludes `both_right`: nothing to adjudicate when both arms already
-    agree with the ground truth. This is exactly the population
-    `evalharness.compare.disagreement()` counts under those three names --
-    `tests/test_judge.py` asserts `len(find_disagreements(...))` equals
-    `both_wrong + incumbent_only_right + candidate_only_right` from that function's own
-    output on the same inputs, so this can never silently define a different population.
+    The judge and the statistical verdict share ``comparison_clusters`` instead of
+    maintaining two nearly-identical correctness implementations.  That keeps orphan
+    false positives, invalid skeletons, product-set comparison, and call clustering
+    identical on both paths.
     """
-    inc_by_key = {r.key: r for r in incumbent}
-    cand_by_key = {r.key: r for r in candidate}
+    if dimension not in JUDGE_DIMENSIONS:
+        raise JudgeError(f"unknown dimension {dimension!r}")
     items: list[DisagreementItem] = []
-    for g in gt:
-        i = inc_by_key.get(g.key)
-        c = cand_by_key.get(g.key)
-        i_ok = _is_correct(g, i, dimension)
-        c_ok = _is_correct(g, c, dimension)
-        if i_ok is None or c_ok is None:
+    try:
+        clusters = comparison_clusters(
+            list(gt), list(incumbent), list(candidate), dimension
+        )
+    except (CoverageMismatch, ValueError) as exc:
+        raise JudgeError(str(exc)) from exc
+    for cluster in clusters:
+        if cluster.incumbent_right and cluster.candidate_right:
             continue
-        if i_ok and c_ok:
-            continue
-        if not i_ok and not c_ok:
+        if not cluster.incumbent_right and not cluster.candidate_right:
             population = "both_wrong"
-        elif i_ok:
+        elif cluster.incumbent_right:
             population = "incumbent_only_right"
         else:
             population = "candidate_only_right"
         items.append(
             DisagreementItem(
-                key=g.key,
+                key=cluster.source.key,
                 dimension=dimension,
-                gt_label=_label(g, dimension),
-                incumbent_label=_label(i, dimension),
-                candidate_label=_label(c, dimension),
+                gt_label=cluster.gt_label,
+                incumbent_label=cluster.incumbent_label,
+                candidate_label=cluster.candidate_label,
                 population=population,
+                rule_labels=cluster.rule_labels,
             )
         )
     return items
@@ -236,6 +228,37 @@ def _blind_a_is_incumbent(key: tuple[str, str | None, str | None]) -> bool:
     """Deterministic per item: which arm the judge sees as "Answer A". See module docstring."""
     digest = hashlib.sha256(repr(key).encode("utf-8")).digest()
     return digest[0] % 2 == 0
+
+
+def judgment_unit_id(
+    item_id: str, product: str | None, dimension: str
+) -> str:
+    """Return a stable, shareable id for one item x product x dimension judgment.
+
+    The scorer's real key also contains call id and phone number. Neither belongs in a
+    judge report. `item_id` is the already-shareable identifier supplied by the testset;
+    product is included because one call can produce several scored rows, and dimension
+    is included because each row can be adjudicated more than once for different claims.
+
+    A dataset manifest/hash still has to scope this id globally. The digest only prevents
+    punctuation and label text from becoming an accidental report schema; it is not a
+    substitute for the repository's HMAC customer-key control.
+    """
+    if not isinstance(item_id, str) or not item_id.strip():
+        raise JudgeError("item_id must be a non-empty string")
+    if dimension not in JUDGE_DIMENSIONS:
+        raise JudgeError(f"unknown dimension {dimension!r}")
+    payload = json.dumps(
+        {
+            "item_id": item_id,
+            "product": product,
+            "dimension": dimension,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return "ju_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
 
 
 def _rule_citations_for(rules: dict[str, str], dimension: str, labels: set[str]) -> list[str]:
@@ -266,7 +289,7 @@ def build_judge_prompt(
         "You are an independent adjudicator reviewing a disputed label on a call-"
         "transcript labelling task. You did not produce either answer being compared "
         "and have no stake in which one is right. Given a transcript, the production "
-        "rule(s) that govern this dimension, the pack's ground-truth label, and two "
+        "available rule references, the pack's reference label under review, and two "
         "models' actual answers (blinded as Answer A and Answer B, in no particular "
         "order), decide exactly one of:\n"
         "ground_truth_correct -- the compared answer(s) are simply wrong, ground truth "
@@ -276,14 +299,18 @@ def build_judge_prompt(
         "ground_truth_error -- a compared answer is clearly the better reading and the "
         "ground truth itself looks wrong.\n"
         "unclear -- the transcript does not give you enough to decide.\n"
-        "Quote the exact transcript span your rationale rests on, verbatim, in "
+        "Do not assume the reference label is correct because it is named as the "
+        "reference. First derive the best label from the transcript itself, then "
+        "compare that conclusion with the reference and the two blinded answers. "
+        "File-and-line rule references are provenance pointers, not rule text; do not "
+        "invent their contents. Quote the exact transcript span your rationale rests on, verbatim, in "
         "cited_span. Respond with the JSON schema only, no other text."
     )
     user = (
         f"Dimension: {item.dimension}\n\n"
         f"Transcript:\n{transcript}\n\n"
-        f"Production rule(s):\n{citation_block}\n\n"
-        f"Ground truth: {item.gt_label}\n"
+        f"Production rule reference(s) (not rule text):\n{citation_block}\n\n"
+        f"Reference label under review: {item.gt_label}\n"
         f"Answer A: {answer_a}\n"
         f"Answer B: {answer_b}\n\n"
         "Adjudicate."
@@ -312,35 +339,105 @@ def judge_response_schema() -> dict[str, Any]:
     }
 
 
-def parse_judge_response(raw_text: str) -> JudgeVerdict:
-    """Never raises. See `tests/fixtures/judge/HAND-COMPUTED.md` for the exact table
-    this reproduces, checked by `tests/test_judge.py` with no network call.
+def _invalid_response(
+    raw_text: str,
+    errors: Sequence[str],
+    *,
+    cited_span: str = "",
+    rationale: str = "",
+    evidence_status: str = EVIDENCE_INVALID_RESPONSE,
+) -> JudgeVerdict:
+    """One unusable model response, preserved rather than raised or dropped."""
+    return JudgeVerdict(
+        verdict="unclear",
+        cited_span=cited_span,
+        rationale=rationale,
+        parse_error=True,
+        raw=raw_text,
+        evidence_status=evidence_status,
+        validation_errors=tuple(errors),
+    )
+
+
+def parse_judge_response(
+    raw_text: str, *, transcript: str | None = None
+) -> JudgeVerdict:
+    """Parse and locally validate one raw response; never raise on model text.
+
+    The remote `strict: True` schema is a request, not evidence that the endpoint honoured
+    it. This function independently enforces the exact key set, string field types, a
+    non-empty rationale, and a non-empty cited span for every decisive verdict. `unclear`
+    may omit a span because "the transcript is insufficient" can itself be the result.
+
+    When `transcript` is provided, every non-empty citation must occur byte-for-byte in
+    it. `run_judge` always provides the transcript. Keeping the parameter optional
+    preserves the pure parsing/aggregation fixture, whose job is deliberately narrower
+    than evidence validation.
     """
     try:
         payload = json.loads(raw_text)
     except (json.JSONDecodeError, TypeError):
-        return JudgeVerdict(
-            verdict="unclear", cited_span="", rationale="", parse_error=True, raw=raw_text
-        )
+        return _invalid_response(raw_text, ("response is not valid JSON",))
     if not isinstance(payload, dict):
-        return JudgeVerdict(
-            verdict="unclear", cited_span="", rationale="", parse_error=True, raw=raw_text
-        )
+        return _invalid_response(raw_text, ("response root is not an object",))
+
+    errors: list[str] = []
+    keys = set(payload)
+    missing = sorted(_RESPONSE_KEYS - keys)
+    extra = sorted(keys - _RESPONSE_KEYS)
+    if missing:
+        errors.append(f"missing required field(s): {missing}")
+    if extra:
+        errors.append(f"unexpected field(s): {extra}")
+
     verdict = payload.get("verdict")
+    cited_value = payload.get("cited_span")
+    rationale_value = payload.get("rationale")
+
+    if not isinstance(verdict, str):
+        errors.append("verdict must be a string")
     if verdict not in JUDGE_VERDICTS:
-        return JudgeVerdict(
-            verdict="unclear",
-            cited_span=str(payload.get("cited_span") or ""),
-            rationale=str(payload.get("rationale") or ""),
-            parse_error=True,
-            raw=raw_text,
+        errors.append(f"verdict is not one of {list(JUDGE_VERDICTS)}")
+    if not isinstance(cited_value, str):
+        errors.append("cited_span must be a string")
+    if not isinstance(rationale_value, str):
+        errors.append("rationale must be a string")
+
+    cited_span = cited_value if isinstance(cited_value, str) else ""
+    rationale = rationale_value if isinstance(rationale_value, str) else ""
+    if not rationale.strip():
+        errors.append("rationale must be non-empty")
+
+    evidence_status = EVIDENCE_UNCHECKED
+    if isinstance(verdict, str) and verdict != "unclear" and not cited_span.strip():
+        evidence_status = EVIDENCE_MISSING
+        errors.append("decisive verdicts require a non-empty cited_span")
+    elif not cited_span.strip():
+        evidence_status = EVIDENCE_NOT_REQUIRED
+    elif transcript is None:
+        evidence_status = EVIDENCE_UNCHECKED
+    elif cited_span in transcript:
+        evidence_status = EVIDENCE_EXACT
+    else:
+        evidence_status = EVIDENCE_NOT_IN_TRANSCRIPT
+        errors.append("cited_span is not an exact substring of the transcript")
+
+    if errors:
+        return _invalid_response(
+            raw_text,
+            errors,
+            cited_span=cited_span,
+            rationale=rationale,
+            evidence_status=evidence_status,
         )
+
     return JudgeVerdict(
         verdict=verdict,
-        cited_span=str(payload.get("cited_span") or ""),
-        rationale=str(payload.get("rationale") or ""),
+        cited_span=cited_span,
+        rationale=rationale,
         parse_error=False,
         raw=raw_text,
+        evidence_status=evidence_status,
     )
 
 
@@ -353,19 +450,119 @@ def summarize_judgments(verdicts: Sequence[JudgeVerdict]) -> dict[str, Any]:
     """
     total = len(verdicts)
     counts = {v: 0 for v in JUDGE_VERDICTS}
+    all_response_counts = {v: 0 for v in JUDGE_VERDICTS}
     parse_errors = 0
+    transport_errors = 0
     for verdict in verdicts:
-        counts[verdict.verdict] += 1
+        all_response_counts[verdict.verdict] += 1
+        if not verdict.parse_error and verdict.execution_status == "completed":
+            counts[verdict.verdict] += 1
         if verdict.parse_error:
             parse_errors += 1
-    rates = {f"{k}_rate": (counts[k] / total if total else 0.0) for k in JUDGE_VERDICTS}
+        if verdict.execution_status == "transport_error":
+            transport_errors += 1
+    execution_errors = sum(
+        verdict.execution_status != "completed" for verdict in verdicts
+    )
+    usable = sum(
+        not verdict.parse_error and verdict.execution_status == "completed"
+        for verdict in verdicts
+    )
+    rates = {
+        f"{key}_rate": (counts[key] / usable if usable else 0.0)
+        for key in JUDGE_VERDICTS
+    }
     return {
         "total": total,
         "counts": counts,
+        "all_response_counts": all_response_counts,
         **rates,
         "parse_error_count": parse_errors,
         "parse_error_rate": (parse_errors / total if total else 0.0),
+        "transport_error_count": transport_errors,
+        "transport_error_rate": (transport_errors / total if total else 0.0),
+        "execution_error_count": execution_errors,
+        "execution_error_rate": (execution_errors / total if total else 0.0),
+        "usable_count": usable,
+        "usable_rate": (usable / total if total else 0.0),
     }
+
+
+def _normalise_dimensions(dimensions: Sequence[str]) -> list[str]:
+    """Validate and de-duplicate dimensions without changing first-seen order."""
+    if isinstance(dimensions, str):
+        dimensions = [dimensions]
+    result: list[str] = []
+    seen: set[str] = set()
+    for dimension in dimensions:
+        if dimension not in JUDGE_DIMENSIONS:
+            raise JudgeError(f"unknown dimension {dimension!r}")
+        if dimension not in seen:
+            result.append(dimension)
+            seen.add(dimension)
+    if not result:
+        raise JudgeError("at least one judge dimension is required")
+    return result
+
+
+def _json_sha(value: Any) -> str:
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+_SHAREABLE_ITEM_FIELDS = (
+    "judgment_unit_id",
+    "dimension",
+    "population",
+    "verdict",
+    "parse_error",
+    "evidence_status",
+    "validation_errors",
+    "execution_status",
+    "identity_status",
+    "transport_error_type",
+    "observed_model",
+    "observed_provider",
+    "reasoning_tokens",
+    "cost",
+    "latency_s",
+    "request_sha256",
+    "raw_response_sha256",
+)
+
+
+def shareable_report(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the report surface safe for a no-transcript aggregate artifact.
+
+    The ordinary review records intentionally retain `cited_span` and `rationale` so a
+    human can inspect a flag. Those fields can contain transcript text and therefore do
+    not belong in a broadly shareable export. Raw response text is never present in the
+    report at all; it can only leave `run_judge` through `private_record_sink`.
+    """
+    top_level = (
+        "schema_version",
+        "model_requested",
+        "provider_requested",
+        "dimensions",
+        "candidates_found",
+        "summary",
+        "truncated",
+        "source_provenance",
+        "judge_runtime",
+        "incumbent_arm",
+        "candidate_arm",
+    )
+    safe = {key: report[key] for key in top_level if key in report}
+    safe["items"] = [
+        {key: row.get(key) for key in _SHAREABLE_ITEM_FIELDS if key in row}
+        for row in report.get("items", [])
+    ]
+    return safe
 
 
 def run_judge(
@@ -377,12 +574,15 @@ def run_judge(
     dimensions: Sequence[str],
     client: Any,
     model: str,
-    provider: str,
+    provider: str | None,
+    reasoning_effort: str = "none",
     max_items: int | None = None,
+    source_provenance: Mapping[str, Any] | None = None,
+    private_record_sink: Callable[[Mapping[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
-    """Call the judge once per disagreement item across `dimensions`, return a report.
+    """Call the judge once per disagreement unit across `dimensions`, return a report.
 
-    One call per item, one replicate -- a diagnostic opinion, not a scored arm, so this
+    One call per call-cluster x dimension, one replicate -- a diagnostic opinion, so this
     does not carry the 3-replicate discipline the primary arms do. That is a real
     limitation and is stated as one in Experiment 6, not hidden: a single judge call's
     instability is unmeasured here, the same caveat `runner.RunResult.N_flip` exists to
@@ -391,11 +591,44 @@ def run_judge(
     `max_items` truncates deterministically (first N in testset order) rather than
     sampling, and the caller is responsible for logging what was dropped -- silent
     truncation reads as "covered everything" when it did not.
+
+    The returned `items` are review records: their rationale and cited span may quote the
+    transcript. `shareable_report(result)` removes those fields. Raw response text and the
+    exact request never enter the result at all; an authorized caller can retain them in a
+    separate restricted store by passing `private_record_sink`.
+
+    `source_provenance` is an optional block of already-shareable hashes/ids supplied by
+    the caller (for example run ids, replicate, testset sha and ground-truth sha). This
+    module cannot derive those values from the in-memory Records it receives.
     """
-    by_key = {(str(i.call_id), str(i.phone_number)): i for i in testset.items}
+    if max_items is not None and (
+        isinstance(max_items, bool) or not isinstance(max_items, int) or max_items < 0
+    ):
+        raise JudgeError("max_items must be a non-negative integer or None")
+    normalised_dimensions = _normalise_dimensions(dimensions)
+
+    by_key: dict[tuple[str, str], Any] = {}
+    for test_item in testset.items:
+        test_key = (str(test_item.call_id), str(test_item.phone_number))
+        if test_key in by_key:
+            raise JudgeError(
+                f"testset has duplicate call/phone lookup key {test_key}; a judge result "
+                "could not identify which transcript it reviewed"
+            )
+        by_key[test_key] = test_item
+
     all_items: list[DisagreementItem] = []
-    for dimension in dimensions:
-        all_items.extend(find_disagreements(gt, incumbent, candidate, dimension))
+    seen_units: set[tuple[tuple[str, str | None, str | None], str]] = set()
+    for dimension in normalised_dimensions:
+        for disagreement_item in find_disagreements(gt, incumbent, candidate, dimension):
+            unit = (disagreement_item.key, disagreement_item.dimension)
+            if unit in seen_units:
+                raise JudgeError(
+                    f"duplicate judgment unit {unit}; duplicated ground-truth keys must "
+                    "be resolved before model calls"
+                )
+            seen_units.add(unit)
+            all_items.append(disagreement_item)
     candidates_found = len(all_items)
     truncated = max_items is not None and candidates_found > max_items
     if max_items is not None:
@@ -411,36 +644,133 @@ def run_judge(
                 f"disagreement key {disagreement_item.key} matches no item in the "
                 "testset passed in. Pass the same testset the runs being compared used."
             )
-        labels: set[str] = set()
-        for label in (
-            disagreement_item.gt_label,
-            disagreement_item.incumbent_label,
-            disagreement_item.candidate_label,
-        ):
-            if label in ("<empty>", "<no prediction>"):
-                continue
-            if disagreement_item.dimension == "reason":
-                labels.update(part.strip() for part in label.split(","))
-            else:
-                labels.add(label)
+        labels: set[str] = set(disagreement_item.rule_labels)
+        if not labels:  # compatibility for directly constructed diagnostic items
+            for label in (
+                disagreement_item.gt_label,
+                disagreement_item.incumbent_label,
+                disagreement_item.candidate_label,
+            ):
+                if label in ("<empty>", "<no prediction>", "<no ground truth>"):
+                    continue
+                if disagreement_item.dimension in {"reason", "product"}:
+                    labels.update(part.strip() for part in label.split(","))
+                else:
+                    labels.add(label)
         citations = _rule_citations_for(item.rules, disagreement_item.dimension, labels)
         messages = build_judge_prompt(item.transcript_th, disagreement_item, citations)
-        completion = client.complete(
-            model=model,
-            messages=messages,
-            max_tokens=1000,
-            temperature=0.0,
-            top_p=1.0,
-            seed=0,
-            response_format=judge_response_schema(),
-            provider=provider,
-            reasoning_effort="none",
+        # The literal request dict is both sent and hashed. A separately reconstructed
+        # provenance object would eventually drift from what the endpoint saw.
+        request: dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": 1000,
+            "temperature": 0.0,
+            "top_p": 1.0,
+            "seed": 0,
+            "response_format": judge_response_schema(),
+            "provider": provider,
+            "reasoning_effort": reasoning_effort,
+        }
+        runtime = getattr(client, "runtime", None)
+        wire_request = (
+            build_runtime_request(runtime, **request)
+            if isinstance(runtime, RuntimeSpec)
+            else request
         )
-        verdict = parse_judge_response(completion.content or "")
+        request_sha = _json_sha(wire_request)
+        unit_id = judgment_unit_id(
+            item.item_id,
+            disagreement_item.key[2],
+            disagreement_item.dimension,
+        )
+
+        try:
+            completion = client.complete(**request)
+        except Exception as exc:  # real client TransportError carries latency_s
+            if not hasattr(exc, "latency_s"):
+                # A programming error in a client implementation is not a transport
+                # outcome and must not be laundered into a plausible judge record.
+                raise
+            verdict = JudgeVerdict(
+                verdict="unclear",
+                cited_span="",
+                rationale="",
+                parse_error=False,
+                raw="",
+                evidence_status=EVIDENCE_NOT_EVALUATED,
+                execution_status="transport_error",
+            )
+            verdicts.append(verdict)
+            private = {
+                "judgment_unit_id": unit_id,
+                "request": wire_request,
+                "raw_response_text": None,
+                "completion_raw": None,
+                "transport_error": f"{type(exc).__name__}: {exc}",
+            }
+            if private_record_sink is not None:
+                private_record_sink(private)
+            records.append(
+                {
+                    "judgment_unit_id": unit_id,
+                    "item_id": item.item_id,
+                    "product": disagreement_item.key[2],
+                    "dimension": disagreement_item.dimension,
+                    "population": disagreement_item.population,
+                    "gt_label": disagreement_item.gt_label,
+                    "incumbent_label": disagreement_item.incumbent_label,
+                    "candidate_label": disagreement_item.candidate_label,
+                    "verdict": verdict.verdict,
+                    "cited_span": "",
+                    "rationale": "",
+                    "parse_error": False,
+                    "evidence_status": verdict.evidence_status,
+                    "validation_errors": [],
+                    "execution_status": verdict.execution_status,
+                    "identity_status": "not_evaluated",
+                    "transport_error_type": type(exc).__name__,
+                    "observed_model": None,
+                    "observed_provider": None,
+                    "reasoning_tokens": None,
+                    "cost": None,
+                    "latency_s": getattr(exc, "latency_s"),
+                    "request_sha256": request_sha,
+                    "raw_response_sha256": None,
+                }
+            )
+            continue
+
+        raw_text = completion.content or ""
+        verdict = parse_judge_response(raw_text, transcript=item.transcript_th)
         verdicts.append(verdict)
+        observed_model = getattr(completion, "observed_model", None)
+        observed_provider = getattr(completion, "provider", None)
+        provider_matches = provider is None or observed_provider == provider
+        if observed_model == model and provider_matches:
+            identity_status = "matched"
+        elif observed_model is None or (provider is not None and observed_provider is None):
+            identity_status = "unverified"
+        else:
+            identity_status = "mismatch"
+        if identity_status != "matched":
+            verdict = replace(verdict, execution_status=f"identity_{identity_status}")
+            verdicts[-1] = verdict
+
+        private = {
+            "judgment_unit_id": unit_id,
+            "request": wire_request,
+            "raw_response_text": raw_text,
+            "completion_raw": getattr(completion, "raw", None),
+            "transport_error": None,
+        }
+        if private_record_sink is not None:
+            private_record_sink(private)
         records.append(
             {
+                "judgment_unit_id": unit_id,
                 "item_id": item.item_id,
+                "product": disagreement_item.key[2],
                 "dimension": disagreement_item.dimension,
                 "population": disagreement_item.population,
                 "gt_label": disagreement_item.gt_label,
@@ -450,20 +780,40 @@ def run_judge(
                 "cited_span": verdict.cited_span,
                 "rationale": verdict.rationale,
                 "parse_error": verdict.parse_error,
-                "observed_model": completion.observed_model,
-                "observed_provider": completion.provider,
-                "reasoning_tokens": completion.reasoning_tokens,
-                "cost": completion.cost,
-                "latency_s": completion.latency_s,
+                "evidence_status": verdict.evidence_status,
+                "validation_errors": list(verdict.validation_errors),
+                "execution_status": verdict.execution_status,
+                "identity_status": identity_status,
+                "transport_error_type": None,
+                "observed_model": observed_model,
+                "observed_provider": observed_provider,
+                "reasoning_tokens": getattr(completion, "reasoning_tokens", None),
+                "cost": getattr(completion, "cost", None),
+                "latency_s": getattr(completion, "latency_s", None),
+                "request_sha256": request_sha,
+                "raw_response_sha256": hashlib.sha256(raw_text.encode("utf-8")).hexdigest(),
             }
         )
 
-    return {
+    runtime = getattr(client, "runtime", None)
+    judge_runtime = (
+        {
+            "manifest": runtime.manifest(),
+            "fingerprint": runtime.fingerprint(),
+        }
+        if isinstance(runtime, RuntimeSpec)
+        else None
+    )
+    report = {
+        "schema_version": 2,
         "model_requested": model,
         "provider_requested": provider,
-        "dimensions": list(dimensions),
+        "dimensions": normalised_dimensions,
         "candidates_found": candidates_found,
         "items": records,
         "summary": summarize_judgments(verdicts),
         "truncated": truncated,
+        "source_provenance": dict(source_provenance or {}),
+        "judge_runtime": judge_runtime,
     }
+    return report

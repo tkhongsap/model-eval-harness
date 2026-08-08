@@ -22,10 +22,12 @@ from typing import Any, Literal
 from evalgen.runner import ItemResult, RunResult
 from evalgen.prompts import PromptError, get as get_prompt
 from evalgen.testsets import TestsetError, load_testset, validate as validate_testset
-from evalharness.compare import Disagreement, PairedVerdict
+from evalharness.compare import Disagreement, PairedVerdict, paired_verdict
 
 __all__ = [
+    "DEFAULT_QUALITY_DIMENSIONS",
     "Decision",
+    "DecisionPolicyName",
     "PlanError",
     "Qualification",
     "arm_by_id",
@@ -884,19 +886,28 @@ class Decision:
     reasons: tuple[str, ...]
 
 
-def decision(
+DecisionPolicyName = Literal["decision_grade_v2", "legacy_v1"]
+DEFAULT_QUALITY_DIMENSIONS = ("call_result", "reason", "product")
+
+
+def _legacy_decision(
     *,
     qualification_status: str,
     parse_ok: int,
     total: int,
     quality_verdicts: Sequence[PairedVerdict],
     stability_verdict: PairedVerdict,
-    runtime_problems: Sequence[str] = (),
-    reference_parse_ok: int | None = None,
-    reference_total: int | None = None,
-    reference_runtime_problems: Sequence[str] = (),
+    runtime_problems: Sequence[str],
+    reference_parse_ok: int | None,
+    reference_total: int | None,
+    reference_runtime_problems: Sequence[str],
 ) -> Decision:
-    """Quality gate first; operations rank only arms that pass it."""
+    """The Experiment 5 directional policy, retained only for reproduction.
+
+    This deliberately preserves the historical semantics, including allowing a
+    negative-net ``INDISTINGUISHABLE`` result to reach PASS.  New decisions use the
+    default v2 policy; callers must name ``legacy_v1`` to reproduce an old report.
+    """
     reasons: list[str] = []
     if qualification_status != "QUALIFIED":
         return Decision("UNAVAILABLE", (f"provider qualification: {qualification_status}",))
@@ -909,7 +920,10 @@ def decision(
         if not reliability_gate(reference_parse_ok, reference_total):
             return Decision(
                 "INCONCLUSIVE",
-                (f"incumbent parse reliability {reference_parse_ok}/{reference_total} is below 99%",),
+                (
+                    f"incumbent parse reliability {reference_parse_ok}/"
+                    f"{reference_total} is below 99%",
+                ),
             )
     if runtime_problems:
         reasons.extend(f"runtime: {problem}" for problem in runtime_problems)
@@ -925,12 +939,6 @@ def decision(
         reasons.append("stability is BEHIND")
     if reasons:
         return Decision("FAIL", tuple(reasons))
-    # A stability comparison with too few discordant items (d < 6 at this alpha) gets
-    # the same UNDERPOWERED treatment as a quality dimension: it is a real result --
-    # "no verdict was possible" -- not a tie, and PASS must not fall through underneath
-    # it. `paired_verdict` already refuses to call this a tie for quality dimensions;
-    # stability uses the identical `paired_verdict`/`exact_band` machinery and was
-    # missing the matching check here (audit finding, 2026-08-07).
     inconclusive: list[str] = []
     if underpowered:
         inconclusive.append(f"quality UNDERPOWERED on {', '.join(underpowered)}")
@@ -939,3 +947,226 @@ def decision(
     if inconclusive:
         return Decision("INCONCLUSIVE", tuple(inconclusive))
     return Decision("PASS", ("all preregistered quality gates passed",))
+
+
+def _paired_evidence_problem(
+    row: object, *, expected_alpha_per_side: float
+) -> str | None:
+    """Return a structural defect without trusting a hand-built verdict object."""
+    if not isinstance(row, PairedVerdict):
+        return f"paired evidence has type {type(row).__name__}, expected PairedVerdict"
+    if not isinstance(row.dimension, str) or not row.dimension:
+        return "paired evidence dimension must be a non-empty string"
+    if (
+        isinstance(row.discordant, bool)
+        or not isinstance(row.discordant, int)
+        or isinstance(row.net, bool)
+        or not isinstance(row.net, int)
+    ):
+        return f"{row.dimension}: discordant and net must be integers"
+    if (
+        isinstance(row.alpha_per_side, bool)
+        or not isinstance(row.alpha_per_side, (int, float))
+        or not math.isfinite(float(row.alpha_per_side))
+        or float(row.alpha_per_side) != float(expected_alpha_per_side)
+    ):
+        return (
+            f"{row.dimension}: alpha_per_side {row.alpha_per_side!r} does not match "
+            f"preregistered {expected_alpha_per_side}"
+        )
+    if row.discordant < 0:
+        return f"{row.dimension}: discordant count is negative"
+    if abs(row.net) > row.discordant:
+        return f"{row.dimension}: abs(net) exceeds discordant count"
+    if (row.discordant - row.net) % 2:
+        return f"{row.dimension}: net parity is incompatible with discordant count"
+    if row.band is not None and (row.band < 0 or row.band > row.discordant):
+        return f"{row.dimension}: decision band is outside the discordant count"
+    if row.verdict == "UNDERPOWERED" and row.band is not None:
+        return f"{row.dimension}: UNDERPOWERED verdict unexpectedly has a band"
+    if row.verdict != "UNDERPOWERED" and row.band is None:
+        return f"{row.dimension}: {row.verdict} verdict is missing its band"
+    incumbent_only = (row.discordant - row.net) // 2
+    candidate_only = (row.discordant + row.net) // 2
+    canonical = paired_verdict(
+        Disagreement(
+            row.dimension,
+            both_right=0,
+            both_wrong=0,
+            incumbent_only_right=incumbent_only,
+            candidate_only_right=candidate_only,
+        ),
+        alpha_per_side=float(expected_alpha_per_side),
+    )
+    if row.band != canonical.band or row.verdict != canonical.verdict:
+        return (
+            f"{row.dimension}: verdict/band {row.verdict}/{row.band} does not match "
+            f"canonical {canonical.verdict}/{canonical.band} for d={row.discordant}, "
+            f"net={row.net}"
+        )
+    return None
+
+
+def decision(
+    *,
+    qualification_status: str,
+    parse_ok: int,
+    total: int,
+    quality_verdicts: Sequence[PairedVerdict],
+    stability_verdict: PairedVerdict,
+    runtime_problems: Sequence[str] = (),
+    reference_parse_ok: int | None = None,
+    reference_total: int | None = None,
+    reference_runtime_problems: Sequence[str] = (),
+    expected_dimensions: Sequence[str] = DEFAULT_QUALITY_DIMENSIONS,
+    maximum_net_losses: Mapping[str, int] | None = None,
+    expected_alpha_per_side: float = 1 / 64,
+    policy: DecisionPolicyName = "decision_grade_v2",
+) -> Decision:
+    """Apply a complete, fail-closed decision policy to paired evidence.
+
+    ``decision_grade_v2`` is the default.  It requires exactly one verdict for every
+    expected dimension, treats runtime/identity/provenance defects as invalid evidence
+    (INCONCLUSIVE rather than a model-quality FAIL), and refuses PASS when an
+    INDISTINGUISHABLE point result loses more paired units than the explicit allowance.
+
+    ``maximum_net_losses`` is a conservative observed-loss guard, not a confidence
+    interval and not a claim of statistical non-inferiority.  It defaults to zero for
+    every quality dimension and stability.  A future preregistered plan can explicitly
+    permit a bounded loss per dimension while a full non-inferiority interval is added.
+
+    ``legacy_v1`` exists solely to reproduce Experiment 5 reports and must be requested
+    explicitly.  It does not receive the v2 completeness or net-loss protections.
+    """
+    if policy not in {"decision_grade_v2", "legacy_v1"}:
+        raise PlanError(f"unknown decision policy {policy!r}")
+    if policy == "legacy_v1":
+        return _legacy_decision(
+            qualification_status=qualification_status,
+            parse_ok=parse_ok,
+            total=total,
+            quality_verdicts=quality_verdicts,
+            stability_verdict=stability_verdict,
+            runtime_problems=runtime_problems,
+            reference_parse_ok=reference_parse_ok,
+            reference_total=reference_total,
+            reference_runtime_problems=reference_runtime_problems,
+        )
+
+    expected = tuple(expected_dimensions)
+    if not expected or len(set(expected)) != len(expected):
+        raise PlanError("expected_dimensions must be a non-empty sequence of unique names")
+    margins = dict(maximum_net_losses or {})
+    allowed_margin_names = set(expected) | {"stability"}
+    unknown_margins = sorted(set(margins) - allowed_margin_names)
+    if unknown_margins:
+        raise PlanError(
+            f"maximum_net_losses names unexpected dimensions: {unknown_margins}"
+        )
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0
+           for value in margins.values()):
+        raise PlanError("maximum_net_losses values must be non-negative integers")
+    if (
+        isinstance(expected_alpha_per_side, bool)
+        or not isinstance(expected_alpha_per_side, (int, float))
+        or not math.isfinite(float(expected_alpha_per_side))
+        or not 0 < float(expected_alpha_per_side) < 0.5
+    ):
+        raise PlanError("expected_alpha_per_side must be between 0 and 0.5")
+
+    if qualification_status != "QUALIFIED":
+        return Decision("UNAVAILABLE", (f"provider qualification: {qualification_status}",))
+
+    invalid: list[str] = []
+    non_verdicts = [row for row in quality_verdicts if not isinstance(row, PairedVerdict)]
+    if not isinstance(stability_verdict, PairedVerdict):
+        non_verdicts.append(stability_verdict)
+    if non_verdicts:
+        return Decision(
+            "INCONCLUSIVE",
+            ("paired evidence contains non-PairedVerdict value(s)",),
+        )
+    quality_dimensions = [row.dimension for row in quality_verdicts]
+    duplicates = sorted(
+        dimension
+        for dimension in set(quality_dimensions)
+        if quality_dimensions.count(dimension) > 1
+    )
+    missing = [dimension for dimension in expected if dimension not in quality_dimensions]
+    unexpected = sorted(set(quality_dimensions) - set(expected))
+    if duplicates:
+        invalid.append(f"duplicate quality verdicts for {', '.join(duplicates)}")
+    if missing:
+        invalid.append(f"missing quality verdicts for {', '.join(missing)}")
+    if unexpected:
+        invalid.append(f"unexpected quality verdicts for {', '.join(unexpected)}")
+    if stability_verdict.dimension != "stability":
+        invalid.append(
+            f"stability verdict has dimension {stability_verdict.dimension!r}"
+        )
+    for row in (*quality_verdicts, stability_verdict):
+        problem = _paired_evidence_problem(
+            row, expected_alpha_per_side=float(expected_alpha_per_side)
+        )
+        if problem:
+            invalid.append(problem)
+    if (reference_parse_ok is None) != (reference_total is None):
+        invalid.append("incumbent parse reliability requires both ok and total counts")
+    elif reference_parse_ok is not None and reference_total is not None:
+        if reference_total <= 0 or not 0 <= reference_parse_ok <= reference_total:
+            invalid.append("incumbent parse reliability counts are invalid")
+    if total <= 0 or not 0 <= parse_ok <= total:
+        invalid.append("candidate parse reliability counts are invalid")
+    invalid.extend(
+        f"invalid incumbent runtime/provenance: {problem}"
+        for problem in reference_runtime_problems
+    )
+    invalid.extend(
+        f"invalid candidate runtime/provenance: {problem}" for problem in runtime_problems
+    )
+    if invalid:
+        return Decision("INCONCLUSIVE", tuple(invalid))
+
+    assert total > 0
+    if reference_parse_ok is not None and reference_total is not None:
+        if not reliability_gate(reference_parse_ok, reference_total):
+            return Decision(
+                "INCONCLUSIVE",
+                (
+                    f"incumbent parse reliability {reference_parse_ok}/"
+                    f"{reference_total} is below 99%",
+                ),
+            )
+    if not reliability_gate(parse_ok, total):
+        return Decision(
+            "FAIL", (f"parse reliability {parse_ok}/{total} is below 99%",)
+        )
+
+    behind = [row.dimension for row in quality_verdicts if row.verdict == "BEHIND"]
+    if stability_verdict.verdict == "BEHIND":
+        behind.append("stability")
+    if behind:
+        return Decision("FAIL", (f"BEHIND on {', '.join(behind)}",))
+
+    inconclusive: list[str] = []
+    underpowered = [
+        row.dimension for row in quality_verdicts if row.verdict == "UNDERPOWERED"
+    ]
+    if underpowered:
+        inconclusive.append(f"quality UNDERPOWERED on {', '.join(underpowered)}")
+    if stability_verdict.verdict == "UNDERPOWERED":
+        inconclusive.append(
+            "stability UNDERPOWERED (too few discordant items for a verdict)"
+        )
+    for row in (*quality_verdicts, stability_verdict):
+        margin = margins.get(row.dimension, 0)
+        if row.verdict == "INDISTINGUISHABLE" and row.net < -margin:
+            inconclusive.append(
+                f"{row.dimension} non-inferiority is not established: observed net "
+                f"{row.net} is below the allowed {-margin}"
+            )
+    if inconclusive:
+        return Decision("INCONCLUSIVE", tuple(inconclusive))
+    return Decision(
+        "PASS", ("all decision-grade quality and observed net-loss gates passed",)
+    )

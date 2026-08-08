@@ -13,4 +13,5 @@
 # scoring runs wherever the differential test runs, generation only where a key exists.
 #
 # Same reasoning, and the same file, as scripts/openrouter-smoketest/requirements.txt.
-openai>=1.0
+# This exact SDK version is validated by the runtime/client suite on Python 3.12.
+openai==2.17.0

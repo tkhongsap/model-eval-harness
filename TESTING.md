@@ -2,30 +2,65 @@
 
 ## Quick Start
 
-```bash
+```powershell
 python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt   # Windows
-# .venv/bin/python -m pip install -r requirements.txt     # macOS/Linux
+.venv/Scripts/python -m pip install -r requirements.txt
+$env:PYTHONPATH = 'src'
 .venv/Scripts/python -m pytest tests/ -q
 ```
 
-Expected in a fresh checkout: **524 passed, 33 skipped** (computed: 498 + the 26
-self-contained tests added 2026-08-07 for `judge.py` and its audit-fix regressions,
-none of which touches `out/` or `TRUE_SOURCE_ROOT` -- not independently re-measured
-against an actual fresh clone).
+On macOS/Linux, use `.venv/bin/python` and set
+`export PYTHONPATH="$PWD/src"` before running the suite. This explicit path is required
+because the repository intentionally has no `pyproject.toml` or editable install yet.
+Commands below assume `PYTHONPATH` remains set in the current shell.
 
-The skips are correct: 11 need production source/pins and 22 integration checks need
-historical gitignored `out/` run directories that a fresh checkout does not contain.
+Historical fresh-checkout baseline on 2026-08-07: **524 passed, 33 skipped** (computed:
+498 + the 26 self-contained tests then added for `judge.py` and its audit-fix
+regressions, not independently re-measured against an actual fresh clone). This predates
+the runtime, artifact, application-contract, and decision-grade tests in the current
+tree. Run the suite and report the observed current count instead of treating 524 as an
+expectation.
+
+At that baseline, 11 skips needed production source/pins and 22 integration checks
+needed historical gitignored `out/` run directories that a fresh checkout did not
+contain. Read the reasons printed by the current run; a skip count alone is not proof.
+
+The scoring and generation environments are intentionally separate. For the exact
+Python 3.12 setup, private data-root contract, zero-call preflight, and OpenRouter or
+internal-GPU commands, use [the team GPU runbook](./docs/TEAM_GPU_RUNBOOK.md).
+
+### Runtime and durable-artifact checks (offline)
+
+```bash
+.venv/Scripts/python -m pytest \
+  tests/test_runtime.py tests/test_artifacts.py tests/test_runner.py tests/test_paths.py -q
+```
+
+These tests make no model call. They validate non-secret runtime manifests and
+fingerprints, OpenRouter-versus-generic request behavior, private destinations outside
+Git, atomic authoritative writes, journal start/result and contract hashes, detection
+of unresolved dispatched calls or torn journal records, bounded scheduling, checkpoint
+failure handling, run-relative bundle inputs, and exact-contract resume.
+
+Validate the example runtime manifest without installing or importing the OpenAI SDK:
+
+```bash
+.venv/Scripts/python -c \
+  "import json,sys; from pathlib import Path; sys.path.insert(0,'src'); from evalgen.runtime import RuntimeSpec; p=Path('configs/runtime.local-gpu.example.json'); r=RuntimeSpec.from_manifest(json.loads(p.read_text(encoding='utf-8'))); print(r.runtime_id, r.fingerprint())"
+```
+
+The example deliberately contains placeholders. Schema validity does not make those
+placeholders acceptable provenance for a decision-grade run.
 
 ## Two modes, two different counts
 
 This repository proves more when True's production source tree is reachable. Report
 whichever number you actually ran, and say which mode.
 
-| Mode | Command | Expected |
+| Mode | Command | Evidence to report |
 |---|---|---|
-| **Fresh standalone checkout** | `pytest tests/ -q` | **524 passed, 33 skipped** (computed, see above) |
-| **With production source and historical local `out/`** | `TRUE_SOURCE_ROOT=<path> pytest tests/ -q` | environment-dependent; report the observed count. Measured 2026-08-07 in an environment with `production-reference/` and historical `out/` runs present: **546 passed, 11 skipped** standalone, **557 passed, 0 skipped** with `TRUE_SOURCE_ROOT` set. |
+| **Fresh standalone checkout** | `PYTHONPATH=src pytest tests/ -q -rs` | Observed pass/skip count and every skip reason. Historical reference only: **524 passed, 33 skipped** on 2026-08-07 before the current additions. |
+| **With production source and historical local `out/`** | `PYTHONPATH=src TRUE_SOURCE_ROOT=<path> pytest tests/ -q -rs` | Observed count and resolved source path. Historical reference only: **546 passed, 11 skipped** standalone and **557 passed, 0 skipped** with `TRUE_SOURCE_ROOT`, measured 2026-08-07 before the current additions. |
 
 For the Experiment 5 implementation audit, the focused production differential,
 dependency-pin and boundary selection passed **18/18** with `TRUE_SOURCE_ROOT` set to
@@ -34,6 +69,7 @@ the tracked `production-reference/sentiment-batch-retention-main` tree.
 ```bash
 # Windows, pointing at the vendored archive in life-os
 set TRUE_SOURCE_ROOT=C:\Users\te90056471\my-github\life-os\work-work\projects\2026-07-local-llm-platform\source-code-review\sentiment-batch-retention-main
+set PYTHONPATH=src
 .venv\Scripts\python -m pytest tests/ -q
 ```
 
@@ -422,8 +458,8 @@ agrees with production".
 
 ## What none of this proves
 
-**No number this harness produces is a migration verdict yet.** Every report prints
-`RECONCILED: NO` until a run has been checked against the app's own live Gemini
-fact-check report. That needs real labelled data and real model runs, neither of which
-this repository has. A fully green suite means the harness computes what it claims to
-compute, not that any model is good enough to deploy.
+The implementation can be **READY for team setup** while the migration decision remains
+**INCONCLUSIVE**. Every report prints `RECONCILED: NO` until a real company-GPU arm has
+run on approved real labelled data and the result has been checked against the app's
+live Gemini fact-check report. A fully green suite proves the harness computes and
+preserves what it claims; it does not prove that a model is good enough to deploy.

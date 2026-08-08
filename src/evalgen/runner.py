@@ -58,12 +58,13 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable, Mapping, Sequence
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
 from evalgen import outcomes
+from evalgen.artifacts import atomic_write_text
 from evalgen.prompts import Prompt, build_messages
 from evalgen.testsets import TestItem, TestSet, testset_sha
 
@@ -76,6 +77,7 @@ __all__ = [
     "RunConfig",
     "RunError",
     "RunResult",
+    "item_result_to_row",
     "run",
     "write_run_log",
 ]
@@ -152,6 +154,10 @@ class CompletionLike(Protocol):
     reasoning_tokens: int | None
     cost: float | None
     latency_s: float
+    runtime_id: str | None
+    runtime_backend: str | None
+    runtime_fingerprint: str | None
+    system_fingerprint: str | None
 
 
 class ClientLike(Protocol):
@@ -287,6 +293,10 @@ class ItemResult:
     error: str | None
     http_status: int | None = None
     attempt_count: int = 1
+    runtime_id: str | None = None
+    runtime_backend: str | None = None
+    runtime_fingerprint: str | None = None
+    system_fingerprint: str | None = None
 
 
 @dataclass(frozen=True)
@@ -629,6 +639,10 @@ def _result_from_completion(
         error=None,
         http_status=None,
         attempt_count=attempts,
+        runtime_id=getattr(completion, "runtime_id", None),
+        runtime_backend=getattr(completion, "runtime_backend", None),
+        runtime_fingerprint=getattr(completion, "runtime_fingerprint", None),
+        system_fingerprint=getattr(completion, "system_fingerprint", None),
     )
 
 
@@ -682,6 +696,10 @@ def _result_from_failure(
         error=detail,
         http_status=_status_code(exc),
         attempt_count=attempts,
+        runtime_id=None,
+        runtime_backend=None,
+        runtime_fingerprint=None,
+        system_fingerprint=None,
     )
 
 
@@ -761,6 +779,9 @@ def run(
     config: RunConfig,
     response_format: Mapping[str, Any] | None = None,
     progress: Callable[[int, int, ItemResult], None] | None = None,
+    started: Callable[[str, int], None] | None = None,
+    checkpoint: Callable[[int, int, ItemResult], None] | None = None,
+    completed: Sequence[ItemResult] = (),
 ) -> RunResult:
     """Run every item, `config.repeats` times each, and return the rows in testset order.
 
@@ -772,9 +793,24 @@ def run(
     is made, and completion order survives only in the `progress` callback -- which is
     where it is useful and nowhere else.
 
-    `progress` is called on the calling thread as each row lands, with
+    `progress` is called on the calling thread as each new row lands, with
     `(done, total, result)`. Exceptions from it are swallowed: it is a display detail,
     and a broken progress bar must not destroy results that have already been paid for.
+
+    `started` is called and must return before a logical cell is submitted. It lets a
+    durable journal distinguish "never dispatched" from "possibly completed at the
+    server but lost before result fsync". Its exceptions stop submission.
+
+    `checkpoint` receives the same arguments immediately before `progress`. Its
+    exceptions are deliberately *not* swallowed: a run that cannot durably record paid
+    work stops scheduling new calls. `completed` supplies cells recovered from a
+    journal. They are validated against the exact task matrix and are never called
+    again, which makes interruption recovery idempotent rather than a second draw.
+
+    At most `concurrency` futures exist at once. Submitting the entire matrix before
+    reading the first result makes a fatal harness error expensive: executor shutdown
+    can let every queued request run. The bounded queue limits additional spend after a
+    fatal error to work already in flight.
 
     Raises `RunError` before any call is made when the configuration would produce a
     misleading result. The prompt id check is the one that matters: two arms silently
@@ -812,35 +848,83 @@ def run(
         for replicate in range(1, config.repeats + 1)
     ]
     slots: list[ItemResult | None] = [None] * len(tasks)
+    task_slots = {(item.item_id, replicate): slot for slot, (item, replicate) in enumerate(tasks)}
+    if len(task_slots) != len(tasks):
+        raise RunError("testset item ids are not unique across the run task matrix")
 
-    with ThreadPoolExecutor(
+    for result in completed:
+        cell = (result.item_id, result.replicate)
+        slot = task_slots.get(cell)
+        if slot is None:
+            raise RunError(f"resumed result {cell} is not part of this run")
+        if slots[slot] is not None:
+            raise RunError(f"resumed results repeat logical cell {cell}")
+        expected_item, _ = tasks[slot]
+        if result.call_id != expected_item.call_id:
+            raise RunError(
+                f"resumed result {cell} records call_id {result.call_id!r}, expected "
+                f"{expected_item.call_id!r}"
+            )
+        slots[slot] = result
+
+    pending_slots = iter(index for index, value in enumerate(slots) if value is None)
+    done_count = len(tasks) - sum(value is None for value in slots)
+    pool = ThreadPoolExecutor(
         max_workers=config.concurrency, thread_name_prefix=f"evalgen-{config.arm}"
-    ) as pool:
-        futures = {
-            pool.submit(
-                _run_one,
-                item,
-                replicate,
-                client=client,
-                prompt=prompt,
-                config=config,
-                response_format=response_format,
-                required_keys=required_keys,
-            ): slot
-            for slot, (item, replicate) in enumerate(tasks)
-        }
-        for done, future in enumerate(as_completed(futures), start=1):
-            # `.result()` re-raises whatever the worker raised, which by construction is
-            # only a programming error (see `_PROGRAMMING_ERRORS`). Letting it out aborts
-            # the run: a harness that calls its client wrongly fails every item the same
-            # way, so there is nothing here worth keeping.
-            result = future.result()
-            slots[futures[future]] = result
-            if progress is not None:
-                try:
-                    progress(done, len(tasks), result)
-                except Exception:  # noqa: BLE001 - a progress bar must never lose a run
-                    pass
+    )
+    futures: dict[Future[ItemResult], int] = {}
+
+    def submit_next() -> bool:
+        try:
+            slot = next(pending_slots)
+        except StopIteration:
+            return False
+        item, replicate = tasks[slot]
+        if started is not None:
+            started(item.item_id, replicate)
+        future = pool.submit(
+            _run_one,
+            item,
+            replicate,
+            client=client,
+            prompt=prompt,
+            config=config,
+            response_format=response_format,
+            required_keys=required_keys,
+        )
+        futures[future] = slot
+        return True
+
+    for _ in range(config.concurrency):
+        if not submit_next():
+            break
+
+    try:
+        while futures:
+            finished, _ = wait(tuple(futures), return_when=FIRST_COMPLETED)
+            # Stable slot order makes simultaneous completions deterministic for
+            # checkpoint/progress consumers while preserving concurrency itself.
+            for future in sorted(finished, key=lambda value: futures[value]):
+                slot = futures.pop(future)
+                # `.result()` re-raises programming errors. Stop scheduling at once;
+                # only already-running calls can finish after this point.
+                result = future.result()
+                slots[slot] = result
+                done_count += 1
+                if checkpoint is not None:
+                    checkpoint(done_count, len(tasks), result)
+                if progress is not None:
+                    try:
+                        progress(done_count, len(tasks), result)
+                    except Exception:  # noqa: BLE001 - display cannot lose paid work
+                        pass
+                submit_next()
+    except BaseException:
+        for future in futures:
+            future.cancel()
+        raise
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
 
     missing = [index for index, value in enumerate(slots) if value is None]
     if missing:  # pragma: no cover - unreachable; the invariant is stated, not assumed
@@ -855,6 +939,44 @@ def run(
         testset_sha=testset_sha(testset.path),
         results=tuple(item for item in slots if item is not None),
     )
+
+
+def item_result_to_row(result: RunResult, item: ItemResult) -> dict[str, Any]:
+    """Serialize one logical cell with the run identity repeated beside it."""
+    return {
+        "arm": result.config.arm,
+        "model_requested": result.config.model,
+        "observed_model": item.observed_model,
+        "provider_requested": result.config.provider,
+        "reasoning_effort": result.config.reasoning_effort,
+        "provider": item.provider,
+        "generation_id": item.generation_id,
+        "prompt_id": result.config.prompt_id,
+        "prompt_sha": result.prompt_sha,
+        "testset_sha": result.testset_sha,
+        "item_id": item.item_id,
+        "call_id": item.call_id,
+        "replicate": item.replicate,
+        "outcome": item.outcome,
+        "parse_ok": item.parse_ok,
+        "truncated": item.truncated,
+        "finish_reason": item.finish_reason,
+        "repairs": list(item.repairs),
+        "error": item.error,
+        "http_status": item.http_status,
+        "attempt_count": item.attempt_count,
+        "runtime_id": item.runtime_id,
+        "runtime_backend": item.runtime_backend,
+        "runtime_fingerprint": item.runtime_fingerprint,
+        "system_fingerprint": item.system_fingerprint,
+        "latency_s": item.latency_s,
+        "prompt_tokens": item.prompt_tokens,
+        "completion_tokens": item.completion_tokens,
+        "reasoning_tokens": item.reasoning_tokens,
+        "cost": item.cost,
+        "payload": item.payload,
+        "raw_content": item.raw_content,
+    }
 
 
 def write_run_log(result: RunResult, path: Path) -> None:
@@ -884,39 +1006,8 @@ def write_run_log(result: RunResult, path: Path) -> None:
     hides a fallback. A row saying `provider: "CoreWeave"` is only interesting once you
     know whether CoreWeave was asked for.
     """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for item in result.results:
-            row = {
-                "arm": result.config.arm,
-                "model_requested": result.config.model,
-                "observed_model": item.observed_model,
-                "provider_requested": result.config.provider,
-                "reasoning_effort": result.config.reasoning_effort,
-                "provider": item.provider,
-                "generation_id": item.generation_id,
-                "prompt_id": result.config.prompt_id,
-                "prompt_sha": result.prompt_sha,
-                "testset_sha": result.testset_sha,
-                "item_id": item.item_id,
-                "call_id": item.call_id,
-                "replicate": item.replicate,
-                "outcome": item.outcome,
-                "parse_ok": item.parse_ok,
-                "truncated": item.truncated,
-                "finish_reason": item.finish_reason,
-                "repairs": list(item.repairs),
-                "error": item.error,
-                "http_status": item.http_status,
-                "attempt_count": item.attempt_count,
-                "latency_s": item.latency_s,
-                "prompt_tokens": item.prompt_tokens,
-                "completion_tokens": item.completion_tokens,
-                "reasoning_tokens": item.reasoning_tokens,
-                "cost": item.cost,
-                "payload": item.payload,
-                "raw_content": item.raw_content,
-            }
-            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    text = "".join(
+        json.dumps(item_result_to_row(result, item), ensure_ascii=False) + "\n"
+        for item in result.results
+    )
+    atomic_write_text(Path(path), text)

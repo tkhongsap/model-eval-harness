@@ -1,4 +1,4 @@
-"""The only file in this package that imports `openai`.
+"""The only file in this package that imports ``openai``.
 
 `src/evalharness/` makes no model calls at all, and `tests/test_boundary.py` enforces
 that by parsing its imports. `src/evalgen/` is the other side of that line: it exists
@@ -12,11 +12,10 @@ declared separately, in `src/evalgen/requirements.txt`), so the environment CI b
 has no client in it. If `outcomes.py` reached for one, the rule that decides
 `parse_ok` would stop being testable in the environment that runs the suite.
 
-Per canon and AGENTS.md ("Service layers do not apply"), model calls route through
-OpenRouter rather than a provider SDK directly. AGENTS.md anticipated this file:
-*"If a future version runs candidate models as part of a real evaluation pipeline
-(not just a pipe test), that is new work with its own review... and OpenRouter becomes
-a real dependency of `src/` at that point."*
+The client speaks the OpenAI chat-completions protocol.  OpenRouter remains the
+default and retains its historical request extensions; an internal vLLM, TGI, SGLang
+or other OpenAI-compatible GPU endpoint can be selected with a non-secret
+``runtime.RuntimeSpec``.  A provider SDK is never imported directly.
 """
 
 from __future__ import annotations
@@ -24,20 +23,24 @@ from __future__ import annotations
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Final
+from typing import Any
 
 from openai import OpenAI
 
-from evalgen.request import build_request
+from evalgen.runtime import (
+    OPENROUTER_BASE_URL,
+    OPENROUTER_RUNTIME,
+    RuntimeSpec,
+    build_runtime_request,
+)
 
-OPENROUTER_BASE_URL: Final = "https://openrouter.ai/api/v1"
-
-# Optional attribution headers; OpenRouter uses them for its public leaderboard.
-# Harmless to omit, kept consistent with scripts/openrouter-smoketest/smoketest.py.
-_DEFAULT_HEADERS: Final = {
-    "HTTP-Referer": "https://github.com/tkhongsap/model-eval-harness",
-    "X-Title": "model-eval-harness evalgen",
-}
+__all__ = [
+    "Completion",
+    "OPENROUTER_BASE_URL",
+    "OpenAICompatibleClient",
+    "OpenRouterClient",
+    "TransportError",
+]
 
 
 class TransportError(RuntimeError):
@@ -98,6 +101,14 @@ class Completion:
     cost: float | None
     latency_s: float
     raw: dict
+    # Runtime identity is attached at the transport boundary, where the endpoint
+    # actually used is known.  The runner can persist these fields without importing
+    # the SDK.  ``system_fingerprint`` is an optional server-reported build signal;
+    # unlike the RuntimeSpec fingerprint it is not a trust proof.
+    runtime_id: str | None = None
+    runtime_backend: str | None = None
+    runtime_fingerprint: str | None = None
+    system_fingerprint: str | None = None
 
 
 def _as_dict(response: Any) -> dict:
@@ -111,15 +122,25 @@ def _as_dict(response: Any) -> dict:
     return {}
 
 
-class OpenRouterClient:
-    """A thin, single-shot OpenRouter client.
+class OpenAICompatibleClient:
+    """A thin, single-shot client for a reviewed :class:`RuntimeSpec`.
 
     Thin on purpose. It does not classify, validate, repair or interpret; that is
     `outcomes.classify`, and a client that quietly decided what counted as a good
     response would put a second `parse_ok` in the codebase.
+
+    OpenRouter is the default runtime for backward compatibility.  Other runtimes use
+    the portable OpenAI chat-completions request surface and reject OpenRouter-only
+    routing/reasoning options before a call can be attempted.
     """
 
-    def __init__(self, api_key: str, *, timeout: float = 120.0) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        *,
+        runtime: RuntimeSpec = OPENROUTER_RUNTIME,
+        timeout: float = 120.0,
+    ) -> None:
         """Build the client.
 
         **`max_retries=0` is a deliberate departure from the SDK default of 2**, and
@@ -134,18 +155,27 @@ class OpenRouterClient:
         lowers coverage. That is the honest presentation, and it is visible enough to
         act on -- re-run the batch, do not launder the retry inside one item.
         """
+        if not isinstance(runtime, RuntimeSpec):
+            raise TypeError("runtime must be a RuntimeSpec")
         if not api_key or not api_key.strip():
             raise ValueError(
-                "OpenRouter API key is empty. Pass a real key; a blank one produces a "
-                "401 on every item and an entire run of transport_error."
+                f"API key from {runtime.api_key_env} is empty. Pass a real key (or a "
+                "documented local placeholder when the endpoint has auth disabled); "
+                "a blank key cannot construct a reproducible client."
             )
-        self._client = OpenAI(
-            base_url=OPENROUTER_BASE_URL,
-            api_key=api_key.strip(),
-            timeout=timeout,
-            max_retries=0,
-            default_headers=_DEFAULT_HEADERS,
-        )
+        self.runtime = runtime
+        client_options: dict[str, Any] = {
+            "base_url": runtime.base_url,
+            "api_key": api_key.strip(),
+            "timeout": timeout,
+            "max_retries": 0,
+            "default_headers": dict(runtime.headers),
+        }
+        if runtime.organization is not None:
+            client_options["organization"] = runtime.organization
+        if runtime.project is not None:
+            client_options["project"] = runtime.project
+        self._client = OpenAI(**client_options)
 
     def complete(
         self,
@@ -164,11 +194,10 @@ class OpenRouterClient:
     ) -> Completion:
         """Make exactly one call and report what came back.
 
-        **`provider` pins the backend; `Completion.provider` reports the one that
-        answered.** They are two different facts and the pair is the point, exactly as
-        `model` and `observed_model` are. `request.build_request` turns the argument
-        into `{"order": [name], "allow_fallbacks": false, "require_parameters": true}`
-        and documents why all three keys are needed.
+        On an OpenRouter runtime, **`provider` pins the backend while
+        `Completion.provider` reports the one that answered.** They are two different
+        facts and the pair is the point, exactly as `model` and `observed_model` are.
+        Generic runtimes reject this router-specific argument before making a call.
 
         **`Completion.provider` is read off the response and is NOT proof the pin
         held.** OpenRouter returns a top-level `provider` string on chat completions,
@@ -199,10 +228,9 @@ class OpenRouterClient:
         `provider` is the field that would have. Both are recorded now; neither
         replaces `prompt_tokens` as the thing that cannot be faked.
 
-        The body itself is built by `request.build_request`, not here. That function
-        is also what `--dry-run` writes, so the request a reviewer reads before
-        spending anything is the same object this method sends -- see its module
-        docstring for the three drifts a second construction would hide.
+        The body itself is built by `runtime.build_runtime_request`, not here. It is a
+        pure helper that a runtime-aware dry run can call too, so the request a
+        reviewer reads before spending anything is the same object this method sends.
 
         Optional parameters are omitted from the request when None rather than sent as
         nulls, because providers differ in how they treat an explicit null and a
@@ -217,7 +245,8 @@ class OpenRouterClient:
         tool arguments as if they were `content` would be a guess about which call and
         which argument mattered.
         """
-        request = build_request(
+        request = build_runtime_request(
+            self.runtime,
             model=model,
             messages=messages,
             max_tokens=max_tokens,
@@ -274,4 +303,19 @@ class OpenRouterClient:
             cost=getattr(usage, "cost", None) if usage else None,
             latency_s=latency_s,
             raw=_as_dict(response),
+            runtime_id=self.runtime.runtime_id,
+            runtime_backend=self.runtime.backend.value,
+            runtime_fingerprint=self.runtime.fingerprint(),
+            system_fingerprint=getattr(response, "system_fingerprint", None),
+        )
+
+
+class OpenRouterClient(OpenAICompatibleClient):
+    """Backward-compatible name for the historical default OpenRouter client."""
+
+    def __init__(self, api_key: str, *, timeout: float = 120.0) -> None:
+        super().__init__(
+            api_key,
+            runtime=OPENROUTER_RUNTIME,
+            timeout=timeout,
         )

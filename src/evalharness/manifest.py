@@ -57,9 +57,46 @@ def _tree_hash(paths: list[Path], *, root: Path) -> str:
 
 
 def outcome_contract_sha(*, root: Path | None = None) -> str:
-    """Code that made the run-time `parse_ok` decision."""
+    """Code that made and bridged the run-time ``parse_ok`` decision."""
     repo = (root or _repository_root()).resolve()
-    return _tree_hash([repo / "src" / "evalgen" / "outcomes.py"], root=repo)
+    return _tree_hash(
+        [
+            repo / "src" / "evalgen" / "outcomes.py",
+            repo / "src" / "evalgen" / "runner.py",
+        ],
+        root=repo,
+    )
+
+
+def generation_contract_sha(*, root: Path | None = None) -> str:
+    """Code that determines request bytes, transport, retry, and response extraction."""
+    repo = (root or _repository_root()).resolve()
+    return _tree_hash(
+        [
+            repo / "src" / "evalgen" / name
+            for name in (
+                "client.py",
+                "config.py",
+                "decoding.py",
+                "request.py",
+                "runner.py",
+                "runtime.py",
+            )
+        ],
+        root=repo,
+    )
+
+
+def decision_policy_sha(*, root: Path | None = None) -> str:
+    """Code that turns paired evidence into an experiment decision."""
+    repo = (root or _repository_root()).resolve()
+    return _tree_hash(
+        [
+            repo / "src" / "evalharness" / "compare.py",
+            repo / "src" / "evalgen" / "experiments.py",
+        ],
+        root=repo,
+    )
 
 
 def scoring_code_sha(*, root: Path | None = None) -> str:
