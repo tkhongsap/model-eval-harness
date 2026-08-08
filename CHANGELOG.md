@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Experiment 7 reproducible handoff.** Added a machine-validatable, zero-call
+  Retention v3 reproduction plan, a synthetic aggregate evidence record, and a detailed
+  team handoff covering three-model F1, paired quality/stability gates, operations,
+  token/cost accounting, the 360-opinion advisory judge, limitations and next gates.
+  The executed locked plan remains with ignored runtime evidence; its SHA is recorded.
+- **Canon-aligned repository governance.** Added CODEOWNERS and a project-specific pull
+  request template with evidence, privacy, decision-grain and reconciliation checks.
+
 - **Committed Experiment 5 execution and decision evidence.** Gate 2 ran the three
   full arms and nine fixed load profiles: exactly 1,458 approved one-attempt calls for
   a US$1.507460937 reported-cost lower bound. A self-hashed ledger records raw-log
@@ -202,6 +210,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **The core handoff set now reflects the 2026-08-08 state.** README, AGENTS, CLAUDE,
+  DEVLOG, TESTING, CONTRIBUTING and EXPERIMENTS identify Experiment 7 as the latest
+  evidence, distinguish setup readiness from migration approval, document the generic
+  internal-GPU runtime path, and point teammates to one safe source of truth.
+- **Experiment reporting accepts the current experiment identifier and completed full
+  arms without load artifacts.** Experiment 7 intentionally excluded load probes; the
+  report now labels the active experiment rather than hard-coding Experiment 5.
+
 - **Verdict bands re-derived from sample size and the null, replacing the n=22 absolute
   counts.** Pre-registered as a hard prerequisite twice (`docs/testset-v2-plan.md`,
   `docs/eval-improvement-plan.md`) and skipped both times. The old bands (`<= -2` BEHIND,
@@ -244,6 +260,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 ### Fixed
+
+- **Shareability validation no longer mistakes cryptographic identifiers for phone
+  numbers.** Exact SHA-256 and HMAC-shaped fields are validated as identifiers before
+  phone-like content scanning, so safe evidence can retain integrity hashes without
+  weakening checks on arbitrary text.
 
 - **`decision()` never routed an UNDERPOWERED stability verdict to INCONCLUSIVE** --
   quality dimensions got that treatment, stability (computed by the identical
@@ -328,6 +349,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   production source carries.
 
 ### Security
+
+- **Only aggregate Experiment 7 evidence is committed.** Raw model completions,
+  transcripts, cited judge spans, credentials and private judge records remain under
+  ignored `out/`; the committed evidence contains synthetic aggregate counts and hashes
+  only. Documentation makes that boundary part of the team pickup checklist.
 
 - **`.gitignore` hardened.** Workbooks are blocked by blanket `*.xlsx` / `*.xlsm` rather
   than the old name-matched `ground_truth*.xlsx`: a real ground-truth workbook saved under

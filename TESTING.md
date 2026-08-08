@@ -21,6 +21,13 @@ the runtime, artifact, application-contract, and decision-grade tests in the cur
 tree. Run the suite and report the observed current count instead of treating 524 as an
 expectation.
 
+Current pinned standalone measurement on 2026-08-08, after the Experiment 7 support
+and handoff changes: **649 passed, 33 skipped in 16.05s**. This is the current reference,
+not a magic assertion; print skip reasons and report what your checkout actually ran.
+With `TRUE_SOURCE_ROOT=production-reference/sentiment-batch-retention-main`, the same
+checkout measured **660 passed, 22 skipped in 15.38s**; all remaining skips required
+historical ignored `out/` directories.
+
 At that baseline, 11 skips needed production source/pins and 22 integration checks
 needed historical gitignored `out/` run directories that a fresh checkout did not
 contain. Read the reasons printed by the current run; a skip count alone is not proof.
@@ -59,8 +66,9 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Evidence to report |
 |---|---|---|
-| **Fresh standalone checkout** | `PYTHONPATH=src pytest tests/ -q -rs` | Observed pass/skip count and every skip reason. Historical reference only: **524 passed, 33 skipped** on 2026-08-07 before the current additions. |
-| **With production source and historical local `out/`** | `PYTHONPATH=src TRUE_SOURCE_ROOT=<path> pytest tests/ -q -rs` | Observed count and resolved source path. Historical reference only: **546 passed, 11 skipped** standalone and **557 passed, 0 skipped** with `TRUE_SOURCE_ROOT`, measured 2026-08-07 before the current additions. |
+| **Fresh standalone checkout** | `PYTHONPATH=src pytest tests/ -q -rs` | Observed pass/skip count and every skip reason. Current reference: **649 passed, 33 skipped** on 2026-08-08. |
+| **With production source** | `PYTHONPATH=src TRUE_SOURCE_ROOT=<path> pytest tests/ -q -rs` | Observed count and resolved source path. Current tracked-reference result: **660 passed, 22 skipped** on 2026-08-08; skips are historical ignored `out/` checks. |
+| **With production source and complete historical local `out/`** | same command | Observed count plus evidence-root inventory. Historical reference only: **557 passed, 0 skipped** on 2026-08-07 before the current additions. |
 
 For the Experiment 5 implementation audit, the focused production differential,
 dependency-pin and boundary selection passed **18/18** with `TRUE_SOURCE_ROOT` set to
@@ -110,6 +118,36 @@ verification because they make paid calls. Gate 1 qualification is complete. Ful
 execution is also complete: the separately self-hashed Gate 2 approval preserves the
 immutable plan SHA, and the committed execution ledger plus report set are verified
 without reading a key or making a network call.
+
+## Experiment 7 — reproduction and aggregate-evidence gate
+
+The committed Experiment 7 plan is a zero-call reproduction draft derived from the
+executed plan after removing private qualification paths. Validate it and the safe
+aggregate evidence before handing the project to another machine:
+
+```bash
+PYTHONPATH=src python scripts/evalgen.py experiment-check \
+  --plan experiments/retention-e7.plan.json
+PYTHONPATH=src python - <<'PY'
+import json
+from pathlib import Path
+
+p = Path("experiments/evidence/retention-e7/summary.json")
+d = json.loads(p.read_text(encoding="utf-8"))
+assert d["experiment_id"] == "retention-e7"
+assert d["reconciled"] is False
+assert d["decision"]["outcome"] == "RETAIN_GEMINI_REFERENCE"
+assert sum(m["parse_valid_calls"] for m in d["models"].values()) == 1242
+assert d["judge"]["total_opinions"] == 360
+assert d["judge"]["possible_ground_truth_error"] == 38
+print("Experiment 7 aggregate evidence: OK")
+PY
+```
+
+The executed locked plan SHA, selected providers, tokens, cost, latency, paired verdicts
+and judge totals are in `docs/experiment7-results.md`. Raw outputs and private judge
+records are intentionally absent from Git. Do not replace those files with copies from
+`out/`; only a reviewed aggregate export is shareable.
 
 ## Verification Scripts
 
@@ -409,7 +447,7 @@ neither flag scores the 20-item pack. The same pair is accepted by `baseline` an
 |---|---:|---:|---|
 | `retention_v1` | 20 | 22 | **Frozen.** Experiments 1 and 2 cite it, so it does not move. |
 | `retention_v2` | 100 | 108 | **Frozen.** Experiment 3 and 4 cite it; `RET-01`…`RET-20` are byte-identical to v1. |
-| `retention_v3` | 138 | 150 | Experiment 5. v2 prefix plus 38 versioned robustness items. |
+| `retention_v3` | 138 | 150 | Experiments 5 and 7. v2 prefix plus 38 versioned robustness items. |
 
 Verified above by running `check` against each. The scored row is
 `(call_id, phone_number, product)` in every pack, which is why the v1/v2/v3 row counts
@@ -423,13 +461,18 @@ scenarios, so that class can be passed by keyword. Both are recorded in
 `tests/fixtures/testsets/README.md` and `docs/testset-v2-plan.md`; read them before
 quoting a v2 per-class number.
 
-### 10. Every run is indexed, because `out/` is not
+### 10. Historical `out/runs` are indexed, because `out/` is not
 
 ```bash
 .venv/Scripts/python scripts/run_index.py                   # writes RUNS.md
 .venv/Scripts/python scripts/run_index.py --check           # exit 1 if RUNS.md is stale
 .venv/Scripts/python -m pytest tests/test_run_index.py -q   # 20 passed
 ```
+
+`RUNS.md` indexes the historical `out/runs/` layout. Experiment 7 used the staged
+`out/experiments/retention-e7/` layout instead, so its committed locator is the safe
+aggregate evidence file and executed-plan SHA, not a hand-edited `RUNS.md` row. Never
+regenerate `RUNS.md` from a machine that does not possess the historical run set.
 
 `out/` is gitignored deliberately — run artifacts carry model output verbatim
 (`cli.py:135-137`) — and the consequence is that every `run_id` quoted in

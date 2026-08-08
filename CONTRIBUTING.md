@@ -1,7 +1,9 @@
 # Contributing
 
 Read [AGENTS.md](./AGENTS.md) for project context and [TESTING.md](./TESTING.md) for
-how to run things. Cross-project standards live in canon and are linked, not repeated.
+how to run things. Read [DEVLOG.md](./DEVLOG.md) for the active task before choosing
+work. Cross-project standards live at `/home/tkhongsap/my-github/s42/canon` and are
+linked, not repeated.
 
 ## The one rule that is not negotiable
 
@@ -24,12 +26,21 @@ left standing is the code checking itself. When a test fails:
 ## Before you open a PR
 
 ```bash
-.venv/Scripts/python -m pytest tests/ -q                      # 451 passed, 11 skipped
-TRUE_SOURCE_ROOT=<path> .venv/Scripts/python -m pytest tests/ -q   # 462 passed, 0 skipped
+PYTHONPATH=src python -m pytest tests/ -q -rs
+PYTHONPATH=src TRUE_SOURCE_ROOT=<path> python -m pytest tests/ -q -rs
+PYTHONPATH=src python scripts/evalgen.py experiment-check \
+  --plan experiments/retention-e7.plan.json
+git diff --check
 ```
 
 **Both modes.** A green standalone run does not prove the differential still agrees,
-because standalone skips it.
+because standalone skips it. The 2026-08-08 standalone reference is 649 passed and
+33 skipped; report your observed count and each skip reason instead of editing a test
+to match that number. If production source is unavailable, say so explicitly in the PR.
+
+Use `.github/PULL_REQUEST_TEMPLATE.md`. Identify the decision grain, privacy class,
+runtime/network behavior, tests actually run and whether `RECONCILED` remains `NO`.
+Raw model outputs, transcripts, credentials and private judge records never belong in Git.
 
 ## Commits
 

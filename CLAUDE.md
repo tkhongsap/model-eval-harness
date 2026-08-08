@@ -1,10 +1,17 @@
 # Claude Code - model-eval-harness
 
+**Last updated:** 2026-08-08
+
 **Read [AGENTS.md](./AGENTS.md) first.** It holds the durable, tool-agnostic project
 context: mission, architecture, key files, conventions, and the open items. This file
 holds only what is specific to working here with Claude Code, and does not repeat it.
 
 Cross-project standards live in canon. Link to them, never copy them in.
+The workspace source is `/home/tkhongsap/my-github/s42/canon`.
+
+At session start, read `DEVLOG.md` for the active decision and next action, then
+`AGENTS.md` for durable architecture and `TESTING.md` for the verification contract.
+The latest result handoff is `docs/experiment7-results.md`.
 
 ## Before you change anything
 
@@ -46,7 +53,8 @@ write the answer down in `WORKED-COMPUTATION.md`.
 ## Two packages, not one
 
 `src/evalharness/` scores. `src/evalgen/` is the generation half that produces what it
-scores: the OpenRouter call loop, the single decision point for `parse_ok`, the flatten
+scores: the declared OpenAI-compatible runtime call loop, the single decision point
+for `parse_ok`, the flatten
 that changes the grain to one row per product, the decoding deviations, and the report.
 Entry point is `scripts/evalgen.py`; each module is listed with the reason it matters in
 [AGENTS.md](./AGENTS.md), "Key Files".
@@ -58,8 +66,14 @@ to the scoring path "just for a moment" breaks a build rather than a rule.
 ## Running things
 
 ```bash
-.venv/Scripts/python -m pytest tests/ -q          # 546 passed, 11 skipped (this env; see TESTING.md)
+PYTHONPATH=src python -m pytest tests/ -q -rs
 ```
+
+Current measured reference (2026-08-08): **649 passed, 33 skipped** in the pinned
+standalone environment. Treat this as evidence, not a hardcoded expectation: report
+your observed count and every skip reason. Validate the Experiment 7 reproduction plan
+with `PYTHONPATH=src python scripts/evalgen.py experiment-check --plan
+experiments/retention-e7.plan.json`; that command makes zero model calls.
 
 Full detail, including how to make the differential test actually run, is in
 [TESTING.md](./TESTING.md).
@@ -69,6 +83,9 @@ Full detail, including how to make the differential test actually run, is in
 - Plan before executing; discuss approach first.
 - Conventional Commits, matching the existing history.
 - Commit or push **only when explicitly asked**.
+- Never commit `out/`, raw completions, transcripts, runtime credentials or private
+  judge records. Only the aggregate Experiment 7 summary under `experiments/evidence/`
+  is approved for Git.
 - Keep customer identifiers out of examples, commit messages and test fixtures. The
   synthetic phone block is `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`) —
   `0810000000`–`0810000999`, 1000 numbers, of which 100 are in use and 900 are free.

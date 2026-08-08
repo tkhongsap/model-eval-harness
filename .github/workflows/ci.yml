@@ -16,8 +16,8 @@
 #      LESS than a local run: it shows the harness is internally consistent, not
 #      that it agrees with production. Do not hard-code a current pass count here:
 #      the suite grows with each enforced contract. Read the observed count and every
-#      skip reason from the CI job. Historical reference only: 483 passed, 11 skipped
-#      was measured on 2026-08-06 before the current runtime/artifact additions.
+#      skip reason from the CI job. Local pinned reference: 649 passed, 33 skipped on
+#      2026-08-08; CI remains authoritative for its own checkout.
 #
 # Items 3 and 4 are real gaps against canon, not decisions. Closing them means
 # adding a pyproject.toml, which is a build change rather than documentation.
@@ -88,6 +88,11 @@ jobs:
           python scripts/evalgen.py check \
             --testset tests/fixtures/testsets/retention_v3.jsonl \
             --gt tests/fixtures/testsets/retention_v3.gt.csv
+
+      - name: Validate the Experiment 7 reproduction plan
+        run: |
+          python scripts/evalgen.py experiment-check \
+            --plan experiments/retention-e7.plan.json
 
       - name: Run tests
         run: pytest tests/ -q -rs

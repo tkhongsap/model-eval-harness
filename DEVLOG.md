@@ -2,28 +2,32 @@
 
 ## 🔴 Active Task
 
-**Current Focus (2026-08-06): waiting on production-shaped ground truth after the
-controlled Experiment 5 run rejected both Qwen candidates.** Gate 2 made exactly 1,458
-approved one-attempt calls for a reported-cost lower bound of US$1.507460937, against
-the US$50.13 ceiling. Qwen3.6 27B/Morph failed
-reliability (359/414), call-result quality, reason quality and stability. Qwen3.6
-35B-A3B/AkashML was 414/414 parse-valid but was `BEHIND` on all three quality dimensions
-and stability. Both decisions are `FAIL`; load results are diagnostic because operations
-cannot rescue a failed quality gate. Safe JSON/Markdown/XLSX evidence and the decision
-are in `docs/experiment5-results.md`.
+**Current focus (2026-08-08): turn Experiment 7 into a production-shaped, internal-GPU
+decision.** The synthetic repeat itself completed successfully: all three arms returned
+414/414 parse-valid calls, and the advisory judge completed 360 opinions with no
+transport or identity failures. The decision remains to retain Gemini as the reference.
+Qwen3.6 27B failed stability (129/138 calls changed exact answer across replicates);
+Qwen3.6 35B-A3B failed all three paired quality gates and stability (130/138 unstable).
+See `docs/experiment7-results.md` and
+`experiments/evidence/retention-e7/summary.json`.
 
-Real production-shaped ground truth is still the decision blocker. `RECONCILED: NO` is
-what stands between synthetic-text results and a migration verdict, and no code in this
-repository can lift it. **2026-08-07**: an audit of the merged framework and an
-independent-judge diagnostic (Experiment 6) both landed the same night; neither touches
-this blocker -- see History below and `docs/overnight-audit-and-experiment-6-report.md`.
+The active blocker has not changed: `RECONCILED: NO`. This repository still lacks an
+approved production-shaped labelled batch, the two-row workbook header contract, and an
+execution on the company GPU. Experiment 7 is mock-data screening evidence, not a
+migration approval.
 
-**Morph was request-compatible at qualification scale but unreliable at full scale.**
-It returned 6/6 object-root, zero-reasoning qualification responses, so the old
-multi-turn 400 did not reproduce. The full arm then returned 54 HTTP 429 failures and
-one empty response. That is the measured endpoint failure: do not rewrite the prompt or
-weaken the schema, and do not post-hoc retry the recorded rows. Any future retry/backoff
-or capacity-controlled regime must be preregistered as a new experiment.
+- [ ] Retention domain owners review the 38 Experiment 7 possible-ground-truth-error
+      flags in the restricted judge bundle; commit decisions, never cited transcript text.
+- [ ] Run the committed Experiment 7 application contract on the internal GPU runtime,
+      preserving testset, prompt, schema, repeats and decision policy.
+- [ ] Reconcile one approved real labelled batch against the application's existing
+      Gemini fact-check report and record the discrepancy analysis.
+- [ ] Implement `load_workbook()` only after the first two real workbook header rows arrive.
+
+**Historical context retained below.** Experiment 5's Morph endpoint qualified at small
+scale but returned 54 HTTP 429 failures and one empty response at full scale. Do not
+rewrite the prompt, weaken the schema, or post-hoc retry those recorded rows; a new
+retry/backoff or capacity regime must be preregistered as a new experiment.
 
 **~~Blocking the Qwen candidate arm (2026-08-05).~~ RESOLVED the same day, before
 Experiment 1 closed.** The arm was never blocked. One endpoint was broken, and the entry
@@ -86,12 +90,11 @@ kept in place and corrected, because the wrong inference is the useful part:
    most important outstanding item.
 2. **MNP adapter.** Cheapest second app: same pure metric functions, and the label
    space differs by exactly one reason class, already declared in `labelspaces.py`.
-3. ~~**Candidate arm wiring.**~~ **DONE (2026-08-05).** `src/evalgen/` calls both arms
-   through OpenRouter and lands them in the same normalized record. No new scoring code
-   was written, as designed, and `test_boundary.py` asserts `evalharness` never imports
-   `evalgen`. Three experiments have run on it. **Not done**: a genuinely self-hosted
-   endpoint. `client.py:33` fixes the base URL to OpenRouter, so pointing an arm at a
-   self-hosted server is a deliberate edit, not a flag.
+3. ~~**Candidate arm wiring.**~~ **DONE (2026-08-08).** `src/evalgen/` calls every arm
+   through one OpenAI-compatible client boundary and lands them in the same normalized
+   record. `runtime.py` supports a reviewable internal-GPU manifest without changing
+   scoring code, while `test_boundary.py` asserts `evalharness` never imports `evalgen`.
+   **Not done:** an actual company-GPU execution. Follow `docs/TEAM_GPU_RUNBOOK.md`.
 4. **Sentiment QA and Telesales adapters.** Hardest, and lowest information: their
    scorers hard-set `FN = TN = 0`, so recall is structurally 100% and three of four
    configured thresholds cannot fail.
@@ -100,9 +103,9 @@ kept in place and corrected, because the wrong inference is the useful part:
 
 ## 🐛 Known Bugs
 
-**Four test-coverage gaps recorded 2026-08-07**, found by a full audit of the merged
-enterprise framework and deliberately not patched the same night they were found -- real
-safety-gate coverage deserves daylight review, not a rushed 2 a.m. edit:
+**Four remaining coverage/configuration gaps, refreshed 2026-08-08.** These do not
+invalidate Experiment 7's recorded output, but they belong in the next harness-hardening
+change before a production-data run:
 
 - [ ] `cmd_qualify` (spends real API calls, decides QUALIFIED/INCOMPATIBLE) has zero test
       coverage anywhere in the suite. (Priority: High -- it is the gate between an
@@ -117,12 +120,6 @@ safety-gate coverage deserves daylight review, not a rushed 2 a.m. edit:
       era-mixing/mismatch checks for `outcome_contract_sha`/`workload_sha` are untested.
       (Priority: Med -- these are the checks stopping two genuinely incompatible runs
       from being silently compared.)
-- [ ] `_disagreement_section` (the paired-verdict table a human reads to approve or
-      reject a migration) has its rendered text asserted by nothing -- existing tests
-      discard everything before that section via a string split before checking
-      anything. A formatting bug (wrong column, mislabeled verdict, swapped fields)
-      would be invisible to the suite. (Priority: Med -- reporting only, not gate logic,
-      but it is the exact table a human reads to make the call.)
 - [ ] `reliability_gate`'s 0.99 threshold is a hardcoded Python default, not read from
       the plan's own `quality_gates.minimum_parse_valid_rate` field that `validate_plan`
       computes and displays as authoritative. Currently harmless (both are 0.99).
@@ -170,6 +167,21 @@ but the reason some code looks odd):
       acceptance criteria on the table for the review, whatever this harness does.)
 
 ## ✅ History
+
+- **2026-08-08**: Experiment 7 completed on synthetic Retention v3. Provider
+  qualification covered 20 advertised endpoints (120 bounded calls); the selected
+  Google/Chutes/AkashML arms then completed 1,242/1,242 parse-valid full calls. Gemini
+  remains the reference: Qwen3.6 27B failed stability and Qwen3.6 35B-A3B failed quality
+  plus stability. The independent Gemma judge completed 360 advisory opinions and
+  flagged 38 possible ground-truth errors for human review. Generation, qualification
+  and judge spend was an observed lower bound of approximately US$1.215310. Raw/private
+  evidence remains ignored; safe aggregate handoff committed. Standalone pinned suite:
+  649 passed, 33 skipped; tracked production-reference mode: 660 passed, 22 skipped.
+- **2026-08-08**: Provider-neutral runtime manifests, portable self-contained run
+  snapshots, crash-resume journals, application contracts, stricter artifact identity,
+  call-clustered paired inference, shareable/private judge surfaces, and decision-grade
+  completeness checks made the harness ready for an internal-GPU rerun without changing
+  the scoring package.
 
 - **2026-08-07**: Full audit of the merged enterprise framework (~2,500 lines, never
   before code-reviewed line by line) -- 21 agents, 12 candidate findings, all

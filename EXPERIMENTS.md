@@ -1343,34 +1343,102 @@ True's systems.
 
 ---
 
-## Experiment 7 — *not started*
+## Experiment 7 — decision-grade three-model repeat (EXECUTED)
 
-Use this template:
+**Date:** 2026-08-08
+**Question:** under one fixed non-reasoning Retention workload, can either Qwen candidate
+pass the paired quality and exact-repeat stability gates required to replace the Gemini
+reference?
 
-```
-## Experiment N — <one-line title>
-
-**Date:**
-**Question:** <what this experiment decides, phrased so it can come out either way>
+**Answer:** no. Retain Gemini as the reference for the next phase. Qwen3.6 27B is
+interesting on call result and price but failed stability; Qwen3.6 35B-A3B failed all
+three paired quality dimensions and stability. `RECONCILED: NO` remains binding.
 
 ### What was run
-<table: run, model, provider, prompt, result>
-<decoding settings, replicate count, what was held constant>
+
+The plan fixed the 138-call/150-product-row synthetic `retention_v3` pack, prompt
+`v9_16_base` (`968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee`),
+schema, three replicates, temperature 0, top-p 0, seed 0, 8,000 output-token cap,
+reasoning off, one attempt, provider fallback off and concurrency 4. Aggregate F1 uses
+replicate 1. The decision uses paired call clusters and an exact three-replicate stability
+gate. Load probes were deliberately excluded.
+
+Provider qualification made 120 bounded calls across 20 advertised provider names.
+Twelve provider/model combinations qualified and eight were request-incompatible. The
+selection rule chose historical full-run reliability first, then projected price; it did
+not inspect qualification labels or predictions.
+
+| Arm | Model | Selected provider | Full calls | Parse valid |
+|---|---|---|---:|---:|
+| reference | `google/gemini-2.5-flash` | Google | 414 | 414 |
+| candidate | `qwen/qwen3.6-27b` | Chutes | 414 | 414 |
+| candidate | `qwen/qwen3.6-35b-a3b` | AkashML | 414 | 414 |
+
+The exact executed locked-plan SHA was
+`ea02cfacad27aea58c486213f0cfba304ca00b902050b983ed27f9cca244d3e1`.
+The committed reproduction plan is intentionally `draft`: private qualification paths
+were removed so a fresh clone can validate it without ignored artifacts.
 
 ### Result
-<what happened, including what did NOT work>
-<the verdict against the pre-registered bands>
-<anything that turned out to be about the harness or the test set rather than a model>
+
+| Metric | Gemini 2.5 Flash | Qwen3.6 27B | Qwen3.6 35B-A3B |
+|---|---:|---:|---:|
+| Call-result weighted F1 | 0.955 | **0.969** | 0.901 |
+| Reason weighted F1 | **0.823** | 0.774 | 0.701 |
+| Product weighted F1 | **0.960** | 0.942 | 0.888 |
+| Descriptive mean (not a gate) | **0.913** | 0.895 | 0.830 |
+| Unstable calls | **0/138** | 129/138 | 130/138 |
+| Generation cost | $0.475916 | $0.362492 | $0.211117 |
+| Latency p50 / p95 | 1.830 / 3.227 s | 6.950 / 20.496 s | 2.779 / 8.995 s |
+
+F1 alone would hide the binding result. Qwen3.6 27B's call-result edge was only one
+net paired call among five discordances (`UNDERPOWERED`), while its stability comparison
+was -129/129 (`BEHIND`). Its reason comparison was -6/36 but inside the exact band
+(`INDISTINGUISHABLE`), and product was underpowered at -2/2. Overall: `FAIL_STABILITY`.
+
+Qwen3.6 35B-A3B was `BEHIND` on call result (-11/15), reason (-27/41), product
+(-10/10) and stability (-130/130). Overall: `FAIL_QUALITY_AND_STABILITY`.
+
+The operational ranking points the same way for this hosted run: Gemini was fastest and
+stable. These endpoint measurements do not predict internal-GPU throughput. Qwen3.6
+35B-A3B was cheapest, but operations cannot rescue a failed quality gate.
+
+### Independent advisory judge
+
+Gemma 4 31B IT on CoreWeave reviewed every scorer disagreement across all three pairings,
+with reasoning off. It returned 360 opinions, 314 usable: 141 said ground truth was
+correct, 135 said both predictions were defensible, and 38 flagged a possible
+ground-truth error. Forty-six responses were unusable parse results; there were zero
+transport or identity errors. The judge does not alter model scores or select a winner.
+
+| Pairing | Opinions | Usable | GT correct | Defensible | Possible GT error |
+|---|---:|---:|---:|---:|---:|
+| Gemini vs Qwen3.6 27B | 99 | 88 | 32 | 44 | 12 |
+| Gemini vs Qwen3.6 35B-A3B | 131 | 115 | 57 | 46 | 12 |
+| Qwen3.6 27B vs 35B-A3B | 130 | 111 | 52 | 45 | 14 |
 
 ### Recommended next steps
-<ordered, each with what would falsify it>
+
+1. **Human-review the 38 possible-ground-truth-error flags.** Falsified as a priority
+   if domain owners find they are all judge misunderstandings; record that result too.
+2. **Rerun the same application contract on the internal GPU.** The hypothesis that
+   hosted routing caused Qwen instability is falsified if exact-answer instability
+   remains materially behind Gemini on the controlled internal runtime.
+3. **Reconcile on one approved production-shaped labelled batch.** The synthetic result
+   is falsified as representative if production class mix or transcript structure moves
+   paired verdicts beyond their exact bands.
+4. **Only then consider prompt/model adaptation as a new experiment.** Any change to the
+   prompt, reasoning regime, schema, retries or provider is a new arm, not a repair to E7.
 
 ### Output files
-<table: what, path>
-<spreadsheet sheet list if one was produced>
-<cost>
-```
 
-**Before running Experiment 2**, state the prediction: which items should move, in which
-direction, and which must not move. An edit that improves the aggregate by moving items you
-did not predict is indistinguishable from luck at n=20.
+| What | Path |
+|---|---|
+| Team-readable result and methodology | `docs/experiment7-results.md` |
+| Zero-call reproduction plan | `experiments/retention-e7.plan.json` |
+| Safe machine-readable aggregate | `experiments/evidence/retention-e7/summary.json` |
+| Raw runs, restricted judge bundles and local HTML/XLSX | `out/experiments/retention-e7/`, ignored |
+
+The three full arms cost $1.049524; the judge cost $0.054399; qualification reported a
+$0.111387 lower bound. Observed lower-bound total: approximately **$1.215310**. No raw
+model response, transcript, credential or private judge rationale is committed.

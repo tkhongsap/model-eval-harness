@@ -21,6 +21,15 @@ boundary is enforced rather than asserted.
 > real-data reconciliation has run, so every report remains `RECONCILED: NO`. See
 > [What it cannot prove](#what-it-cannot-prove).
 
+### Latest evidence: Experiment 7
+
+The 2026-08-08 synthetic Retention v3 repeat completed all 1,242 full-arm calls and
+all 360 advisory judge opinions. **Gemini remains the reference:** Qwen3.6 27B failed
+the replicate-stability gate despite a slightly higher call-result F1, and Qwen3.6
+35B-A3B failed both quality and stability gates. This is screening evidence on a mock
+testset, not a production verdict. Read the [Experiment 7 handoff](./docs/experiment7-results.md)
+or its [safe aggregate JSON](./experiments/evidence/retention-e7/summary.json).
+
 ## Documentation
 
 | If you need... | Read this |
@@ -38,6 +47,8 @@ boundary is enforced rather than asserted.
 | Experiment 5 decision, operations and safe report set | [docs/experiment5-results.md](./docs/experiment5-results.md) |
 | Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
 | What the overnight audit found, and how the independent-judge experiment works | [docs/overnight-audit-and-experiment-6-report.md](./docs/overnight-audit-and-experiment-6-report.md) |
+| Latest three-model result, judge audit and team handoff | [docs/experiment7-results.md](./docs/experiment7-results.md) |
+| Reproducible Experiment 7 draft and safe aggregate evidence | [experiments/retention-e7.plan.json](./experiments/retention-e7.plan.json) and [summary.json](./experiments/evidence/retention-e7/summary.json) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |
 | The arithmetic every expectation comes from | [WORKED-COMPUTATION.md](./tests/fixtures/WORKED-COMPUTATION.md) |
@@ -89,6 +100,13 @@ the 26 self-contained tests `judge.py` and its regression fixes added on
 2026-08-07 (`tests/test_judge.py` plus new cases in `test_enterprise_experiments.py` and
 `test_testset_pack.py`), none of which needs `out/` or `TRUE_SOURCE_ROOT` -- computed,
 not independently re-measured against an actual fresh clone.
+
+The current pinned environment was measured on 2026-08-08 after the Experiment 7
+support and documentation work: **649 passed, 33 skipped**. The skips still name missing
+optional production source or historical ignored evidence; always report the count and
+skip reasons from the environment you actually ran. With `TRUE_SOURCE_ROOT` pointed at
+the tracked Retention production reference, the same checkout measured **660 passed,
+22 skipped**; the remaining skips require deliberately ignored historical `out/` runs.
 
 ## What it cannot prove
 
@@ -190,7 +208,7 @@ src/evalgen/       the generator half. Calls models on purpose, so the scorer ma
   runtime.py       non-secret OpenRouter/OpenAI-compatible runtime identity and request dialect
   contracts.py     versioned application meaning: dimensions, grain, assets, adapter, policy
   artifacts.py     private destinations, atomic writes, integrity hashes and crash-resume journals
-  request.py       the OpenRouter request body, built in exactly one place
+  request.py       the runtime-specific request body, built in exactly one place
   prompts.py       the retention system prompt, assembled from committed assets
   decoding.py      the production port as a constrained-decoding grammar, three named deviations
   outcomes.py      the single place that decides whether a response counts as parsed

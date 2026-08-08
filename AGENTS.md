@@ -1,5 +1,7 @@
 # Project Context for AI Agents
 
+**Last updated:** 2026-08-08
+
 ## Mission
 
 > Score model outputs against human labels so True can decide, on evidence, whether a
@@ -18,7 +20,9 @@ model calls.
 
 **Two packages, and the boundary between them is the load-bearing part.**
 `src/evalharness/` scores; `src/evalgen/` produces the outputs it scores, by calling
-models through OpenRouter. `evalharness` imports no model client, and
+models through a declared OpenAI-compatible runtime. OpenRouter is the default hosted
+runtime; an internal company GPU is represented by a reviewed runtime manifest.
+`evalharness` imports no model client, and
 `tests/test_boundary.py` enforces that by parsing its imports rather than by trusting
 this sentence: the claim is a property of what the code imports, so it stops being true
 the moment somebody adds `import openai` for a plausible-sounding reason.
@@ -26,16 +30,17 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
 - **Language**: Python 3.12, standard library only for the scoring path
 - **Backend**: none. Two libraries plus a test suite, not a service. No HTTP surface, no
   database, no deployment target. `evalgen` makes outbound calls; nothing serves anything.
-- **AI/ML**: OpenRouter, in `src/evalgen/` only. **The scoring library still makes none,
-  deliberately.** `src/evalgen/client.py` is the one file that imports `openai`, and the
-  SDK is declared in `src/evalgen/requirements.txt` rather than in the root pins, so the
-  environment CI builds has no client in it and `outcomes.py` stays testable there.
-  `scripts/openrouter-smoketest/` is still separate exploratory tooling. See "Service
-  layers do not apply" below.
-- **Auth**: none. No users, no sessions. Two secrets exist and neither is in git:
-  `EVAL_HARNESS_KEY_HMAC`, which salts item keys and is held by True's team, and the
-  OpenRouter key, read from a gitignored `.env` by `src/evalgen/config.py`.
-- **External integrations**: OpenRouter at generation time, none at scoring time. The
+- **AI/ML**: provider-neutral OpenAI-compatible generation in `src/evalgen/` only.
+  **The scoring library still makes no model calls, deliberately.** `client.py` is the
+  one file under `src/` that imports `openai`; `runtime.py` owns non-secret endpoint,
+  request-dialect and build identity. The SDK stays in `src/evalgen/requirements.txt`
+  rather than the scoring pins. `scripts/openrouter-smoketest/` remains exploratory.
+- **Auth**: no users or sessions. `EVAL_HARNESS_KEY_HMAC` salts item keys. Generation
+  credentials come from the environment variable named by the selected runtime manifest;
+  neither value may be written to Git, manifests, logs or reports.
+- **External integrations**: the declared model runtime at generation time, none at
+  scoring time. OpenRouter is the default hosted route; internal GPU endpoints use the
+  same client boundary. The
   test suite optionally reaches True's production source tree via `TRUE_SOURCE_ROOT` to
   run a differential check.
 - **Infrastructure**: a venv pinned to production's own dependency versions, plus
@@ -61,6 +66,12 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
   order. It calls the model and judges nothing. Its numbered refusals are the point:
   never retry a parse failure, never drop an item, never reorder, never assume the model
   that answered is the model that was asked for.
+- `src/evalgen/runtime.py`: immutable runtime identity, request dialect, endpoint safety,
+  credential-variable name and reproducibility fingerprint for OpenRouter or internal GPU.
+- `src/evalgen/contracts.py`: versioned application meaning: dimensions, comparison
+  grain, asset/code references and the decision policy an arm claims to implement.
+- `src/evalgen/artifacts.py`: private/shareable destination policy, atomic writes,
+  integrity hashes and the started/result journal used for crash-safe resume.
 - `src/evalgen/outcomes.py`: **the single place `parse_ok` is decided.** A second,
   slightly different copy written inline at a call site is how two arms end up with two
   denominators and a comparison that is not paired.
@@ -87,7 +98,8 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
   parsing/aggregation arithmetic in `tests/fixtures/judge/HAND-COMPUTED.md`, written
   before the module, per the rule below.
 - `src/evalgen/experiments.py`: the Gate 1/Gate 2 provider-qualification and
-  decision-rule pipeline behind Experiment 5B (`experiments/retention-e5.plan.json`).
+  decision-rule pipeline behind Experiments 5B and 7 (`experiments/retention-e5.plan.json`,
+  `experiments/retention-e7.plan.json`).
   `decision()` is the final PASS/FAIL/INCONCLUSIVE/UNAVAILABLE call; see `EXPERIMENTS.md`
   Experiment 6 for a gap this project found and fixed in it (an UNDERPOWERED stability
   verdict silently reaching PASS) and two it recorded rather than fixed (see DEVLOG.md,
@@ -97,7 +109,8 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
   boundary `tests/test_boundary.py` guards.
 - `tests/fixtures/testsets/`: the synthetic Thai packs `evalgen` runs against.
   `retention_v1.*` (20 items, 22 scored rows) is frozen and is what Experiments 1-2 used;
-  `retention_v2.*` (100 items, 108 scored rows) is Experiment 3's.
+  `retention_v2.*` (100 items, 108 scored rows) is Experiment 3's; `retention_v3.*`
+  (138 items, 150 scored rows) is the robustness pack used by Experiments 5 and 7.
 - `tests/fixtures/WORKED-COMPUTATION.md`: the hand arithmetic every expectation comes from.
 - `tests/production_ref.py`: test-only scaffolding to import True's real scorer.
 - `tests/test_boundary.py`: turns "the scoring library makes no model calls" from prose
@@ -109,6 +122,9 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
   than trusted. Regenerate it; never hand-edit it.
 - `scripts/openrouter-smoketest/`: exploratory model-calling tooling. See "Service
   layers do not apply" below for why it lives outside `src/`.
+- `docs/experiment7-results.md` and `experiments/evidence/retention-e7/summary.json`:
+  the current synthetic result and safe aggregate handoff. Raw/private runtime evidence
+  remains ignored under `out/`.
 
 ## Conventions
 
@@ -132,7 +148,7 @@ oversight.**
 
 | Layer | Status in `src/evalharness/` | Reason |
 |---|---|---|
-| OpenRouter | not used | The scoring library makes **no model calls at all**. It scores outputs produced elsewhere. `google.genai` appears only as a stub in test scaffolding, never as a dependency. In `src/evalgen/` OpenRouter **is** used, and is the only route to a model: see below. |
+| OpenRouter | not used | The scoring library makes **no model calls at all**. `src/evalgen/` uses OpenRouter as its default hosted runtime or a declared internal OpenAI-compatible endpoint. |
 | WorkOS | not used | No users, no sessions, no HTTP surface. |
 | Composio | not used | No external API execution. |
 
@@ -160,8 +176,9 @@ against, and it was met on its own terms:
   other way. `config.py` duplicates roughly forty lines of the script's key handling
   and its docstring says why: an import in either direction would end the script's
   standalone status, which is the whole reason the exception survived review.
-- **The route is still OpenRouter**, not a provider SDK. One file, `client.py`, holds
-  the dependency.
+- **The default hosted route is still OpenRouter**, not a provider SDK. A reviewed
+  generic runtime manifest is the deliberate path to the company GPU; `client.py`
+  remains the single SDK boundary.
 - **The scoring library was not touched.** `src/evalharness/` still makes no model
   calls, and `tests/test_boundary.py` now fails CI if that changes.
 
@@ -172,15 +189,17 @@ is what defends it.
 ## Cross-Project References
 
 > These live in canon and apply to all projects. Linked, never restated here.
+> The current workspace source is `/home/tkhongsap/my-github/s42/canon`; canon is not
+> vendored into this repository.
 
 | Resource | Location | Use When |
 |----------|----------|----------|
-| **Project structure and repo policy** | `canon/guides/project-structure.md` | Repo location, visibility, layout |
-| **Git workflow** | `canon/guides/git-workflow.md` | Branching, commits, PRs |
-| **Production patterns** | `canon/guides/production-patterns.md` | If this ever grows a service |
-| **Release versioning** | `canon/guides/release-versioning.md` | Tagging a version |
-| **Development process** | `canon/development/development-process.md` | Session workflow |
-| **Infrastructure service layers** | `canon/guides/infrastructure-service-layers.md` | Before adding any AI, auth or integration |
+| **Project structure and repo policy** | `/home/tkhongsap/my-github/s42/canon/guides/project-structure.md` | Repo location, visibility, layout |
+| **Git workflow** | `/home/tkhongsap/my-github/s42/canon/guides/git-workflow.md` | Branching, commits, PRs |
+| **Production patterns** | `/home/tkhongsap/my-github/s42/canon/guides/production-patterns.md` | If this ever grows a service |
+| **Release versioning** | `/home/tkhongsap/my-github/s42/canon/guides/release-versioning.md` | Tagging a version |
+| **Development process** | `/home/tkhongsap/my-github/s42/canon/development/development-process.md` | Session workflow |
+| **Infrastructure service layers** | `/home/tkhongsap/my-github/s42/canon/guides/infrastructure-service-layers.md` | Before adding any AI, auth or integration |
 
 ## Review Guidelines
 
@@ -227,6 +246,12 @@ ruff, mypy and a `pyproject.toml` under `backend/`. This repository has none. CI
 the test suite only; see the comment block in `.github/workflows/ci.yml`.
 
 ## Project-Specific Notes
+
+**Latest synthetic decision (Experiment 7, 2026-08-08): retain Gemini as the reference.**
+All three arms completed 414/414 parse-valid calls. Qwen3.6 27B failed stability; Qwen3.6
+35B-A3B failed quality and stability. The independent judge returned 360 advisory
+opinions and flagged 38 possible ground-truth errors for human review. See
+`docs/experiment7-results.md`. This does not change `RECONCILED: NO`.
 
 **No number this harness produces is a migration verdict yet.** Every report prints
 `RECONCILED: NO` until a run has been checked against the app's own live Gemini

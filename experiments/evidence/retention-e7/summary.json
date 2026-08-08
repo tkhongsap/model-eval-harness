@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e7",
+  "recorded_utc": "2026-08-08T10:54:00Z",
+  "classification": "synthetic_aggregate_only",
+  "reconciled": false,
+  "decision": {
+    "outcome": "RETAIN_GEMINI_REFERENCE",
+    "migration_status": "INCONCLUSIVE",
+    "reason": "Both candidate arms failed preregistered decision gates on the synthetic Retention v3 set. Qwen3.6 27B failed replicate stability; Qwen3.6 35B-A3B failed quality and stability.",
+    "not_a_production_verdict": true
+  },
+  "method": {
+    "testset": "retention_v3",
+    "synthetic_items": 138,
+    "scored_product_rows": 150,
+    "replicates_per_model": 3,
+    "calls_per_model": 414,
+    "prompt_id": "v9_16_base",
+    "prompt_sha256": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+    "decision_policy": "decision_grade_v2",
+    "paired_inference_unit": "call_cluster",
+    "aggregate_score_replicate": 1,
+    "load_probes_included": false
+  },
+  "models": {
+    "gemini-2.5-flash": {
+      "model": "google/gemini-2.5-flash",
+      "provider": "Google",
+      "parse_valid_calls": 414,
+      "weighted_f1": {
+        "call_result": 0.955,
+        "reason": 0.823,
+        "product": 0.960,
+        "descriptive_mean": 0.913
+      },
+      "input_tokens": 1237746,
+      "output_tokens": 84459,
+      "reported_cost_usd": 0.47591580,
+      "latency_seconds": {
+        "p50": 1.830,
+        "p95": 3.227,
+        "p99": 3.669,
+        "max": 3.953
+      },
+      "wall_seconds": 205.848,
+      "throughput_calls_per_second": 2.011,
+      "unstable_calls": 0
+    },
+    "qwen3.6-27b": {
+      "model": "qwen/qwen3.6-27b",
+      "provider": "Chutes",
+      "parse_valid_calls": 414,
+      "weighted_f1": {
+        "call_result": 0.969,
+        "reason": 0.774,
+        "product": 0.942,
+        "descriptive_mean": 0.895
+      },
+      "input_tokens": 1645842,
+      "output_tokens": 100992,
+      "reported_cost_usd": 0.36249180,
+      "latency_seconds": {
+        "p50": 6.950,
+        "p95": 20.496,
+        "p99": 35.744,
+        "max": 55.980
+      },
+      "wall_seconds": 920.798,
+      "throughput_calls_per_second": 0.450,
+      "unstable_calls": 129,
+      "decision_vs_gemini": "FAIL_STABILITY"
+    },
+    "qwen3.6-35b-a3b": {
+      "model": "qwen/qwen3.6-35b-a3b",
+      "provider": "AkashML",
+      "parse_valid_calls": 414,
+      "weighted_f1": {
+        "call_result": 0.901,
+        "reason": 0.701,
+        "product": 0.888,
+        "descriptive_mean": 0.830
+      },
+      "input_tokens": 1645842,
+      "output_tokens": 99418,
+      "reported_cost_usd": 0.21111652,
+      "latency_seconds": {
+        "p50": 2.779,
+        "p95": 8.995,
+        "p99": 16.337,
+        "max": 20.645
+      },
+      "wall_seconds": 368.671,
+      "throughput_calls_per_second": 1.123,
+      "unstable_calls": 130,
+      "decision_vs_gemini": "FAIL_QUALITY_AND_STABILITY"
+    }
+  },
+  "paired_decisions": {
+    "qwen3.6-27b_vs_gemini-2.5-flash": {
+      "call_result": {"discordant": 5, "net_candidate": 1, "verdict": "UNDERPOWERED"},
+      "reason": {"discordant": 36, "net_candidate": -6, "band": 14, "verdict": "INDISTINGUISHABLE"},
+      "product": {"discordant": 2, "net_candidate": -2, "verdict": "UNDERPOWERED"},
+      "stability": {"discordant": 129, "net_candidate": -129, "band": 27, "verdict": "BEHIND"},
+      "overall": "FAIL"
+    },
+    "qwen3.6-35b-a3b_vs_gemini-2.5-flash": {
+      "call_result": {"discordant": 15, "net_candidate": -11, "band": 11, "verdict": "BEHIND"},
+      "reason": {"discordant": 41, "net_candidate": -27, "band": 15, "verdict": "BEHIND"},
+      "product": {"discordant": 10, "net_candidate": -10, "band": 8, "verdict": "BEHIND"},
+      "stability": {"discordant": 130, "net_candidate": -130, "band": 26, "verdict": "BEHIND"},
+      "overall": "FAIL"
+    }
+  },
+  "judge": {
+    "role": "advisory_disagreement_review_only",
+    "model": "google/gemma-4-31b-it",
+    "provider": "CoreWeave",
+    "total_opinions": 360,
+    "usable_opinions": 314,
+    "ground_truth_correct": 141,
+    "both_predictions_defensible": 135,
+    "possible_ground_truth_error": 38,
+    "unusable": 46,
+    "transport_or_identity_errors": 0,
+    "reported_cost_usd": 0.054399,
+    "changes_model_scores": false,
+    "selects_a_winner": false
+  },
+  "cost": {
+    "generation_usd": 1.04952412,
+    "judge_usd": 0.054399,
+    "qualification_lower_bound_usd": 0.111386698,
+    "observed_lower_bound_total_usd": 1.215309818
+  },
+  "provenance": {
+    "executed_locked_plan_sha256": "ea02cfacad27aea58c486213f0cfba304ca00b902050b983ed27f9cca244d3e1",
+    "committed_reproduction_plan": "experiments/retention-e7.plan.json",
+    "raw_outputs_committed": false,
+    "private_judge_records_committed": false,
+    "local_runtime_root": "out/experiments/retention-e7"
+  },
+  "next_gates": [
+    "Review the 38 possible-ground-truth-error flags with domain owners.",
+    "Rerun the same application contract on the internal GPU runtime.",
+    "Reconcile the harness against the live Gemini fact-check report.",
+    "Run on production-shaped, approved data before any migration decision."
+  ]
+}

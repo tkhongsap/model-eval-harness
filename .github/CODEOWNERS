@@ -1,0 +1,11 @@
+# Evaluation semantics, data-safety controls, prompts and evidence require owner review.
+* @tkhongsap
+
+/.github/ @tkhongsap
+/src/evalharness/ @tkhongsap
+/src/evalgen/ @tkhongsap
+/tests/fixtures/ @tkhongsap
+/experiments/ @tkhongsap
+/production-reference/ @tkhongsap
+/.gitignore @tkhongsap
+/requirements.txt @tkhongsap
