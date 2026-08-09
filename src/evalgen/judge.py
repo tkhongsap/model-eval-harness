@@ -87,7 +87,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from evalharness.compare import CoverageMismatch, comparison_clusters
@@ -96,10 +98,13 @@ from evalgen.runtime import RuntimeSpec, build_runtime_request
 
 __all__ = [
     "JUDGE_VERDICTS",
+    "RULE_SOURCE_FILES",
     "JudgeError",
     "JudgeVerdict",
     "DisagreementItem",
     "find_disagreements",
+    "parse_rule_citation",
+    "resolve_rule_text",
     "build_judge_prompt",
     "judge_response_schema",
     "parse_judge_response",
@@ -261,30 +266,282 @@ def judgment_unit_id(
     return "ju_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
 
 
-def _rule_citations_for(rules: dict[str, str], dimension: str, labels: set[str]) -> list[str]:
-    """`rule_<dimension>:<label>` lookups for every label in play, skipping misses.
+def _parse_rule_key(key: str, dimension: str) -> str | None:
+    """`rule_<dimension>:<label>` or `rule_<dimension>:<label>#N` -> the label, else None.
+
+    The `#N` forms are the packs' second-corroborating-citation keys (97 across the
+    committed packs, 22 of them citing lines the base citation does not cover -- the
+    2026-08-09 review found they were never matched, so RET-37 was quoted prompt.py:4342
+    while the pack also cites :4345, the CRITICAL clause that settles it).
+    """
+    prefix = f"rule_{dimension}:"
+    if not key.startswith(prefix):
+        return None
+    label = key[len(prefix):]
+    if "#" in label:
+        label = label.split("#", 1)[0]
+    return label
+
+
+def _rule_entries_for(
+    rules: dict[str, str], dimension: str, labels: set[str]
+) -> list[tuple[str, tuple[str, ...]]]:
+    """Item-own citations per label in play -- base AND `#N` keys, deduped, ordered.
 
     A miss is not an error: `<empty>` and `<no prediction>` are placeholder labels with
-    no rule to cite, and a genuinely wrong label a model invented may not correspond to
-    any class the pack's rule table names at all -- that absence is itself information
-    the judge is allowed to see, not a reason to fail the lookup.
+    no rule to cite. But since the 2026-08-09 review, a miss here no longer means the
+    label goes untexted -- `run_judge` falls back to the pack-level union, because this
+    dict is authored per ground truth and quoting only its labels gave the judge the
+    case for the reference label and nothing about the competing one (defect 4).
     """
-    citations = []
-    for label in sorted(labels):
-        key = f"rule_{dimension}:{label.lower()}"
-        if key in rules:
-            citations.append(f"{label}: {rules[key]}")
-    return citations
+    wanted = {label.lower(): label for label in labels}
+    collected: dict[str, list[str]] = {}
+    for key in sorted(rules):
+        parsed = _parse_rule_key(key, dimension)
+        if parsed is None or parsed.lower() not in wanted:
+            continue
+        bucket = collected.setdefault(parsed.lower(), [])
+        if rules[key] not in bucket:
+            bucket.append(rules[key])
+    return [
+        (wanted[lowered], tuple(citations))
+        for lowered, citations in sorted(collected.items())
+    ]
+
+
+def _rule_citations_for(rules: dict[str, str], dimension: str, labels: set[str]) -> list[str]:
+    """The `label: citation` pointer strings `build_judge_prompt` has always taken."""
+    return [
+        f"{label}: {citation}"
+        for label, citations in _rule_entries_for(rules, dimension, labels)
+        for citation in citations
+    ]
+
+
+def label_citation_union(items: Sequence[Any], dimension: str) -> dict[str, tuple[str, ...]]:
+    """label -> every citation any item in the pack gives it, deduped, sorted.
+
+    Built from the SAME testset the runs used, never another pack. This is the
+    defect-4 fallback: a competing label the item's own ground-truth-authored `rules`
+    dict never names still gets its rule text, from wherever in the pack that class IS
+    asserted. Hand-enumerated expectation for two labels in the fixture addendum.
+    """
+    union: dict[str, set[str]] = {}
+    for item in items:
+        rules = getattr(item, "rules", None) or {}
+        for key, citation in rules.items():
+            label = _parse_rule_key(key, dimension)
+            if label is None:
+                continue
+            union.setdefault(label.lower(), set()).add(citation)
+    return {label: tuple(sorted(cites)) for label, cites in union.items()}
+
+
+def resolve_citations_dedup(
+    citations: Sequence[str],
+    root: Path,
+    _cache: dict[str, list[str] | None] | None = None,
+) -> tuple[list[str], list[str]]:
+    """Resolve several citations into one line list, deduped by (file, line number).
+
+    The fixture's union example is why the dedup key is the line's identity and not its
+    text: `prompt.py:4368` and `prompt.py:4369` sit inside `prompt.py:4367-4369`, and a
+    label whose union carries all three citations must quote each line once.
+    """
+    cache = _cache if _cache is not None else {}
+    seen: set[tuple[str, int]] = set()
+    lines: list[str] = []
+    unresolved: list[str] = []
+    for citation in citations:
+        parsed, unparsed = parse_rule_citation(citation)
+        unresolved.extend(f"{fragment} (no file:line form)" for fragment in unparsed)
+        for basename, first, last in parsed:
+            relative = RULE_SOURCE_FILES.get(basename)
+            if relative is None:
+                unresolved.append(f"{basename}:{first} (unmapped file)")
+                continue
+            if basename not in cache:
+                try:
+                    cache[basename] = (root / relative).read_text(
+                        encoding="utf-8"
+                    ).splitlines()
+                except OSError:
+                    cache[basename] = None
+            file_lines = cache[basename]
+            if file_lines is None:
+                # NOT `under {root}`: that is an absolute local path carrying the
+                # operator's OS account name, and this string travels twice -- into the
+                # prompt via `_format_rule_entry`, and into `rule_text.unresolved_fragments`
+                # in every shareable export, where dropping `rule_text.root` alone did not
+                # remove it. `assert_shareable_payload` does not reject a path.
+                # Review finding, 2026-08-09; the fragment stays actionable without it.
+                unresolved.append(f"{basename}:{first} (file unreadable under the rule-source root)")
+                continue
+            if first < 1 or last > len(file_lines):
+                unresolved.append(f"{basename}:{first}-{last} (outside 1-{len(file_lines)})")
+                continue
+            for lineno in range(first, last + 1):
+                if (basename, lineno) in seen:
+                    continue
+                seen.add((basename, lineno))
+                lines.append(file_lines[lineno - 1])
+    return lines, unresolved
+
+
+# ------------------------------------------------------------- rule-text resolution
+#
+# Why this exists: Experiment 6's cross-validated "possible ground-truth error" flags
+# were hand-checked on 2026-08-08 and three of four were judge errors with one root
+# cause -- the judge received `customer reason: prompt.py:4372` but never line 4372's
+# text, so it re-derived class boundaries from common sense, and this vocabulary is
+# deliberately counterintuitive exactly where it matters (indecision counts as `save`,
+# prompt.py:4397; refusing to give a reason IS `customer reason`, prompt.py:4372;
+# `undefined` means out-of-scope, not unresolved, prompt.py:4399). The arithmetic below
+# is fixed by hand in tests/fixtures/judge/HAND-COMPUTED.md, addendum of 2026-08-09,
+# written before this code.
+
+# Basename -> path relative to the rule-source root. The root is `production-reference/`
+# (the PARENT of both apps) because `prompt.txt` belongs to the MNP sibling, not the
+# retention tree (tests/fixtures/testsets/README.md).
+RULE_SOURCE_FILES: Mapping[str, str] = {
+    "prompt.py": "sentiment-batch-retention-main/src/prompt.py",
+    "main.py": "sentiment-batch-retention-main/src/main.py",
+    "fact_checker.py": "sentiment-batch-retention-main/src/modules/fact_checker.py",
+    "prompt.txt": "sentiment-batch-mnp-develop/config/system_prompt/prompt.txt",
+}
+
+_CITATION_FRAGMENT = re.compile(
+    r"^(?P<file>[A-Za-z_][\w.]*\.(?:py|txt)):(?P<first>\d+)(?:-(?P<last>\d+))?$"
+)
+
+
+def parse_rule_citation(citation: str) -> tuple[list[tuple[str, int, int]], list[str]]:
+    """Split a citation on `;`/`,` into `(file, first, last)` spans plus the leftovers.
+
+    Leftovers are returned, never dropped: `grain` and `merge` are real citation values
+    in the packs (mechanics, not file:line), and a fragment that fails to parse must
+    surface as unresolved rather than silently vanish -- the same rule
+    `outcomes.classify` applies to failures.
+    """
+    parsed: list[tuple[str, int, int]] = []
+    unparsed: list[str] = []
+    for fragment in re.split(r"[;,]", citation):
+        fragment = fragment.strip()
+        if not fragment:
+            continue
+        match = _CITATION_FRAGMENT.match(fragment)
+        if match is None:
+            unparsed.append(fragment)
+            continue
+        first = int(match.group("first"))
+        last = int(match.group("last") or first)
+        if last < first:
+            unparsed.append(fragment)
+            continue
+        parsed.append((match.group("file"), first, last))
+    return parsed, unparsed
+
+
+def resolve_rule_text(
+    citation: str,
+    root: Path,
+    _cache: dict[str, list[str] | None] | None = None,
+) -> tuple[list[str], list[str]]:
+    """Resolve one citation to the cited source lines, reporting what did not resolve.
+
+    Returns `(lines, unresolved)`. Lines keep their leading indentation and lose only
+    the trailing newline, exactly as the hand-computed fixture copies them. Every
+    fragment that cannot be turned into text -- unparsable, unmapped basename, missing
+    file, out-of-range line -- lands in `unresolved` with the reason attached.
+    """
+    cache = _cache if _cache is not None else {}
+    parsed, unresolved = parse_rule_citation(citation)
+    unresolved = [f"{fragment} (no file:line form)" for fragment in unresolved]
+    lines: list[str] = []
+    for basename, first, last in parsed:
+        relative = RULE_SOURCE_FILES.get(basename)
+        if relative is None:
+            unresolved.append(f"{basename}:{first} (unmapped file)")
+            continue
+        if basename not in cache:
+            path = root / relative
+            try:
+                cache[basename] = path.read_text(encoding="utf-8").splitlines()
+            except OSError:
+                cache[basename] = None
+        file_lines = cache[basename]
+        if file_lines is None:
+            # See `resolve_citations_dedup`: the root is an absolute local path and this
+            # fragment reaches both the prompt and the shareable export.
+            unresolved.append(f"{basename}:{first} (file unreadable under the rule-source root)")
+            continue
+        if first < 1 or last > len(file_lines):
+            unresolved.append(
+                f"{basename}:{first}-{last} (outside 1-{len(file_lines)})"
+            )
+            continue
+        lines.extend(file_lines[first - 1 : last])
+    return lines, unresolved
+
+
+def _format_rule_entry(
+    label: str, citation: str, lines: Sequence[str], unresolved: Sequence[str]
+) -> str:
+    """One prompt block: the pointer line, then the quoted text, then loud gaps."""
+    parts = [f"- {label} ({citation}):"]
+    parts.extend(f"    > {line}" for line in lines)
+    parts.extend(
+        f"    [text unavailable for {fragment} -- pointer only, do not invent it]"
+        for fragment in unresolved
+    )
+    if not lines and not unresolved:
+        parts.append("    [no text resolved -- pointer only, do not invent it]")
+    return "\n".join(parts)
 
 
 def build_judge_prompt(
-    transcript: str, item: DisagreementItem, rule_citations: Sequence[str]
+    transcript: str,
+    item: DisagreementItem,
+    rule_citations: Sequence[str],
+    rule_texts: Sequence[str] | None = None,
 ) -> list[dict[str, str]]:
-    """The messages sent to the judge. Neither arm is named; see module docstring."""
+    """The messages sent to the judge. Neither arm is named; see module docstring.
+
+    `rule_texts` is the resolved-rule-text path: pre-formatted blocks from
+    `_format_rule_entry`, one per rule entry, quoting the cited production lines
+    verbatim. Without it (the default) the prompt is byte-identical to the
+    pointer-only prompt every earlier run sent, so no existing caller changes
+    behavior by accident -- the hand-computed fixture addendum pins that.
+
+    Why the text matters enough to change the prompt: this vocabulary is deliberately
+    counterintuitive exactly where disagreements concentrate. A judge shown only
+    `customer reason: prompt.py:4372` re-derives the class boundary from common sense
+    and gets it backwards; a judge shown line 4372 itself can apply it as written.
+    """
     a_is_incumbent = _blind_a_is_incumbent(item.key)
     answer_a = item.incumbent_label if a_is_incumbent else item.candidate_label
     answer_b = item.candidate_label if a_is_incumbent else item.incumbent_label
-    citation_block = "\n".join(f"- {c}" for c in rule_citations) or "(none on file)"
+    # `is not None`, never truthiness: `bool([])` was the silent-placebo path the
+    # 2026-08-09 review found -- 8 units whose labels had no rule key were sent a
+    # byte-identical pointer request while the report said rule text was enabled.
+    with_text = rule_texts is not None
+    if with_text:
+        rules_heading = "Production rule text, quoted verbatim from the production source"
+        rules_block = "\n".join(rule_texts) or "(none on file)"
+        rules_stance = (
+            "Where a rule's text is quoted under its reference, apply it exactly as "
+            "written, even where it contradicts your intuition -- these class "
+            "definitions are deliberate and sometimes counterintuitive. Where a line "
+            "is marked text-unavailable, treat it as a pointer only and do not invent "
+            "its contents. "
+        )
+    else:
+        rules_heading = "Production rule reference(s) (not rule text)"
+        rules_block = "\n".join(f"- {c}" for c in rule_citations) or "(none on file)"
+        rules_stance = (
+            "File-and-line rule references are provenance pointers, not rule text; do not "
+            "invent their contents. "
+        )
     system = (
         "You are an independent adjudicator reviewing a disputed label on a call-"
         "transcript labelling task. You did not produce either answer being compared "
@@ -302,14 +559,14 @@ def build_judge_prompt(
         "Do not assume the reference label is correct because it is named as the "
         "reference. First derive the best label from the transcript itself, then "
         "compare that conclusion with the reference and the two blinded answers. "
-        "File-and-line rule references are provenance pointers, not rule text; do not "
-        "invent their contents. Quote the exact transcript span your rationale rests on, verbatim, in "
+        + rules_stance +
+        "Quote the exact transcript span your rationale rests on, verbatim, in "
         "cited_span. Respond with the JSON schema only, no other text."
     )
     user = (
         f"Dimension: {item.dimension}\n\n"
         f"Transcript:\n{transcript}\n\n"
-        f"Production rule reference(s) (not rule text):\n{citation_block}\n\n"
+        f"{rules_heading}:\n{rules_block}\n\n"
         f"Reference label under review: {item.gt_label}\n"
         f"Answer A: {answer_a}\n"
         f"Answer B: {answer_b}\n\n"
@@ -533,6 +790,9 @@ _SHAREABLE_ITEM_FIELDS = (
     "latency_s",
     "request_sha256",
     "raw_response_sha256",
+    "rule_text_resolved",
+    "rule_text_unresolved",
+    "replicate",
 )
 
 
@@ -556,8 +816,19 @@ def shareable_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "judge_runtime",
         "incumbent_arm",
         "candidate_arm",
+        "rule_text",
+        "repeats",
+        "units",
     )
     safe = {key: report[key] for key in top_level if key in report}
+    # `rule_text.root` is an absolute local path and carries the operator's OS account
+    # name. The counts are the shareable part; where the tree sat on one workstation is
+    # not, and `assert_shareable_payload` does not reject a path. Dropped here rather
+    # than at the call site so every export gets it (review finding, 2026-08-09).
+    if isinstance(safe.get("rule_text"), Mapping):
+        safe["rule_text"] = {
+            key: value for key, value in safe["rule_text"].items() if key != "root"
+        }
     safe["items"] = [
         {key: row.get(key) for key in _SHAREABLE_ITEM_FIELDS if key in row}
         for row in report.get("items", [])
@@ -579,14 +850,17 @@ def run_judge(
     max_items: int | None = None,
     source_provenance: Mapping[str, Any] | None = None,
     private_record_sink: Callable[[Mapping[str, Any]], None] | None = None,
+    rule_source_root: str | Path | None = None,
+    repeats: int = 1,
 ) -> dict[str, Any]:
-    """Call the judge once per disagreement unit across `dimensions`, return a report.
+    """Call the judge `repeats` times per disagreement unit, return a report.
 
-    One call per call-cluster x dimension, one replicate -- a diagnostic opinion, so this
-    does not carry the 3-replicate discipline the primary arms do. That is a real
-    limitation and is stated as one in Experiment 6, not hidden: a single judge call's
-    instability is unmeasured here, the same caveat `runner.RunResult.N_flip` exists to
-    make visible for the arms actually being scored.
+    `repeats` exists because the 2026-08-09 review measured the judge flipping its
+    verdict on 4 of 8 byte-identical requests at temperature 0 -- single-shot judge
+    deltas are not separable from resampling noise. Unit-level aggregation is a strict
+    majority; a tie is `no_majority`, never broken by picking, per the hand-computed
+    table in the fixture's second addendum. A unit counts as flagged only on a
+    strict-majority `ground_truth_error`.
 
     `max_items` truncates deterministically (first N in testset order) rather than
     sampling, and the caller is responsible for logging what was dropped -- silent
@@ -600,12 +874,43 @@ def run_judge(
     `source_provenance` is an optional block of already-shareable hashes/ids supplied by
     the caller (for example run ids, replicate, testset sha and ground-truth sha). This
     module cannot derive those values from the in-memory Records it receives.
+
+    `rule_source_root` turns on rule-text resolution: each cited `file:line` is read out
+    of that tree (`RULE_SOURCE_FILES` maps basenames; the root is `production-reference/`)
+    and quoted verbatim in the prompt. A root that does not exist raises, because the
+    caller explicitly asked for text and a silent pointer-only downgrade is how the
+    2026-08-08 false flags happened in the first place. Fragments that fail to resolve
+    are counted in the report and marked in the prompt, never dropped.
     """
     if max_items is not None and (
         isinstance(max_items, bool) or not isinstance(max_items, int) or max_items < 0
     ):
         raise JudgeError("max_items must be a non-negative integer or None")
+    if isinstance(repeats, bool) or not isinstance(repeats, int) or repeats < 1:
+        raise JudgeError("repeats must be a positive integer")
+    rule_root: Path | None = None
+    if rule_source_root is not None:
+        rule_root = Path(rule_source_root)
+        if not rule_root.is_dir():
+            raise JudgeError(
+                f"rule_source_root {rule_root} is not a directory. Rule-text resolution "
+                "was explicitly requested; refusing to fall back to pointer-only "
+                "prompts silently."
+            )
+    rule_file_cache: dict[str, list[str] | None] = {}
+    rule_parts_resolved = 0
+    rule_parts_unresolved = 0
+    rule_unresolved_fragments: set[str] = set()
+    units_without_rule_text: list[dict[str, Any]] = []
     normalised_dimensions = _normalise_dimensions(dimensions)
+    dimension_unions: dict[str, dict[str, tuple[str, ...]]] = (
+        {
+            dimension: label_citation_union(testset.items, dimension)
+            for dimension in normalised_dimensions
+        }
+        if rule_root is not None
+        else {}
+    )
 
     by_key: dict[tuple[str, str], Any] = {}
     for test_item in testset.items:
@@ -657,8 +962,56 @@ def run_judge(
                     labels.update(part.strip() for part in label.split(","))
                 else:
                     labels.add(label)
-        citations = _rule_citations_for(item.rules, disagreement_item.dimension, labels)
-        messages = build_judge_prompt(item.transcript_th, disagreement_item, citations)
+        own_entries = _rule_entries_for(item.rules, disagreement_item.dimension, labels)
+        own_by_label = {label.lower(): citations for label, citations in own_entries}
+        citations = [
+            f"{label}: {citation}"
+            for label, cites in own_entries
+            for citation in cites
+        ]
+        rule_texts: list[str] | None = None
+        record_resolved = 0
+        record_unresolved = 0
+        if rule_root is not None:
+            # Defect-4 fix: every label in play gets rule text -- the item's own
+            # citations (base + #N keys) when it has them, else the pack-level union,
+            # else a VISIBLE no-text line. Never a silent fallback to pointer mode.
+            union = dimension_unions[disagreement_item.dimension]
+            rule_texts = []
+            for label in sorted(labels):
+                label_citations = own_by_label.get(label.lower()) or union.get(
+                    label.lower(), ()
+                )
+                if not label_citations:
+                    rule_texts.append(
+                        f"- {label}: [no rule text on file for this label anywhere in "
+                        "the pack -- do not invent one]"
+                    )
+                    continue
+                lines, unresolved = resolve_citations_dedup(
+                    label_citations, rule_root, _cache=rule_file_cache
+                )
+                rule_texts.append(
+                    _format_rule_entry(
+                        label, "; ".join(label_citations), lines, unresolved
+                    )
+                )
+                record_resolved += len(lines)
+                record_unresolved += len(unresolved)
+                rule_unresolved_fragments.update(unresolved)
+            rule_parts_resolved += record_resolved
+            rule_parts_unresolved += record_unresolved
+            if record_resolved == 0:
+                units_without_rule_text.append(
+                    {
+                        "item_id": item.item_id,
+                        "dimension": disagreement_item.dimension,
+                        "labels": sorted(labels),
+                    }
+                )
+        messages = build_judge_prompt(
+            item.transcript_th, disagreement_item, citations, rule_texts=rule_texts
+        )
         # The literal request dict is both sent and hashed. A separately reconstructed
         # provenance object would eventually drift from what the endpoint saw.
         request: dict[str, Any] = {
@@ -685,115 +1038,121 @@ def run_judge(
             disagreement_item.dimension,
         )
 
-        try:
-            completion = client.complete(**request)
-        except Exception as exc:  # real client TransportError carries latency_s
-            if not hasattr(exc, "latency_s"):
-                # A programming error in a client implementation is not a transport
-                # outcome and must not be laundered into a plausible judge record.
-                raise
-            verdict = JudgeVerdict(
-                verdict="unclear",
-                cited_span="",
-                rationale="",
-                parse_error=False,
-                raw="",
-                evidence_status=EVIDENCE_NOT_EVALUATED,
-                execution_status="transport_error",
-            )
+        base_record = {
+            "judgment_unit_id": unit_id,
+            "item_id": item.item_id,
+            "product": disagreement_item.key[2],
+            "dimension": disagreement_item.dimension,
+            "population": disagreement_item.population,
+            "gt_label": disagreement_item.gt_label,
+            "incumbent_label": disagreement_item.incumbent_label,
+            "candidate_label": disagreement_item.candidate_label,
+            "request_sha256": request_sha,
+            "rule_text_resolved": record_resolved if rule_root is not None else None,
+            "rule_text_unresolved": record_unresolved if rule_root is not None else None,
+        }
+        for replicate in range(1, repeats + 1):
+            try:
+                completion = client.complete(**request)
+            except Exception as exc:  # real client TransportError carries latency_s
+                if not hasattr(exc, "latency_s"):
+                    # A programming error in a client implementation is not a transport
+                    # outcome and must not be laundered into a plausible judge record.
+                    raise
+                verdict = JudgeVerdict(
+                    verdict="unclear",
+                    cited_span="",
+                    rationale="",
+                    parse_error=False,
+                    raw="",
+                    evidence_status=EVIDENCE_NOT_EVALUATED,
+                    execution_status="transport_error",
+                )
+                verdicts.append(verdict)
+                private = {
+                    "judgment_unit_id": unit_id,
+                    "replicate": replicate,
+                    "request": wire_request,
+                    "raw_response_text": None,
+                    "completion_raw": None,
+                    "transport_error": f"{type(exc).__name__}: {exc}",
+                }
+                if private_record_sink is not None:
+                    private_record_sink(private)
+                records.append(
+                    {
+                        **base_record,
+                        "replicate": replicate,
+                        "verdict": verdict.verdict,
+                        "cited_span": "",
+                        "rationale": "",
+                        "parse_error": False,
+                        "evidence_status": verdict.evidence_status,
+                        "validation_errors": [],
+                        "execution_status": verdict.execution_status,
+                        "identity_status": "not_evaluated",
+                        "transport_error_type": type(exc).__name__,
+                        "observed_model": None,
+                        "observed_provider": None,
+                        "reasoning_tokens": None,
+                        "cost": None,
+                        "latency_s": getattr(exc, "latency_s"),
+                        "raw_response_sha256": None,
+                    }
+                )
+                continue
+
+            raw_text = completion.content or ""
+            verdict = parse_judge_response(raw_text, transcript=item.transcript_th)
             verdicts.append(verdict)
+            observed_model = getattr(completion, "observed_model", None)
+            observed_provider = getattr(completion, "provider", None)
+            provider_matches = provider is None or observed_provider == provider
+            if observed_model == model and provider_matches:
+                identity_status = "matched"
+            elif observed_model is None or (
+                provider is not None and observed_provider is None
+            ):
+                identity_status = "unverified"
+            else:
+                identity_status = "mismatch"
+            if identity_status != "matched":
+                verdict = replace(verdict, execution_status=f"identity_{identity_status}")
+                verdicts[-1] = verdict
+
             private = {
                 "judgment_unit_id": unit_id,
+                "replicate": replicate,
                 "request": wire_request,
-                "raw_response_text": None,
-                "completion_raw": None,
-                "transport_error": f"{type(exc).__name__}: {exc}",
+                "raw_response_text": raw_text,
+                "completion_raw": getattr(completion, "raw", None),
+                "transport_error": None,
             }
             if private_record_sink is not None:
                 private_record_sink(private)
             records.append(
                 {
-                    "judgment_unit_id": unit_id,
-                    "item_id": item.item_id,
-                    "product": disagreement_item.key[2],
-                    "dimension": disagreement_item.dimension,
-                    "population": disagreement_item.population,
-                    "gt_label": disagreement_item.gt_label,
-                    "incumbent_label": disagreement_item.incumbent_label,
-                    "candidate_label": disagreement_item.candidate_label,
+                    **base_record,
+                    "replicate": replicate,
                     "verdict": verdict.verdict,
-                    "cited_span": "",
-                    "rationale": "",
-                    "parse_error": False,
+                    "cited_span": verdict.cited_span,
+                    "rationale": verdict.rationale,
+                    "parse_error": verdict.parse_error,
                     "evidence_status": verdict.evidence_status,
-                    "validation_errors": [],
+                    "validation_errors": list(verdict.validation_errors),
                     "execution_status": verdict.execution_status,
-                    "identity_status": "not_evaluated",
-                    "transport_error_type": type(exc).__name__,
-                    "observed_model": None,
-                    "observed_provider": None,
-                    "reasoning_tokens": None,
-                    "cost": None,
-                    "latency_s": getattr(exc, "latency_s"),
-                    "request_sha256": request_sha,
-                    "raw_response_sha256": None,
+                    "identity_status": identity_status,
+                    "transport_error_type": None,
+                    "observed_model": observed_model,
+                    "observed_provider": observed_provider,
+                    "reasoning_tokens": getattr(completion, "reasoning_tokens", None),
+                    "cost": getattr(completion, "cost", None),
+                    "latency_s": getattr(completion, "latency_s", None),
+                    "raw_response_sha256": hashlib.sha256(
+                        raw_text.encode("utf-8")
+                    ).hexdigest(),
                 }
             )
-            continue
-
-        raw_text = completion.content or ""
-        verdict = parse_judge_response(raw_text, transcript=item.transcript_th)
-        verdicts.append(verdict)
-        observed_model = getattr(completion, "observed_model", None)
-        observed_provider = getattr(completion, "provider", None)
-        provider_matches = provider is None or observed_provider == provider
-        if observed_model == model and provider_matches:
-            identity_status = "matched"
-        elif observed_model is None or (provider is not None and observed_provider is None):
-            identity_status = "unverified"
-        else:
-            identity_status = "mismatch"
-        if identity_status != "matched":
-            verdict = replace(verdict, execution_status=f"identity_{identity_status}")
-            verdicts[-1] = verdict
-
-        private = {
-            "judgment_unit_id": unit_id,
-            "request": wire_request,
-            "raw_response_text": raw_text,
-            "completion_raw": getattr(completion, "raw", None),
-            "transport_error": None,
-        }
-        if private_record_sink is not None:
-            private_record_sink(private)
-        records.append(
-            {
-                "judgment_unit_id": unit_id,
-                "item_id": item.item_id,
-                "product": disagreement_item.key[2],
-                "dimension": disagreement_item.dimension,
-                "population": disagreement_item.population,
-                "gt_label": disagreement_item.gt_label,
-                "incumbent_label": disagreement_item.incumbent_label,
-                "candidate_label": disagreement_item.candidate_label,
-                "verdict": verdict.verdict,
-                "cited_span": verdict.cited_span,
-                "rationale": verdict.rationale,
-                "parse_error": verdict.parse_error,
-                "evidence_status": verdict.evidence_status,
-                "validation_errors": list(verdict.validation_errors),
-                "execution_status": verdict.execution_status,
-                "identity_status": identity_status,
-                "transport_error_type": None,
-                "observed_model": observed_model,
-                "observed_provider": observed_provider,
-                "reasoning_tokens": getattr(completion, "reasoning_tokens", None),
-                "cost": getattr(completion, "cost", None),
-                "latency_s": getattr(completion, "latency_s", None),
-                "request_sha256": request_sha,
-                "raw_response_sha256": hashlib.sha256(raw_text.encode("utf-8")).hexdigest(),
-            }
-        )
 
     runtime = getattr(client, "runtime", None)
     judge_runtime = (
@@ -815,5 +1174,64 @@ def run_judge(
         "truncated": truncated,
         "source_provenance": dict(source_provenance or {}),
         "judge_runtime": judge_runtime,
+        "repeats": repeats,
+        "units": _unit_aggregation(records),
+        # Loud, not buried in prompts: a partially-broken resolution shows up here as a
+        # nonzero unresolved count, and a run that never asked for text says so.
+        "rule_text": {
+            "enabled": rule_root is not None,
+            "root": str(rule_root) if rule_root is not None else None,
+            "resolved_parts": rule_parts_resolved,
+            "unresolved_parts": rule_parts_unresolved,
+            "unresolved_fragments": sorted(rule_unresolved_fragments),
+            "units_without_rule_text": units_without_rule_text,
+        },
     }
     return report
+
+
+def _unit_aggregation(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Majority-per-unit arithmetic, fixed by hand in the fixture's second addendum.
+
+    Strict majority only (`top count * 2 > replicate count`); a tie is `no_majority`,
+    never broken by picking. A unit is flagged only on a strict-majority
+    `ground_truth_error`, so single-replicate noise cannot put an item on the human
+    review queue by itself once `repeats > 1`.
+    """
+    by_unit: dict[str, list[Mapping[str, Any]]] = {}
+    for record in records:
+        by_unit.setdefault(record["judgment_unit_id"], []).append(record)
+    flagged: list[dict[str, Any]] = []
+    flipped = 0
+    no_majority = 0
+    for unit_id, unit_records in by_unit.items():
+        verdicts = [
+            r["verdict"]
+            for r in sorted(unit_records, key=lambda r: r.get("replicate") or 1)
+        ]
+        counts: dict[str, int] = {}
+        for v in verdicts:
+            counts[v] = counts.get(v, 0) + 1
+        top_verdict, top_count = max(counts.items(), key=lambda kv: kv[1])
+        if len(set(verdicts)) > 1:
+            flipped += 1
+        if top_count * 2 <= len(verdicts):
+            no_majority += 1
+            continue
+        if top_verdict == "ground_truth_error":
+            first = unit_records[0]
+            flagged.append(
+                {
+                    "judgment_unit_id": unit_id,
+                    "item_id": first["item_id"],
+                    "dimension": first["dimension"],
+                    "votes": f"{top_count}/{len(verdicts)}",
+                }
+            )
+    return {
+        "total": len(by_unit),
+        "flagged_majority": len(flagged),
+        "flagged": sorted(flagged, key=lambda f: (f["item_id"], f["dimension"])),
+        "flipped": flipped,
+        "no_majority": no_majority,
+    }

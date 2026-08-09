@@ -2,6 +2,24 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-09, Experiment 8): error severity now measured, and the LLM-judged half
+of it failed its own evidence bar.** `src/evalgen/severity.py` attaches an error category
+to every unit the scorer counts as wrong, so a report can say *how* an arm failed and not
+only how often. The deterministic half needs no model, is byte-identical across three
+independent runs, and produced four decision-relevant findings — the largest being that
+**over-labelling is 69.2% of the incumbent's `reason` errors** (45 of 65), independently
+reproducing Experiment 3's hand count of 39 of 57 on a different pack via a different code
+path; and that **a quarter of what the scorer calls "wrong" is a product-row alignment
+failure, not a labelling error**, at near-identical rates on all three arms. The judged
+near/cross layer did **not** produce a measurement: across 8 runs, **178 of 276 responses
+that arrived (64.5%) failed a byte-exact evidence gate**, and the CoreWeave endpoint then
+degraded (181 transport errors of 457 calls). Goal-contract criterion 5 is recorded as NOT
+met. An 11-of-17 "flip rate" from the first attempt is **withdrawn**: an adversarial review
+found gate-rejected responses were being counted as votes. Two review passes (14 agents)
+found 20 defects in this work, two of them critical data-safety or post-spend-abort bugs;
+all 20 are fixed with regression tests, and one hand-computed expectation was corrected in
+writing. Full record: `EXPERIMENTS.md` Experiment 8, `docs/severity-plan-2026-08-09.md`.
+
 **Current focus (2026-08-08): the recommendation is written down, and a second,
 independently executed experiment reached the same answer.** `docs/migration-decision-
 2026-08-07.md` synthesizes Experiments 1-6: every apparent Qwen advantage this project
@@ -26,8 +44,25 @@ production-shaped work, or the internal-GPU rerun Experiment 7's own handoff cal
 -- not more infrastructure built against the same synthetic comparison, which has now
 been decided twice.
 
-- [ ] Retention domain owners review the 38 Experiment 7 possible-ground-truth-error
-      flags in the restricted judge bundle; commit decisions, never cited transcript text.
+- [ ] **Fix the judge prompt's ground-truth asymmetry before any more flag review.**
+      `_rule_entries_for` reads the item's own ground-truth-authored `rules` dict, so
+      the rule for a *competing* label is never quoted -- the judge sees why the
+      reference label might be right and nothing about why the alternative is wrong.
+      Traced as the cause of RET-98 (0->3) and RET-129 (2->3) false flags. Quote the
+      whole dimension's class list, and match `#2` second-citation keys (97 across the
+      packs) while there. `EXPERIMENTS.md` E6 addendum, defect 4.
+- [ ] **Add replicates per judgment unit.** A placebo arm inside the 2026-08-09 A/B
+      (8 rows, byte-identical requests in both modes) flipped verdict 4 times out of 8
+      at temperature 0. Until judge instability is measured per unit, no judge delta is
+      separable from resampling noise.
+- [ ] ~~Retention domain owners review the 38 Experiment 7 possible-ground-truth-error
+      flags in the restricted judge bundle~~ **Blocked on the two items above, and on
+      access:** those flags came from pointer-only prompts, and the raw Experiment 7
+      run directories are not on this workstation (gitignored `out/`, executed
+      elsewhere), so re-derivation has to happen where that data lives. Current
+      contested queue if reviewed anyway: RET-100 (possibly a real GT error, not just
+      arguable), RET-98 and RET-129 (both independently re-derived as GT *correct*,
+      i.e. probably false flags). Commit decisions, never cited transcript text.
 - [ ] Run the committed Experiment 7 application contract on the internal GPU runtime,
       preserving testset, prompt, schema, repeats and decision policy.
 - [ ] Reconcile one approved real labelled batch against the application's existing
@@ -77,7 +112,12 @@ kept in place and corrected, because the wrong inference is the useful part:
 - [ ] Receive the **first two header rows** of the Retention ground-truth workbook
       (no data rows). This settles the two-row header layout that
       `adapters/retention.py::load_workbook` currently refuses to guess, and contains
-      no customer record. Cheapest unblock available.
+      no customer record. Cheapest unblock available. **The email is now written and
+      ready to send: `docs/ask1-email-draft.md`, English and Thai.** It was extracted
+      from `docs/data-contract.md` and sent on its own precisely because Asks 2-4 need a
+      privacy conversation and this one does not -- bundling them is what kept this
+      unsent since 2026-08-04. Nothing in this repository can retire `RECONCILED: NO`
+      until it is answered.
 - [ ] Receive ground-truth **row counts and class distribution** per app. Blocks the
       sample design. **Partly overtaken (2026-08-05)**: a sample was designed and shipped
       without them, on synthetic data -- `retention_v2` is 100 items / 108 scored rows,
@@ -178,6 +218,21 @@ but the reason some code looks odd):
 
 ## ✅ History
 
+- **2026-08-09**: The judge's flags were hand-checked, mostly wrong, the cause fixed --
+  and then the fix's own success claim was reviewed and largely withdrawn. Three of
+  Experiment 6's four cross-validated ground-truth flags were judge errors with one root
+  cause: the prompt carried rule *citations* but never rule *text*. `judge.py` now quotes
+  the cited `production-reference/` lines verbatim (hand-computed expectation first,
+  default ON, `--no-rule-text` for the old behavior). An A/B measured raw flags 32 -> 18;
+  a four-reviewer adversarial pass then found that **the 270 rows are 107 distinct units
+  replicated 2-3x** (collapsed: 15 -> 7, `p=0.0386`, INDISTINGUISHABLE at this repo's own
+  alpha), that **8 rows were an accidental placebo arm** whose requests were byte-identical
+  in both modes and **4 of 8 flipped anyway** (first measurement of judge self-inconsistency
+  at temperature 0), and that "dropped to zero flags" was false. The fix also *created*
+  3/3 flags on RET-98 and RET-129, traced to a structural asymmetry: the prompt quotes the
+  rule for the ground-truth label only, never the competing label. A MAJOR data-safety
+  finding (absolute path + OS account name in the shareable export) was fixed with a
+  regression test. `EXPERIMENTS.md` Experiment 6 addendum carries the full correction.
 - **2026-08-08**: Experiment 7 completed on synthetic Retention v3. Provider
   qualification covered 20 advertised endpoints (120 bounded calls); the selected
   Google/Chutes/AkashML arms then completed 1,242/1,242 parse-valid full calls. Gemini

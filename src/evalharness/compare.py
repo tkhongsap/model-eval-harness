@@ -556,6 +556,35 @@ def comparison_clusters(
     return clusters
 
 
+def label_set(record: Record | None, dimension: str) -> frozenset[str]:
+    """The set of labels one record asserts in one dimension.
+
+    Public alias of the set this module already builds for rule lookup.  Exposed so a
+    diagnostic can ask what an arm claimed without re-deriving the per-dimension shapes
+    (one value for ``call_result``, a union of three columns for ``reason``) a second
+    time somewhere else.
+    """
+    return _rule_labels(record, dimension)
+
+
+def comparison_units(
+    gt: list[Record],
+    incumbent: list[Record],
+    candidate: list[Record],
+    dimension: str,
+) -> list[ComparisonUnit]:
+    """The canonical paired population at scored-row grain, before call clustering.
+
+    :func:`comparison_clusters` is the population for inference and stays that way.
+    This is the same population at the grain a regression row is actionable on, which
+    is what a per-answer diagnostic has to read: a cluster's label can concatenate
+    several products (``_cluster_label``), so it is a display string and not a label
+    set.  Sharing this rather than re-deriving correctness is the same rule
+    ``comparison_clusters`` documents for the judge.
+    """
+    return _comparison_units(gt, incumbent, candidate, dimension)
+
+
 def disagreement(
     gt: list[Record],
     incumbent: list[Record],

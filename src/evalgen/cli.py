@@ -83,6 +83,12 @@ from evalgen.config import ENV_FILES, find_api_key, find_runtime_api_key, load_e
 from evalgen.decoding import decoding_schema
 from evalgen.flatten import named_no_product, to_rows
 from evalgen.judge import find_disagreements, run_judge, shareable_report
+from evalgen.severity import (
+    SEVERITY_DIMENSIONS,
+    SeverityError,
+    run_severity,
+    shareable_severity_report,
+)
 from evalgen.experiments import (
     PlanError,
     arm_by_id,
@@ -3290,27 +3296,44 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return EXIT_PROBLEMS if verdicts & {"FAIL", "FLAKY"} else EXIT_OK
 
 
-def cmd_judge(args: argparse.Namespace) -> int:
-    """Independent-model adjudication of scorer disagreements. Diagnostic only.
+@dataclass(frozen=True)
+class _AdjudicationInputs:
+    """Everything an advisory diagnostic needs, past every gate, before any call.
 
-    Reuses `_refuse_incomparable` -- the same gate `compare` applies -- because a judge
-    run over two arms that were not comparable in the first place (different testset,
-    ground truth or scorer version) would adjudicate disagreements that are artifacts of
-    the mismatch, not of either model. This command never prints a verdict, a net, or
-    anything `report.render`'s mechanism table would recognise: see `evalgen.judge`'s
-    module docstring for how that separation is enforced rather than only claimed.
+    Shared by `cmd_judge` and `cmd_severity` deliberately: these gates are the reason
+    an advisory number is trustworthy at all, and a gate that exists in two places is
+    a gate that eventually differs in two places.
+    """
+
+    incumbent: Any
+    candidate: Any
+    runtime: Any
+    testset: Any
+    gt: Any
+    inc_rows: Any
+    cand_rows: Any
+    effective_classification: str
+    source_provenance: dict
+
+
+def _adjudication_inputs(args: argparse.Namespace) -> _AdjudicationInputs:
+    """Load, verify and pair two runs for an advisory diagnostic.
+
+    Every refusal here has a specific incident behind it: comparability (arms that were
+    never comparable produce disagreements that are artifacts of the mismatch), the two
+    sha checks (a testset or ground truth edited after the runs means the adjudicator is
+    shown labels the arms were never scored against), the self-review check (a model
+    reviewing its own family's output is not independent), and the classification floor
+    (an advisory export must never be filed less restricted than the evidence it came
+    from).
     """
     incumbent = load_run(Path(args.incumbent))
     candidate = load_run(Path(args.candidate))
     _refuse_incomparable(incumbent, candidate)
 
+    # The provider pin is checked by each caller rather than here: it is a property of
+    # making a call, and `severity --deterministic-only` makes none.
     runtime = _runtime_from_args(args)
-    if runtime.backend is RuntimeBackend.OPENROUTER and not args.provider:
-        raise CliError(
-            "the advisory judge must pin one OpenRouter provider; pass --provider, "
-            "or select an openai-compatible internal runtime where provider routing "
-            "does not apply"
-        )
 
     testset_path = (
         Path(args.testset)
@@ -3390,6 +3413,53 @@ def cmd_judge(args: argparse.Namespace) -> int:
     inc_rows = per_replicate[incumbent.arm][0]
     cand_rows = per_replicate[candidate.arm][0]
 
+    source_provenance = {
+        "incumbent_manifest_sha": canonical_sha(incumbent.meta),
+        "candidate_manifest_sha": canonical_sha(candidate.meta),
+        "selected_replicate": 1,
+        "testset_sha": actual_testset_sha,
+        "gt_sha": actual_gt_sha,
+        "application_contract_sha": incumbent.meta.get("application_contract_sha"),
+        "outcome_contract_sha": incumbent.meta.get("outcome_contract_sha"),
+        "generation_contract_sha": incumbent.meta.get("generation_contract_sha"),
+        "scoring_code_sha": incumbent.meta.get(
+            "scoring_code_sha", incumbent.meta.get("scorer_sha")
+        ),
+        "incumbent_run_contract_sha": incumbent.meta.get("run_contract_sha"),
+        "candidate_run_contract_sha": candidate.meta.get("run_contract_sha"),
+    }
+    return _AdjudicationInputs(
+        incumbent=incumbent,
+        candidate=candidate,
+        runtime=runtime,
+        testset=testset,
+        gt=gt,
+        inc_rows=inc_rows,
+        cand_rows=cand_rows,
+        effective_classification=effective_classification,
+        source_provenance=source_provenance,
+    )
+
+
+def cmd_judge(args: argparse.Namespace) -> int:
+    """Independent-model adjudication of scorer disagreements. Diagnostic only.
+
+    This command never prints a verdict, a net, or anything `report.render`'s mechanism
+    table would recognise: see `evalgen.judge`'s module docstring for how that separation
+    is enforced rather than only claimed. Its gates live in `_adjudication_inputs`.
+    """
+    loaded = _adjudication_inputs(args)
+    incumbent, candidate = loaded.incumbent, loaded.candidate
+    runtime, testset, gt = loaded.runtime, loaded.testset, loaded.gt
+    inc_rows, cand_rows = loaded.inc_rows, loaded.cand_rows
+    effective_classification = loaded.effective_classification
+    if runtime.backend is RuntimeBackend.OPENROUTER and not args.provider:
+        raise CliError(
+            "the advisory judge must pin one OpenRouter provider; pass --provider, "
+            "or select an openai-compatible internal runtime where provider routing "
+            "does not apply"
+        )
+
     dimensions = args.dimension if args.dimension else ["call_result", "reason", "product"]
 
     if args.dry_run:
@@ -3442,22 +3512,6 @@ def cmd_judge(args: argparse.Namespace) -> int:
     else:
         client = build_client(api_key, timeout=args.timeout, runtime=runtime)
 
-    source_provenance = {
-        "incumbent_manifest_sha": canonical_sha(incumbent.meta),
-        "candidate_manifest_sha": canonical_sha(candidate.meta),
-        "selected_replicate": 1,
-        "testset_sha": actual_testset_sha,
-        "gt_sha": actual_gt_sha,
-        "application_contract_sha": incumbent.meta.get("application_contract_sha"),
-        "outcome_contract_sha": incumbent.meta.get("outcome_contract_sha"),
-        "generation_contract_sha": incumbent.meta.get("generation_contract_sha"),
-        "scoring_code_sha": incumbent.meta.get(
-            "scoring_code_sha", incumbent.meta.get("scorer_sha")
-        ),
-        "incumbent_run_contract_sha": incumbent.meta.get("run_contract_sha"),
-        "candidate_run_contract_sha": candidate.meta.get("run_contract_sha"),
-    }
-
     report = run_judge(
         testset=testset,
         gt=gt,
@@ -3473,8 +3527,10 @@ def cmd_judge(args: argparse.Namespace) -> int:
             else "provider-default"
         ),
         max_items=args.max_items,
-        source_provenance=source_provenance,
+        source_provenance=loaded.source_provenance,
         private_record_sink=lambda record: append_jsonl(raw_path, record),
+        rule_source_root=None if args.no_rule_text else args.rule_source_root,
+        repeats=args.repeats,
     )
     report["incumbent_arm"] = incumbent.arm
     report["candidate_arm"] = candidate.arm
@@ -3577,6 +3633,302 @@ def _render_judge_report(report: dict[str, Any]) -> str:
         "reviewer's comment, not a second scorer's number. Transcript spans, rationale,",
         "and raw responses exist only in the restricted review bundle.",
     ]
+    return "\n".join(lines)
+
+
+def _refusing(function):
+    """Turn a diagnostic's own refusal into the CLI's documented REFUSED exit.
+
+    `SeverityError` is a `ValueError` and `main` catches only `CliError`, so every
+    refusal in `severity.py` -- including one that names a testset key -- reached the
+    operator as a traceback rather than the promised one-line message and exit code 2.
+    """
+
+    def wrapper(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except SeverityError as exc:
+            raise CliError(str(exc)) from exc
+
+    return wrapper
+
+
+def cmd_severity(args: argparse.Namespace) -> int:
+    """How each arm was wrong, not just how often. Diagnostic only, never a verdict.
+
+    Shares every gate with `cmd_judge` through `_adjudication_inputs`. The one addition
+    is `--deterministic-only`, which makes zero model calls and still returns a complete
+    report: that is how the judged remainder is sized before any spend is approved, and
+    it is the design working as intended rather than a debugging convenience.
+    """
+    loaded = _adjudication_inputs(args)
+    incumbent, candidate = loaded.incumbent, loaded.candidate
+    dimensions = args.dimension if args.dimension else list(SEVERITY_DIMENSIONS)
+    arms = {incumbent.arm: loaded.inc_rows, candidate.arm: loaded.cand_rows}
+    if incumbent.arm == candidate.arm:
+        raise CliError(
+            f"both runs report the arm role {incumbent.arm!r}; severity is reported per "
+            "arm and could not tell the two apart"
+        )
+    arm_models = {
+        incumbent.arm: _observed_model_id(incumbent),
+        candidate.arm: _observed_model_id(candidate),
+    }
+    arm_reasoning_tokens = {
+        loaded_run.arm: sum(
+            item.reasoning_tokens or 0 for item in loaded_run.result.results
+        )
+        for loaded_run in (incumbent, candidate)
+    }
+
+    if args.deterministic_only:
+        report = _refusing(run_severity)(
+            testset=loaded.testset,
+            gt=loaded.gt,
+            arms=arms,
+            arm_models=arm_models,
+            arm_reasoning_tokens=arm_reasoning_tokens,
+            dimensions=dimensions,
+            deterministic_only=True,
+            rule_source_root=args.rule_source_root,
+            repeats=args.repeats,
+            source_provenance=loaded.source_provenance,
+        )
+        text = _render_severity_report(report)
+        print()
+        print(text)
+        if args.shareable_out:
+            safe = shareable_severity_report(report)
+            assert_shareable_payload(safe)
+            atomic_write_text(
+                Path(args.shareable_out),
+                json.dumps(safe, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+            )
+            print(f"wrote shareable severity report {args.shareable_out}")
+        if args.report:
+            atomic_write_text(Path(args.report), text + "\n")
+            print(f"wrote {args.report}")
+        return EXIT_OK
+
+    runtime = loaded.runtime
+    if runtime.backend is RuntimeBackend.OPENROUTER and not args.provider:
+        raise CliError(
+            "the advisory severity judge must pin one OpenRouter provider; pass "
+            "--provider, or select an openai-compatible internal runtime where provider "
+            "routing does not apply"
+        )
+    if not args.model:
+        raise CliError("--model is required unless --deterministic-only is passed")
+    # The self-review refusal is NOT repeated here: `_adjudication_inputs` already ran it
+    # on these same objects. A second copy is exactly the drift its docstring says the
+    # extraction exists to prevent -- relaxing one leaves the other enforcing the old rule.
+    if not args.private_out:
+        raise CliError(
+            "severity calls require --private-out so exact request/raw-response "
+            "evidence is fsynced after every paid call"
+        )
+    private_path = Path(args.private_out).expanduser().resolve(strict=False)
+    if loaded.effective_classification != "synthetic":
+        try:
+            private_path = require_private_destination(private_path)
+        except ArtifactError as exc:
+            raise CliError(str(exc)) from exc
+    raw_path = private_path.with_name(private_path.name + ".raw.jsonl")
+    for target in (private_path, raw_path):
+        if target.exists():
+            raise CliError(
+                f"refusing to mix or overwrite severity evidence at {target}; choose a "
+                "new --private-out"
+            )
+
+    api_key = _api_key(runtime)
+    append_jsonl(
+        raw_path,
+        {
+            "type": "severity_private_journal",
+            "schema_version": 1,
+            "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "judge_model": args.model,
+            "judge_runtime_fingerprint": runtime.fingerprint(),
+            "incumbent_run_id": incumbent.meta.get("run_id", incumbent.directory.name),
+            "candidate_run_id": candidate.meta.get("run_id", candidate.directory.name),
+        },
+    )
+    if runtime == OPENROUTER_RUNTIME:
+        client = build_client(api_key, timeout=args.timeout)
+    else:
+        client = build_client(api_key, timeout=args.timeout, runtime=runtime)
+
+    report = _refusing(run_severity)(
+        testset=loaded.testset,
+        gt=loaded.gt,
+        arms=arms,
+        arm_models=arm_models,
+        arm_reasoning_tokens=arm_reasoning_tokens,
+        dimensions=dimensions,
+        client=client,
+        model=args.model,
+        provider=args.provider,
+        reasoning_effort=(
+            "none"
+            if runtime.backend is RuntimeBackend.OPENROUTER
+            else "provider-default"
+        ),
+        rule_source_root=args.rule_source_root,
+        repeats=args.repeats,
+        max_judged_units=args.max_judged_units,
+        source_provenance=loaded.source_provenance,
+        private_record_sink=lambda record: append_jsonl(raw_path, record),
+    )
+    text = _render_severity_report(report)
+    print()
+    print(text)
+    atomic_write_text(
+        private_path,
+        json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+    )
+    print(f"wrote restricted severity report {private_path}")
+    print(f"wrote restricted raw call journal {raw_path}")
+    safe = shareable_severity_report(report)
+    assert_shareable_payload(safe)
+    if args.shareable_out:
+        atomic_write_text(
+            Path(args.shareable_out),
+            json.dumps(safe, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        )
+        print(f"wrote shareable severity report {args.shareable_out}")
+    if args.report:
+        atomic_write_text(Path(args.report), text + "\n")
+        print(f"wrote {args.report}")
+    return EXIT_OK
+
+
+def _render_severity_report(report: dict[str, Any]) -> str:
+    """The per-arm failure profile. No net, no verdict, no winner -- by construction.
+
+    Rates are printed over each arm's own wrong units, and the denominator is stated on
+    the line, because a severity rate over all units would fall whenever an arm got more
+    right and would read as an improvement in how it fails.
+    """
+    lines = [
+        "=" * 78,
+        "ERROR SEVERITY -- DIAGNOSTIC ONLY, NOT A SCORED DIMENSION",
+        "=" * 78,
+        f"dimensions  {', '.join(report['dimensions'])}",
+        f"judge model {report['model_requested'] or '(none -- deterministic only)'}"
+        + (f" on {report['provider_requested']}" if report.get("provider_requested") else ""),
+        f"judge replicates  {report['repeats']}",
+        f"arm rows    REPLICATE "
+        f"{report.get('source_provenance', {}).get('selected_replicate', 1)} of each arm"
+        " -- a single draw, not an average; see N_flip in the compare report",
+        "",
+    ]
+    if report.get("deterministic_only"):
+        lines += [
+            "NOT JUDGED: --deterministic-only. Every `unclear_family` below was never",
+            "sent to a model; it is an unresolved substitution, not a judge that looked",
+            "and could not tell.",
+            "",
+        ]
+    if report.get("regime_warning"):
+        lines += [
+            "!! REGIME WARNING",
+            "   " + report["regime_warning"],
+            "",
+        ]
+    for arm, profile in report["profile"].items():
+        details = report.get("arms", {}).get(arm) or {}
+        model = details.get("model") or "unknown"
+        reasoning = details.get("reasoning_tokens")
+        suffix = "" if reasoning is None else f", {reasoning:,} reasoning tokens"
+        lines.append(f"{arm}  ({model}{suffix})")
+        for dimension, block in profile["by_dimension"].items():
+            lines.append(
+                f"  {dimension}: {block['wrong_units']} wrong unit(s) "
+                "(the denominator below)"
+            )
+            for category, count in block["counts"].items():
+                if not count:
+                    continue
+                reasons: dict[str, int] = {}
+                for unit in report.get("units", []):
+                    if (
+                        unit["arm"] == arm
+                        and unit["dimension"] == dimension
+                        and unit["category"] == category
+                        and unit.get("sub_reason")
+                    ):
+                        name = str(unit["sub_reason"])
+                        reasons[name] = reasons.get(name, 0) + 1
+                detail = (
+                    "  [" + ", ".join(f"{n} {c}" for n, c in sorted(reasons.items())) + "]"
+                    if reasons
+                    else ""
+                )
+                lines.append(
+                    f"    {category:<20} {count:>4}  "
+                    f"({block['rates'][category]:.1%}){detail}"
+                )
+            lines += [
+                f"    {'-- mis-scoping':<20} {block['mis_scoping']:>4}",
+                f"    {'-- mis-classification':<20} {block['mis_classification']:>4}",
+            ]
+        if len(profile["by_dimension"]) > 1:
+            lines.append(
+                f"  {len(profile['by_dimension'])} dimensions pooled: "
+                f"{profile['wrong_units']} wrong unit(s) -- one missing row is wrong in "
+                "both, so this is not two failures"
+            )
+        lines.append("")
+    judged = report["judged"]
+    lines += [
+        "judged remainder (only substitutions reach a model):",
+        f"  substitution units found:  {judged['substitution_units_found']}",
+        f"  of those, sendable:        {judged['units_sendable']} "
+        "(the rest have no rule text to quote, so gate 2 could never pass)",
+        f"  units actually judged:     {judged['units_judged']}",
+        f"  calls made:                {judged['calls_made']}",
+        f"  invalid responses:         {judged['invalid_responses']} "
+        f"({judged['invalid_response_rate']:.1%})",
+        f"  units that flipped:        {judged['flipped']}",
+        f"  units with no majority:    {judged['no_majority']}",
+        f"  transport errors:          {judged['transport_errors']}",
+        f"  identity not matched:      {judged['identity_not_matched']}",
+    ]
+    rule_text = report.get("rule_text", {})
+    if rule_text.get("enabled"):
+        lines += [
+            f"  rule parts resolved:       {rule_text['resolved_parts']}",
+            f"  rule parts unresolved:     {rule_text['unresolved_parts']}",
+            f"  units with no rule text:   {len(rule_text['units_without_rule_text'])}",
+        ]
+    if report.get("truncated"):
+        lines.append("  TRUNCATED by --max-judged-units; the rest are unclear_family")
+    lines += [
+        "",
+        "How to read this: it says how an arm failed, never how often -- the counts here",
+        "are conditioned on being wrong, so an arm with fewer errors can still show a",
+        "worse profile. Nothing here changes a score, joins a verdict, or ranks an arm.",
+        "No significance test is computed: these units are scored rows, several can come",
+        "from one call, and they are not independent.",
+    ]
+    lines.append(
+        "Unit grain is the scored ROW, so a call carrying three product rows contributes "
+        "three units to these counts and rates."
+    )
+    if judged["calls_made"] and report["repeats"] > 1:
+        lines.append(
+            f"The family judgments flipped on {judged['flipped']} of "
+            f"{judged['units_judged']} judged unit(s) across {report['repeats']} "
+            "identical calls at temperature 0. Read a high flip rate as a coin, not a "
+            "measurement."
+        )
+    elif judged["calls_made"]:
+        lines.append(
+            "Flip rate is NOT measurable at --repeats 1: `flipped` is zero by "
+            "construction, not by observation. The fixture requires at least two "
+            "replicates for the stability check."
+        )
     return "\n".join(lines)
 
 
@@ -3823,6 +4175,28 @@ def build_parser() -> argparse.ArgumentParser:
     judge.add_argument("--max-items", type=int, default=None)
     judge.add_argument("--timeout", type=float, default=120.0)
     judge.add_argument(
+        "--repeats",
+        type=int,
+        default=1,
+        help="identical calls per judgment unit; unit verdicts are strict-majority and "
+        "a tie reports no_majority. Added 2026-08-09 after a placebo arm measured the "
+        "judge flipping 4 of 8 byte-identical requests at temperature 0.",
+    )
+    judge.add_argument(
+        "--rule-source-root",
+        default=str(REPO_ROOT / "production-reference"),
+        help="tree the cited rule text is read from and quoted verbatim in the prompt; "
+        "the tracked production-reference/ by default",
+    )
+    judge.add_argument(
+        "--no-rule-text",
+        action="store_true",
+        help="send file:line pointers only, the pre-2026-08-09 prompt. The hand-check "
+        "of Experiment 6's flags found pointer-only prompts made the judge re-derive "
+        "deliberately counterintuitive class boundaries from common sense; use this "
+        "only to reproduce the old behavior.",
+    )
+    judge.add_argument(
         "--data-classification",
         choices=("synthetic", "internal", "customer"),
         default="synthetic",
@@ -3850,6 +4224,76 @@ def build_parser() -> argparse.ArgumentParser:
         help="count disagreement items and exit. No call, no key required.",
     )
     judge.set_defaults(handler=cmd_judge)
+
+    severity = subparsers.add_parser(
+        "severity",
+        help="per-arm error severity profile (diagnostic only, never a verdict)",
+    )
+    severity.add_argument("--incumbent", required=True, help="a run directory")
+    severity.add_argument("--candidate", required=True, help="a run directory")
+    severity.add_argument("--testset", default=None, help="override the recorded path")
+    severity.add_argument("--gt", default=None, help="override the recorded path")
+    severity.add_argument(
+        "--dimension",
+        action="append",
+        choices=SEVERITY_DIMENSIONS,
+        default=None,
+        help="repeatable; default is call_result and reason. `product` is deliberately "
+        "out of scope -- see docs/severity-plan-2026-08-09.md",
+    )
+    severity.add_argument(
+        "--deterministic-only",
+        action="store_true",
+        help="classify with set arithmetic alone and print the judged remainder. Makes "
+        "ZERO model calls and needs no key: this is how the spend is sized before it is "
+        "approved.",
+    )
+    severity.add_argument(
+        "--model",
+        default=None,
+        help="runtime model id for the near-vs-cross judge; required unless "
+        "--deterministic-only",
+    )
+    severity.add_argument(
+        "--provider",
+        default=None,
+        help="required OpenRouter provider pin; omit for an internal GPU runtime",
+    )
+    severity.add_argument(
+        "--repeats",
+        type=int,
+        default=3,
+        help="identical calls per substitution unit; families are strict-majority and a "
+        "tie reports unclear_family. Defaults to 3 because this judge was measured "
+        "flipping 18.1%% of units at temperature 0.",
+    )
+    severity.add_argument("--max-judged-units", type=int, default=None)
+    severity.add_argument("--timeout", type=float, default=120.0)
+    severity.add_argument(
+        "--rule-source-root",
+        default=str(REPO_ROOT / "production-reference"),
+        help="tree the cited rule text is read from and quoted verbatim; the near/cross "
+        "question is answered against it and the second evidence gate requires it",
+    )
+    severity.add_argument(
+        "--data-classification",
+        choices=("synthetic", "internal", "customer"),
+        default="synthetic",
+    )
+    _add_runtime_arguments(severity)
+    severity.add_argument(
+        "--private-out",
+        default=None,
+        help="restricted JSON review report; a sibling raw JSONL journal is checkpointed",
+    )
+    severity.add_argument(
+        "--shareable-out",
+        default=None,
+        help="sanitized JSON with no transcript spans, rationale, quoted rule text or "
+        "absolute paths",
+    )
+    severity.add_argument("--report", default=None, help="write the text summary here")
+    severity.set_defaults(handler=cmd_severity)
 
     experiment_check = subparsers.add_parser(
         "experiment-check",

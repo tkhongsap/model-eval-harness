@@ -9,6 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`src/evalgen/severity.py`: how an arm was wrong, not just how often.** The scorer is
+  all-or-nothing, so answering `promotion related` where the truth is `save cost` -- two
+  classes the production prompt separates with one CRITICAL line -- scores exactly the
+  same zero as answering `network`. Every unit the scorer already counts as wrong now
+  carries an error category, and the report prints a per-arm failure profile beside the
+  dimension table. Seven of the eight branches are set arithmetic and cost nothing;
+  `fabricated_class` is evaluated **before** the subset tests as a hard cap, so an answer
+  carrying every true label plus one invented class can never be reported as
+  over-labelling. Only `substitution` -- where the answer both dropped and asserted
+  classes -- reaches a model, and it is asked one binary question (near or cross family)
+  behind two byte-exact evidence gates: the cited transcript span and the cited
+  production rule line, the latter checked against the rule text that prompt itself
+  quoted. Advisory only, isolation from the verdict path enforced by an AST test, and
+  no significance test is computed on it: severity units are scored rows and are not
+  independent. Expectation hand-computed first in
+  `tests/fixtures/judge/SEVERITY-HAND-COMPUTED.md`; goal contract and the recorded
+  deviation from the recommendation that preceded it in `docs/severity-plan-2026-08-09.md`.
+- **`evalgen severity --deterministic-only`.** Classifies with set arithmetic alone,
+  makes **zero** model calls, needs no key, and prints the exact judged remainder
+  (`units_sendable` x `--repeats` = calls). The spend is approved against a counted
+  number rather than an estimate, which is the deterministic-first design working rather
+  than a debugging convenience.
+- **A reasoning-regime warning on the severity report.** Experiment 4 measured `reason`
+  net moving -1 -> +24 on an endpoint change alone, because the replacement endpoint
+  reasoned. Nothing in this repository has ever recorded the regime in a report header.
+  The severity profile now prints one when two arms differ by an order of magnitude in
+  reasoning tokens, including the zero-versus-anything case, which is production's actual
+  `thinkingBudget: 0` regime against one that reasons.
+- **Experiment 8 (diagnostic).** The severity profile run over the Experiment 5A runs.
+  Deterministic half: byte-identical across three independent runs; over-labelling is
+  69.2% of the incumbent's `reason` errors, independently reproducing Experiment 3's hand
+  count on a different pack; a quarter of all "wrong" units are product-row alignment
+  failures rather than labelling errors, at near-identical rates on every arm; only
+  Qwen3.6 35B-A3B produced unparseable output; `fabricated_class` is zero everywhere.
+  Judged half: **no measurement**, recorded as such -- 178 of 276 arrived responses
+  (64.5%) failed a byte-exact evidence gate and the endpoint then degraded, so
+  goal-contract criterion 5 is NOT met. An 11-of-17 flip rate from the first attempt is
+  withdrawn.
+- **`docs/ask1-email-draft.md`.** The data contract's Ask 1 extracted into a sendable
+  email, in English and Thai: the two header rows of the ground-truth workbook, zero data
+  rows, no customer record, and therefore no privacy conversation to have first. Bundling
+  it with Asks 2-4 is what kept it unsent since 2026-08-04.
 - **Experiment 7 reproducible handoff.** Added a machine-validatable, zero-call
   Retention v3 reproduction plan, a synthetic aggregate evidence record, and a detailed
   team handoff covering three-model F1, paired quality/stability gates, operations,
@@ -223,6 +265,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **The advisory diagnostics now share one gate sequence instead of two copies.**
+  `cmd_judge`'s preamble -- run comparability, the testset and ground-truth sha checks,
+  the self-review model refusal and the classification-downgrade floor -- moved into
+  `_adjudication_inputs` and is now used unchanged by `cmd_severity`. A gate that exists
+  in two places is a gate that eventually differs in two places. The provider pin moved
+  out of the shared block to each caller, because it is a property of making a call and
+  `severity --deterministic-only` makes none.
+- **`evalharness.compare` gained two public wrappers, `label_set` and
+  `comparison_units`.** Pure aliases of what the module already computed privately, added
+  so the severity diagnostic reads the scorer's own correctness decision and label sets
+  rather than re-deriving them -- the rule `comparison_clusters` already documents for
+  the judge path. No behaviour changed, and a test asserts the scoring package still
+  imports nothing from `evalgen`.
 - **The core handoff set now reflects the 2026-08-08 state.** README, AGENTS, CLAUDE,
   DEVLOG, TESTING, CONTRIBUTING and EXPERIMENTS identify Experiment 7 as the latest
   evidence, distinguish setup readiness from migration approval, document the generic
@@ -273,6 +328,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 ### Fixed
+
+- **A shareable export could abort after every paid call, on a coin flip.**
+  `assert_shareable_payload` exempted `*_sha256` from its phone-like check but not the
+  `*_sha` provenance digests or `judge_runtime.fingerprint`, and a bare 64-hex digest
+  trips that pattern 2.08% of the time -- 10-21% of exports, raised after the spend and
+  outside the `CliError` path, so the operator got a traceback rather than a refusal. The
+  exemption now covers the names this repository actually uses, still requiring an exact
+  64-hex `fullmatch`, which no phone number can be.
+- **The advisory judge leaked an absolute local path into every shareable export and into
+  the prompt itself.** `resolve_citations_dedup` and `resolve_rule_text` formatted the
+  rule-source root -- carrying the operator's OS account name -- into each unresolved
+  fragment. Dropping `rule_text.root` on 2026-08-09 had removed only one of the two
+  routes. The fragment stays actionable without it.
+- **The judge never saw the rule text it was citing, and that made most of its
+  ground-truth flags wrong.** Hand-checking Experiment 6's four cross-validated
+  "possible ground-truth error" flags (2026-08-08) found three were judge errors with
+  one root cause: `build_judge_prompt` sent `customer reason: prompt.py:4372` and never
+  line 4372's text, so the judge re-derived deliberately counterintuitive class
+  boundaries from common sense (indecision counts as `save`, prompt.py:4397; refusing
+  to give a reason IS `customer reason`, prompt.py:4372; `undefined` means
+  out-of-scope, not unresolved, prompt.py:4399). `judge.py` now resolves every cited
+  `file:line` against the tracked `production-reference/` tree and quotes it verbatim
+  in the prompt -- hand-computed expectation written before the code
+  (`tests/fixtures/judge/HAND-COMPUTED.md`, 2026-08-09 addendum), default ON in
+  `evalgen judge`, `--no-rule-text` reproduces the old prompt, unresolved fragments
+  counted in the report rather than dropped. An A/B under identical code (270 rows x 2
+  prompts, $0.080) measured raw flags falling 32 -> 18 -- **and a four-reviewer
+  adversarial pass then found that inference over-claimed; the correction ships with
+  the result.** Those 270 rows are only **107 distinct units** replicated 2-3x;
+  collapsed, the effect is 15 -> 7, `d=12`, `p=0.0386`, which is
+  **INDISTINGUISHABLE** under this project's own `alpha=1/64` and band rule. 8 rows
+  were an accidental placebo arm -- byte-identical requests in both modes, because a
+  label with no `rule_<dim>:<label>` key silently falls back to the pointer prompt --
+  and **4 of those 8 flipped verdict anyway**, the first measurement this project has
+  of judge self-inconsistency at temperature 0. "Three hand-ruled judge errors dropped
+  to zero flags" was false (`RET-94` 4->2, `RET-19` 3->2, `RET-59` 4->1), and the fix
+  *created* 3/3 flags on `RET-98` and `RET-129`, both independently re-derived as
+  ground-truth correct. Root cause of that last one, recorded as the next fix: the
+  prompt quotes the rule for the ground-truth label only and never for the competing
+  label, because `_rule_entries_for` reads the item's own ground-truth-authored `rules`
+  dict. Quoting rule text remains right on the merits; the claim that this run
+  *demonstrates* it works is withdrawn. Narrative in `EXPERIMENTS.md`, Experiment 6
+  addendum.
+
+- **`shareable_report()` leaked the operator's absolute path and OS account name.**
+  The new `rule_text.root` field carried e.g.
+  `C:\Users\<account>\...\production-reference` into the *shareable* export, and
+  `assert_shareable_payload` does not reject a filesystem path. The counts are
+  shareable; where the tree sat on one workstation is not. Stripped in
+  `shareable_report` so every export gets it, with a regression test asserting the root
+  string appears nowhere in the serialized safe payload. Found by adversarial review of
+  the rule-text change, 2026-08-09.
 
 - **Shareability validation no longer mistakes cryptographic identifiers for phone
   numbers.** Exact SHA-256 and HMAC-shaped fields are validated as identifiers before
