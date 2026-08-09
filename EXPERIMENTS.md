@@ -1280,12 +1280,19 @@ each, which is expected -- an item only becomes a disagreement to review when th
 arms being compared don't already agree, so a flag's absence from a pairing is not
 evidence against it.
 
-**The strongest candidate, on inspection: `RET-85`.** All three pairings, same argument,
+~~**The strongest candidate, on inspection: `RET-85`.** All three pairings, same argument,
 independently reasoned each time: ground truth is `save`, but the customer cancels the
 home internet and TV box outright and only the mobile line is left undecided -- "the
 agent did not save any service that was being cancelled." This is the same shape of catch
 RET-11 was: a plausible, specific, transcript-grounded objection to a label, worth a
-human reading it before anything about the fixture moves. **Nothing was changed on the
+human reading it before anything about the fixture moves.~~ **WRONG, and hand-checked as
+wrong on 2026-08-08 -- see the addendum at the foot of this experiment.** RET-85's `save`
+sits on the Postpaid row of a three-row `multislot` call, and `prompt.py:4397` counts
+indecision as `save` in as many words; the judge quoted the exact indecision phrase and
+concluded the opposite, because it was shown the rule's *citation* and never its *text*.
+Kept struck through rather than deleted, per this file's convention, because "the flag
+three independent pairings agree on" turning out to be the same mistake made three times
+is precisely the lesson. **Nothing was changed on the
 strength of this** -- that is the entire point of keeping the judge a diagnostic.
 
 **`RET-59 [reason]`'s flag looks like a judge miss, not a ground-truth defect.** Ground
@@ -1340,6 +1347,177 @@ repository, zero model calls against OpenRouter.
 
 Item keys used a local placeholder `EVAL_HARNESS_KEY_HMAC`; they do not resolve inside
 True's systems.
+
+### Addendum (2026-08-09): the flags were hand-checked, most were wrong, the cause was found, fixed, and measured
+
+**The hand-check (2026-08-08).** The four cross-validated flags above were read against
+the actual ground truth and the actual production rule text. Three of the four were
+judge errors, and their three-pairing agreement was not corroboration -- it was one
+mistake made three times:
+
+| Flag | Hand ruling | Why |
+|---|---|---|
+| `RET-85 [call_result]` | judge error | `save` sits on the Postpaid row of a 3-row multislot call; `prompt.py:4397` counts indecision as `save` in as many words. The judge quoted the exact indecision phrase and concluded the opposite. |
+| `RET-59 [reason]` | judge error | The judge argued `customer reason` was wrong *because* the customer refused to give a reason; `prompt.py:4372` defines the class as exactly that refusal. Backwards. |
+| `RET-94 [call_result]` | judge error | The judge read `undefined` as "unresolved"; `prompt.py:4399` defines it as out-of-retention-scope. RET-94 is a service call, correctly `undefined`. |
+| `RET-100 [call_result]` | genuinely arguable | Agent says "may I call back tomorrow", customer agrees. `prompt.py:4397` lists agent-will-contact-later under `save`; `:4398` covers no-final-decision as `unknown`. A real, unarbitrated boundary. |
+
+**The root cause was this experiment's own design defect**: `build_judge_prompt` sent
+the rule *citation* (`customer reason: prompt.py:4372`) and never the rule *text*, so
+the judge re-derived every class boundary from common sense -- and this vocabulary is
+deliberately counterintuitive exactly where disagreements concentrate. The limitation
+paragraph above ("the judge knows the transcript and the cited production rule") was
+itself too generous: the judge never knew the cited rule either, only its address.
+
+**The fix (2026-08-09).** `judge.py` now resolves every cited `file:line` against the
+tracked `production-reference/` tree and quotes the text verbatim in the prompt
+(`resolve_rule_text`, hand-computed expectation in
+`tests/fixtures/judge/HAND-COMPUTED.md`'s addendum, written before the code; default ON
+in `evalgen judge`, `--no-rule-text` reproduces the old prompt; unresolved fragments are
+counted in the report, never dropped).
+
+**The measurement.** Because the judge module had also been rewritten in the interim
+(stricter response validation, call-cluster units), the old numbers above are not
+comparable to any new run. So the re-run is an A/B under today's code with the prompt as
+the only variable: all three pairings, pointer-only vs rule-text, 270 units each,
+$0.080 total.
+
+| | pointer-only | rule-text |
+|---|---:|---:|
+| decisive opinions | 249 | 230 |
+| ground_truth_correct | 122 (49.0%) | 135 (58.7%) |
+| defensible_disagreement | 95 (38.2%) | 77 (33.5%) |
+| **possible ground-truth error** | **32 (12.9%)** | **18 (7.8%)** |
+| invalid responses (byte-exact evidence gate) | 21 | 40 |
+| distinct flagged (item, dimension) | 17 | 8 |
+| rule parts resolved / unresolved | — | 524 / 0 |
+
+95 of 270 rows changed verdict. The largest flag-affecting move is
+`ground_truth_error -> ground_truth_correct` (14 rows).
+
+### The above was over-claimed. A four-reviewer adversarial pass found four defects in it (2026-08-09)
+
+Every tabulated number survives; the **inferences drawn from them do not**. Recorded
+here in full rather than quietly amended, because "I fixed the judge and measured that it
+worked" is exactly the kind of self-assessment this file exists to distrust.
+
+**1. The n is inflated 2.5x, and the effect does not clear this repo's own alpha.** The
+270 rows per mode are **107 distinct judgment units**, each re-judged in 2 or 3 pairings
+(56 units x3, 51 x2). Treating replicates as independent is the error `cli.py:25-31`
+already refuses for the aggregate metrics table. Collapsed to one verdict per distinct
+unit by majority: **15 flags -> 7**, discordant `d=12`, exact two-sided **p = 0.0386**.
+Against this project's own `alpha = 1/64 = 0.0156`, and its own band rule (`band(12) =
+±10`, observed `net = -8`), the prompt A/B reads **INDISTINGUISHABLE**. The earlier
+`p = 0.0094` was computed on the inflated row count and is withdrawn.
+
+**2. The run contains an accidental placebo arm that undercuts "prompt was the only
+variable."** 8 of 270 rows received a **byte-identical request in both modes** (equal
+`request_sha256`): their labels have no `rule_<dim>:<label>` key, so `bool([])` at
+`judge.py`'s `with_text` falls back to the pointer-only prompt. **4 of those 8 flipped
+verdict anyway**, at `temperature=0, seed=0`, same provider. A ~50% flip rate on
+identical input means an unknown share of the 32 -> 18 delta is resampling noise rather
+than the prompt, and it is the first measurement this project has of judge
+self-inconsistency -- previously listed only as an unmeasured limitation.
+
+**3. "All three drop to zero flags" was false.** Counted per item across all dimensions
+and pairings: `RET-94` **4 -> 2**, `RET-19` **3 -> 2**, `RET-59` **4 -> 1**. None
+reached zero. Worse, the fix *created* flags on two items an independent re-derivation
+ruled ground-truth **correct**: `RET-98` **0 -> 3** and `RET-129` **2 -> 3**. The
+corrected queue below is therefore not a clean improvement over the old one.
+
+**4. The prompt only ever quotes the rule for the ground-truth label, never the
+competing one.** `_rule_entries_for` looks up `rule_<dimension>:<label>` in the *item's
+own* `rules` dict, which is authored per ground truth, so a label the model proposed but
+the pack does not assert has no entry and gets no text. The judge is shown why the
+reference label might be right and nothing about why the alternative is wrong -- a
+structural asymmetry that plausibly explains defect 3. Related: `#2` second-citation
+keys (97 across the packs, 22 citing lines the base citation does not cover) are never
+matched, so `RET-37` is quoted `prompt.py:4342` while the pack also cites `:4345`, the
+CRITICAL clause that would settle it.
+
+**What survived the review**, verified independently: the invalid-response confound is
+clean (of 27 rows that went decisive -> invalid, **zero** were pointer flags, against a
+12.9% base rate); the resolver's arithmetic is correct (79 distinct file:line fragments
+across all three packs, all parse, all resolve, no off-by-one, fixture lines byte-exact);
+`RULE_SOURCE_FILES` is complete; and the judge remains isolated from every verdict path.
+A separate MAJOR data-safety finding -- `rule_text.root` put the operator's absolute path
+and OS account name into the *shareable* export, which `assert_shareable_payload` does
+not reject -- was **fixed** with a regression test.
+
+**What the fix costs, stated rather than hidden**: invalid responses rose 21 -> 40.
+Longer prompts make Gemma's `cited_span` discipline worse, and the byte-exact evidence
+gate correctly refuses those responses rather than counting them.
+
+**Honest status of the fix.** Quoting the rule text is still right on the merits --
+defect 4 is an argument for quoting *more* rule text, not less, and the three hand-ruled
+false flags do fall. But **the claim that this run demonstrates the fix works is
+withdrawn**: at the correct n it is INDISTINGUISHABLE, and a placebo arm inside the run
+flips half the time on identical input. Demonstrating it needs the asymmetry in defect 4
+fixed first, then replicates per unit so judge instability can be separated from the
+prompt.
+
+**Human-review queue, with the caveat that it is now contested**: `RET-100
+[call_result]` (3/3 both modes; the `prompt.py:4396`-vs-`:4398` callback boundary, and
+one reviewer argues `:4396` puts it squarely under `save`, making it a possible real
+ground-truth error rather than merely arguable), `RET-98 [call_result]` and `RET-129
+[reason]` (both 3/3 in rule-text mode, both independently ruled ground-truth **correct**
+on re-derivation -- i.e. probably false flags created by defect 4). Nothing was changed
+in any fixture on the strength of any of this.
+
+**Consequence for Experiment 7's judge numbers**: its 38 flags were produced by
+pointer-only prompts under the same rewritten module. Given the review above, the
+honest statement is weaker than "inflated ~2x": the flag count is **unreliable in an
+unquantified direction**, since rule text both removes false flags (RET-94/19/59) and
+creates them (RET-98, RET-129) under defect 4. Re-deriving them is still worth doing --
+after defect 4 is fixed, not before. Experiment 7's raw run directories are not on this
+machine (gitignored `out/`, executed elsewhere), so that re-derivation has to happen
+where that data lives.
+
+Re-run outputs: `out/reports/judge-e6b-<pairing>-{pointer,ruletext}.{json,txt}` (+ raw
+call journals). Cost of the addendum's runs: **$0.080**.
+
+### Second addendum (2026-08-09, later): defect 4 fixed, replicates added, decision-grade re-run clean
+
+All four review defects were fixed the same day, with the arithmetic hand-computed
+first (fixture, second addendum): every label in play now gets rule text -- the item's
+own citations *including the previously-invisible `#N` keys*, else the pack-level
+citation union, else a visibly marked no-text line; the silent pointer-fallback placebo
+path is structurally impossible (`rule_texts is not None`, and a regression test proves
+zero request-sha overlap between modes); and the judge gained `--repeats` with
+strict-majority unit verdicts where a tie reports `no_majority` rather than picking.
+
+The decision-grade run: 3 pairings x 3 replicates, rule text on -- **270 units, 810
+calls, $0.148**. Gate: **zero transport errors, zero identity mismatches, zero
+silent-fallback units, all 1,395 rule parts resolved.**
+
+| Unit-majority result | count |
+|---|---:|
+| ground_truth_correct | 154 |
+| defensible_disagreement | 64 |
+| **ground_truth_error (flagged)** | **12 across pairings, 5 distinct** |
+| unclear (majority-invalid) | 39 |
+| no_majority | 1 |
+| flipped units (any disagreement across replicates) | 49 (18.1%) |
+
+The 18.1% unit flip rate independently reproduces the placebo arm's ~50%-of-8 estimate
+at proper scale, and is now measured rather than accidental. Invalid responses ran
+14.8% of records; majority aggregation absorbed them (only 1 unit lost to no_majority).
+
+**The flag queue, replicated and majority-voted** (this supersedes every earlier queue):
+
+| Flag | Pairings | Reading |
+|---|---|---|
+| `RET-100 [call_result]` | 3/3 | The known `prompt.py:4396-4397` vs `:4398` callback boundary. Survives every prompt design and replication. The strongest candidate for a real ground-truth review. |
+| `RET-129 [reason]` | 3/3, unanimous votes | Persists with full rule text quoted. The judge engages `prompt.txt:43`'s refused-or-couldn't-provide clause against the granted discount. Contested by the 2026-08-09 review's own re-derivation (Rule A) -- precisely the kind of item the queue exists for. |
+| `RET-46 [reason]` | 3/3 | **New under competing-label text**, which is the fix working as designed: the judge now sees `dissatisfied service`'s own "สาขาไม่ทำให้" example beside `down sell not success` and argues the shop refusal fits both. A genuine class-boundary question. |
+| `RET-89 [call_result]` | 2/3 | Carryover from earlier runs; weaker support. |
+| `RET-98 [call_result]` | 1/3 at 2/3 votes | Collapsed from 3/3 single-shot to marginal once the competing label's rule text arrived -- consistent with the review's ruling that it was a defect-4 artifact. |
+
+`RET-94`, `RET-19`, `RET-59` -- the three hand-ruled judge errors -- produce **zero
+majority flags** in this run.
+
+Outputs: `out/reports/judge-e6c-<pairing>.{json,txt}` + raw call journals. Suites at
+this state: 688 passed / 12 skipped standalone, 699 / 1 differential.
 
 ---
 
@@ -1442,3 +1620,142 @@ transport or identity errors. The judge does not alter model scores or select a 
 The three full arms cost $1.049524; the judge cost $0.054399; qualification reported a
 $0.111387 lower bound. Observed lower-bound total: approximately **$1.215310**. No raw
 model response, transcript, credential or private judge rationale is committed.
+
+---
+
+## Experiment 8 — error severity: what the all-or-nothing scorer cannot say (DIAGNOSTIC)
+
+**Not a model comparison.** This is a re-read of Experiment 5A's committed run
+directories through a new diagnostic, plus a judged remainder. It changes no score, joins
+no verdict, and does not touch `docs/migration-decision-2026-08-07.md`. Goal contract:
+`docs/severity-plan-2026-08-09.md`. Expectation hand-computed first:
+`tests/fixtures/judge/SEVERITY-HAND-COMPUTED.md`.
+
+### The question
+
+The scorer is all-or-nothing. Answering `promotion related` where the truth is `save cost`
+— two classes the production prompt separates with a single CRITICAL line — scores the
+same zero as answering `network`. Experiment 3 measured by hand that 39 of the incumbent's
+57 whole-item failures were *over-labelling*, a categorically milder defect, and no report
+in this repository could say so. Experiment 8 attaches a category to every wrong unit.
+
+### Design
+
+Seven of eight branches are set arithmetic and cost nothing; only `substitution` (the
+answer both dropped and asserted classes) reaches a model, which is asked one binary
+question — near or cross family — behind two byte-exact evidence gates. Dimensions:
+`call_result` and `reason`. `product` is out of scope with a stated reason. Unit grain is
+the scored **row**. **No significance test is computed**: these units are not independent.
+
+**The arms are the Experiment 5A runs, so the reasoning-regime confound applies.** Gemini
+burned 0 reasoning tokens; Qwen 27B burned 2,379,369 and Qwen 35B-A3B 2,620,339. Each
+arm's own profile stands; a cross-arm reading repeats Experiment 4's confound. The report
+prints this warning above its own table rather than leaving it in a run log.
+
+### Deterministic result (zero model calls, byte-identical across three independent runs)
+
+Denominator is that arm's own wrong units. Replicate 1 of each arm.
+
+| | Gemini 2.5 Flash | Qwen3.6 27B | Qwen3.6 35B-A3B |
+|---|---:|---:|---:|
+| **`reason` wrong units** | 65 | 38 | 49 |
+| over-labelling | **45 (69.2%)** | 18 (47.4%) | 19 (38.8%) |
+| under-labelling | 2 | 2 | 2 |
+| substitution (judged) | 4 | 7 | 10 |
+| missing row | 5 | 5 | 6 |
+| unsupported claim | 9 | 6 | 6 |
+| invalid output | 0 | 0 | **6** |
+| **`call_result` wrong units** | 16 | 15 | 24 |
+| substitution (judged) | 4 | 2 | 4 |
+| missing row | 5 | 5 | 6 |
+| unsupported claim | 7 | 8 | 8 |
+| invalid output | 0 | 0 | **6** |
+| **fabricated class (any dimension)** | **0** | **0** | **0** |
+
+**Four findings, in order of how much they change what a reader does.**
+
+1. **Over-labelling is the incumbent's dominant failure mode, and this reproduces
+   Experiment 3 independently.** 45 of 65 `reason` errors (69.2%) are the right answer plus
+   unsupported extras. Experiment 3 counted 39 of 57 by hand on the *v2* pack; this is a
+   different pack, a different code path, and no shared arithmetic. Two independent
+   derivations of the same dominant pattern.
+2. **A quarter of what the scorer calls "wrong" is not a labelling error at all.** Across
+   all three arms, 5–6 units per dimension are `missing_output` (ground truth has a product
+   row the arm never emitted) and 7–8 are `unsupported_claim / no_ground_truth_row` (the
+   arm emitted a row ground truth does not have). Both are **row-alignment** failures, and
+   the counts are near-identical across arms — so they are a property of the pack and the
+   prompt, not a discriminator between models. They are currently inside every F1 number
+   this project has reported.
+3. **Only Qwen3.6 35B-A3B produced unparseable output** — 6 units in each dimension. A
+   decoding-reliability signal the F1 table cannot express, and consistent with the
+   stability failure Experiments 5B and 7 recorded for that arm.
+4. **`fabricated_class` is zero everywhere.** Constrained decoding held on all three arms.
+   Reported as evidence, never as proof the check is unnecessary — the category exists
+   because this repository has recorded providers that do not honour `strict: true`.
+
+### `call_result` cannot produce a mis-scoping category
+
+A single-label dimension's sets never hold more than one element, so `over_labelling` and
+`under_labelling` are unreachable there by construction. `mis-scoping: 0` on that dimension
+says nothing about the arm. Recorded in the fixture before any run was interpreted.
+
+### Judged remainder: the near/cross layer does not work, and that is the result
+
+**Goal-contract criterion 5 is NOT met, and no family conclusion is drawn from these
+runs.** Criterion 5 required zero transport errors and zero identity mismatches. Eight
+runs were executed across four code revisions and the criterion was met twice, early;
+the CoreWeave endpoint serving `google/gemma-4-31b-it` then degraded and stayed degraded.
+Recorded rather than retried into a pass — the pin is a term in the result, and switching
+provider mid-experiment would be a new arm, not a repair.
+
+| run | calls | transport errors | responses that arrived | failed an evidence gate |
+|---|---:|---:|---:|---:|
+| first pairing, first attempt | 51 | 0 | 51 | 30 (58.8%) |
+| second pairing, first attempt | 66 | 0 | 66 | 42 (63.6%) |
+| first pairing, after memoisation | 48 | 0 | 48 | 29 (60.4%) |
+| second pairing, after memoisation | 60 | 19 | 41 | 31 (75.6%) |
+| first pairing, degraded | 51 | 33 | 18 | 15 (83.3%) |
+| second pairing, degraded | 64 | 38 | 26 | 15 (57.7%) |
+| first pairing, final | 51 | 48 | 3 | 3 |
+| second pairing, final | 66 | 43 | 23 | 13 (56.5%) |
+| **total** | **457** | **181** | **276** | **178 (64.5%)** |
+
+**The one thing measured cleanly, and it is the decisive one: the judge fails the
+byte-exact evidence gates on roughly two thirds of the responses that arrive.** 178 of 276
+across eight runs, four code revisions and two pairings; the per-run rate sits between
+56.5% and 75.6% wherever the sample is larger than a handful. That rate is a property of
+the responses, so it survives both the endpoint degradation and an aggregation defect
+found mid-experiment (below). The judge is asked to quote one transcript span and one line
+of the production rule text **it was handed in the same prompt**, verbatim. It paraphrases
+instead, about two times in three.
+
+**A defect found by review, mid-experiment, and what it invalidated.** The first
+aggregation counted gate-rejected responses as `unclear` votes, so units were being decided
+by responses that had demonstrated nothing. Under that defect the first pairing reported
+11 of 17 units "flipping" across identical calls at temperature 0; that figure is
+**withdrawn** — most of the apparent flipping was invalid responses alternating, not the
+judge changing its mind. `judge.summarize_judgments` had always excluded both parse errors
+and non-completed executions; the severity collapse excluded only the second. Fixed, tested,
+and the runs regenerated rather than reinterpreted.
+
+**Conclusion for the judged layer.** With two thirds of responses rejected before they can
+vote, the near/cross question as posed does not produce a measurement, and none is claimed.
+The deterministic layer above needed no model at all and is byte-identical across three
+independent runs. That asymmetry is the finding: on this task the value came from the set
+arithmetic, and the model-judged extension did not clear its own evidence bar.
+
+**Cost.** 457 calls at an observed lower bound of approximately US$0.08 across every
+attempt, including the abandoned and superseded ones. Raw journals, private reports and
+shareable exports stay in gitignored `out/`; nothing from them is committed.
+
+### What would have to change before asking this question again
+
+1. **Relax gate 2 from a quoted line to a cited line number**, and check the number against
+   the citations the prompt supplied. The evidence requirement stays — the judge still has
+   to point at a specific rule — but copying a long Thai source line verbatim stops being
+   the binding constraint. Preregister it as a change and measure the rejection rate again.
+2. **A different judge model or endpoint**, chosen and pinned before the run, not after
+   seeing a rate one dislikes.
+3. **Do neither until the ground-truth workbook arrives.** The deterministic profile is
+   already decision-relevant and cost nothing; the judged layer is second-order to
+   `RECONCILED: NO`.

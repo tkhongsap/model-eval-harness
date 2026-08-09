@@ -68,6 +68,7 @@ _PRIVATE_KEYS = frozenset(
 _PHONE_LIKE = re.compile(r"(?<!\d)(?:\+?66|0)\d{8,9}(?!\d)")
 _SHA256_HEX = re.compile(r"[0-9a-f]{64}")
 _JUDGMENT_UNIT_ID = re.compile(r"ju_[0-9a-f]{24}")
+_SEVERITY_UNIT_ID = re.compile(r"sv_[0-9a-f]{24}")
 
 
 class ArtifactError(RuntimeError):
@@ -192,8 +193,17 @@ def assert_shareable_payload(value: Any, *, path: str = "$") -> None:
             # request/response material. Its random hex can contain a Thai-phone-like
             # digit run by chance; only exempt a correctly named, exact SHA-256 value,
             # never arbitrary free text or a malformed pseudo-hash.
+            #
+            # Widened 2026-08-09 from `_sha256` alone to the `_sha` and `fingerprint`
+            # names this repository actually uses for the same kind of value. This is the
+            # existing rule applied to the same kind of value, not a relaxation: the
+            # `fullmatch` still requires exactly 64 hex characters, which no phone number
+            # can be. Measured before changing it: a bare 64-hex digest trips `_PHONE_LIKE`
+            # 2.08% of the time, and a severity or judge export carries 5-11 of them, so
+            # 10-21% of exports aborted -- with `ArtifactError` raised AFTER every call was
+            # paid for, and outside the `CliError` path, so the operator got a traceback.
             if (
-                key.endswith("_sha256")
+                (key.endswith("_sha256") or key.endswith("_sha") or key == "fingerprint")
                 and isinstance(child, str)
                 and _SHA256_HEX.fullmatch(child) is not None
             ):
@@ -202,6 +212,17 @@ def assert_shareable_payload(value: Any, *, path: str = "$") -> None:
                 key == "judgment_unit_id"
                 and isinstance(child, str)
                 and _JUDGMENT_UNIT_ID.fullmatch(child) is not None
+            ):
+                continue
+            # Same reasoning, same shape, for the severity diagnostic's unit id. Without
+            # it a truncated digest whose hex happens to contain a 9-10 digit run
+            # starting `0` or `66` is rejected as a phone number: measured at 0.625% per
+            # id, which is a ~47% chance of aborting a 100-unit export -- and the raise
+            # lands AFTER every call is paid for.
+            if (
+                key == "severity_unit_id"
+                and isinstance(child, str)
+                and _SEVERITY_UNIT_ID.fullmatch(child) is not None
             ):
                 continue
             assert_shareable_payload(child, path=child_path)

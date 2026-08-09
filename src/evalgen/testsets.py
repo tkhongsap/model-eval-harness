@@ -146,6 +146,23 @@ _CITATION = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:py|txt|ya?ml|md):\d+(
 _LABEL_SPACES: dict[str, LabelSpace] = {"retention": RETENTION, "mnp": MNP}
 
 
+def label_space_for(app: str) -> LabelSpace:
+    """The label space one app is scored against, or a refusal.
+
+    Public because a consumer that hard-codes `RETENTION` scores MNP's legal 12th reason
+    class as an out-of-vocabulary answer, and silently: nothing downstream compares the
+    space it used against the pack it read. Refusing on an unknown app is the point --
+    a diagnostic that guesses a vocabulary reports a decoding failure that never happened.
+    """
+    space = _LABEL_SPACES.get(str(app).strip().lower())
+    if space is None:
+        raise TestsetError(
+            f"unknown app {app!r}: no label space to score against. Known apps: "
+            f"{', '.join(sorted(_LABEL_SPACES))}."
+        )
+    return space
+
+
 @dataclass(frozen=True)
 class TestItem:
     """One transcript and every claim made about it.
