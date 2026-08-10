@@ -37,6 +37,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   The severity profile now prints one when two arms differ by an order of magnitude in
   reasoning tokens, including the zero-versus-anything case, which is production's actual
   `thinkingBudget: 0` regime against one that reasons.
+- **Experiments 10-14: Gemma 4 12B evaluated end to end.** Head-to-head against Gemini at
+  matched decoding, three prompt iterations on a locked tune slice, and a holdout
+  evaluation. On held-out items Gemma is **indistinguishable from Gemini on all three
+  dimensions**; against the open field it has the best `reason` F1 and roughly half the
+  instability of either Qwen arm, at a fraction of the size. It is 5-10x slower and its
+  endpoint reports no cost. The prompt edit **generalised** on its target (`reason` AHEAD,
+  +14 of 18) **and cost the other two dimensions**. `docs/gemma-4-12b-assessment.md`.
+- **`scripts/gpu_endpoint_probe.py`.** Answers "is it there" and "will it honour the real
+  request" separately, building the second through the harness's own client, prompt and
+  schema. Found that this endpoint honours json_schema `strict:true` but **rejects
+  `top_p = 0`**, which both committed plans pin. The key never leaves the process.
 - **`src/evalgen/stability.py`: how much of an arm's instability the scorer can see.**
   The enterprise stability gate compares the exact structured response, so it counts any
   byte that moves -- including bytes in `recommendation`, `keyword` and
