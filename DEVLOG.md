@@ -2,6 +2,20 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-11, Experiments 10-14): Gemma 4 12B is indistinguishable from Gemini on
+held-out items, and is the best open model this project has tested.** On the 89 locked
+holdout items: `reason` INDISTINGUISHABLE (+0 of 24 discordant), `call_result` and
+`product` UNDERPOWERED. Against the open field it posts the best `reason` F1 (0.815 vs
+0.774 and 0.701) and is far steadier -- 79 of 138 calls vary against 129 and 130, with
+only 8 touching a scored label against 31 and 44 -- at a fifth to a third the parameter
+count. It is **5-10x slower** (p50 9.62s vs 1.99s) on one small shared box, and its
+endpoint reports no cost, so there is no cost case yet. Prompt tuning moved the target
+dimension and **generalised** (`reason` AHEAD, +14 of 18 against a +/-10 band, the second
+AHEAD ever recorded here) **and cost the other two** (both BEHIND). The portable finding,
+now seen twice: **a prompt edit works by changing what the model is SHOWN; telling it what
+to do moves nothing.** Full assessment: `docs/gemma-4-12b-assessment.md`; runs in
+`EXPERIMENTS.md` Experiments 10-14. Still `RECONCILED: NO`, still synthetic.
+
 **Latest (2026-08-09, Experiment 9): prompt tuning for Qwen, aimed at the gate it actually
 fails.** Qwen3.6 27B is not behind Gemini on any quality dimension (UNDERPOWERED,
 INDISTINGUISHABLE, UNDERPOWERED); it fails on **stability alone**, -129/129. A new
@@ -168,6 +182,24 @@ kept in place and corrected, because the wrong inference is the useful part:
    after independent sorts, so a single missing row silently misaligns everything after it.
 
 ## 🐛 Known Bugs
+
+**Intermittent, Windows-only, three occurrences and never reproduced (2026-08-09/11).**
+Three different tests have each failed exactly once in a full local run and then passed
+every subsequent time -- 18, 11 and 4 consecutive clean runs respectively:
+
+- (unnamed; the summary line was captured but not the test id)
+- `test_portable_run_bundles_compare_after_the_original_directories_move`
+- `test_private_resume_uses_snapshots_and_ignores_the_unused_default_output`
+
+All three live in `tests/test_cli.py` and all three create, copy, rename or resume a run
+directory. CI (ubuntu-latest) has never reproduced any of them, and neither has an
+isolated run. The signature points at a Windows file-handle or antivirus race in the
+test's own directory manipulation rather than at harness code, but that is a hypothesis
+and not a diagnosis: none of the three was caught with a traceback. Recorded so a single
+red run on a developer machine is recognised rather than investigated from scratch, and so
+that a FOURTH occurrence -- especially a reproducible one, or one in CI -- is treated as
+new information.
+
 
 **Four remaining coverage/configuration gaps, refreshed 2026-08-08.** These do not
 invalidate Experiment 7's recorded output, but they belong in the next harness-hardening
