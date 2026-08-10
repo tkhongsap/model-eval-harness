@@ -1976,3 +1976,78 @@ tuned on this pack's tune slice.
 
 **Cost of the search:** 441 Gemma calls, no reported cost. `call_result` drifted 13 -> 15
 -> 16 across the iterations, which the holdout is there to test.
+
+## Experiment 14 — the holdout, and the only uncontaminated numbers here
+
+89 locked holdout items x 3 replicates x 3 arms = 801 calls. The holdout was drawn and
+committed before any prompt was written and was untouched until this run.
+
+### Gemma 4 12B against Gemini, same prompt, on items neither was tuned on
+
+| dimension | paired verdict (Gemma vs Gemini) | discordant |
+|---|---|---|
+| call_result | UNDERPOWERED | -2 of 4 |
+| **reason** | **INDISTINGUISHABLE** | **+0 of 24** |
+| product | UNDERPOWERED | -2 of 2 |
+
+**On the holdout, Gemma 4 12B is statistically indistinguishable from Gemini 2.5 Flash on
+all three scored dimensions, at this repository's own alpha of 1/64.** The `reason`
+dimension -- the hard one -- came out **dead level, +0 of 24 discordant pairs**.
+
+Experiment 10's BEHIND verdicts on `call_result` and `product` do **not** reproduce here.
+Both were at the minimum resolvable discordance on the full pack; on the 89-item holdout
+the same comparison is UNDERPOWERED. The honest reading is that the full-pack BEHIND was
+real but small, and that this pack cannot resolve a gap that size on a subset. It is not
+evidence that Gemma caught up.
+
+### Did the prompt edit generalise? Yes on its target, and it cost the other two
+
+`v9_16_e1` against `v9_16_base`, same model, same items, same decoding:
+
+| dimension | verdict | discordant | band |
+|---|---|---|---|
+| **reason** | **AHEAD** | **+14 of 18** | +/-10 |
+| call_result | **BEHIND** | -7 of 7 | +/-7 |
+| product | **BEHIND** | -8 of 8 | +/-8 |
+
+**The tuning generalised.** `reason` clears the band on data the edit was never selected
+against -- a genuine AHEAD at alpha = 1/64, which this project has recorded only once
+before. And it is **not free**: `call_result` and `product` both go BEHIND.
+
+That trade is the entire value of having pre-registered guard endpoints. A report of the
+target dimension alone would have called this a clean 37.5% error reduction that
+replicated. It did replicate. It also broke two other dimensions.
+
+### Operations, measured on the same runs
+
+| arm | calls | p50 | p95 | max | raw-unstable | scored-unstable | cost |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Gemini 2.5 Flash (full pack) | 414 | **1.99 s** | **3.76 s** | 4.77 s | **0/138** | **0** | $0.5173 |
+| Gemma 4 12B (full pack) | 414 | 9.62 s | 12.95 s | 22.55 s | 79/138 | 8 | not reported |
+| Gemini (holdout) | 267 | **2.12 s** | **3.92 s** | 5.22 s | **0/89** | **0** | $0.3030 |
+| Gemma base (holdout) | 267 | 19.56 s | 25.73 s | 33.95 s | 50/89 | 4 | not reported |
+| Gemma + e1 (holdout) | 267 | 19.41 s | 25.61 s | 29.76 s | 63/89 | 4 | not reported |
+
+**Latency is Gemma's clearest loss and it is not close**: 5-10x Gemini's p50 on the same
+items, and it degraded as the two Gemma arms ran concurrently (9.6 s single-arm, 19.6 s
+with two in flight) -- so this is a property of one small shared box, not of the model.
+Cost is not reported by the endpoint at all, so no cost comparison is possible; the zeroes
+above are absence of data, not free inference.
+
+### What Experiments 10-14 establish, and what they do not
+
+1. **Gemma 4 12B is a serious arm on quality.** Indistinguishable from Gemini on all three
+   dimensions on held-out items, from a model roughly a fifth the size of the Qwen
+   candidates this project rejected.
+2. **It is far steadier than either Qwen** -- 79 of 138 calls vary against 138 of 138, and
+   only 8 of those touch a scored label against 31.
+3. **Prompt tuning moved the target dimension and generalised** -- AHEAD, +14 of 18, on a
+   locked holdout -- **and cost two other dimensions.** Anyone quoting the `reason` gain
+   must quote the other two.
+4. **A prompt edit works by changing what the model is shown, not what it is told.** Two
+   experiments, two models, two dimensions, same answer.
+
+**Not established:** anything about production. Synthetic Thai, authored in this project,
+every item carrying a written description of the wrong answer. The holdout narrows the
+contamination; the same author wrote both slices, so it does not remove it. Latency was
+measured on one shared box under self-inflicted contention. And `RECONCILED: NO`.
