@@ -598,7 +598,133 @@ V9_16_Q2 = Variant(
 )
 
 
-VARIANTS: dict[str, Variant] = {v.id: v for v in (V9_16_E1, V9_16_Q1, V9_16_Q2)}
+# ------------------------------------------------ Experiment 11-13: Gemma 4 12B tuning
+#
+# Target chosen from measurement, not intuition. Experiment 10 profiled Gemma 4 12B's
+# errors with `evalgen.severity`: 47 of its 70 wrong `reason` units (67.1%) are
+# OVER-LABELLING -- the right answer plus unsupported extras -- and its weighted precision
+# on that dimension is 0.753 against a recall of 0.928. Precision is the weak side, and
+# over-labelling is what makes it the weak side.
+#
+# Each variant below is a step in one directed search, and each `why` cites the number the
+# edit was aimed at. Every edit is confined to how the task is FRAMED. None adds, removes
+# or rewords a class definition, a threshold or a rule -- the constraint carried over from
+# Experiment 9, because an edit that teaches the pack's answers measures the author, not
+# the model.
+
+_SINGLE_REASON_ANCHOR = (
+    "4. For phrase, Do not invent or fabricate any words. The output must strictly "
+    "adhere to the transcript content and contain no words that are not explicitly "
+    "present in the transcript."
+)
+
+_SINGLE_REASON_RULE = (
+    _SINGLE_REASON_ANCHOR + "\n"
+    "5. Fill `secondary` and `third` ONLY when the client states a further, DISTINCT "
+    "reason in their own words. Two ways of describing one complaint are one reason, "
+    "not two. If you are weighing whether a second reason is present, it is not: leave "
+    "it empty. An unsupported extra reason is a worse error than a missing one."
+)
+
+V9_16_G1 = Variant(
+    id="v9_16_g1",
+    version="9.16-g1-harness.1",
+    target_models=("gemma-4-12b",),
+    phase="phase_two_tuned",
+    edits=(
+        # Carried verbatim from v9_16_e1, which Experiment 11 measured cutting Gemma's
+        # reason errors from 32 to 20 on the tune slice.
+        Edit(
+            before=(
+                '"secondary": {\n'
+                f'                "reason": "{EXAMPLE_REASON_VALUES["secondary"]}",'
+            ),
+            after='"secondary": {\n                "reason": "",',
+            why=(
+                "Carried from v9_16_e1. Experiment 11 measured it cutting Gemma 4 12B's "
+                "reason errors 32 -> 20 on the tune slice, over-labelling 20 -> 13: the "
+                "model copies the worked example's filled optional slots."
+            ),
+        ),
+        Edit(
+            before=(
+                '"third": {\n'
+                f'                "reason": "{EXAMPLE_REASON_VALUES["third"]}",'
+            ),
+            after='"third": {\n                "reason": "",',
+            why="Same edit, same measurement, applied to the second optional slot.",
+        ),
+        Edit(
+            before=_SINGLE_REASON_ANCHOR,
+            after=_SINGLE_REASON_RULE,
+            why=(
+                "v9_16_e1 removed the example-copying half of the problem and left 13 "
+                "over-labelled units on the tune slice. Those remaining ones are the "
+                "model INFERRING a second reason rather than copying one, so this states "
+                "the decision rule the pack's ground truth already follows -- a distinct, "
+                "client-stated reason -- and names the asymmetry, since an unsupported "
+                "extra costs precision while a missing one costs recall, and precision "
+                "is the weak side at 0.753 against 0.928."
+            ),
+        ),
+    ),
+    notes=(
+        "v9_16_e1's two example edits plus an explicit single-reason default. Targets "
+        "the 67.1% of Gemma 4 12B's reason errors that Experiment 10 measured as "
+        "over-labelling. Touches no class definition, threshold or rule."
+    ),
+)
+
+V9_16_G2 = Variant(
+    id="v9_16_g2",
+    version="9.16-g2-harness.1",
+    target_models=("gemma-4-12b",),
+    phase="phase_two_tuned",
+    edits=(
+        Edit(
+            before=(
+                '"secondary": {\n'
+                f'                "reason": "{EXAMPLE_REASON_VALUES["secondary"]}",'
+            ),
+            after='"secondary": {\n                "reason": "",',
+            why="Carried from v9_16_g1, which Experiment 12 measured as the better base.",
+        ),
+        Edit(
+            before=(
+                '"third": {\n'
+                f'                "reason": "{EXAMPLE_REASON_VALUES["third"]}",'
+            ),
+            after='"third": {\n                "reason": "",',
+            why="Carried from v9_16_g1.",
+        ),
+        Edit(
+            before=_SINGLE_REASON_ANCHOR,
+            after=(
+                _SINGLE_REASON_RULE + "\n"
+                "6. Before returning, re-read every reason you filled and delete any you "
+                "cannot support by quoting the client's own words for it. Deleting a "
+                "reason you cannot quote is always correct."
+            ),
+            why=(
+                "g1 stated the rule; this adds a verification step that makes the model "
+                "apply it to its own draft. The pack's ground truth requires a "
+                "client-side span for every label (`testsets._validate_evidence_spans`), "
+                "so a reason with no quotable client utterance is exactly the "
+                "over-labelling that Experiment 10 measured at 47 of 70 reason errors. "
+                "Tests whether an explicit self-check beats a stated rule -- Experiment 9 "
+                "found instruction alone did not move a free-text field, and this asks "
+                "the same question for a scored one."
+            ),
+        ),
+    ),
+    notes=(
+        "v9_16_g1 plus a final self-check instructing the model to delete any reason it "
+        "cannot quote the client saying. Iteration 3."
+    ),
+)
+
+
+VARIANTS: dict[str, Variant] = {v.id: v for v in (V9_16_E1, V9_16_Q1, V9_16_Q2, V9_16_G1, V9_16_G2)}
 
 # Built once at import: the assets do not change under a running process, and a prompt
 # whose sha depends on when it was called is not a prompt anyone can cite in a report.

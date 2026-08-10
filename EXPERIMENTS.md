@@ -1895,3 +1895,84 @@ so that adding it cannot later be read as choosing a metric that flattered a res
    requires `recommendation`, and the stability gate compares the exact structured
    response, so the gate is substantially measuring a field nothing scores. That is a
    schema-and-gate decision for the app owners, not something a prompt can repair.
+
+---
+
+## Experiments 10-14 — Gemini 2.5 Flash vs Gemma 4 12B, and whether a prompt moves the score
+
+Plan and goal contract: `docs/experiments-10-14-plan.md`. Runs 2026-08-10/11.
+
+### The decoding change that governs every number below
+
+The Gemma endpoint **rejects `top_p = 0`** (`top_p must be in (0, 1]`, LiteLLM in front of
+vLLM), and both committed plans pin it. So **every arm here runs at `top_p = 1.0`,
+including Gemini, which was re-run rather than reused.** These figures are therefore
+**not comparable to Experiments 5 or 7**; a difference against those confounds the model
+with the decoding. Gemini's numbers below are a fresh reference measured under this
+regime.
+
+Endpoint qualified first with `scripts/gpu_endpoint_probe.py`: `response_format`
+json_schema `strict:true` is honoured, usage is reported, cost is not, and the 10x
+long-context items fit (6,251 of 8,192 tokens).
+
+## Experiment 10 — head-to-head baseline, identical prompt, identical decoding
+
+138 items x 3 replicates x 2 arms = 828 calls. `v9_16_base` on both.
+
+| dimension | Gemini 2.5 Flash | Gemma 4 12B | paired verdict (Gemma vs Gemini) |
+|---|---:|---:|---|
+| call_result w-F1 | **0.955** | 0.928 | **BEHIND** (-9 of 9 discordant, band +/-9) |
+| reason w-F1 | **0.823** | 0.815 | **INDISTINGUISHABLE** (-4 of 36, band +/-14) |
+| product w-F1 | **0.960** | 0.946 | **BEHIND** (-6 of 6, band +/-6) |
+| parse-valid | 414/414 | 414/414 | |
+| N_flip over 3 replicates | **0** | 10 | |
+| raw-unstable calls | **0/138** | 79/138 | |
+| of which the scorer can see | 0 | **8** | |
+| cost (414 calls) | $0.517276 | not reported | |
+
+**Gemma 4 12B loses, narrowly, and not everywhere.** It is BEHIND on `call_result` and
+`product` -- both at the minimum discordance the band can resolve, so these are the
+weakest possible BEHIND verdicts rather than large gaps -- and **INDISTINGUISHABLE on
+`reason`**, the hardest dimension and the one every previous experiment turned on.
+
+**It is dramatically more stable than either Qwen.** 79 of 138 calls vary at all, against
+138 of 138 for both Qwen arms, and only **8** of those touch a label the scorer reads,
+against 31 for Qwen 27B. On a 12B model that is the surprise of this experiment.
+
+### Where its errors are, measured rather than guessed
+
+`evalgen.severity` on the same run: of Gemma's 70 wrong `reason` units, **47 (67.1%) are
+over-labelling** -- the right answer plus unsupported extras. Weighted precision 0.753
+against recall 0.928. Precision is the weak side and over-labelling is why. That single
+number chose every prompt edit below.
+
+## Experiments 11-13 — three prompt iterations, on the 49-item tune slice only
+
+Tune slice from the committed `retention_v3.split.json`, drawn before any of this. The
+holdout was untouched until Experiment 14. Replicate 1, ground truth scoped to the slice.
+
+| # | prompt | what it changes | reason errors | of which over-labelling | call_result errors |
+|---|---|---|---:|---:|---:|
+| control | `v9_16_base` | -- | 32 | 20 | 13 |
+| **E11** | `v9_16_e1` | blanks the worked example's `secondary`/`third` reason values | **20** | **13** | 15 |
+| E12 | `v9_16_g1` | e1 + an explicit "only a distinct, client-stated second reason" rule | 20 | 14 | 16 |
+| E13 | `v9_16_g2` | g1 + "delete any reason you cannot quote the client saying" | 20 | 13 | 16 |
+
+**The entire gain came from iteration 1, and iterations 2 and 3 added nothing.** Removing
+the two filled reason values from the worked example cut reason errors by 37.5%. Then two
+successive attempts to state the rule in words -- first as a decision rule, then as a
+self-check the model applies to its own draft -- moved the count by zero.
+
+**This is Experiment 9's finding again, on a different model, a different dimension and a
+different failure mode.** There, a free-text field obeyed a length instruction exactly and
+its instability did not move; only removing the degree of freedom worked. Here, a scored
+label obeys nothing it is told about restraint; only removing the example it was copying
+worked. Two independent experiments, one lesson: **change what the model is SHOWN, not
+what it is TOLD.**
+
+`v9_16_e1` therefore goes to the holdout. It is also the least contaminated candidate
+available: it was authored in an earlier phase against v1/v2 measurements and was never
+tuned on this pack's tune slice.
+
+**Cost of the search:** 441 Gemma calls, no reported cost. `call_result` drifted 13 -> 15
+-> 16 across the iterations, which the holdout is there to test.

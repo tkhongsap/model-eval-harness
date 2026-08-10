@@ -42,6 +42,44 @@
       "caveat": "Canned advice is a product decision for the app owners, not a harness one. This id exists to make an experiment interpretable, not as a deployment proposal.",
       "development_slice": "tests/fixtures/testsets/retention_v3.split.json -> tune (49 items)",
       "locked_holdout": "tests/fixtures/testsets/retention_v3.split.json -> holdout (89 items)"
+    },
+    {
+      "id": "v9_16_g1",
+      "app": "retention",
+      "version": "9.16-g1-harness.1",
+      "parent_id": "v9_16_base",
+      "phase": "phase_two_tuned",
+      "target_models": [
+        "gemma-4-12b"
+      ],
+      "sha256": "79a5d2ce47edb76040dd9e1b52b08b8622a3008e9adbf8bd8a2e9ffa573b05c7",
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "none",
+      "targets": "reason precision -- over-labelling was 67.1% of this model's reason errors",
+      "changes": "Experiment 12, iteration 2. v9_16_e1's example edits plus an explicit single-reason decision rule. Measured no further gain over e1.",
+      "change_policy": "The edit list in prompts.py is the change history; it must remain an exact transformation of the parent. Any further change is a new id.",
+      "development_slice": "tests/fixtures/testsets/retention_v3.split.json -> tune (49 items)",
+      "locked_holdout": "tests/fixtures/testsets/retention_v3.split.json -> holdout (89 items)"
+    },
+    {
+      "id": "v9_16_g2",
+      "app": "retention",
+      "version": "9.16-g2-harness.1",
+      "parent_id": "v9_16_base",
+      "phase": "phase_two_tuned",
+      "target_models": [
+        "gemma-4-12b"
+      ],
+      "sha256": "ecb3bf4159261a9ea7594fa0e9725e399901a170496f0aeb92a14c2672483ec4",
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "reasoning_effort": "none",
+      "targets": "reason precision -- over-labelling was 67.1% of this model's reason errors",
+      "changes": "Experiment 13, iteration 3. g1 plus a self-check instructing the model to delete any reason it cannot quote. Measured no further gain over e1.",
+      "change_policy": "The edit list in prompts.py is the change history; it must remain an exact transformation of the parent. Any further change is a new id.",
+      "development_slice": "tests/fixtures/testsets/retention_v3.split.json -> tune (49 items)",
+      "locked_holdout": "tests/fixtures/testsets/retention_v3.split.json -> holdout (89 items)"
     }
   ]
 }
