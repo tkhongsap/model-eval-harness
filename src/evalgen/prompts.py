@@ -54,7 +54,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 if TYPE_CHECKING:  # pragma: no cover - a type name, never a runtime dependency
     from evalgen.testsets import TestItem
@@ -69,6 +69,8 @@ __all__ = [
     "Prompt",
     "PromptError",
     "PROMPT_MANIFEST_PATH",
+    "PHASE_TWO_MANIFEST_PATH",
+    "PROMPT_CATALOGUES",
     "Variant",
     "WRAPPER_PATH",
     "build_base",
@@ -85,6 +87,15 @@ __all__ = [
 # and this module becomes unimportable. Keep the asset directory a plain data folder.
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 PROMPT_MANIFEST_PATH = PROMPTS_DIR / "manifest.json"
+# Phase two lives in its own catalogue, and that is not tidiness. `manifest.json`'s
+# sha256 is pinned as an asset inside `experiments/retention-e5.plan.json` and
+# `retention-e7.plan.json`, both of which describe EXECUTED experiments. Adding a
+# phase-two prompt to it changes that hash, so `experiment-check` would fail on two
+# committed plans -- and "fixing" that by editing the pinned shas would make the plans
+# describe something other than what was run. The phase-one library stays frozen; new
+# prompts are catalogued beside it.
+PHASE_TWO_MANIFEST_PATH = PROMPTS_DIR / "manifest.phase_two.json"
+PROMPT_CATALOGUES: tuple[Path, ...] = (PROMPT_MANIFEST_PATH, PHASE_TWO_MANIFEST_PATH)
 WRAPPER_PATH = PROMPTS_DIR / "retention_wrapper.txt"
 BODY_PATH = PROMPTS_DIR / "retention_v9_16_body.txt"
 
@@ -279,6 +290,14 @@ class Variant:
     id: str
     edits: tuple[Edit, ...]
     notes: str
+    # Phase-two fields. `Prompt` and `validate_manifest` have always carried all three;
+    # `build_variant` used to hardcode them, which made the prompt manifest's own
+    # `phase_two_protocol` requirement -- "create a new prompt id with parent_id and
+    # target_models" -- literally inexpressible. Defaults reproduce the previous
+    # hardcoded behaviour exactly, so `v9_16_e1` is unchanged byte for byte.
+    version: str = ""
+    target_models: tuple[str, ...] = ("*",)
+    phase: str = "historical_ablation"
 
 
 def build_variant(variant: Variant, base: Prompt) -> Prompt:
@@ -288,6 +307,11 @@ def build_variant(variant: Variant, base: Prompt) -> Prompt:
     twice means the edit landed somewhere its author did not look at, and an anchor that
     matched zero times means the ablation silently did not happen -- which produces two
     arms on the same prompt, a comparison of nothing, and a number anyway.
+
+    `version`, `target_models` and `phase` come from the variant rather than from a
+    literal here, so a model-targeted phase-two prompt can be declared. `validate_manifest`
+    already compares all three against `prompts/manifest.json`, so a variant whose
+    declaration drifts from the catalogue fails a test rather than shipping.
     """
     text = base.system_text
     for edit in variant.edits:
@@ -310,9 +334,10 @@ def build_variant(variant: Variant, base: Prompt) -> Prompt:
         system_text=text,
         sha=_sha(text),
         notes=variant.notes,
-        version="9.16-e1-harness.1" if variant.id == "v9_16_e1" else "variant",
+        version=variant.version or "variant",
         parent_id=base.id,
-        phase="historical_ablation",
+        target_models=variant.target_models,
+        phase=variant.phase,
     )
 
 
@@ -383,9 +408,197 @@ V9_16_E1 = Variant(
         "base. Tests the hypothesis that both models copy the example's reason labels "
         "into slots the transcript does not support."
     ),
+    # Declared here rather than hardcoded in `build_variant`, which is where it used to
+    # live. The catalogue entry in prompts/manifest.json carries the same string and
+    # `validate_manifest` compares them, so the two cannot drift apart silently.
+    version="9.16-e1-harness.1",
 )
 
-VARIANTS: dict[str, Variant] = {v.id: v for v in (V9_16_E1,)}
+
+
+# ---------------------------------------------------------------- phase two: v9_16_q1
+#
+# The first model-specific prompt this project has authorised (EXPERIMENTS.md,
+# Experiment 9). It targets STABILITY, not score: Experiment 7 put Qwen3.6 27B at
+# INDISTINGUISHABLE or UNDERPOWERED against Gemini on all three quality dimensions and
+# BEHIND (-129/129) on stability alone, and the 2026-08-09 decomposition
+# (`evalgen.stability`) measured that 107 of its 138 unstable calls -- 77.5% -- never
+# change a label the scorer reads.
+#
+# So every edit below constrains an UNSCORED free-text field: `recommendation` (moves on
+# 100% of those calls), the quoted `keyword` phrase (91%), and `call_event_detection`
+# (23%). No edit touches a rule, a class definition, a vocabulary or a worked-example
+# label -- those are the scored content, and editing them is where tuning becomes
+# teaching to the test. The pre-registered guard endpoint is that scored quality must not
+# come out BEHIND; a prompt that bought stability by flattening the answers would satisfy
+# the primary endpoint and fail that one.
+
+V9_16_Q1 = Variant(
+    id="v9_16_q1",
+    version="9.16-q1-harness.1",
+    target_models=("qwen/qwen3.6-27b",),
+    phase="phase_two_tuned",
+    edits=(
+        Edit(
+            before="5. recommendation: Suggestion how to keep client loyalty to brand",
+            after=(
+                "5. recommendation: Suggestion how to keep client loyalty to brand\n"
+                "    - Write exactly one sentence in Thai, at most 20 words.\n"
+                "    - State only the single most direct action implied by the reason "
+                "you selected in field 2. Do not add alternatives, apologies, "
+                "pleasantries, or restated context.\n"
+                "    - The same transcript must produce the same sentence every time: "
+                "prefer the plainest available wording over varying it."
+            ),
+            why=(
+                "`recommendation` is free text no metric reads, and it differed across "
+                "replicates on 107 of 107 cosmetically-unstable Qwen 27B calls -- every "
+                "single one. It is the largest single contributor to a stability gate "
+                "defined as exact structured response agreement. Constraining length, "
+                "content and wording choice is the most direct available intervention, "
+                "and it cannot move a scored label because no scored field reads it."
+            ),
+        ),
+        Edit(
+            before=(
+                "4. call_event_detection: Determine whay cause client making phone call"
+            ),
+            after=(
+                "4. call_event_detection: Determine whay cause client making phone call\n"
+                "    - Choose exactly one value. Where more than one could apply, choose "
+                "the one listed FIRST below, and choose the same one every time."
+            ),
+            why=(
+                "`call_event_detection` differed across replicates on 25 of the 107 "
+                "cosmetically-unstable calls. It is a single-choice enum no metric "
+                "reads, so the instability is the model re-picking between defensible "
+                "options; a stated tie-break removes the degree of freedom without "
+                "changing which options are legal. Production's own typo `whay` is kept "
+                "verbatim -- this port fixes what breaks the schema, not what reads "
+                "badly."
+            ),
+        ),
+        Edit(
+            before=(
+                "4. For phrase, Do not invent or fabricate any words. The output must "
+                "strictly adhere to the transcript content and contain no words that are "
+                "not explicitly present in the transcript."
+            ),
+            after=(
+                "4. For phrase, Do not invent or fabricate any words. The output must "
+                "strictly adhere to the transcript content and contain no words that are "
+                "not explicitly present in the transcript.\n"
+                "    - Quote one contiguous client utterance, copied character for "
+                "character. Do not join fragments, trim, or paraphrase. Where the same "
+                "reason is supported more than once, quote the same occurrence every "
+                "time rather than choosing a different one."
+            ),
+            why=(
+                "The quoted `keyword` phrase differed across replicates on 97 of the 107 "
+                "cosmetically-unstable calls -- the product block was byte-identical "
+                "once `keyword` was removed. It is an unscored diagnostic field. This "
+                "edit deliberately does NOT tell the model which occurrence to pick "
+                "(earliest, longest); naming a selection rule could change which reason "
+                "the model settles on, and this variant is not permitted to move a "
+                "scored label. It asks only for a contiguous, unmodified, repeatable "
+                "quotation."
+            ),
+        ),
+    ),
+    notes=(
+        "v9_16_base with three additional constraints on UNSCORED free-text fields: "
+        "`recommendation`, `call_event_detection` and the quoted phrase behind "
+        "`keyword`. No rule, class definition, vocabulary, threshold or worked-example "
+        "label is touched; every scored instruction is byte-identical to the base. "
+        "Targets the stability gate Qwen3.6 27B fails, not the quality gates it already "
+        "passes. Authorised in EXPERIMENTS.md, Experiment 9."
+    ),
+)
+
+
+# `v9_16_q1` iteration 2. q1's constraint WAS obeyed -- `recommendation` fell from a mean
+# of 217 characters to 61 -- and raw instability did not move at all (44 of 49 unstable on
+# both arms). Shortening free text only makes the variation shorter. The schema requires
+# the field, so it cannot be dropped; the one remaining lever is to remove the degrees of
+# freedom rather than narrow them, which this variant tests by making `recommendation` a
+# deterministic function of a value the model has already chosen.
+#
+# This is an EXPERIMENT, not a deployment proposal: canned advice is a product decision
+# for the app owners, not a harness one. It is registered because a result is only
+# interpretable if the exact text that produced it is pinned and citable.
+V9_16_Q2 = Variant(
+    id="v9_16_q2",
+    version="9.16-q2-harness.1",
+    target_models=("qwen/qwen3.6-27b",),
+    phase="phase_two_tuned",
+    edits=(
+        Edit(
+            before="5. recommendation: Suggestion how to keep client loyalty to brand",
+            after=(
+                "5. recommendation: Suggestion how to keep client loyalty to brand\n"
+                "    - Output exactly this and nothing else, copying the value you chose "
+                "for call_event_detection in field 4 verbatim in place of the "
+                "placeholder:\n"
+                "      ติดตามลูกค้าตามประเภทเหตุการณ์: <call_event_detection>\n"
+                "    - Do not add, reorder, translate or reword anything."
+            ),
+            why=(
+                "q1 asked for short, plain, repeatable free text. The model complied on "
+                "length (217 -> 61 chars mean) and still produced different content "
+                "across replicates on 35 of 39 cosmetically-unstable calls, so raw "
+                "instability was unchanged at 44 of 49. This removes the free choice "
+                "instead of narrowing it: the field becomes a function of "
+                "call_event_detection, which the model has already selected. It tests "
+                "whether ANY prompt can make this field deterministic, which q1 could "
+                "not settle."
+            ),
+        ),
+        Edit(
+            before=(
+                "4. call_event_detection: Determine whay cause client making phone call"
+            ),
+            after=(
+                "4. call_event_detection: Determine whay cause client making phone call\n"
+                "    - Choose exactly one value. Where more than one could apply, choose "
+                "the one listed FIRST below, and choose the same one every time."
+            ),
+            why=(
+                "Carried unchanged from q1. With `recommendation` now derived from this "
+                "field, its stability determines the stability of both, so the tie-break "
+                "matters more here than it did in q1."
+            ),
+        ),
+        Edit(
+            before=(
+                "4. For phrase, Do not invent or fabricate any words. The output must "
+                "strictly adhere to the transcript content and contain no words that are "
+                "not explicitly present in the transcript."
+            ),
+            after=(
+                "4. For phrase, Do not invent or fabricate any words. The output must "
+                "strictly adhere to the transcript content and contain no words that are "
+                "not explicitly present in the transcript.\n"
+                "    - Quote one contiguous client utterance, copied character for "
+                "character. Do not join fragments, trim, or paraphrase. Where the same "
+                "reason is supported more than once, quote the same occurrence every "
+                "time rather than choosing a different one."
+            ),
+            why=(
+                "Carried unchanged from q1, where the quoted phrase still moved on 15 of "
+                "39 cosmetically-unstable calls. Kept identical so q1 and q2 differ in "
+                "exactly one edit and any difference between them attributes cleanly."
+            ),
+        ),
+    ),
+    notes=(
+        "v9_16_q1 with `recommendation` made a deterministic function of "
+        "`call_event_detection` instead of constrained free text. Iteration 2 of the "
+        "Experiment 9 tuning process. Still touches no scored content."
+    ),
+)
+
+
+VARIANTS: dict[str, Variant] = {v.id: v for v in (V9_16_E1, V9_16_Q1, V9_16_Q2)}
 
 # Built once at import: the assets do not change under a running process, and a prompt
 # whose sha depends on when it was called is not a prompt anyone can cite in a report.
@@ -396,24 +609,49 @@ PROMPTS: dict[str, Prompt] = {
 }
 
 
-def validate_manifest(path: Path = PROMPT_MANIFEST_PATH) -> list[str]:
-    """Return drift between the executable prompt registry and its library metadata."""
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        return [f"cannot read prompt manifest {path}: {exc}"]
-    entries = value.get("prompts", []) if isinstance(value, dict) else []
-    if not isinstance(entries, list):
-        return [f"{path}: `prompts` must be a list"]
-    by_id = {
-        entry.get("id"): entry for entry in entries if isinstance(entry, dict)
-    }
+def validate_manifest(
+    path: Path | None = None,
+    registry: Mapping[str, Prompt] | None = None,
+) -> list[str]:
+    """Return drift between the executable prompt registry and its library metadata.
+
+    `registry` defaults to the module's own `PROMPTS`. It is a parameter so a test can
+    prove this function actually CATCHES drift by handing it a deliberately drifted
+    registry -- a checker that has only ever been run against agreeing inputs has not
+    been shown to detect anything.
+    """
+    prompts = PROMPTS if registry is None else registry
+    paths = (path,) if path is not None else PROMPT_CATALOGUES
     problems: list[str] = []
-    if set(by_id) != set(PROMPTS):
+    by_id: dict[str, dict] = {}
+    for catalogue in paths:
+        if catalogue is PHASE_TWO_MANIFEST_PATH and not catalogue.is_file():
+            # Optional until a phase-two prompt exists. Absent is not drift.
+            continue
+        try:
+            value = json.loads(catalogue.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"cannot read prompt manifest {catalogue}: {exc}")
+            continue
+        entries = value.get("prompts", []) if isinstance(value, dict) else []
+        if not isinstance(entries, list):
+            problems.append(f"{catalogue}: `prompts` must be a list")
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            entry_id = entry.get("id")
+            if entry_id in by_id:
+                problems.append(
+                    f"{entry_id} is catalogued twice across {[str(p) for p in paths]}; "
+                    "one prompt id, one entry."
+                )
+            by_id[entry_id] = entry
+    if set(by_id) != set(prompts):
         problems.append(
-            f"prompt ids differ: registry={sorted(PROMPTS)} manifest={sorted(by_id)}"
+            f"prompt ids differ: registry={sorted(prompts)} manifest={sorted(by_id)}"
         )
-    for prompt_id, prompt in PROMPTS.items():
+    for prompt_id, prompt in prompts.items():
         entry = by_id.get(prompt_id, {})
         for field, actual, expected in (
             ("sha256", entry.get("sha256"), prompt.sha),

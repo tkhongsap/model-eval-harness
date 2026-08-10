@@ -37,6 +37,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   The severity profile now prints one when two arms differ by an order of magnitude in
   reasoning tokens, including the zero-versus-anything case, which is production's actual
   `thinkingBudget: 0` regime against one that reasons.
+- **`src/evalgen/stability.py`: how much of an arm's instability the scorer can see.**
+  The enterprise stability gate compares the exact structured response, so it counts any
+  byte that moves -- including bytes in `recommendation`, `keyword` and
+  `call_event_detection`, which the production schema asks for and no metric reads. This
+  splits an arm's replicate disagreement into the part the scorer sees and the part it
+  does not, using the scorer's own `flatten.to_rows` + `records.from_row` rather than a
+  lookalike, and prints it as section 4b of the compare report -- **beside** the existing
+  count, never in place of it. Measured on the Experiment 5A runs: Gemini 0/138 unstable
+  at any level; Qwen3.6 27B 138/138 raw but only 31 scored, so **77.5% of its instability
+  never touches a label**. Recorded, never a gate: the direction it would move a recorded
+  verdict is already known, and a measure adopted after its answer is known is not a
+  measure. Expectation hand-computed first in `tests/fixtures/STABILITY-HAND-COMPUTED.md`.
+- **Model-targeted prompt variants, and the phase-two protocol authorised.** `Variant`
+  gained `target_models`, `phase` and `version`; `build_variant` had hardcoded all three,
+  which made the prompt manifest's own requirement -- "create a new prompt id with
+  parent_id and target_models" -- literally inexpressible. Phase-two prompts are
+  catalogued in a new `manifest.phase_two.json`, because `manifest.json`'s sha is pinned
+  as an asset inside two EXECUTED experiment plans and adding an entry there would make
+  them describe something other than what was run.
+- **`compare --prompts-may-differ`, and a pre-spend comparability check.** An explicit
+  ablation path that permits a prompt difference, **proves the prompt is the only
+  contract difference** field by field rather than waving a hash through, and labels every
+  output a configuration comparison. `compare` still refuses by default. `baseline
+  --will-compare-against` moves the same check ahead of the first paid call, where
+  Experiments 4.5 and 4.7 show it belongs.
+- **`src/evalgen/splits.py` and a committed tune/holdout split.** 49 tune / 89 holdout,
+  drawn deterministically, stratified by family, with every `long_context` dilation kept
+  on the same side as its base item -- RET-101..112 are the same six transcripts at 3x and
+  10x, so a naive split puts one call on both sides. The committed list carries its own
+  contamination warning: every item ships an `expected_failure` naming the exact wrong
+  answer, so any figure from this holdout is an upper bound.
+- **Experiment 9 (pre-registered, tuning iterations run, holdout deliberately unspent).**
+  The first model-specific prompt tuning this project has authorised, targeting the only
+  gate Qwen fails -- stability -- rather than the score, which is already
+  INDISTINGUISHABLE. Iteration 1 (`v9_16_q1`) constrained the unscored free text, was
+  obeyed (mean `recommendation` 217 -> 61 chars) and moved raw instability by **zero**
+  (44/49 both). Iteration 2 (`v9_16_q2`) derived the field from one the model had already
+  chosen and moved it to **25/49** -- while scored instability rose 7 -> 13, an
+  observation reported with its `n` rather than as a result. The holdout was not spent.
 - **Experiment 8 (diagnostic).** The severity profile run over the Experiment 5A runs.
   Deterministic half: byte-identical across three independent runs; over-labelling is
   69.2% of the incumbent's `reason` errors, independently reproducing Experiment 3's hand

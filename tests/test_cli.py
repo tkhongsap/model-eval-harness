@@ -1756,3 +1756,155 @@ def test_a_run_log_written_before_these_fields_existed_still_loads(
     )
     with pytest.raises(cli.CliError):
         cli.load_run(legacy)
+
+
+# ------------------------------------- the ablation path and the pre-spend refusal
+#
+# Added 2026-08-09 for the phase-two prompt protocol. The prompt manifest's
+# `phase_two_protocol` requires tuning to be comparable against its untuned baseline, and
+# `_refuse_incomparable` refuses exactly that comparison. The escape is explicit, proves
+# its own precondition, and leaves the default refusing.
+
+from types import SimpleNamespace  # noqa: E402
+
+from evalgen.cli import CliError  # noqa: E402
+from evalgen.cli import (  # noqa: E402
+    _refuse_before_spending,
+    _refuse_incomparable,
+    _require_only_the_prompt_differs,
+    _workload_contract,
+)
+
+
+def _contract(**overrides):
+    base = dict(
+        app="retention",
+        testset_sha_value="t" * 64,
+        gt_sha="g" * 64,
+        prompt_sha="p" * 64,
+        schema_sha="s" * 64,
+        repeats=3,
+        application_contract_sha="a" * 64,
+    )
+    base.update(overrides)
+    return _workload_contract(**base)
+
+
+def _run(arm, contract, *, workload_sha="w", prompt_id="v9_16_base", legacy=False):
+    meta = {
+        "arm": arm,
+        "testset_sha": contract["testset_sha"],
+        "gt_sha": contract["gt_sha"],
+        "application_contract_sha": contract["application_contract_sha"],
+        "outcome_contract_sha": "o" * 64,
+        "workload_sha": workload_sha,
+        "prompt_id": prompt_id,
+    }
+    if not legacy:
+        meta["workload_contract"] = contract
+    return SimpleNamespace(arm=arm, meta=meta, directory=Path("."), result=None)
+
+
+def test_the_default_still_refuses_two_arms_that_ran_different_prompts():
+    """The whole point of the flag is that it is a flag. Without it, nothing changes."""
+    inc = _run("base", _contract(prompt_sha="1" * 64), workload_sha="wa")
+    cand = _run("tuned", _contract(prompt_sha="2" * 64), workload_sha="wb")
+    with pytest.raises(CliError, match="differ on workload_sha"):
+        _refuse_incomparable(inc, cand)
+
+
+def test_the_ablation_path_permits_a_prompt_difference():
+    inc = _run("base", _contract(prompt_sha="1" * 64), workload_sha="wa")
+    cand = _run("tuned", _contract(prompt_sha="2" * 64), workload_sha="wb")
+    _refuse_incomparable(inc, cand, prompts_may_differ=True)  # does not raise
+
+
+def test_the_ablation_path_permits_the_prompt_and_nothing_else():
+    """`workload_sha` is one hash over the whole contract, so waving the hash through
+    would also let a different testset or ground truth past under the banner of a prompt
+    ablation. The contract is compared field by field instead."""
+    inc = _run("base", _contract(prompt_sha="1" * 64), workload_sha="wa")
+    cand = _run(
+        "tuned",
+        _contract(prompt_sha="2" * 64, repeats=5),
+        workload_sha="wb",
+    )
+    with pytest.raises(CliError, match="permits exactly one difference"):
+        _refuse_incomparable(inc, cand, prompts_may_differ=True)
+
+
+def test_the_ablation_path_refuses_a_run_that_predates_the_recorded_contract():
+    """Without the contract there is no way to show the prompt is the only difference,
+    and an ablation whose other variables are unknown is not an ablation."""
+    inc = _run("base", _contract(prompt_sha="1" * 64), workload_sha="wa", legacy=True)
+    cand = _run("tuned", _contract(prompt_sha="2" * 64), workload_sha="wb")
+    with pytest.raises(CliError, match="predates it"):
+        _require_only_the_prompt_differs(inc, cand)
+
+
+def test_the_ablation_path_does_not_relax_the_testset_or_ground_truth_gates():
+    """Those refusals sit above the workload check and are not reached by the flag."""
+    inc = _run("base", _contract(), workload_sha="wa")
+    cand = _run("tuned", _contract(testset_sha_value="z" * 64), workload_sha="wb")
+    with pytest.raises(CliError, match="different testset files"):
+        _refuse_incomparable(inc, cand, prompts_may_differ=True)
+
+
+def test_the_pre_spend_check_passes_when_the_planned_contract_matches(tmp_path, monkeypatch):
+    contract = _contract()
+    target = _run("base", contract)
+    monkeypatch.setattr("evalgen.cli.load_run", lambda path: target)
+    _refuse_before_spending("out/runs/whatever", dict(contract))  # does not raise
+
+
+def test_the_pre_spend_check_refuses_before_the_first_paid_call(monkeypatch):
+    target = _run("base", _contract(prompt_sha="1" * 64))
+    monkeypatch.setattr("evalgen.cli.load_run", lambda path: target)
+    with pytest.raises(CliError, match="would not be comparable"):
+        _refuse_before_spending("out/runs/whatever", _contract(prompt_sha="2" * 64))
+
+
+def test_the_pre_spend_check_refuses_a_target_that_predates_the_contract(monkeypatch):
+    target = _run("base", _contract(), legacy=True)
+    monkeypatch.setattr("evalgen.cli.load_run", lambda path: target)
+    with pytest.raises(CliError, match="predates the workload contract"):
+        _refuse_before_spending("out/runs/whatever", _contract())
+
+
+def test_the_workload_contract_has_exactly_one_definition():
+    """The pre-flight contract and the recorded one come from the same function, so the
+    prediction cannot drift from what the run will actually write."""
+    planned = _workload_contract(
+        app="retention",
+        testset_sha_value="t" * 64,
+        gt_sha="g" * 64,
+        prompt_sha="p" * 64,
+        schema_sha="s" * 64,
+        repeats=3,
+        application_contract_sha="a" * 64,
+    )
+    assert set(planned) == {
+        "app",
+        "testset_sha",
+        "gt_sha",
+        "prompt_sha",
+        "schema_sha",
+        "repeats",
+        "application_contract_sha",
+    }
+    # the plan sha is present only when there is one
+    assert "experiment_plan_sha" not in planned
+    with_plan = _workload_contract(
+        app="retention",
+        testset_sha_value="t" * 64,
+        gt_sha="g" * 64,
+        prompt_sha="p" * 64,
+        schema_sha="s" * 64,
+        repeats=3,
+        application_contract_sha="a" * 64,
+        experiment_plan_sha="e" * 64,
+    )
+    assert with_plan["experiment_plan_sha"] == "e" * 64
+    # and no runtime knob leaked into the common workload
+    for forbidden in ("provider", "model", "concurrency", "timeout", "reasoning_effort"):
+        assert forbidden not in with_plan

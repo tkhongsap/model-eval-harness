@@ -2,6 +2,22 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-09, Experiment 9): prompt tuning for Qwen, aimed at the gate it actually
+fails.** Qwen3.6 27B is not behind Gemini on any quality dimension (UNDERPOWERED,
+INDISTINGUISHABLE, UNDERPOWERED); it fails on **stability alone**, -129/129. A new
+zero-call diagnostic (`src/evalgen/stability.py`, report section 4b) measured that
+**77.5% of its instability never touches a label the scorer reads** -- it is churn in
+`recommendation`, `keyword` and `call_event_detection`, free text the schema requires and
+no metric consumes. Phase-two tuning was authorised for the first time and pre-registered
+before any prompt was written, with a committed 49/89 tune/holdout split. **Iteration 1
+(`v9_16_q1`) obeyed its constraint and moved raw instability by zero** (217 -> 61 chars
+mean, 44/49 unstable both) -- a free-text field cannot be made deterministic by
+instruction. **Iteration 2 (`v9_16_q2`) derived the field from one already chosen and got
+25/49**, but scored instability rose 7 -> 13. **The holdout has NOT been spent**, because
+that trade is not yet understood and the holdout is a one-shot resource. The real question
+is now a schema-and-gate one for the app owners, not a prompting one. Full record:
+`EXPERIMENTS.md` Experiment 9.
+
 **Latest (2026-08-09, Experiment 8): error severity now measured, and the LLM-judged half
 of it failed its own evidence bar.** `src/evalgen/severity.py` attaches an error category
 to every unit the scorer counts as wrong, so a report can say *how* an arm failed and not

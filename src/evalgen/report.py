@@ -111,7 +111,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal
 
 from evalgen.testsets import TestItem
 from evalharness.compare import Disagreement, RegressionRow, paired_verdict
@@ -648,6 +648,7 @@ def render(
     mechanisms: Mapping[str, Sequence[MechanismRow]],
     disagreements: Sequence[Disagreement],
     regressions: Sequence[RegressionRow],
+    decompositions: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> str:
     """The whole report, as one string. Print it or write it; this function does neither.
 
@@ -671,6 +672,12 @@ def render(
     count section 5's table is built from, so a reader who met it first would be asked
     to check a division whose denominator had not appeared yet.
 
+    `decompositions` is optional: `{arm: evalgen.stability.decompose(...)}`. When
+    supplied it adds 4b, which says how much of each arm's instability the scorer can
+    actually see. Optional rather than required because it needs the raw run log, which
+    an aggregate-only caller does not have -- and because it is a diagnostic printed
+    beside section 4's count, never a replacement for it.
+
     The output can contain Thai (`MechanismRow.detail` carries `expected_failure`
     verbatim). Call `console.configure_stdout()` before printing it.
     """
@@ -682,7 +689,7 @@ def render(
     lines += _mechanism_section(incumbent, candidate, mechanisms)
     lines += _disagreement_section(disagreements, regressions)
     lines += _returned_section(arms)
-    lines += _flip_section(arms)
+    lines += _flip_section(arms, decompositions)
     lines += _metrics_section(arms)
     lines += _performance_section(arms)
     lines += _not_observable_section()
@@ -975,7 +982,10 @@ def _returned_section(arms: Sequence[ArmSummary]) -> list[str]:
     return lines
 
 
-def _flip_section(arms: Sequence[ArmSummary]) -> list[str]:
+def _flip_section(
+    arms: Sequence[ArmSummary],
+    decompositions: Mapping[str, Mapping[str, Any]] | None = None,
+) -> list[str]:
     lines = [_SECTION, "4. N_flip - replicate-to-replicate instability", _SECTION]
     for arm in arms:
         lines.append(
@@ -992,6 +1002,59 @@ def _flip_section(arms: Sequence[ArmSummary]) -> list[str]:
         "",
         "  N_flip = 0 with one replicate is arithmetic, not stability: a single sample",
         "  cannot vary. Read it only at two replicates or more.",
+        "",
+    ]
+    lines += _decomposition_block(arms, decompositions)
+    return lines
+
+
+def _decomposition_block(
+    arms: Sequence[ArmSummary],
+    decompositions: Mapping[str, Mapping[str, Any]] | None,
+) -> list[str]:
+    """How much of the raw instability the scorer can see. BESIDE the count, never instead.
+
+    The enterprise stability gate compares the exact structured response, so it counts any
+    byte that moves -- including bytes in `recommendation`, `keyword` and
+    `call_event_detection`, which the production schema asks for and no metric reads. This
+    block says how much of an arm's instability is of that kind.
+
+    It is printed and never returned as a verdict, for a reason recorded in
+    `tests/fixtures/STABILITY-HAND-COMPUTED.md`: it is already known that scoring
+    stability at the label level would flip a recorded decision, so this measure cannot
+    become the gate for that comparison without choosing the rule to fit the answer.
+    """
+    if not decompositions:
+        return []
+    lines = ["  4b. Of that instability, how much the scorer can see", ""]
+    for arm in arms:
+        summary = decompositions.get(arm.arm)
+        if not summary:
+            continue
+        lines.append(
+            f"  {arm.arm:<20} observable {summary['observable']:>4}  "
+            f"raw-unstable {summary['raw_unstable']:>4}  "
+            f"scored-unstable {summary['scored_unstable']:>4}  "
+            f"cosmetic {summary['cosmetic_only']:>4} "
+            f"({summary['cosmetic_share_of_instability']:.1%} of the instability)"
+        )
+        fields = {
+            name: count
+            for name, count in summary["unscored_fields_on_cosmetic_items"].items()
+            if count
+        }
+        if fields:
+            detail = ", ".join(f"{name} {count}" for name, count in fields.items())
+            lines.append(f"  {'':<20} unscored fields moving on those calls: {detail}")
+    lines += [
+        "",
+        "  `cosmetic` means the raw text changed and every label the scorer reads did",
+        "  not. It is NOT a claim that the instability does not matter: whatever reads",
+        "  `recommendation` downstream sees the churn, and nothing here measures whether",
+        "  that text is any good.",
+        "",
+        "  This is a recorded diagnostic. It does not replace the stability gate, and it",
+        "  must not: the direction it would move a recorded verdict is already known.",
         "",
     ]
     return lines

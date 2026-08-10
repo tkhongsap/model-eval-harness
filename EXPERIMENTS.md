@@ -1759,3 +1759,139 @@ shareable exports stay in gitignored `out/`; nothing from them is committed.
 3. **Do neither until the ground-truth workbook arrives.** The deterministic profile is
    already decision-relevant and cost nothing; the judged layer is second-order to
    `RECONCILED: NO`.
+
+---
+
+## Experiment 9 — phase-two prompt tuning, AUTHORISED (pre-registration, no run yet)
+
+**Nothing has been tuned or run at the time this section is written.** It exists so the
+target, the rule and the split are on record before any of them can be chosen to fit a
+result. `docs/severity-plan-2026-08-09.md` is the plan; this is the pre-registration.
+
+### What is authorised, and what is not
+
+`src/evalgen/prompts/manifest.json`'s `phase_two_protocol` has stood at *"protocol only;
+no model-specific tuning is authorized in Experiment 5"* since it was written. That
+sentence is scoped to Experiment 5 and remains true; **Experiment 9 authorises
+model-specific tuning for the first time**, under that protocol's five requirements:
+
+| # | Requirement | How it is met |
+|---|---|---|
+| 1 | new prompt id with `parent_id` and `target_models` | `v9_16_q1`, parent `v9_16_base`, `target_models: ["qwen/qwen3.6-27b"]`. `Variant` gained those fields; before this they were hardcoded and the requirement was not expressible. |
+| 2 | document every change before running it | the `Edit.why` on each edit, plus this section |
+| 3 | keep the untuned baseline and report it beside | the base arm is re-run on the same slice, same pin, same decoding |
+| 4 | development slice, locked holdout | `tests/fixtures/testsets/retention_v3.split.json` — 49 tune / 89 holdout, drawn and committed **before** the prompt was written |
+| 5 | never compare tuned and untuned as though prompt identity were held | `compare --prompts-may-differ` prints a configuration-comparison banner and refuses unless the prompt is the *only* contract difference |
+
+**The phase-one prompt library is not touched.** `manifest.json`'s sha is pinned as an
+asset in the executed `retention-e5` and `retention-e7` plans, so a phase-two prompt is
+catalogued in `manifest.phase_two.json` beside it. Editing the frozen file would have made
+two committed plans describe something other than what was run.
+
+### The target: stability, not score
+
+Experiment 7's paired gate put Qwen3.6 27B at UNDERPOWERED (+1/5) on call result,
+INDISTINGUISHABLE (−6/36) on reason, UNDERPOWERED (−2/2) on product, and
+**BEHIND (−129/129) on stability**. It fails one gate and it is not the score. A prompt
+tuned to raise F1 would optimise a variable that is already not losing.
+
+The 2026-08-09 decomposition (section 4b of any compare report, `evalgen.stability`)
+measured that **107 of Qwen 27B's 138 unstable calls — 77.5% — never change a label the
+scorer reads.** `recommendation` moves on 100% of them, `keyword` on 91%, and
+`call_event_detection` on 23%: free text the production schema asks for and no metric
+consumes. That is the target.
+
+### Pre-registered success criteria
+
+Within-arm, Qwen 27B on `v9_16_base` versus `v9_16_q1`, same items, same provider pin,
+same decoding, 3 replicates.
+
+| # | Endpoint | Requirement |
+|---|---|---|
+| 1 | **primary** — raw instability | strictly lower on `q1` than on `base`, on the holdout |
+| 2 | **guard** — scored quality | `not BEHIND` on any of the three dimensions at alpha = 1/64 |
+| 3 | **guard** — parse validity | ≥ 99%, the existing reliability rule |
+
+Endpoint 2 is the one that makes this falsifiable: a prompt that buys stability by making
+the model answer more blandly would satisfy endpoint 1 and fail here.
+
+**Tuning happens on the 49 tune items only.** The holdout is evaluated **once**. If it is
+evaluated more than once, the number of times is reported next to the result.
+
+### Recorded before the fact, because they limit what the result can mean
+
+- **The holdout is fresh-eyes at best, not clean.** Every item ships an `expected_failure`
+  string naming the exact wrong answer, and `EXPERIMENTS.md:401` records that the
+  phase-one items were already used to select the `v9_16_e1` edits. Any figure here is an
+  **upper bound**.
+- **Synthetic Thai.** The pack was authored inside this project. A prompt tuned on it is
+  tuned to this pack.
+- **A configuration comparison, never a model comparison.** If `Gemini + v9_16_base` is
+  later compared with `Qwen + v9_16_q1`, that is a comparison of two deployable
+  configurations. Per-model prompts are operationally acceptable to the app owners, which
+  is what makes the comparison meaningful — and it still may not be described as
+  "Qwen beats Gemini".
+- **Stability is measured by the pre-registered gate, at the raw level.** The scored-level
+  decomposition is a recorded diagnostic and does **not** become the endpoint here. Its
+  direction on this comparison is already known, and a measure adopted after its answer is
+  known is not a measure.
+
+### Experiment 9, tuning iterations on the development slice (2026-08-09)
+
+Qwen3.6 27B, Chutes, reasoning off, temperature 0, 3 replicates, the **49 tune items
+only**. The holdout has **not** been touched. 441 calls across three arms.
+
+| arm | prompt | raw-unstable | scored-unstable | `recommendation` chars (mean) |
+|---|---|---:|---:|---:|
+| control | `v9_16_base` | **44 / 49** | 7 | 217 |
+| iteration 1 | `v9_16_q1` | **44 / 49** | 5 | 61 |
+| iteration 2 | `v9_16_q2` | **25 / 49** | **13** | 89 |
+
+**Iteration 1 failed the primary endpoint, and failed it informatively.** `q1` asked for
+a short, plain, repeatable sentence. The model *complied* — mean `recommendation` length
+fell from 217 characters to 61 — and raw instability did not move by a single call. On
+RET-01 replicates 1 and 2 returned the same sentence and replicate 3 returned a different
+one. **Shortening free text only makes the variation shorter.** An instruction to be
+repeatable is not a mechanism for being repeatable.
+
+**Iteration 2 moved it, by removing the choice rather than narrowing it.** `q2` makes
+`recommendation` a deterministic function of `call_event_detection`, which the model has
+already selected. Raw instability fell 44 → 25 of 49, and `recommendation` stopped moving
+on all but 2 of the cosmetically-unstable calls (from 36).
+
+**And it appears to have cost something the primary endpoint cannot see.** `q2`'s
+**scored** instability rose from 7 to 13 of 49 — the labels the scorer actually reads
+became *less* stable while the free text became more stable. That is not one of the three
+pre-registered endpoints, and it is reported here as an observation with its `n`, not as a
+result: 7 against 13 on 49 items is a difference two items wide in each direction of the
+kind this project has repeatedly watched evaporate.
+
+**The guard endpoint could not be evaluated.** Paired quality on the tune slice came out
+`UNDERPOWERED` on all three dimensions for both iterations (discordant counts of 0, 1 and
+5 against the 6 needed at alpha = 1/64). That is the expected and correct outcome on 49
+items, and it is the reason the protocol puts the decision on the holdout. **The
+weighted-F1 figures printed by `compare` on these runs are diluted** — the subset ran 49
+items against the full pack's 150-row ground truth — and are not quoted here.
+
+### The holdout was deliberately NOT spent
+
+`q2` is not yet a candidate worth a one-shot resource. It trades an unscored-stability
+gain for an apparent scored-stability loss, and until that trade is understood, evaluating
+it on the holdout would consume the only clean measurement available to answer a question
+that is not yet well posed.
+
+**Pre-registered now, before the holdout runs:** scored instability joins raw instability
+as a reported endpoint of any holdout evaluation. It is being added *before* that data
+exists, and the direction observed on the tune slice (worse under `q2`) is recorded above
+so that adding it cannot later be read as choosing a metric that flattered a result.
+
+### What the two iterations already establish
+
+1. **A free-text field cannot be made deterministic by instruction.** Iteration 1 obeyed
+   its constraint exactly and changed nothing. This is the useful negative result.
+2. **It can be made deterministic by construction**, by deriving it from a field the model
+   has already committed to — at the cost of the field no longer being advice.
+3. **Which means the real question is not a prompting question.** The production schema
+   requires `recommendation`, and the stability gate compares the exact structured
+   response, so the gate is substantially measuring a field nothing scores. That is a
+   schema-and-gate decision for the app owners, not something a prompt can repair.
