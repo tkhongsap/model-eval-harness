@@ -183,6 +183,24 @@ kept in place and corrected, because the wrong inference is the useful part:
 
 ## 🐛 Known Bugs
 
+**Intermittent, Windows-only, three occurrences and never reproduced (2026-08-09/11).**
+Three different tests have each failed exactly once in a full local run and then passed
+every subsequent time -- 18, 11 and 4 consecutive clean runs respectively:
+
+- (unnamed; the summary line was captured but not the test id)
+- `test_portable_run_bundles_compare_after_the_original_directories_move`
+- `test_private_resume_uses_snapshots_and_ignores_the_unused_default_output`
+
+All three live in `tests/test_cli.py` and all three create, copy, rename or resume a run
+directory. CI (ubuntu-latest) has never reproduced any of them, and neither has an
+isolated run. The signature points at a Windows file-handle or antivirus race in the
+test's own directory manipulation rather than at harness code, but that is a hypothesis
+and not a diagnosis: none of the three was caught with a traceback. Recorded so a single
+red run on a developer machine is recognised rather than investigated from scratch, and so
+that a FOURTH occurrence -- especially a reproducible one, or one in CI -- is treated as
+new information.
+
+
 **Four remaining coverage/configuration gaps, refreshed 2026-08-08.** These do not
 invalidate Experiment 7's recorded output, but they belong in the next harness-hardening
 change before a production-data run:
