@@ -392,7 +392,7 @@ def test_e1_is_registered_and_distinct(base: Prompt, e1: Prompt) -> None:
     without anyone noticing is exactly what this line is here to prevent, and every arm
     that ever ran cites its prompt id.
     """
-    assert sorted(PROMPTS) == ["v9_16_base", "v9_16_e1", "v9_16_q1", "v9_16_q2"]
+    assert sorted(PROMPTS) == ["v9_16_base", "v9_16_e1", "v9_16_g1", "v9_16_g2", "v9_16_q1", "v9_16_q2"]
     assert len({PROMPTS[pid].sha for pid in PROMPTS}) == len(PROMPTS)
     assert get("v9_16_e1") is e1
     assert e1.id == "v9_16_e1"
@@ -884,9 +884,9 @@ def test_the_phase_one_manifest_is_untouched_by_the_phase_two_prompt():
         entry["id"]
         for entry in _json.loads(PROMPT_MANIFEST_PATH.read_text(encoding="utf-8"))["prompts"]
     }
-    assert not {"v9_16_q1", "v9_16_q2"} & phase_one_ids
+    assert not {"v9_16_q1", "v9_16_q2", "v9_16_g1", "v9_16_g2"} & phase_one_ids
     phase_two_ids = {
         entry["id"]
         for entry in _json.loads(PHASE_TWO_MANIFEST_PATH.read_text(encoding="utf-8"))["prompts"]
     }
-    assert phase_two_ids == {"v9_16_q1", "v9_16_q2"}
+    assert phase_two_ids == {"v9_16_q1", "v9_16_q2", "v9_16_g1", "v9_16_g2"}
