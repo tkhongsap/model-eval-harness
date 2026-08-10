@@ -384,8 +384,16 @@ def _example_span(text: str) -> tuple[int, int]:
 
 
 def test_e1_is_registered_and_distinct(base: Prompt, e1: Prompt) -> None:
-    """Two ids, two shas, one file. A variant sharing the base's sha is not a variant."""
-    assert sorted(PROMPTS) == ["v9_16_base", "v9_16_e1"]
+    """Two ids, two shas, one file. A variant sharing the base's sha is not a variant.
+
+    The registry gained `v9_16_q1` and then `v9_16_q2` on 2026-08-09 (EXPERIMENTS.md,
+    Experiment 9 -- phase-two tuning authorised for the first time; q2 is iteration 2). The id list is asserted in full
+    rather than loosened to a membership check: a prompt appearing in the registry
+    without anyone noticing is exactly what this line is here to prevent, and every arm
+    that ever ran cites its prompt id.
+    """
+    assert sorted(PROMPTS) == ["v9_16_base", "v9_16_e1", "v9_16_q1", "v9_16_q2"]
+    assert len({PROMPTS[pid].sha for pid in PROMPTS}) == len(PROMPTS)
     assert get("v9_16_e1") is e1
     assert e1.id == "v9_16_e1"
     assert e1.sha != base.sha
@@ -712,3 +720,173 @@ def test_the_variant_edits_are_built_from_the_named_example_values() -> None:
     wrapper = WRAPPER_PATH.read_text(encoding="utf-8")
     for slot, value in EXAMPLE_REASON_VALUES.items():
         assert f'"{slot}": {{\n                "reason": "{value}",' in wrapper
+
+
+# ------------------------------------- phase-two: model-targeted variants (2026-08-09)
+
+
+def test_a_variant_can_declare_its_target_models_phase_and_version():
+    """The prompt manifest's own `phase_two_protocol` requires "a new prompt id with
+    parent_id and target_models". `build_variant` used to hardcode all three, so that
+    requirement was not expressible in code at all."""
+    from evalgen.prompts import Edit, Variant, build_base, build_variant
+
+    base = build_base()
+    anchor = "**Role**: You are a call center agent"
+    assert base.system_text.count(anchor) == 1
+    variant = Variant(
+        id="v9_16_probe",
+        edits=(Edit(before=anchor, after=anchor + " (probe)", why="test fixture"),),
+        notes="a probe variant, never registered",
+        version="9.16-probe.1",
+        target_models=("qwen/qwen3.6-27b",),
+        phase="phase_two_tuned",
+    )
+    built = build_variant(variant, base)
+    assert built.parent_id == base.id
+    assert built.version == "9.16-probe.1"
+    assert built.target_models == ("qwen/qwen3.6-27b",)
+    assert built.phase == "phase_two_tuned"
+
+
+def test_the_variant_defaults_reproduce_the_previous_hardcoded_behaviour():
+    """`v9_16_e1` must not move: its sha, version, phase and target_models are pinned in
+    prompts/manifest.json and quoted in four experiments."""
+    from evalgen.prompts import PROMPTS, validate_manifest
+
+    e1 = PROMPTS["v9_16_e1"]
+    assert e1.version == "9.16-e1-harness.1"
+    assert e1.phase == "historical_ablation"
+    assert e1.target_models == ("*",)
+    assert e1.sha == "143d34c97fbd943cbb4698a2eb9d1095778571860cda98030e94d2a68628d380"
+    assert validate_manifest() == []
+
+
+def test_a_variant_whose_declaration_drifts_from_the_catalogue_is_caught():
+    """The safety net that makes the new fields safe: `validate_manifest` compares the
+    executable registry against prompts/manifest.json on exactly these fields."""
+    from dataclasses import replace
+
+    from evalgen.prompts import PROMPTS, validate_manifest
+
+    drifted = dict(PROMPTS)
+    drifted["v9_16_e1"] = replace(PROMPTS["v9_16_e1"], target_models=("qwen/qwen3.6-27b",))
+    problems = validate_manifest(registry=drifted)
+    assert any("target_models" in problem for problem in problems), problems
+    # and the undrifted registry still passes, so the check is not simply always failing
+    assert validate_manifest(registry=PROMPTS) == []
+
+
+# ------------------------------------------------ v9_16_q1: the phase-two Qwen prompt
+
+
+def _q1_and_base():
+    from evalgen.prompts import PROMPTS, build_base
+
+    return PROMPTS["v9_16_q1"], build_base()
+
+
+def test_q1_declares_itself_as_a_model_targeted_phase_two_child():
+    """Requirement 1 of prompts/manifest.json's phase_two_protocol."""
+    q1, base = _q1_and_base()
+    assert q1.parent_id == base.id
+    assert q1.target_models == ("qwen/qwen3.6-27b",)
+    assert q1.phase == "phase_two_tuned"
+    assert q1.sha != base.sha
+
+
+def test_q1_deletes_and_rewrites_nothing_in_the_base():
+    """Every edit is an append after an anchor, so the base text survives line for line.
+    This is what makes the next test's claim checkable at all: if a base line could
+    vanish, 'no scored instruction changed' would need a semantic argument instead of a
+    set comparison."""
+    q1, base = _q1_and_base()
+    q1_lines = q1.system_text.split("\n")
+    for line in base.system_text.split("\n"):
+        assert line in q1_lines, f"the base line {line!r} is missing from v9_16_q1"
+
+
+def test_q1_touches_no_scored_content():
+    """The rule this variant ships under: it may constrain unscored free text and nothing
+    else. Every label of every scored dimension must appear exactly as often as it does in
+    the parent -- a class the tuned prompt mentions more or less often is a tuned rule,
+    not a tuned format."""
+    from evalharness.labelspaces import (
+        CALL_RESULT_CLASSES,
+        PRODUCT_CLASSES,
+        REASON_CLASSES,
+    )
+
+    q1, base = _q1_and_base()
+    for label in (*REASON_CLASSES, *CALL_RESULT_CLASSES, *PRODUCT_CLASSES):
+        assert q1.system_text.count(label) == base.system_text.count(label), (
+            f"the scored label {label!r} appears a different number of times in "
+            "v9_16_q1 than in its parent"
+        )
+
+
+def test_every_line_q1_adds_is_about_an_unscored_field():
+    """The added text is auditable: each new line has to sit under one of the three
+    unscored-field instructions, and none may name a scored class."""
+    from evalharness.labelspaces import CALL_RESULT_CLASSES, REASON_CLASSES
+
+    q1, base = _q1_and_base()
+    added = [
+        line
+        for line in q1.system_text.split("\n")
+        if line not in base.system_text.split("\n")
+    ]
+    assert added, "a variant that adds nothing is two arms on one prompt"
+    for line in added:
+        for label in (*REASON_CLASSES, *CALL_RESULT_CLASSES):
+            assert label not in line, f"added line names the scored class {label!r}: {line!r}"
+
+
+def test_q1_constrains_exactly_the_three_measured_unscored_fields():
+    q1, base = _q1_and_base()
+    added = "\n".join(
+        line
+        for line in q1.system_text.split("\n")
+        if line not in base.system_text.split("\n")
+    )
+    # recommendation: length and wording pinned
+    assert "at most 20 words" in added
+    # call_event_detection: a tie-break, so the enum choice stops moving
+    assert "listed FIRST" in added
+    # the quoted phrase behind `keyword`: contiguous, unmodified, repeatable
+    assert "character for character" in added
+
+
+def test_every_q1_edit_states_why_with_a_measured_number():
+    """`Edit.why` is required by the dataclass; this asserts the reasons are grounded in
+    the decomposition rather than being restatements of the change."""
+    from evalgen.prompts import VARIANTS
+
+    for edit in VARIANTS["v9_16_q1"].edits:
+        assert edit.why.strip()
+        assert any(char.isdigit() for char in edit.why), (
+            f"an edit's reason cites no measurement: {edit.why!r}"
+        )
+
+
+def test_the_phase_one_manifest_is_untouched_by_the_phase_two_prompt():
+    """`manifest.json`'s sha256 is pinned as an asset in two EXECUTED experiment plans.
+    A phase-two entry added there would make those plans describe something other than
+    what was run, so phase two is catalogued separately."""
+    import hashlib
+    import json as _json
+
+    from evalgen.prompts import PHASE_TWO_MANIFEST_PATH, PROMPT_MANIFEST_PATH
+
+    pinned = "d49d85055637156ba9cbc7f79e73a8ec4c0e844be6a10d295a033c19eef56206"
+    assert hashlib.sha256(PROMPT_MANIFEST_PATH.read_bytes()).hexdigest() == pinned
+    phase_one_ids = {
+        entry["id"]
+        for entry in _json.loads(PROMPT_MANIFEST_PATH.read_text(encoding="utf-8"))["prompts"]
+    }
+    assert not {"v9_16_q1", "v9_16_q2"} & phase_one_ids
+    phase_two_ids = {
+        entry["id"]
+        for entry in _json.loads(PHASE_TWO_MANIFEST_PATH.read_text(encoding="utf-8"))["prompts"]
+    }
+    assert phase_two_ids == {"v9_16_q1", "v9_16_q2"}

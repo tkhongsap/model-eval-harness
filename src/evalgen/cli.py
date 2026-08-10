@@ -83,6 +83,7 @@ from evalgen.config import ENV_FILES, find_api_key, find_runtime_api_key, load_e
 from evalgen.decoding import decoding_schema
 from evalgen.flatten import named_no_product, to_rows
 from evalgen.judge import find_disagreements, run_judge, shareable_report
+from evalgen.stability import decompose
 from evalgen.severity import (
     SEVERITY_DIMENSIONS,
     SeverityError,
@@ -1731,6 +1732,80 @@ def _preflight(testset: TestSet, gt_path: Path) -> None:
         )
 
 
+def _workload_contract(
+    *,
+    app: str,
+    testset_sha_value: str,
+    gt_sha: str,
+    prompt_sha: str,
+    schema_sha: str,
+    repeats: int,
+    application_contract_sha: str,
+    experiment_plan_sha: str | None = None,
+) -> dict[str, Any]:
+    """The common evaluation question, as one dict.
+
+    ONE definition, called both after a run (to record what was asked) and before one (to
+    refuse an incomparable run before it is paid for). A second copy would drift, and the
+    copy that drifted would be the pre-flight one -- the one whose whole job is to predict
+    what the post-run copy will say.
+
+    Runtime and operational knobs are deliberately absent and live in the execution
+    contract: an OpenRouter endpoint and an internal GPU need not expose the same
+    reasoning controls, retry policy, concurrency or timeout to be valid arms over the
+    same scored workload.
+    """
+    contract: dict[str, Any] = {
+        "app": app,
+        "testset_sha": testset_sha_value,
+        "gt_sha": gt_sha,
+        "prompt_sha": prompt_sha,
+        "schema_sha": schema_sha,
+        "repeats": repeats,
+        "application_contract_sha": application_contract_sha,
+    }
+    if experiment_plan_sha:
+        contract["experiment_plan_sha"] = experiment_plan_sha
+    return contract
+
+
+def _refuse_before_spending(target: str, planned: dict[str, Any]) -> None:
+    """Refuse an incomparable run BEFORE the first paid call, not after the last one.
+
+    `_refuse_incomparable` runs at compare time, so a mismatched prompt, testset or
+    ground truth is discovered only once both arms have been bought. Experiment 4.5 and
+    4.7 exist only because that gate refused a comparison after the spend
+    (`EXPERIMENTS.md`). Every field of the workload contract is knowable before the first
+    call, so this check costs nothing and is available whenever the operator already knows
+    which run they intend to compare against.
+    """
+    loaded = load_run(Path(target))
+    recorded = loaded.meta.get("workload_contract")
+    if not isinstance(recorded, Mapping):
+        raise CliError(
+            f"{target} predates the workload contract, so this run cannot be checked "
+            "against it before spending. Drop --will-compare-against, or compare against "
+            "a run recorded by a current version of the harness."
+        )
+    differing = sorted(
+        key
+        for key in set(recorded) | set(planned)
+        if recorded.get(key) != planned.get(key)
+    )
+    if differing:
+        detail = "; ".join(
+            f"{key}: planned={planned.get(key)!r} recorded={recorded.get(key)!r}"
+            for key in differing
+        )
+        raise CliError(
+            f"this run would not be comparable with {target} ({detail}). Refusing before "
+            "the first paid call rather than after the last one. Fix the mismatch, or run "
+            "it deliberately and use `compare --prompts-may-differ` if the prompt is the "
+            "only difference and the confound is what you are measuring."
+        )
+    print(f"comparable   with {target} (workload contract matches, checked before spending)")
+
+
 def _execute_run(
     args: argparse.Namespace,
     *,
@@ -1822,6 +1897,21 @@ def _execute_run(
     gt_path = Path(snapshot["gt_path"])
     schema = response_format(Path(snapshot["schema_path"]))
     _preflight(testset, gt_path)
+
+    if getattr(args, "will_compare_against", None):
+        _refuse_before_spending(
+            args.will_compare_against,
+            _workload_contract(
+                app=args.app,
+                testset_sha_value=testset_sha(testset.path),
+                gt_sha=manifest_mod.file_hash(gt_path),
+                prompt_sha=prompt.sha,
+                schema_sha=str(snapshot["schema_sha"]),
+                repeats=config.repeats,
+                application_contract_sha=application.fingerprint(),
+                experiment_plan_sha=getattr(args, "experiment_plan_sha", None),
+            ),
+        )
 
     experiment_plan_sha = getattr(args, "experiment_plan_sha", None)
     run_contract = {
@@ -2005,17 +2095,16 @@ def _execute_run(
     # are deliberately recorded in a separate per-arm contract: OpenRouter and an
     # internal GPU endpoint need not expose the same reasoning controls, retry policy,
     # concurrency, or timeout to remain valid arms over the same scored workload.
-    workload_contract = {
-        "app": args.app,
-        "testset_sha": result.testset_sha,
-        "gt_sha": gt_sha,
-        "prompt_sha": prompt.sha,
-        "schema_sha": schema_sha,
-        "repeats": config.repeats,
-        "application_contract_sha": application.fingerprint(),
-    }
-    if experiment_plan_sha:
-        workload_contract["experiment_plan_sha"] = experiment_plan_sha
+    workload_contract = _workload_contract(
+        app=args.app,
+        testset_sha_value=result.testset_sha,
+        gt_sha=gt_sha,
+        prompt_sha=prompt.sha,
+        schema_sha=schema_sha,
+        repeats=config.repeats,
+        application_contract_sha=application.fingerprint(),
+        experiment_plan_sha=experiment_plan_sha,
+    )
     execution_contract = {
         "runtime_fingerprint": runtime.fingerprint(),
         "provider": config.provider,
@@ -3106,7 +3195,40 @@ def _write_experiment_xlsx(summary: Mapping[str, Any], path: Path) -> None:
     workbook.save(path)
 
 
-def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
+def _require_only_the_prompt_differs(
+    incumbent: LoadedRun, candidate: LoadedRun
+) -> None:
+    """Permit a prompt difference, and prove it is the only one.
+
+    Refuses on a run that predates the recorded contract: without it there is no way to
+    show the prompt is the only thing that moved, and an ablation whose other variables
+    are unknown is not an ablation.
+    """
+    left = incumbent.meta.get("workload_contract")
+    right = candidate.meta.get("workload_contract")
+    if not isinstance(left, Mapping) or not isinstance(right, Mapping):
+        raise CliError(
+            "--prompts-may-differ needs the recorded workload contract on both arms to "
+            "prove the prompt is the only difference, and at least one of these runs "
+            "predates it. Re-run the arms with a current version of the harness."
+        )
+    differing = sorted(
+        key for key in set(left) | set(right) if left.get(key) != right.get(key)
+    )
+    if differing != ["prompt_sha"]:
+        detail = "; ".join(
+            f"{key}: {left.get(key)!r} vs {right.get(key)!r}" for key in differing
+        )
+        raise CliError(
+            "--prompts-may-differ permits exactly one difference, the prompt. These arms "
+            f"differ on {differing} ({detail}). Everything else must be held constant, or "
+            "the result confounds the prompt with whatever else moved."
+        )
+
+
+def _refuse_incomparable(
+    incumbent: LoadedRun, candidate: LoadedRun, *, prompts_may_differ: bool = False
+) -> None:
     """Every mismatch that would still produce a full, plausible-looking table."""
     if incumbent.arm == candidate.arm:
         raise CliError(
@@ -3154,6 +3276,14 @@ def _refuse_incomparable(incumbent: LoadedRun, candidate: LoadedRun) -> None:
                 "to mix a legacy run with a content-addressed enterprise run."
             )
         if left is not None and left != right:
+            if field == "workload_sha" and prompts_may_differ:
+                # The one sanctioned exception, and it proves its own precondition: the
+                # prompt may differ, and NOTHING ELSE may. `workload_sha` is one hash over
+                # the whole contract, so the contract itself is compared field by field
+                # rather than the hash waved through -- otherwise "the prompt differs"
+                # would also let a different testset or ground truth past.
+                _require_only_the_prompt_differs(incumbent, candidate)
+                continue
             raise CliError(
                 f"the arms differ on {field} ({left} vs {right}). A common-prompt "
                 "comparison requires identical classification code and workload."
@@ -3169,7 +3299,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
     """
     incumbent = load_run(Path(args.incumbent))
     candidate = load_run(Path(args.candidate))
-    _refuse_incomparable(incumbent, candidate)
+    prompts_may_differ = bool(getattr(args, "prompts_may_differ", False))
+    _refuse_incomparable(incumbent, candidate, prompts_may_differ=prompts_may_differ)
 
     testset_path = (
         Path(args.testset)
@@ -3275,13 +3406,45 @@ def cmd_compare(args: argparse.Namespace) -> int:
         for row in regressions(gt, inc_rows, cand_rows, name, key)
     ]
 
+    # Section 4b: how much of each arm's instability the scorer can see. Computed from
+    # the run logs the runs already carry, so it costs nothing and needs no new call. It
+    # is printed BESIDE the N_flip count, never in place of it -- see
+    # `tests/fixtures/STABILITY-HAND-COMPUTED.md` for why that separation is load-bearing.
+    items_by_id = {item.item_id: item for item in testset.items}
+    decompositions = {
+        loaded.arm: decompose(
+            [asdict(result) for result in loaded.result.results], items_by_id
+        )
+        for loaded in (incumbent, candidate)
+    }
+
     text = render(
         summaries[incumbent.arm],
         summaries[candidate.arm],
         mechanisms,
         disagreements,
         regression_rows,
+        decompositions,
     )
+    if prompts_may_differ:
+        # `report._header` already warns when the shas differ, but that warning sits
+        # inside the provenance block. An ablation is the report a reader is most likely
+        # to quote a number out of, so the confound goes above everything else.
+        rule = "=" * 78
+        text = (
+            f"""{rule}
+ABLATION -- THE ARMS RAN DIFFERENT PROMPTS
+{rule}
+Every difference below confounds the prompt with the model. This is NOT a model
+comparison and must not be reported as one. It compares two CONFIGURATIONS: each
+arm's model together with the prompt it was given.
+  {incumbent.arm}: {incumbent.meta.get('prompt_id')}
+  {candidate.arm}: {candidate.meta.get('prompt_id')}
+The workload contract was checked field by field: the prompt is the only
+difference between these two runs.
+
+"""
+        ) + text
     text += _footer(incumbent, candidate, deltas, coverage_warnings)
 
     print()
@@ -4129,6 +4292,14 @@ def build_parser() -> argparse.ArgumentParser:
     baseline = subparsers.add_parser("baseline", help="run one arm over the whole pack")
     baseline.add_argument("--arm", required=True)
     baseline.add_argument("--repeats", type=int, default=3)
+    baseline.add_argument(
+        "--will-compare-against",
+        default=None,
+        metavar="RUN_DIR",
+        help="check BEFORE the first paid call that this run's workload contract will "
+        "match that run's, and refuse if it will not. The same check runs at compare "
+        "time regardless; passing this moves it ahead of the spend.",
+    )
     _add_run_arguments(baseline)
     baseline.set_defaults(handler=cmd_baseline)
 
@@ -4149,6 +4320,15 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--testset", default=None, help="override the recorded path")
     compare.add_argument("--gt", default=None, help="override the recorded path")
     compare.add_argument("--report", default=None, help="also write the report here")
+    compare.add_argument(
+        "--prompts-may-differ",
+        action="store_true",
+        help="permit an ablation whose arms ran different prompts. The workload contract "
+        "is still checked field by field and the prompt must be the ONLY difference; "
+        "every output is labelled as a configuration comparison, not a model comparison. "
+        "Without this flag a prompt difference is refused, which is the default and stays "
+        "the default.",
+    )
     compare.set_defaults(handler=cmd_compare)
 
     judge = subparsers.add_parser(

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "purpose": "Phase-two, model-targeted prompts. Kept SEPARATE from manifest.json because that file's sha256 is pinned as an asset inside experiments/retention-e5.plan.json and retention-e7.plan.json, both of which describe executed experiments: adding an entry there would make two committed plans describe something other than what was run. The phase-one library stays frozen; new prompts are catalogued here.",
+  "authorisation": "EXPERIMENTS.md, Experiment 9 (pre-registered 2026-08-09)",
+  "prompts": [
+    {
+      "id": "v9_16_q1",
+      "app": "retention",
+      "version": "9.16-q1-harness.1",
+      "parent_id": "v9_16_base",
+      "phase": "phase_two_tuned",
+      "target_models": [
+        "qwen/qwen3.6-27b"
+      ],
+      "sha256": "5c7382643e1d04c5fd9509371347de2f3ad479a798ad8ccf1db371375dd75859",
+      "temperature": 0.0,
+      "top_p": 0.0,
+      "reasoning_effort": "none",
+      "targets": "stability, not score",
+      "changes": "Three constraints added to UNSCORED free-text fields only: `recommendation`, `call_event_detection`, and the quoted phrase behind `keyword`. No rule, class definition, vocabulary, threshold or worked-example label differs from the parent.",
+      "change_policy": "The edit list in prompts.py is the change history; it must remain an exact transformation of the parent. Any further text or decoding change creates a new prompt id.",
+      "development_slice": "tests/fixtures/testsets/retention_v3.split.json -> tune (49 items)",
+      "locked_holdout": "tests/fixtures/testsets/retention_v3.split.json -> holdout (89 items)"
+    },
+    {
+      "id": "v9_16_q2",
+      "app": "retention",
+      "version": "9.16-q2-harness.1",
+      "parent_id": "v9_16_base",
+      "phase": "phase_two_tuned",
+      "target_models": [
+        "qwen/qwen3.6-27b"
+      ],
+      "sha256": "8f96e30dade6ea61e49b05c8e241c8352aac60f31661a96d5c795dce76549e76",
+      "temperature": 0.0,
+      "top_p": 0.0,
+      "reasoning_effort": "none",
+      "targets": "stability, not score",
+      "iteration": 2,
+      "changes": "v9_16_q1 with `recommendation` made a deterministic function of `call_event_detection` rather than constrained free text. Iteration 1 obeyed its length constraint (217 -> 61 chars mean) and moved raw instability by zero.",
+      "change_policy": "The edit list in prompts.py is the change history; it must remain an exact transformation of the parent. Any further text or decoding change creates a new prompt id.",
+      "caveat": "Canned advice is a product decision for the app owners, not a harness one. This id exists to make an experiment interpretable, not as a deployment proposal.",
+      "development_slice": "tests/fixtures/testsets/retention_v3.split.json -> tune (49 items)",
+      "locked_holdout": "tests/fixtures/testsets/retention_v3.split.json -> holdout (89 items)"
+    }
+  ]
+}
