@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "dataset_id": "retention_challenge_v1",
+  "app": "retention",
+  "language": [
+    "th",
+    "th-en"
+  ],
+  "modality": "original synthetic multi-turn transcript text",
+  "created_on": "2026-08-11",
+  "source_plan": "../../../docs/retention-challenge-v1-plan.md",
+  "testset": {
+    "path": "retention_challenge_v1.jsonl",
+    "sha256": "a3029a7081a1eb859938671d0d3f880ef97dabbb4bf55b2cf773ec184aa1f801",
+    "items": 50,
+    "turns_per_item": 18
+  },
+  "ground_truth": {
+    "path": "retention_challenge_v1.gt.csv",
+    "sha256": "ef0f11b1e6ccb6c60b5bfd43b5cb1b77ceb515c64a3e5650423d670101f04b8c",
+    "scored_rows": 64,
+    "grain": "one row per (call_id, phone_number, product)"
+  },
+  "families": {
+    "compound_history": 10,
+    "negotiation_reversal": 10,
+    "multi_product": 10,
+    "interaction_noise": 10,
+    "boundary_outcome": 10
+  },
+  "complexity_controls": {
+    "minimum_turns": 18,
+    "maximum_turn_codepoints": 120,
+    "minimum_multi_product_calls": 10,
+    "minimum_three_product_calls": 3,
+    "minimum_items_per_reason_class": 3,
+    "unique_evidence_spans": true,
+    "reason_evidence_customer_speech_only": true
+  },
+  "label_method": {
+    "type": "synthetic evidence-and-rule adjudication",
+    "authorities": [
+      "committed retention prompt citations in each item",
+      "committed retention label space",
+      "product-level scorer grain"
+    ],
+    "research_role": "Public sources informed scenario and dialogue design only; they do not define labels."
+  },
+  "research_sources": [
+    "https://nbtc.go.th/tcp/NBTC_TCP/media/Source/Media-of-Thumnail/Statistics-%E0%B9%80%E0%B8%94%E0%B8%AD%E0%B8%99-%E0%B8%81-%E0%B8%9E-68_1.pdf?ext=.pdf",
+    "https://www.true.th/help/trueonline/internet-relocation",
+    "https://www.true.th/help/billing/check-bill/bill-high",
+    "https://www.true.th/en/international/roaming",
+    "https://aclanthology.org/2026.findings-acl.1261/",
+    "https://arxiv.org/abs/2407.09849",
+    "https://arxiv.org/abs/2305.03007"
+  ],
+  "known_limits": [
+    "No real customer calls, customer identifiers, production scripts, or production audio.",
+    "Synthetic Thai has not received native-speaker sign-off.",
+    "Text transcripts do not measure ASR, diarisation, crosstalk, or telephone audio quality.",
+    "No result is a migration verdict until reconciled against the live Gemini fact-check report; RECONCILED remains NO."
+  ]
+}

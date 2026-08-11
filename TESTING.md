@@ -427,7 +427,7 @@ be measuring the grammar rather than the example. Both facts are pinned:
 `test_e1_example_is_legal_under_the_grammar_that_is_actually_sent` and
 `test_e1_example_fails_the_committed_port_schema_at_exactly_the_blanked_slots`.
 
-### 9. The pack is an argument, and there are three of them
+### 9. The pack is an argument, and there are four of them
 
 ```bash
 .venv/Scripts/python scripts/evalgen.py check          # retention_v1, the default
@@ -437,6 +437,9 @@ be measuring the grammar rather than the example. Both facts are pinned:
 .venv/Scripts/python scripts/evalgen.py check \
     --testset tests/fixtures/testsets/retention_v3.jsonl \
     --gt tests/fixtures/testsets/retention_v3.gt.csv
+.venv/Scripts/python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_challenge_v1.jsonl \
+    --gt tests/fixtures/testsets/retention_challenge_v1.gt.csv
 ```
 
 `--testset` / `--gt` default to `retention_v1.*` (`cli.py:131-132`), so a command with
@@ -448,10 +451,15 @@ neither flag scores the 20-item pack. The same pair is accepted by `baseline` an
 | `retention_v1` | 20 | 22 | **Frozen.** Experiments 1 and 2 cite it, so it does not move. |
 | `retention_v2` | 100 | 108 | **Frozen.** Experiment 3 and 4 cite it; `RET-01`…`RET-20` are byte-identical to v1. |
 | `retention_v3` | 138 | 150 | Experiments 5 and 7. v2 prefix plus 38 versioned robustness items. |
+| `retention_challenge_v1` | 50 | 64 | Separate `RTC-*` pack of longer, original multi-turn calls; not part of the frozen prefix chain. |
 
 Verified above by running `check` against each. The scored row is
 `(call_id, phone_number, product)` in every pack, which is why the v1/v2/v3 row counts
 do not always equal their item counts.
+
+The challenge pack is gated by `tests/test_retention_challenge_pack.py`, including exact
+CSV/JSON agreement, synthetic-key ranges, unique evidence, customer-side reason evidence,
+conversation length, class support, multi-product budgets and manifest integrity.
 
 What v2 buys: the six reason classes sitting at **support 1** in v1 are gone — v2's
 minimum reason-class support is **6**, across the same 11 classes, so a single miss no

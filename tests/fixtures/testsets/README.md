@@ -3,9 +3,11 @@
 Synthetic Thai call transcripts for comparing two LLMs on True Corp's **Retention**
 call-analysis app. Twenty items, twenty-two scored rows, no real customer data.
 
-**Everything below describes `retention_v1` unless it says otherwise.** Two later packs
-sit in this directory and have their own sections at the end: `retention_v2` (100 items,
-108 scored rows) and `retention_v3` (138 items, 150 scored rows, four new families).
+**Everything below describes `retention_v1` unless it says otherwise.** Two later
+cumulative packs sit in this directory and have their own sections at the end:
+`retention_v2` (100 items, 108 scored rows) and `retention_v3` (138 items, 150 scored
+rows, four new families). A separate non-cumulative challenge pack is also documented
+at the end.
 `retention_v1` is **frozen**: Experiments 1 and 2 cite it, so nothing this document says
 about it moves.
 
@@ -19,6 +21,9 @@ about it moves.
 | `retention_v3.gt.csv` | v3 ground truth at the same grain. 150 rows. |
 | `ASR-EXPECTATION.md` | Hand-derived expectation for the ten `asr_noise` artifact classes in v3, derived before any model was scored on them. |
 | `retention_v3.manifest.json` | Versioned dataset contract: hashes, row counts, slice ids, provenance and review status. |
+| `retention_challenge_v1.jsonl` | Separate 50-call, 64-row multi-turn challenge pack, `RTC-001` … `RTC-050`; it is not a continuation of the frozen `RET-*` chain. |
+| `retention_challenge_v1.gt.csv` | Challenge-pack ground truth at the same product-level grain. |
+| `retention_challenge_v1.manifest.json` | Challenge-pack hashes, research provenance, quantitative controls and limitations. |
 | `VOCABULARIES.md` | Label vocabularies, provenance and the D1–D14 divergence register. The authority for what a label means. |
 | `block_a_clear.jsonl`, `block_b_thai.jsonl`, `block_c_tiebreak.jsonl`, `block_d_escape.jsonl` | The pre-merge drafts. Superseded by `retention_v1.jsonl`; kept only for diff history. **Do not score against them** — they were never run through the loader and fail `validate()` in 155 places. |
 
@@ -432,3 +437,36 @@ line; 0 turns over the 120-character limit (max observed 107); `retention_v1.*` 
 `retention_v3.jsonl` sha256 `ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff`.
 The same warning applies as to v1 and v2: editing a transcript is the one operation that
 can silently break the substring check, so re-run the validator after any edit.
+
+---
+
+## The separate challenge pack — `retention_challenge_v1`
+
+**50 original synthetic calls, 64 scored product rows.** This pack is deliberately not
+named `retention_v4`: Experiments 1–7 cite the cumulative `RET-*` assets, while this pack
+uses `RTC-001` … `RTC-050` and new synthetic keys (`5201` … `5250`) so results cannot be
+mistaken for an extension of those frozen bytes.
+
+Every call has 18 customer/agent turns. Five families of ten cover compound history,
+negotiation reversals, multiple products, interaction noise and outcome boundaries.
+Eleven calls have multiple product rows and three have three product rows. All four
+products, all four outcomes and all eleven reasons are represented; each reason appears
+in at least three distinct calls. All evidence spans are unique within their transcript,
+and reason evidence is customer speech.
+
+The research and label-first design matrix are in
+[`docs/retention-challenge-v1-plan.md`](../../../docs/retention-challenge-v1-plan.md).
+Public sources informed scenario selection and dialogue phenomena only. The committed
+retention prompt remains the label authority through each item's `rule_*` citations.
+
+```bash
+.venv/Scripts/python scripts/evalgen.py check \
+    --testset tests/fixtures/testsets/retention_challenge_v1.jsonl \
+    --gt tests/fixtures/testsets/retention_challenge_v1.gt.csv
+
+.venv/Scripts/python -m pytest tests/test_retention_challenge_pack.py -q
+```
+
+This is still synthetic Thai text with no native-speaker sign-off and no audio. It does
+not measure ASR, diarisation, crosstalk or production accuracy, and every result remains
+`RECONCILED: NO` until the repository's normal live-reference requirement is met.
