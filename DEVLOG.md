@@ -9,16 +9,31 @@ that band under a matched zero-reasoning regime, though NOT the first ever: Expe
 two Qwen AHEADs were bought with 2.4-2.6M reasoning tokens. **Kimi K3 is indistinguishable**
 on `reason`, the one dimension with power, with a perfect 1.000 call_result precision. The
 blockers are operational: GLM completed 408/414 and retried 33 calls on HTTP 429 (below the
-99% rule) with the worst latency tail measured (p95 108.9s, max 186s); Kimi costs **22.7x**
-Gemini, driven partly by a tokenizer needing **2.59x** the input tokens for the same Thai
-text. Gemini remains untouched on operations: zero variance, zero retries, fastest
-everywhere. **An eight-agent adversarial pass found four wrong claims in the first
-write-up** -- a false "first AHEAD" superlative, a latency claim contradicted by Experiment
-5A, ratios dividing 408-call totals by 414-call ones, and an understated retry count -- all
-corrected in place in `EXPERIMENTS.md`. It also caught that E15 and E16 ran concurrently
-through one account, so the 429 burst and the p95 are contaminated by self-imposed load;
-a re-run at concurrency 1 is the discriminating test. Full table:
+99% rule) with the worst latency measured at every percentile, not just the tail (p50 25.8s,
+p95 108.9s, max 186s); Kimi costs **22.7x** Gemini, driven partly by a tokenizer needing
+**2.59x** the input tokens for the same Thai text. Gemini remains untouched on operations:
+zero variance, zero retries, fastest everywhere. **An eight-agent adversarial pass flagged
+four claims in the first write-up, three of which were genuinely wrong** -- a false "first
+AHEAD" superlative, an overstatement of Kimi's parity, and an understated retry count --
+all corrected in place in `EXPERIMENTS.md`, along with a further fix to ratios that had
+divided 408-call totals by 414-call ones. The fourth flag, on latency, was itself mistaken
+and is withdrawn (see below). It also caught that E15 and E16 ran concurrently through
+one account, so the 429 burst and the p95 are contaminated by self-imposed load; a re-run
+at concurrency 1 is the discriminating test. Full table:
 `docs/frontier-open-model-comparison.md`. Still `RECONCILED: NO`.
+
+**A second review pass (2026-08-11) found that the corrections commit had itself introduced
+errors, now repaired.** The big one: correction 3 retracted "GLM has the worst latency" by
+citing Qwen p50s from the **reasoning-on** Experiment 5A arms -- the exact confound
+correction 1 had just disclosed. Under the matched zero-reasoning regime those arms post
+6.95 s and 2.78 s, so **GLM is in fact the slowest at p50, p95 and max**, and the retraction
+is withdrawn. The same regime mix put an impossible `p95 9.00 s` under `p50 28.75 s` in the
+comparison table, whose Qwen columns were Experiment 7 in every row except latency. Also
+fixed: Gemma's AHEAD is the **third**, not the second or fourth; Kimi's `call_result` was
+one pair from INDISTINGUISHABLE, not UNDERPOWERED; and the "clustered on four items" scope
+covers the 6 terminal failures, while the 33 retried calls span 22 items. Everything was
+recomputed from `retention-e7/summary.json` and the raw logs through the harness's own
+`_percentile` and `exact_band`.
 
 **Latest (2026-08-11, Experiments 10-14): Gemma 4 12B is indistinguishable from Gemini on
 held-out items, and is the best open model this project has tested.** On the 89 locked
@@ -28,10 +43,11 @@ holdout items: `reason` INDISTINGUISHABLE (+0 of 24 discordant), `call_result` a
 only 8 touching a scored label against 31 and 44 -- at a fifth to a third the parameter
 count. It is **5-10x slower** (p50 9.62s vs 1.99s) on one small shared box, and its
 endpoint reports no cost, so there is no cost case yet. Prompt tuning moved the target
-dimension and **generalised** (`reason` AHEAD, +14 of 18 against a +/-10 band, the second
-AHEAD ever recorded here) **and cost the other two** (both BEHIND). The portable finding,
-now seen twice: **a prompt edit works by changing what the model is SHOWN; telling it what
-to do moves nothing.** Full assessment: `docs/gemma-4-12b-assessment.md`; runs in
+dimension and **generalised** (`reason` AHEAD, +14 of 18 against a +/-10 band, the third
+AHEAD recorded here, after Experiment 5A's two Qwen arms) **and cost the other two** (both
+BEHIND). The portable finding, now seen twice: **a prompt edit works by changing what the
+model is SHOWN; telling it what to do moves nothing.** Full assessment:
+`docs/gemma-4-12b-assessment.md`; runs in
 `EXPERIMENTS.md` Experiments 10-14. Still `RECONCILED: NO`, still synthetic.
 
 **Latest (2026-08-09, Experiment 9): prompt tuning for Qwen, aimed at the gate it actually

@@ -2011,8 +2011,10 @@ evidence that Gemma caught up.
 | product | **BEHIND** | -8 of 8 | +/-8 |
 
 **The tuning generalised.** `reason` clears the band on data the edit was never selected
-against -- a genuine AHEAD at alpha = 1/64, which this project has recorded only once
-before. And it is **not free**: `call_result` and `product` both go BEHIND.
+against -- a genuine AHEAD at alpha = 1/64, which this project has recorded ~~only once~~
+**twice** before. *(Corrected 2026-08-11: Experiment 5A recorded two AHEADs on `reason`,
+Qwen27B at +26/40 and Qwen35B-A3B at +17/41 -- `EXPERIMENTS.md:864,867`. This one is the
+third.)* And it is **not free**: `call_result` and `product` both go BEHIND.
 
 That trade is the entire value of having pre-registered guard endpoints. A report of the
 target dimension alone would have called this a clean 37.5% error reduction that
@@ -2070,7 +2072,7 @@ production's regime. Gemini's arm is Experiment 10's, reused: same workload cont
 | parse-valid | 414/414 | 414/414 | | |
 | raw-unstable | **0/138** | 138/138 | | |
 | of which scored | **0** | 25 | | |
-| p50 / p95 latency | **1.99 s / 3.76 s** | 16.78 s / 46.31 s | | |
+| p50 / p95 latency | **1.99 s / 3.76 s** | 16.77 s / 46.31 s | | |
 | cost, 414 calls | **$0.517** | **$11.750** | | |
 
 **Kimi K3 is statistically level with Gemini on quality.** No dimension separates them at
@@ -2106,14 +2108,20 @@ is Experiment 10's, reused.
 | completed calls | **414/414** | 408/414 | | |
 | raw-unstable | **0/138** | 137/138 | | |
 | of which scored | **0** | 27 | | |
-| p50 / p95 / max latency | **1.99 / 3.76 / 4.77 s** | 25.78 / 108.86 / 186.11 s | | |
-| cost, 414 calls | **$0.518** | $1.028 | | |
+| p50 / p95 / max latency | **1.99 / 3.76 / 4.77 s** | 25.77 / 108.86 / 186.11 s | | |
+| cost, 414 calls | **$0.517** | $1.028 | | |
 
-### The first time an open model has beaten Gemini on `reason` in this project
+### ~~The first time an open model has beaten Gemini on `reason` in this project~~ The first to do it under a matched zero-reasoning regime
+
+*(Header corrected in place 2026-08-11. The original superlative was false -- see
+correction 1 below. The corrected claim is the one to quote.)*
 
 **AHEAD, +14 of 32 discordant pairs against a +/-14 band**, and weighted F1 0.863 against
-0.823. Every previous candidate was INDISTINGUISHABLE at best on this dimension, and it is
-the dimension every experiment here has turned on.
+0.823, on the dimension every experiment here has turned on. ~~Every previous candidate was
+INDISTINGUISHABLE at best on this dimension.~~ That was false: Experiment 5A recorded two
+Qwen arms AHEAD on `reason`, both by wider margins. What is new here is the **regime** --
+GLM posted this with **zero reasoning tokens on both sides**, where both Qwen AHEADs were
+bought with 2.4-2.6M.
 
 **The margin is the narrowest one the rule can return.** `net` equals the band exactly:
 one discordant pair the other way and this reads INDISTINGUISHABLE. That is a real AHEAD
@@ -2132,22 +2140,41 @@ The failures are **transport, not schema** -- the model never returned malformed
 produce valid output. It is recorded as measured rather than excused, and a re-run on a
 second provider is the way to separate the two.
 
-### Latency is the worst of any arm measured
+### Latency is the worst of any arm measured under a matched zero-reasoning regime
 
-p50 **25.78 s** against Gemini's 1.99 s, p95 **108.86 s** against 3.76 s, and a worst call
+p50 **25.77 s** against Gemini's 1.99 s, p95 **108.86 s** against 3.76 s, and a worst call
 of **186 s** -- over three minutes for one transcript. At production's roughly 83,000 files
 a month this is the number that decides deployability, well before quality does.
 
-Cost is the mildest of its problems: **$1.028 against $0.518**, only 2x, with a tokenizer
-needing 1.81x the input tokens for the same Thai text (2,240,851 against 1,237,746) --
-markedly better than Kimi K3's 2.59x.
+**Worst at every percentile, not just the tail.** Against the other zero-reasoning arms in
+this comparison -- Gemini 1.99 s, Qwen35B-A3B 2.78 s, Qwen27B 6.95 s, Gemma 9.62 s, Kimi
+16.77 s -- GLM's 25.77 s p50 is the slowest, and so are its p95 and max. The superlative
+also survives a sweep of **every** zero-reasoning arm in `out/runs`, roughly twenty of them
+including the tuning and holdout arms; the nearest p50 is 19.56 s (`e14-hold-gemma-base`),
+the nearest p95 46.31 s and the nearest max 71.02 s, both Kimi's. *(Correction 3 below
+originally retracted this header by comparing against Experiment 5A's reasoning-on Qwen
+runs. That retraction was itself wrong and is withdrawn; see the note there.)*
+
+Cost is the mildest of its problems: **$1.028 against $0.517**, only 2x, with a tokenizer
+needing **1.84x** the input tokens for the same Thai text -- 2,240,851 against Gemini's
+1,220,906 **on the 408 cells both arms answered** -- markedly better than Kimi K3's 2.59x.
 
 ### Corrections to Experiments 15 and 16, from an adversarial verification pass (2026-08-11)
 
 Eight agents across four lenses checked every claim above against the run logs before the
-cross-model summary was written. **Four claims were wrong and are corrected here rather
-than edited away.** The verdict arithmetic itself was reproduced exactly in every case;
-what failed was the prose wrapped around it.
+cross-model summary was written. **Four claims were flagged wrong and are corrected here
+rather than edited away -- of which three really were wrong.** The verdict arithmetic
+itself was reproduced exactly in every case; what failed was the prose wrapped around it.
+*(Recount 2026-08-11: correction 3 was a false alarm and is withdrawn below, so the score
+is three genuine errors, one mistaken retraction, plus corrections 5-8 which were never
+part of the four.)*
+
+> **Second pass, 2026-08-11.** A later review found that this corrections section had
+> introduced errors of its own. Correction 3 was wrong outright and is withdrawn below;
+> the AHEAD count in correction 1 and the verdict category in correction 2 were both off
+> by one step. Those repairs are marked inline. Recomputed from
+> `experiments/evidence/retention-e7/summary.json` and the raw run logs through the
+> harness's own `_percentile` and `exact_band`, never a re-implementation.
 
 **1. ~~"The first time an open model has beaten Gemini on `reason` in this project."~~
 FALSE, and contradicted by this same file 1,250 lines above.** Experiment 5A recorded
@@ -2163,22 +2190,64 @@ with none". GLM 5.2 posted **zero reasoning tokens on both sides**. The correct 
 zero-reasoning regime at identical decoding.**
 
 The same error appears in `docs/gemma-4-12b-assessment.md` ("only the second AHEAD this
-project has recorded"); Experiment 14's was the **fourth**.
+project has recorded"); Experiment 14's was the ~~**fourth**~~ **third**. *(Repaired
+2026-08-11: the four AHEADs on `reason` in order are Qwen27B and Qwen35B-A3B in Experiment
+5A, Gemma's tuned arm in Experiment 14, then GLM 5.2 in Experiment 16. Experiment 14
+precedes Experiment 16, so Gemma's is the third and GLM's is the fourth --
+`EXPERIMENTS.md:864,867,2009,2106`. `docs/gemma-4-12b-assessment.md` had it right and this
+line contradicted it.)*
 
 **2. ~~"Kimi K3 is statistically level with Gemini on quality."~~ Overstated.** Only
 `reason` carries power: d=37 against a +/-15 band is a real no-difference result. On
 `call_result`, d=7 and `exact_band(7) = 7`, so the test could only have returned a verdict
-on a 7-0 sweep -- one pair from UNDERPOWERED, ruling out nothing short of total. On
+on a 7-0 sweep -- one pair from ~~UNDERPOWERED~~ **INDISTINGUISHABLE**, ruling out nothing
+short of total. *(Repaired 2026-08-11: flipping one pair of a 7-0 leaves d=7, so the band
+stays 7 while net falls to 5, which is INDISTINGUISHABLE. UNDERPOWERED needs the band
+itself to vanish, i.e. d dropping to 5 or below -- `exact_band(5) = None`. Verified against
+`src/evalharness/compare.py`.)* On
 `product`, Kimi lost all 3 discordant clusters it had. The defensible statement is
 **"indistinguishable on `reason`, the one dimension with power; the other two are
 underpowered and say nothing either way."**
 
-**3. ~~"GLM 5.2's latency is the worst of any arm measured here."~~ FALSE on the median.**
-On the identical 138-item pack at the same prompt, Qwen3.6 27B posted **p50 40.62 s** and
-Qwen3.6 35B-A3B **28.75 s**, both worse than GLM's **25.77 s**. GLM has the worst **tail**:
-p95 108.86 s and max 186.11 s against 53.25 s and 85.94 s for the next worst arm. The p50
-figures quoted above as 25.78 s and 16.78 s were rounded up by 0.01 and are **25.77 s** and
-**16.77 s** in the committed reports.
+**3. ~~"GLM 5.2's latency is the worst of any arm measured here."~~ ~~FALSE on the
+median.~~ WITHDRAWN 2026-08-11 -- the original claim was right and this correction was
+wrong.**
+
+~~On the identical 138-item pack at the same prompt, Qwen3.6 27B posted p50 40.62 s and
+Qwen3.6 35B-A3B 28.75 s, both worse than GLM's 25.77 s. GLM has the worst tail only: p95
+108.86 s and max 186.11 s against 53.25 s and 85.94 s for the next worst arm.~~
+
+**Why it was wrong.** Those Qwen p50s are from the **reasoning-on** arms -- CoreWeave and
+AkashML, 2,379,369 and 2,620,339 reasoning tokens, $6.55 and $1.96 -- the very runs
+correction 1 four paragraphs above says must not be read as a clean comparison. Citing
+them to rebut a latency claim about a zero-reasoning arm repeats the confound the same
+section had just finished disclosing.
+
+Under the **matched zero-reasoning regime** (Experiment 7, `retention-e7/summary.json`),
+the same two models post **p50 6.950 s** and **2.779 s** -- both far faster than GLM.
+
+**One of those two legs also changed provider, and that is disclosed rather than buried.**
+Qwen35B-A3B ran on AkashML in both experiments, so its 28.703 s -> 2.779 s is regime alone.
+Qwen27B moved from CoreWeave (E5A) to Chutes (E7), so its 40.594 s -> 6.950 s is regime
+*and* hardware and cannot be attributed to either by itself. Neither leg is needed for the
+conclusion below: GLM is the slowest arm even against the provider-matched 35B-A3B.
+
+Ranking all six zero-reasoning arms:
+
+| arm | p50 | p95 | max |
+|---|---:|---:|---:|
+| Gemini 2.5 Flash | **1.99 s** | **3.76 s** | **4.77 s** |
+| Qwen3.6 35B-A3B (E7) | 2.78 s | 9.00 s | 20.65 s |
+| Qwen3.6 27B (E7) | 6.95 s | 20.50 s | 55.98 s |
+| Gemma 4 12B | 9.62 s | 12.95 s | 22.55 s |
+| Kimi K3 | 16.77 s | 46.31 s | 71.02 s |
+| **GLM 5.2** | **25.77 s** | **108.86 s** | **186.11 s** |
+
+**GLM is the slowest arm at every percentile, not merely in the tail.** The section header
+stands as originally written, with the regime named.
+
+**What survives from this correction:** the rounding. The p50 figures quoted as 25.78 s and
+16.78 s were rounded up by 0.01 and are **25.77 s** and **16.77 s**.
 
 **4. ~~"6 of 414 calls returned a transport error"~~ understates the instability by 5.5x,
 and both write-ups omit a confound of my own making.** The 6 are only the calls that
@@ -2186,8 +2255,28 @@ exhausted all three attempts. The run **retried 33 of 414 calls (8.0%)** across 
 HTTP attempts -- attempt histogram `{1: 381, 2: 21, 3: 12}` -- while Gemini, Gemma and Kimi
 each ran `attempt_count = 1` on all 414 calls with zero retries.
 
-Every failure is **HTTP 429**, `no_asap_capacity`, clustered on four adjacent items
-(RET-116 rep3, RET-117 rep3, RET-118 all three reps, RET-119 rep1). And **Experiments 15
+~~Every failure is **HTTP 429**, `no_asap_capacity`, clustered on four adjacent items
+(RET-116 rep3, RET-117 rep3, RET-118 all three reps, RET-119 rep1).~~
+
+*Scope and evidence repaired 2026-08-11, in two parts.*
+
+**The four-item cluster describes the 6 terminal failures, not the 51 attempts.** Those 6
+are RET-116 rep3, RET-117 rep3, RET-118 all three reps and RET-119 rep1, each with
+`attempt_count = 3` and `http_status = 429`. The **33 retried calls do not cluster** --
+they span **22 distinct items** across the pack. The 51 failed attempts reconcile as
+21x1 + 6x2 + 6x3, the last term because a call that fails all three attempts contributes
+three failures, not two.
+
+**"Every one an HTTP 429" is an inference for 45 of the 51, not a recorded fact.** Only the
+6 terminal rows carry `http_status = 429` and a `TransportError`. On the 27 calls that
+retried and then succeeded, the winning attempt's fields overwrite the failed ones, so they
+record `http_status = null` and `error = null`, and no per-attempt journal exists. That all
+51 were 429s is the natural reading of a burst confined to one arm on one night, and it is
+consistent with every failure the log *does* describe -- but the run log cannot confirm it,
+and the harness's own `max_retries=0` design note (`client.py:137`) is the reason the
+intermediate attempts leave no trace.
+
+And **Experiments 15
 and 16 ran concurrently through one OpenRouter account at concurrency 8 each**: E15's wall
 clock was 1,043.9 s inside E16's 2,156.3 s, so E15 ran entirely within E16's window.
 **The 429 burst and the 108 s p95 were measured under load I imposed.** Experiment 14

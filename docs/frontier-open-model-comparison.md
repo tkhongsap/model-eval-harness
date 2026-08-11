@@ -8,15 +8,16 @@ tags: [work/true, project/intelligence-layer, evaluation, frontier-open]
 # Gemini 2.5 Flash against the frontier open models
 
 Every arm this project has measured on `retention_v3`, in one place. Written after an
-eight-agent adversarial pass that found four wrong claims in the first draft; those are
-corrected here and recorded in `EXPERIMENTS.md`.
+eight-agent adversarial pass that flagged four claims in the first draft, three of them
+genuinely wrong; a later pass withdrew the fourth and found further errors in the
+corrections themselves. All of it is recorded in `EXPERIMENTS.md`.
 
 **Answer first.** Two open models now match or beat Gemini 2.5 Flash on quality: **GLM 5.2
 is AHEAD on `reason`** under a matched non-reasoning regime, and **Kimi K3 is
 indistinguishable** on the one dimension with power. Neither is deployable on the evidence
-here: GLM failed the 99% reliability rule and has the worst latency tail measured, Kimi
-costs **22.7x** Gemini. Gemini remains the only arm that is perfectly stable, fastest and
-cheapest. Synthetic data; `RECONCILED: NO`.
+here: GLM failed the 99% reliability rule and is the slowest arm measured at every
+percentile, Kimi costs **22.7x** Gemini. Gemini remains the only arm that is perfectly
+stable, fastest and cheapest. Synthetic data; `RECONCILED: NO`.
 
 ## Quality
 
@@ -54,11 +55,30 @@ the one dimension with power; the other two say nothing.
 | calls retried | **0** | 0 | 0 | **33 (8.0%)** | -- | -- |
 | calls that varied | **0/138** | 79/138 | 138/138 | 137/138 | 129/138 | 130/138 |
 | ...changing a scored label | **0** | **8** | 25 | 27 | 31 | 44 |
-| p50 latency | **1.99 s** | 9.62 s | 16.77 s | 25.77 s | 40.62 s | 28.75 s |
-| p95 latency | **3.76 s** | 12.95 s | 46.31 s | **108.86 s** | 53.25 s | 9.00 s |
-| max latency | **4.77 s** | 22.55 s | 71.02 s | **186.11 s** | 85.94 s | 91.70 s |
+| p50 latency | **1.99 s** | 9.62 s | 16.77 s | 25.77 s | 6.95 s | 2.78 s |
+| p95 latency | **3.76 s** | 12.95 s | 46.31 s | **108.86 s** | 20.50 s | 9.00 s |
+| max latency | **4.77 s** | 22.55 s | 71.02 s | **186.11 s** | 55.98 s | 20.65 s |
 | cost, 414 calls | $0.517 | not reported | **$11.750** | ~$1.04 | $0.362 | $0.211 |
 | input tokens vs Gemini | 1.00x | 1.01x | **2.59x** | 1.84x | 1.33x | 1.33x |
+
+**Regime, because the first version of this table got it wrong.** Every column is
+**zero-reasoning**; the two Qwen columns are Experiment 7 throughout (Chutes and AkashML),
+which is what the F1, stability, cost and token rows here have always been.
+
+*Corrected 2026-08-11.* **Five of the six Qwen latency cells** previously carried Experiment
+**5A** figures -- the reasoning-on arms on CoreWeave and AkashML, 2.4-2.6M reasoning tokens
+and $6.55/$1.96 -- while every other row in those same columns was Experiment 7. The sixth,
+Qwen35B-A3B's p95, was already E7's `9.00 s`, which is how it came to sit *beneath* an E5A
+`p50 28.75 s` -- a p95 below its own median, and the tell that the row was mixing two runs.
+Both Qwen columns are now E7 end to end, so the table compares one regime against itself.
+
+**Convention.** Medians are `statistics.median` (`src/evalgen/cli.py:1286`, what the compare
+reports print); p95 and max are `operational_summary`'s `_percentile` and `max`
+(`src/evalgen/experiments.py:843`). The two Qwen columns come from
+`experiments/evidence/retention-e7/summary.json`, whose p50 is `_percentile` rather than
+`statistics.median` -- a difference of at most 0.05 s on these runs, which changes no
+ordering in this table. That file records three decimals; two of them round ambiguously at
+two, and are quoted here half-up: Qwen35B-A3B's **8.995 -> 9.00** and **20.645 -> 20.65**.
 
 **Gemini is untouched on operations.** Zero variance, zero retries, fastest on every
 percentile, and cheaper than everything except the two Qwen arms it beats on quality.
@@ -67,8 +87,14 @@ percentile, and cheaper than everything except the two Qwen arms it beats on qua
 against 25, 27, 31 and 44 -- from the smallest model in the table.
 
 **GLM 5.2's reliability is worse than the headline.** 6 calls failed outright, but 33 were
-retried across 51 failed HTTP attempts, every one an HTTP 429 `no_asap_capacity` clustered
-on four adjacent items. **Measured under load I imposed**: Experiments 15 and 16 ran
+retried across 51 failed HTTP attempts. The 6 terminal failures cluster on four adjacent
+items (RET-116 to RET-119) and each carries `http_status = 429`, `no_asap_capacity`; the 33
+retried calls do **not** cluster -- they span 22 distinct items across the pack.
+*(Corrected 2026-08-11 on two counts: the earlier text applied "clustered on four adjacent
+items" to all 51 attempts, which is impossible at three replicates an item; and it called
+all 51 confirmed 429s, when only the 6 terminal rows record a status. A retried-then-
+successful call overwrites the failed attempt's fields, so the other 45 are a reasonable
+inference, not a logged fact.)* **Measured under load I imposed**: Experiments 15 and 16 ran
 concurrently through one OpenRouter account at concurrency 8 each, E15 entirely inside
 E16's window. The 429 burst and the 108 s p95 are not separable from that contention. A
 re-run at concurrency 1 on the same pin is the cheap discriminating test.
@@ -100,7 +126,7 @@ And on the holdout, the edit that worked **cost two other dimensions** (`call_re
 |---|---|---|
 | **Gemini 2.5 Flash** | reference | none measured |
 | **Gemma 4 12B** | indistinguishable on the holdout | latency 5-10x, no cost data |
-| **GLM 5.2** | **AHEAD on `reason`** | **98.55% reliability, below the 99% rule**; worst latency tail |
+| **GLM 5.2** | **AHEAD on `reason`** | **98.55% reliability, below the 99% rule**; slowest at every percentile |
 | **Kimi K3** | indistinguishable where powered | **22.7x cost**, 8x latency |
 | Qwen3.6 27B / 35B-A3B | `FAIL` (Experiment 7) | stability; quality for the 35B |
 
