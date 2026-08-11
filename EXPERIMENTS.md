@@ -2091,3 +2091,53 @@ precision figure any arm has posted in this project.
 against a +/-15 band, which is a genuine no-difference result rather than an underpowered
 one. `product` is UNDERPOWERED at d=3 and says nothing either way. So the honest summary is
 **level on the two dimensions the pack can resolve, at 22.7x the cost and 8x the latency.**
+
+## Experiment 16 — Gemini 2.5 Flash vs GLM 5.2
+
+Same design as Experiment 15. `z-ai/glm-5.2` pinned to **Sail Research (fp8)** after a
+probe in which Novita returned 3/3 transport errors. Zero reasoning tokens. Gemini's arm
+is Experiment 10's, reused.
+
+| dimension | Gemini 2.5 Flash | GLM 5.2 | paired verdict | discordant |
+|---|---:|---:|---|---|
+| call_result w-F1 | 0.955 | **0.966** | INDISTINGUISHABLE | +0 of 6 |
+| **reason w-F1** | 0.823 | **0.863** | **AHEAD** | **+14 of 32, band +/-14** |
+| product w-F1 | **0.960** | 0.950 | UNDERPOWERED | -3 of 3 |
+| completed calls | **414/414** | 408/414 | | |
+| raw-unstable | **0/138** | 137/138 | | |
+| of which scored | **0** | 27 | | |
+| p50 / p95 / max latency | **1.99 / 3.76 / 4.77 s** | 25.78 / 108.86 / 186.11 s | | |
+| cost, 414 calls | **$0.518** | $1.028 | | |
+
+### The first time an open model has beaten Gemini on `reason` in this project
+
+**AHEAD, +14 of 32 discordant pairs against a +/-14 band**, and weighted F1 0.863 against
+0.823. Every previous candidate was INDISTINGUISHABLE at best on this dimension, and it is
+the dimension every experiment here has turned on.
+
+**The margin is the narrowest one the rule can return.** `net` equals the band exactly:
+one discordant pair the other way and this reads INDISTINGUISHABLE. That is a real AHEAD
+under a pre-registered rule, and it is one pair from not being one. Both facts belong in
+any quotation of it.
+
+### And it failed the reliability gate
+
+**6 of 414 calls returned a transport error: 408/414 = 98.55%, below the pre-registered
+99% minimum.** Under Experiment 5B's `decision()` that is a `FAIL` on reliability
+regardless of the quality result.
+
+The failures are **transport, not schema** -- the model never returned malformed JSON, and
+`response_format` was honoured on every call that arrived. So this is a property of
+`glm-5.2 @ Sail Research` on the night it was measured, not evidence that the model cannot
+produce valid output. It is recorded as measured rather than excused, and a re-run on a
+second provider is the way to separate the two.
+
+### Latency is the worst of any arm measured
+
+p50 **25.78 s** against Gemini's 1.99 s, p95 **108.86 s** against 3.76 s, and a worst call
+of **186 s** -- over three minutes for one transcript. At production's roughly 83,000 files
+a month this is the number that decides deployability, well before quality does.
+
+Cost is the mildest of its problems: **$1.028 against $0.518**, only 2x, with a tokenizer
+needing 1.81x the input tokens for the same Thai text (2,240,851 against 1,237,746) --
+markedly better than Kimi K3's 2.59x.
