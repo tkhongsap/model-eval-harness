@@ -2051,3 +2051,43 @@ above are absence of data, not free inference.
 every item carrying a written description of the wrong answer. The holdout narrows the
 contamination; the same author wrote both slices, so it does not remove it. Latency was
 measured on one shared box under self-inflicted contention. And `RECONCILED: NO`.
+
+---
+
+## Experiment 15 — Gemini 2.5 Flash vs Kimi K3
+
+Plan: `docs/experiments-15-16-plan.md`. 414 calls, `v9_16_base`, temperature 0,
+top_p 1.0, seed 0, 3 replicates, `moonshotai/kimi-k3` pinned to **DeepInfra (bf16)** after
+a probe in which Fireworks returned 3/3 transport errors. Zero reasoning tokens, which is
+production's regime. Gemini's arm is Experiment 10's, reused: same workload contract, so
+`compare` accepts the pairing without an override.
+
+| dimension | Gemini 2.5 Flash | Kimi K3 | paired verdict | discordant |
+|---|---:|---:|---|---|
+| call_result w-F1 | 0.955 | **0.972** | INDISTINGUISHABLE | +1 of 7 |
+| reason w-F1 | **0.823** | 0.806 | INDISTINGUISHABLE | -3 of 37 |
+| product w-F1 | **0.960** | 0.943 | UNDERPOWERED | -3 of 3 |
+| parse-valid | 414/414 | 414/414 | | |
+| raw-unstable | **0/138** | 138/138 | | |
+| of which scored | **0** | 25 | | |
+| p50 / p95 latency | **1.99 s / 3.76 s** | 16.78 s / 46.31 s | | |
+| cost, 414 calls | **$0.517** | **$11.750** | | |
+
+**Kimi K3 is statistically level with Gemini on quality.** No dimension separates them at
+alpha = 1/64, and its `call_result` weighted precision is **1.000** -- the only perfect
+precision figure any arm has posted in this project.
+
+**Everything else is worse, and two of them by a lot.**
+
+- **Cost: 22.7x Gemini** for the same 414 calls. Two things drive it: a higher price per
+  token, and **a tokenizer that needs 2.59x the input tokens for identical Thai text**
+  (3,205,227 against 1,237,746). The second is invisible in any published price comparison
+  and is a property of Thai text specifically.
+- **Latency: 8.4x on p50 and 12.3x on p95**, with a worst call of 71 s.
+- **Stability: every one of 138 calls varied**, and 25 of them changed a label the scorer
+  reads -- three times Gemma 4 12B's 8, though still below both Qwen arms.
+
+**Read the parity claim carefully.** `reason` is INDISTINGUISHABLE on 37 discordant pairs
+against a +/-15 band, which is a genuine no-difference result rather than an underpowered
+one. `product` is UNDERPOWERED at d=3 and says nothing either way. So the honest summary is
+**level on the two dimensions the pack can resolve, at 22.7x the cost and 8x the latency.**
