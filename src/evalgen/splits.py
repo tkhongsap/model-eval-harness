@@ -81,23 +81,17 @@ def dilation_blocks(items: Sequence[Any]) -> dict[str, tuple[str, ...]]:
             )
         families.setdefault(base, []).append(item.item_id)
 
+    # Multi-item blocks first, then singletons via `setdefault`, so a block member can
+    # never be overwritten by a block of one and the order `items` arrives in does not
+    # matter. Doing it the other way round needs a "have I already seen this as a
+    # dilation?" scan of every family on every item, which is what this replaced.
     blocks: dict[str, tuple[str, ...]] = {}
+    for base, dilations in families.items():
+        members = (base, *sorted(dilations))
+        for member in members:
+            blocks[member] = members
     for item in items:
-        if item.item_id in blocks:
-            continue
-        if item.item_id in families:
-            members = (item.item_id, *sorted(families[item.item_id]))
-        elif any(item.item_id in group for group in families.values()):
-            continue  # a dilation; recorded when its base is reached
-        else:
-            members = (item.item_id,)
-        for member in members:
-            blocks[member] = members
-    # dilations whose base was visited after them
-    for base, kids in families.items():
-        members = (base, *sorted(kids))
-        for member in members:
-            blocks[member] = members
+        blocks.setdefault(item.item_id, (item.item_id,))
     return blocks
 
 
