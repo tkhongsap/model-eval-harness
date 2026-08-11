@@ -30,7 +30,11 @@ Weighted F1, replicate 1, `v9_16_base` on every arm.
 | decision vs Gemini | reference | see below | `FAIL` stability | `FAIL` quality + stability |
 
 Gemini and Gemma are Experiment 10 (`top_p = 1.0`); both Qwen columns are Experiment 7
-(`top_p = 0`, different providers).
+(`top_p = 0`, different providers). All four columns are zero-reasoning. Medians are
+`statistics.median` (`src/evalgen/cli.py:1286`, what the compare reports print) and p95 is
+`operational_summary`'s `_percentile`; the Qwen columns come from
+`experiments/evidence/retention-e7/summary.json`, whose p50 is `_percentile` instead -- at
+most 0.05 s apart on these runs and never enough to reorder a column.
 
 **Why that mixed-regime table is nevertheless readable.** Gemini was re-run from scratch
 under the new regime and produced **0.955 / 0.823 / 0.960 -- identical to three decimals to
