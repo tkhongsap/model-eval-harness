@@ -217,22 +217,53 @@ kept in place and corrected, because the wrong inference is the useful part:
 
 ## 🐛 Known Bugs
 
-**Intermittent, Windows-only, three occurrences and never reproduced (2026-08-09/11).**
-Three different tests have each failed exactly once in a full local run and then passed
-every subsequent time -- 18, 11 and 4 consecutive clean runs respectively:
+**~~Intermittent, Windows-only, three occurrences and never reproduced.~~ DIAGNOSED and
+mitigated 2026-08-11.** Three tests in `tests/test_cli.py` had each failed once in a full
+local run and then passed every subsequent time, never in isolation and never on CI:
 
 - (unnamed; the summary line was captured but not the test id)
 - `test_portable_run_bundles_compare_after_the_original_directories_move`
 - `test_private_resume_uses_snapshots_and_ignores_the_unused_default_output`
 
-All three live in `tests/test_cli.py` and all three create, copy, rename or resume a run
-directory. CI (ubuntu-latest) has never reproduced any of them, and neither has an
-isolated run. The signature points at a Windows file-handle or antivirus race in the
-test's own directory manipulation rather than at harness code, but that is a hypothesis
-and not a diagnosis: none of the three was caught with a traceback. Recorded so a single
-red run on a developer machine is recognised rather than investigated from scratch, and so
-that a FOURTH occurrence -- especially a reproducible one, or one in CI -- is treated as
-new information.
+**The fourth occurrence was caught with a traceback -- the first one ever captured.**
+Reproduced on run 14 of a 16-run hunt:
+
+```
+candidate.rename(env / "original-candidate-moved")
+PermissionError: [WinError 5] Access is denied:
+  ...runs/20260811-062144Z-candidate -> .../original-candidate-moved
+```
+
+It is the **second of two renames**, on a directory `shutil.copytree` finished reading a
+line earlier. Windows fails a directory rename with `ERROR_ACCESS_DENIED` while any file
+beneath it is open by any process, and a real-time scanner opens files that were just
+read.
+
+**Two earlier explanations were tested and ruled out**, so neither should be re-proposed:
+
+1. *`artifacts._fsync_directory` holding a directory handle* -- it cannot. `os.open` on a
+   directory raises `PermissionError` on Windows, so the function returns early and opens
+   nothing. Measured.
+2. *A generic copytree-then-rename race* -- a bare loop over a run-shaped tree survived
+   **600 iterations** with zero failures. The race needs the load of a full suite run.
+
+**An in-process leak is ruled out as far as inspection can**: every `os.open` in
+`evalgen.artifacts` closes in a `finally`, `RunJournal` opens and closes per append, and
+`runner`'s pool is shut down with `wait=True`. The remaining inference -- an external
+holder, almost certainly the real-time scanner -- is strongly supported but was never
+caught red-handed; the holder was not identified by name.
+
+**Mitigation:** `tests/test_cli.py::move_run_dir`, used at all three sites. It retries the
+rename for up to five seconds and then re-raises. This retries the test's own *setup*, not
+an assertion, and **it cannot hide a real leak**: a handle held by this process is never
+released while the test runs, so the budget expires and the original error propagates with
+its traceback. Both directions were proved on Windows -- a lock released after 400 ms is
+absorbed (rename succeeded at 391 ms); a lock never released still raises (at 515 ms
+against a 500 ms budget).
+
+Frequency before the fix was roughly **1 in 40 full runs** (one failure across ~40 runs on
+2026-08-11). A recurrence *after* this change means the budget expired, which would be new
+information: it would point at an in-process holder rather than a scanner.
 
 
 **Four remaining coverage/configuration gaps, refreshed 2026-08-08.** These do not

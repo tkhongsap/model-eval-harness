@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+import time
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,6 +47,43 @@ from evalgen.testsets import load_testset  # noqa: E402
 TESTSETS = ROOT / "tests" / "fixtures" / "testsets"
 TESTSET_PATH = TESTSETS / "retention_v1.jsonl"
 GT_PATH = TESTSETS / "retention_v1.gt.csv"
+
+
+def move_run_dir(source: Path, target: Path, *, budget_s: float = 5.0) -> Path:
+    """Rename a run directory, tolerating a transient lock held outside this process.
+
+    **This retries the test's own setup, never an assertion.** The thing being moved is
+    a directory the test just finished copying; nothing about the harness's behaviour is
+    being smoothed over, and every assertion after the move is unchanged.
+
+    Windows fails a directory rename with `ERROR_ACCESS_DENIED` while any file beneath
+    it is still open by any process, and a real-time scanner opens files that were just
+    read -- which is exactly what the `shutil.copytree` a line above does to this
+    source. Measured on 2026-08-11 as::
+
+        PermissionError: [WinError 5] Access is denied:
+          ...runs/20260811-062144Z-candidate -> .../original-candidate-moved
+
+    on the second of two renames, in 1 of roughly 40 full-suite runs, never in an
+    isolated run and never on CI's Linux. Two earlier explanations were tested and
+    ruled out: `artifacts._fsync_directory` opens nothing on Windows (`os.open` on a
+    directory raises `PermissionError` there, so it returns early), and a bare
+    copytree-then-rename loop over a run-shaped tree survived 600 iterations untouched.
+    Every `os.open` in `evalgen.artifacts` closes in a `finally`, and the runner's pool
+    is shut down with `wait=True`, so no handle is known to be held in-process.
+
+    **A retry cannot hide a real leak.** A handle held by this process is never released
+    while the test runs, so the budget expires and the original error is raised with its
+    traceback intact. Only an external holder that lets go is absorbed.
+    """
+    deadline = time.monotonic() + budget_s
+    while True:
+        try:
+            return source.rename(target)
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.02)
 
 
 # --------------------------------------------------------------------------- fakes
@@ -1200,8 +1238,8 @@ def test_portable_run_bundles_compare_after_the_original_directories_move(
     cand_copy = portable / "candidate"
     shutil.copytree(incumbent, inc_copy)
     shutil.copytree(candidate, cand_copy)
-    incumbent.rename(env / "original-incumbent-moved")
-    candidate.rename(env / "original-candidate-moved")
+    move_run_dir(incumbent, env / "original-incumbent-moved")
+    move_run_dir(candidate, env / "original-candidate-moved")
 
     assert cli.load_run(inc_copy).meta["testset_path"] == "inputs/testset.jsonl"
     code = main(["compare", "--incumbent", str(inc_copy), "--candidate", str(cand_copy)])
@@ -1259,7 +1297,7 @@ def test_private_resume_uses_snapshots_and_ignores_the_unused_default_output(
     state = json.loads(state_path.read_text(encoding="utf-8"))
     state["status"] = "INCOMPLETE"
     state_path.write_text(json.dumps(state), encoding="utf-8", newline="\n")
-    source.rename(private_root / "mounted-source-unavailable")
+    move_run_dir(source, private_root / "mounted-source-unavailable")
     monkeypatch.setattr(
         cli,
         "build_client",
