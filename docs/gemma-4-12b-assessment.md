@@ -83,8 +83,11 @@ recall 0.928.
 
 **The whole gain came from iteration 1.** On the holdout it **generalised**: `reason`
 came out **AHEAD, +14 of 18 discordant against a +/-10 band** -- a real result at alpha =
-1/64 on data the edit was never selected against, and only the second AHEAD this project
-has recorded.
+1/64 on data the edit was never selected against, and ~~only the second~~ **the third**
+AHEAD this project has recorded. *(Corrected 2026-08-11 by an adversarial verification
+pass: Experiment 5A recorded **two** AHEADs on `reason`, both by Qwen arms and both bought
+inside the reasoning-regime confound -- `EXPERIMENTS.md:864-873`. This one is the third,
+and GLM 5.2's in Experiment 16 is the fourth.)*
 
 **And it broke the other two dimensions**: `call_result` BEHIND (-7/7), `product` BEHIND
 (-8/8). Quoting the 37.5% error reduction without those two would be a false report of a

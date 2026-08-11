@@ -2,6 +2,24 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-11, Experiments 15-16): two frontier open models now match or beat Gemini
+on quality, and neither is deployable on this evidence.** **GLM 5.2 is AHEAD on `reason`**
+(+14 of 32 against a +/-14 band, exactly at the boundary) -- the first open model to clear
+that band under a matched zero-reasoning regime, though NOT the first ever: Experiment 5A's
+two Qwen AHEADs were bought with 2.4-2.6M reasoning tokens. **Kimi K3 is indistinguishable**
+on `reason`, the one dimension with power, with a perfect 1.000 call_result precision. The
+blockers are operational: GLM completed 408/414 and retried 33 calls on HTTP 429 (below the
+99% rule) with the worst latency tail measured (p95 108.9s, max 186s); Kimi costs **22.7x**
+Gemini, driven partly by a tokenizer needing **2.59x** the input tokens for the same Thai
+text. Gemini remains untouched on operations: zero variance, zero retries, fastest
+everywhere. **An eight-agent adversarial pass found four wrong claims in the first
+write-up** -- a false "first AHEAD" superlative, a latency claim contradicted by Experiment
+5A, ratios dividing 408-call totals by 414-call ones, and an understated retry count -- all
+corrected in place in `EXPERIMENTS.md`. It also caught that E15 and E16 ran concurrently
+through one account, so the 429 burst and the p95 are contaminated by self-imposed load;
+a re-run at concurrency 1 is the discriminating test. Full table:
+`docs/frontier-open-model-comparison.md`. Still `RECONCILED: NO`.
+
 **Latest (2026-08-11, Experiments 10-14): Gemma 4 12B is indistinguishable from Gemini on
 held-out items, and is the best open model this project has tested.** On the 89 locked
 holdout items: `reason` INDISTINGUISHABLE (+0 of 24 discordant), `call_result` and
