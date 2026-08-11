@@ -2141,3 +2141,80 @@ a month this is the number that decides deployability, well before quality does.
 Cost is the mildest of its problems: **$1.028 against $0.518**, only 2x, with a tokenizer
 needing 1.81x the input tokens for the same Thai text (2,240,851 against 1,237,746) --
 markedly better than Kimi K3's 2.59x.
+
+### Corrections to Experiments 15 and 16, from an adversarial verification pass (2026-08-11)
+
+Eight agents across four lenses checked every claim above against the run logs before the
+cross-model summary was written. **Four claims were wrong and are corrected here rather
+than edited away.** The verdict arithmetic itself was reproduced exactly in every case;
+what failed was the prose wrapped around it.
+
+**1. ~~"The first time an open model has beaten Gemini on `reason` in this project."~~
+FALSE, and contradicted by this same file 1,250 lines above.** Experiment 5A recorded
+**two** open models AHEAD of Gemini on `reason` at the same alpha: Qwen3.6 27B at **+26 of
+40** against +/-16, and Qwen3.6 35B-A3B at **+17 of 41** against +/-15 (`EXPERIMENTS.md`
+lines 864-873). Both margins are larger than GLM's.
+
+What is genuinely new about GLM 5.2 is the **regime, not the direction**. Both Qwen AHEADs
+were bought with 2,379,369 and 2,620,339 reasoning tokens against Gemini's zero, and this
+file already says they must be read as "Qwen with 2.4-2.6M tokens of reasoning beats Gemini
+with none". GLM 5.2 posted **zero reasoning tokens on both sides**. The correct claim is:
+**the first open model to clear the AHEAD band against Gemini on `reason` under a matched
+zero-reasoning regime at identical decoding.**
+
+The same error appears in `docs/gemma-4-12b-assessment.md` ("only the second AHEAD this
+project has recorded"); Experiment 14's was the **fourth**.
+
+**2. ~~"Kimi K3 is statistically level with Gemini on quality."~~ Overstated.** Only
+`reason` carries power: d=37 against a +/-15 band is a real no-difference result. On
+`call_result`, d=7 and `exact_band(7) = 7`, so the test could only have returned a verdict
+on a 7-0 sweep -- one pair from UNDERPOWERED, ruling out nothing short of total. On
+`product`, Kimi lost all 3 discordant clusters it had. The defensible statement is
+**"indistinguishable on `reason`, the one dimension with power; the other two are
+underpowered and say nothing either way."**
+
+**3. ~~"GLM 5.2's latency is the worst of any arm measured here."~~ FALSE on the median.**
+On the identical 138-item pack at the same prompt, Qwen3.6 27B posted **p50 40.62 s** and
+Qwen3.6 35B-A3B **28.75 s**, both worse than GLM's **25.77 s**. GLM has the worst **tail**:
+p95 108.86 s and max 186.11 s against 53.25 s and 85.94 s for the next worst arm. The p50
+figures quoted above as 25.78 s and 16.78 s were rounded up by 0.01 and are **25.77 s** and
+**16.77 s** in the committed reports.
+
+**4. ~~"6 of 414 calls returned a transport error"~~ understates the instability by 5.5x,
+and both write-ups omit a confound of my own making.** The 6 are only the calls that
+exhausted all three attempts. The run **retried 33 of 414 calls (8.0%)** across 51 failed
+HTTP attempts -- attempt histogram `{1: 381, 2: 21, 3: 12}` -- while Gemini, Gemma and Kimi
+each ran `attempt_count = 1` on all 414 calls with zero retries.
+
+Every failure is **HTTP 429**, `no_asap_capacity`, clustered on four adjacent items
+(RET-116 rep3, RET-117 rep3, RET-118 all three reps, RET-119 rep1). And **Experiments 15
+and 16 ran concurrently through one OpenRouter account at concurrency 8 each**: E15's wall
+clock was 1,043.9 s inside E16's 2,156.3 s, so E15 ran entirely within E16's window.
+**The 429 burst and the 108 s p95 were measured under load I imposed.** Experiment 14
+disclosed exactly this contention for Gemma and these two write-ups dropped it. The cheap
+discriminating test is a re-run at concurrency 1 on the same pin, not the second provider
+the write-up proposed.
+
+**5. Also corrected.** GLM's token and cost ratios divided its 408-call totals by Gemini's
+414-call totals. On the **408 cells both arms answered**, GLM used 2,240,851 prompt tokens
+against Gemini's 1,220,906 -- **1.84x**, not 1.81x. Its $1.028 is a lower bound over 408
+paid calls; scaled to full coverage roughly **$1.04, about 2.0x**. Gemini's cost is
+$0.517276, printed inconsistently as $0.517 and $0.518 in adjacent tables.
+
+**6. "Mutually comparable" does not follow from the shared workload contract.** All four
+arms do carry the identical `workload_sha 6b1ab3ed...`, single-valued `observed_models` and
+`observed_providers`, one `prompt_token_spread` value per item and empty `split_items` --
+verified. But the contract has seven keys and **decoding is not among them**, and the
+omission bites here: **`e10-gemma-base` ran `reasoning_effort="provider-default"` while
+Gemini, Kimi and GLM all ran `"none"`.** Experiment 10's own heading, "identical decoding",
+is therefore not exact, and the Gemma column is the one arm whose regime was not pinned.
+
+**7. "Pre-registered" was doing work the artifacts do not support.** The 99% reliability
+minimum is real and predates these runs (`experiments.py:738`), but
+`docs/experiments-15-16-plan.md` contains no reliability gate, and both runs carry
+`experiment_mode=null` and `experiment_plan_sha=null`, so `decision()` never executed. The
+`FAIL` is a **correct inference from a standing rule**, not a recorded verdict.
+
+**8. The quantisation confound was named but not labelled.** Kimi ran bf16 and GLM ran fp8.
+Kimi-versus-GLM is as much a bf16-versus-fp8 comparison as a model comparison, and the
+summary says so.
