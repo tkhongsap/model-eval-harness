@@ -5,18 +5,24 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
+import threading
+import time
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from evalgen import artifacts  # noqa: E402
 from evalgen.artifacts import (  # noqa: E402
     ArtifactError,
     RunJournal,
     append_jsonl,
     assert_shareable_payload,
+    atomic_write_bytes,
     atomic_write_text,
     require_private_destination,
 )
@@ -148,3 +154,77 @@ def test_unresolved_started_cell_blocks_safe_replay_and_torn_tail_keeps_history(
     )
     assert resumed.unresolved_cells() == (("B", 1),)
     assert resumed.trailing_torn_record is True
+
+
+# --- the atomic-replace retry, proved in both directions -----------------------------
+#
+# MEASURED 2026-08-12: `os.replace` inside `atomic_write_bytes` failed with
+# `PermissionError [WinError 5]` writing `run.state.json`, once in ten full suite runs.
+# Harness code, not test code -- and `run.state.json` is the crash-safe-resume record, so
+# an unhandled failure there aborts a run that has already been paid for.
+#
+# A retry is only defensible if it cannot hide a real bug, so both directions are proved
+# rather than asserted: a holder that lets go is absorbed, and a holder that never lets go
+# still raises inside the budget.
+
+
+def test_a_transient_holder_is_absorbed_and_the_write_still_lands():
+    """The measured case: something else holds the destination, then releases it."""
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        target = root / "run.state.json"
+        target.write_bytes(b'{"status": "RUNNING"}')
+
+        handle = open(target, "rb")  # noqa: SIM115 - deliberately held
+
+        def release():
+            time.sleep(0.4)
+            handle.close()
+
+        threading.Thread(target=release, daemon=True).start()
+        started = time.monotonic()
+        try:
+            atomic_write_bytes(target, b'{"status": "COMPLETE"}')
+        finally:
+            if not handle.closed:
+                handle.close()
+
+        elapsed = (time.monotonic() - started) * 1000
+        assert target.read_bytes() == b'{"status": "COMPLETE"}'
+        if sys.platform == "win32":
+            # On POSIX the rename never blocks, so it lands immediately and there is
+            # nothing to wait for; only Windows exercises the retry.
+            assert elapsed >= 300, (
+                f"expected to wait for the holder, returned in {elapsed:.0f} ms"
+            )
+        # No temp file is left behind either way.
+        assert list(root.glob(".run.state.json.*.tmp")) == []
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="POSIX rename(2) succeeds over an open file, so there is no failure to bound",
+)
+def test_a_holder_that_never_releases_still_raises_inside_the_budget():
+    """The property that stops this retry from hiding a real in-process leak.
+
+    A handle held by THIS process is never released while the write is blocked, so the
+    budget must expire and the original PermissionError must propagate. If this ever
+    starts passing by absorbing the write, the retry has become a way to lose an error.
+    """
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        target = root / "run.state.json"
+        target.write_bytes(b"{}")
+        handle = open(target, "rb")  # noqa: SIM115 - never released
+        started = time.monotonic()
+        try:
+            with pytest.raises(PermissionError):
+                with mock.patch.object(artifacts, "_REPLACE_BUDGET_S", 0.5):
+                    atomic_write_bytes(target, b'{"status": "COMPLETE"}')
+        finally:
+            handle.close()
+        elapsed = (time.monotonic() - started) * 1000
+        assert 450 <= elapsed <= 3000, f"budget not respected: {elapsed:.0f} ms"
+        # The failed write cleans up after itself rather than leaving a .tmp behind.
+        assert list(root.glob(".run.state.json.*.tmp")) == []

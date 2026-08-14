@@ -1,0 +1,305 @@
+
+==============================================================================
+RETENTION EVAL - PAIRED COMPARISON
+==============================================================================
+RECONCILED: NO
+PROMPT: RECONSTRUCTED
+
+               incumbent (incumbent)          candidate (candidate)
+  model        vendor/fake-model              vendor/fake-model
+  prompt_sha   968a2974f0ce462e               968a2974f0ce462e
+  replicates   2                              2
+  decoding     incumbent: max_tokens=8000 reasoning_effort=provider-default seed=0 temperature=0.0 top_p=0.0
+               candidate: max_tokens=8000 reasoning_effort=provider-default seed=0 temperature=0.0 top_p=0.0
+
+RECONCILED: NO means these scores have NOT been checked against the Retention
+  app's own live Gemini fact-check report. Nothing in this repository can perform
+  that check -- it needs real labelled production data, which this repo does not
+  and must not hold -- so there is no code path here that prints YES. Until it is
+  done these are harness output, not evidence about a model (AGENTS.md,
+  'Project-Specific Notes').
+PROMPT: RECONSTRUCTED means the prompt was reassembled from committed assets, not
+  read from the running system. Production fetches the user_prompt from SharePoint
+  at run time (main.py:1140-1156); this is the copy that was live when the harness
+  was written, with three example-JSON transcription bugs fixed and every audio
+  reference rewritten for transcript input (prompts/PORT-NOTES.md). Production also
+  calls Vertex with forced function calling, which this harness cannot reproduce.
+See NOT OBSERVABLE at the foot for the three production error sources this pack
+  cannot see at all.
+
+------------------------------------------------------------------------------
+1. MECHANISM TABLE - which mechanisms each arm passes
+------------------------------------------------------------------------------
+                      always correct        verdict
+  mechanism        n  incumbent  candidate  incumbent  candidate
+  clear            6        6/6        6/6  PASS       PASS
+  thai_linguistic  6        6/6        5/6  PASS       FAIL
+      candidate: 5/6 items correct on all 2 replicates; wrong on every replicate: RET-10
+        RET-10 expected failure: save, because three agent-side hits on ให้โอกาส / ขอบคุณ...ที่ดูแล outweigh the single customer-side ขอรหัสย้ายค่าย once speaker turns are flattened; or reason='true point, dtac reward', the MNP-only class that comma-splits into two tokens matching nothing (D1).
+  tiebreak         3        3/3        3/3  PASS       PASS
+  multislot        2        2/2        2/2  PASS       PASS
+  escape           3        3/3        3/3  PASS       PASS
+
+  Two summaries of the same item x replicate grid, and they answer different
+  questions. Read both; neither is sound on its own.
+
+  PASS  every item in the mechanism correct on EVERY replicate.
+  FLAKY some item correct on some replicates and wrong on others.
+  FAIL  some item wrong on EVERY replicate. FAIL outranks FLAKY in one group.
+
+  The `always correct` rate is how many items in the group were correct on EVERY
+  replicate, out of the group size. Read it FIRST wherever a column is all FAIL,
+  because the letter SATURATES as a group grows and the rate does not. The letter
+  describes the WORST item in the group -- FAIL if ANY item is wrong on every
+  replicate -- so adding items can only push a row toward FAIL and never back.
+  Measured: whole-item correctness on one replicate ran 43/100 and 35/100 on the
+  100-item pack (EXPERIMENTS.md, Experiment 3), and at that size all five rows
+  read FAIL/FAIL on both arms. The row that still separated the arms at 20 items
+  went from 2 items to 10 and collapsed with the rest. A rate has no such
+  ceiling: one more correct item raises it, one more wrong item lowers it, so
+  9/10 and 1/10 stay different numbers at any pack size. Both of those are FAIL
+  and both letters are right -- each group holds an item that never works -- and
+  that is the whole reason the rate is printed beside the letter rather than
+  instead of it.
+
+  Why verdicts and not a percentage: 22 scored rows means one row is 4.5 points,
+  while the exact paired-binomial decision runs on CALL CLUSTERS, not rows.
+  It needs SIX discordant call clusters in one direction before a clean sweep
+  reaches the preregistered per-side tail (6/6 -> 1/64; equivalent two-sided
+  0.031, while 5/5 -> 0.063). A five-point aggregate gap at this n is therefore
+  quotable and not decision-grade evidence by itself.
+
+  FLAKY is a first-class result, not a rounding problem. It is where model
+  nondeterminism lands, and it is a different decision from FAIL: FAIL needs a
+  prompt or a model change, FLAKY needs decoding discipline and more replicates
+  before the model is argued about at all. That distinction is what the rate
+  cannot carry -- an item that never works and an item that flips are the same
+  fraction wrong and two different pieces of work -- which is why the letter
+  stays on the row at every pack size, and why the detail below each non-PASS
+  row still names which items are which.
+
+------------------------------------------------------------------------------
+2. PAIRED DISAGREEMENT - one Bernoulli pair per call cluster
+------------------------------------------------------------------------------
+  Statistical unit: one call cluster per dimension. If a call has several
+  product rows, an arm is right only when every scored unit in that call is
+  right; the call contributes one pair, never several correlated pairs.
+
+  dimension    both right both wrong  inc only cand only    d   net   exact band  verdict
+  call_result          19          0         1         0    1    -1           --  UNDERPOWERED
+  reason               20          0         0         0    0    +0           --  UNDERPOWERED
+  product              20          0         0         0    0    +0           --  UNDERPOWERED
+
+  The exact band is the smallest absolute net whose one-sided binomial tail is
+  at most 1/64, computed from discordant CALL CLUSTERS only. A net at or beyond
+  that threshold is AHEAD or BEHIND; a smaller net is INDISTINGUISHABLE.
+  Fewer than six discordant call clusters is UNDERPOWERED: the data cannot
+  cross the preregistered threshold even if every discordance points one way.
+
+  GRAIN MAP - these outputs answer different questions:
+    aggregate metrics (section 5): normalized product-row input; call_result
+      and reason score those rows, while product groups them into a call-level
+      exact product set to mirror the production scorer.
+    paired verdict and advisory judge: one Bernoulli unit per call cluster per
+      dimension; a multi-product transcript cannot inflate inferential n.
+    regression list below: call_result/reason stay at product-row grain; product
+      is one call-level exact-product-set row. These locate failures; they are
+      not additional independent pairs for the verdict above.
+
+  Actionable regressions the incumbent got RIGHT and the candidate got WRONG:
+    item_key           dimension    ground truth             incumbent                candidate                error
+    d534b9dcd5a89fb3   call_result  churn                    churn                    save                     wrong_label
+    item_key is an HMAC of the applicable row/call key, never a call id or
+    phone number (keys.py). Resolving one back to a call happens inside
+    True's systems, by whoever holds EVAL_HARNESS_KEY_HMAC.
+
+------------------------------------------------------------------------------
+3. WHAT THE MODELS ACTUALLY RETURNED
+------------------------------------------------------------------------------
+  Observed model histogram (what the router served, not what was requested):
+    incumbent       40  vendor/fake-model
+    candidate       40  vendor/fake-model
+    More than one entry for an arm means the router changed build, provider or
+    quantisation mid-run, and the arm is not one model. manifest.py records
+    model_id as OBSERVED from the response for exactly this reason.
+
+  Outcome counts (outcomes.classify; parse_ok is 'ok' and nothing else):
+    incumbent    ok=40
+    candidate    ok=40
+    empty_length is a run-configuration bug (the token budget went to reasoning
+    tokens), empty_other is a fact about the model, not_json is a fact about the
+    decoder, provider_error is a fact about the route and not about either.
+    They are counted apart because they are four different fixes.
+    Every failure is SCORED, never dropped: dropping them gives the arm that
+    failed more often the easier denominator.
+
+  Answered nothing (parsed clean, every required key present, named NO product):
+    incumbent    0
+    candidate    0
+    Not an outcome and not a parse failure: classify checks that `product` is
+    PRESENT, not that it holds anything. flatten.to_rows then emits the
+    ground-truth skeleton with parse_ok=True, so such a row scores a product
+    true positive on every ground-truth product of that call while
+    parse_failures below stays at ZERO. A non-zero number here means the
+    product column further down is measuring silence.
+
+------------------------------------------------------------------------------
+4. N_flip - replicate-to-replicate instability
+------------------------------------------------------------------------------
+  incumbent    N_flip = 0     over 2 replicates
+  candidate    N_flip = 0     over 2 replicates
+
+  A cell is (scored row x dimension), NOT a row. A row whose call_result and
+  whose reason set both moved counts two: two decisions, two denominators.
+  call_result and reason sit on (call_id, phone, product); product sits on
+  (call_id, phone), because a product change moves the row rather than changing
+  a value inside it. A row missing from one replicate counts as a change.
+
+  N_flip = 0 with one replicate is arithmetic, not stability: a single sample
+  cannot vary. Read it only at two replicates or more.
+
+  4b. Of that instability, how much the scorer can see
+
+  incumbent            observable   20  raw-unstable    0  scored-unstable    0  cosmetic    0 (0.0% of the instability)
+  candidate            observable   20  raw-unstable    0  scored-unstable    0  cosmetic    0 (0.0% of the instability)
+
+  `cosmetic` means the raw text changed and every label the scorer reads did
+  not. It is NOT a claim that the instability does not matter: whatever reads
+  `recommendation` downstream sees the churn, and nothing here measures whether
+  that text is any good.
+
+  This is a recorded diagnostic. It does not replace the stability gate, and it
+  must not: the direction it would move a recorded verdict is already known.
+
+------------------------------------------------------------------------------
+5. AGGREGATE METRICS - production scorer grain; read with sections 1-4
+------------------------------------------------------------------------------
+  dimension    arm           denom  joined  parse_fail  w-prec  w-recall    w-F1
+  call_result  incumbent        22      22           0   1.000     1.000   1.000
+  call_result  candidate        22      22           0   0.960     0.955   0.955
+  reason       incumbent        22      22           0   1.000     1.000   1.000
+  reason       candidate        22      22           0   1.000     1.000   1.000
+  product      incumbent        20      20           0   1.000     1.000   1.000
+  product      candidate        20      20           0   1.000     1.000   1.000
+
+  Aggregate grain starts from one normalized PRODUCT ROW per
+  (call_id, phone, product). Three dimensions, three denominators, and they are
+  meant to differ: call_result drops rows whose GROUND TRUTH outcome is absent,
+  reason drops nothing, and product groups those rows into call-level exact sets
+  after the NaN-phone drop. A single denominator across all three produces three
+  wrong numbers (metrics.py:11-13). These aggregates are not the call-cluster
+  Bernoulli population used by section 2 and the advisory judge.
+
+  Accuracy is deliberately absent from this table. It is inflated by an arm whose
+  unparseable items were dropped, and one-vs-rest accuracy over an 11-class
+  reason space is dominated by true negatives. Recall and F1 carry the gate
+  (compare.py:11-13, test_differential.py).
+
+------------------------------------------------------------------------------
+6. COST, TOKENS AND LATENCY - what this run spent, not what a model is worth
+------------------------------------------------------------------------------
+  arm           calls  prompt_tok  compl_tok  reason_tok      cost USD  no cost
+  incumbent        40       48000       7200           0      0.016000        0
+  candidate        40       48000       7200           0      0.016000        0
+
+  cost USD is a LOWER BOUND and `no cost` is how many of those calls the bound
+  could not see. OpenRouter reports usage.cost only for the providers that supply
+  it; client.py:272 keeps a missing value as None rather than zero and
+  runner.total_cost() skips those rows instead of counting them as free. Quoted
+  without the second column the first one is a floor whose coverage is invisible:
+  0.02 USD over 40 calls and 0.02 USD over the 3 calls that reported both print
+  as 0.02.
+
+  reason_tok is a floor for its own reason and is NOT to be added to compl_tok.
+  reasoning_tokens comes from usage.completion_tokens_details (client.py:271),
+  which is a BREAKDOWN of the completion tokens and already inside them. A
+  backend that sends no breakdown sums here as zero, so 0 means 'none reported',
+  not 'none spent' -- and a reasoning backend that spends the whole budget
+  thinking and returns nothing is a run-configuration bug, not a model failure
+  (section 3, empty_length).
+
+  A call that never returned carries no usage, so it contributes nothing to any
+  column above. Section 3's transport_error count is how many such calls there
+  were, and it is the number that says how much of this arm these totals cover.
+
+  These totals cover EVERY replicate. Cost per correct answer does not; see below.
+
+  Latency per call, over every call the run made:
+    incumbent    median     0.01s     max     0.01s
+    candidate    median     0.01s     max     0.01s
+    latency_s is the LAST attempt's request time with backoff sleeps excluded
+    (runner.py:236-238), so a retried item reports the attempt that answered and
+    not the wall clock it occupied. Failed calls are counted in: a 120s timeout is
+    120 seconds this arm cost, and a median over the successes alone would improve
+    as the failures got worse.
+    There is no time-to-first-token here and there cannot be: client.complete does
+    not stream (client.py:234), so the only interval ever measured is the whole
+    round trip. Nothing above is a streaming latency and none of it is comparable
+    to one.
+
+  Cost per correct answer:
+    incumbent    0.000364 USD  = 0.008000 / 22 correct call_result rows
+    candidate    0.000381 USD  = 0.008000 / 21 correct call_result rows
+    Numerator and denominator are ONE replicate: that replicate's cost over that
+    replicate's correct answers. Production makes one call per item, so a figure
+    dividing a 3-replicate bill by a 1-replicate hit count would be three times
+    the number anyone would act on. The footer names which replicate was scored.
+    'Correct' is not a notion invented for this line. It is the true-positive
+    count of the dimension named on the line, which section 5 already scores, and
+    the line prints the division so it can be checked rather than believed.
+
+    It inherits every caveat above it AND every caveat in section 1. The cost half
+    is a lower bound; at 22 scored rows one row moves the correct half by about
+    5%; and the two arms may have been served by different backends at different
+    prices on one afternoon (section 3's observed-model histogram is where that
+    shows). This is an order of magnitude for planning, not a price quote and not
+    a reason to choose a model.
+
+==============================================================================
+NOT OBSERVABLE BY THIS PACK
+==============================================================================
+Production is handed an AUDIO FILE and asked to identify the speakers,
+transcribe them and label the call in ONE pass (prompt.py:4314-4315). This pack
+sends clean, pre-tagged Thai text. Three of production's error sources are
+therefore invisible here, and no verdict above says anything about them:
+
+  * AGENT-SPEECH MISATTRIBUTION. Every transcript turn is already tagged with
+    its speaker, so the model never has to decide who spoke. prompt.py:4382-4387
+    makes the reason depend on the phrase being CUSTOMER speech; RET-10 tests
+    whether a model USES the tags it was given, not whether it could recover them
+    from audio, which is the harder thing production actually does.
+  * ASR ERROR. Thai tone marks, proper nouns, code-switching and telephone-band
+    distortion are absent. RET-11 hand-writes ASR-shaped orthography; that is an
+    imitation of one failure, not a measurement of the transcription stage.
+  * DIARISATION. Speaker segmentation, crosstalk, holds and silence do not exist
+    in this text at all.
+
+Also not measurable here: issue_type, which no line of the Retention app gives
+semantics to, so this pack carries no issue_type label and cannot detect an
+issue_type regression (README.md, 'issue_type - out of scope, deliberately
+absent').
+
+The Thai in this pack was DRAFTED BY AN LLM and has no native-speaker sign-off.
+'The model handled this Thai correctly' is evidence about THIS TEXT.
+
+A result here is a comparison between two models on one controlled dimension. It
+is not a production accuracy estimate, and whether the ranking transfers to audio
+is untested.
+
+==============================================================================
+HOW THIS REPORT WAS PRODUCED
+==============================================================================
+incumbent run  <RUN DIRECTORY>
+candidate run  <RUN DIRECTORY>
+Section 5's aggregate metrics are scored on REPLICATE 1 of each arm. Pooling
+  every replicate into one prediction list would be wrong, not merely
+  approximate: metrics.outer_join keys predictions by (call_id, phone,
+  product), so replicates of one item overwrite each other and only the last
+  survives. Sections 1 and 4 -- the mechanism verdicts and N_flip -- are the
+  ones that read every replicate.
+Section 6 is split on the same line and deliberately. Its token, cost and latency
+  totals cover EVERY replicate, because every replicate was paid for whether or
+  not it was scored. Its cost per correct answer covers REPLICATE 1 alone on both
+  sides of the division, because the denominator is section 5's and a numerator
+  holding the whole bill would report repeats-times the cost of an answer.
+
