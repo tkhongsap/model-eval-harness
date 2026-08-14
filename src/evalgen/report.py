@@ -693,7 +693,7 @@ def render(
     lines += _disagreement_section(disagreements, regressions)
     lines += _returned_section(arms)
     lines += _flip_section(arms, decompositions)
-    lines += _metrics_section(arms)
+    lines += _metrics_section(arms, dimension_order=dimension_order)
     lines += _performance_section(arms)
     lines += _not_observable_section()
     # rstrip per line: the column padding leaves trailing spaces that show up as diff
@@ -1068,7 +1068,11 @@ def _decomposition_block(
     return lines
 
 
-def _metrics_section(arms: Sequence[ArmSummary]) -> list[str]:
+def _metrics_section(
+    arms: Sequence[ArmSummary],
+    *,
+    dimension_order: Sequence[str] = _DIMENSION_ORDER,
+) -> list[str]:
     lines = [
         _SECTION,
         "5. AGGREGATE METRICS - production scorer grain; read with sections 1-4",
@@ -1078,8 +1082,8 @@ def _metrics_section(arms: Sequence[ArmSummary]) -> list[str]:
     ]
 
     seen = {name for arm in arms for name in arm.dimensions}
-    order = [n for n in _DIMENSION_ORDER if n in seen] + sorted(
-        seen - set(_DIMENSION_ORDER)
+    order = [n for n in dimension_order if n in seen] + sorted(
+        seen - set(dimension_order)
     )
 
     for name in order:

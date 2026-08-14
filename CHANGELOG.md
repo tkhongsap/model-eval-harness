@@ -9,15 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- **`scoring_code_sha` moved: `cefd4ae9…` → `d33f1d44…`.** Recorded here rather than left
-  to be discovered, because it is a **BLOCKING** manifest field: a run recorded before this
-  change and one recorded after will refuse to compare, by design. The digest rglobs
-  `src/evalharness/**/*.py` plus `cli.py`, `flatten.py` and `report.py`, all of which the
-  application-seam work touches, so the move is unavoidable. It was **not** worked around
-  by narrowing the digest — that would be weakening a gate to avoid an inconvenience.
-  Two arms of any *new* comparison both carry the new value and compare normally.
-  **`decision_policy_sha` is unchanged at `3d5f3e60…`**, which is itself the evidence that
-  `compare.py` and `experiments.py` were not touched.
+- **`scoring_code_sha` moved twice: `cefd4ae9…` → `d33f1d44…` → `9b4afc95…`.** Both hops
+  are recorded rather than left to be discovered, because it is a **BLOCKING** manifest
+  field: a run recorded before and one recorded after refuse to compare, by design. The
+  first hop was the seam refactor itself; the second is `apps.py` **joining** the digest,
+  plus the follow-up work below. It was **not** worked around by narrowing the digest —
+  that would be weakening a gate to avoid an inconvenience. Two arms of any *new*
+  comparison both carry the current value and compare normally.
+  **`decision_policy_sha` is unchanged at `3d5f3e60…` across all of it**, which is itself
+  the evidence that `compare.py` and `experiments.py` were never touched.
+
+- **`apps.py` is now inside `scoring_code_sha`.** It holds the dimension-to-scorer
+  pairing that `cli.py` used to hold — which function scores which dimension, against which
+  class list. For one commit it sat outside every digest, so pairing `reason` with
+  `score_product` would have changed every reported number and moved no BLOCKING field;
+  `application_contract_sha` does not cover it either, because a contract names an
+  application's *dimensions*, never the implementations bound to them. The test for
+  inclusion is not which package a file lives in, it is whether the file can silently
+  change the reported number. Now covered by parametrised tests over a synthetic tree that
+  assert what the digest **includes**, plus the other half — that a file outside the
+  scoring path does *not* move it, so "include `apps.py`" cannot be satisfied by hashing
+  the whole repository.
 
 ### Fixed
 

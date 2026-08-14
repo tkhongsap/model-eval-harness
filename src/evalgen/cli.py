@@ -79,11 +79,11 @@ from evalgen.artifacts import (
     file_sha256,
     require_private_destination,
 )
-from evalgen.contracts import ApplicationSpec, RETENTION_APPLICATION
+from evalgen.contracts import ApplicationSpec
 from evalgen.console import configure_stdout
 from evalgen.config import ENV_FILES, find_api_key, find_runtime_api_key, load_env_file
 from evalgen.decoding import decoding_schema
-from evalgen.flatten import named_no_product, to_rows
+from evalgen.flatten import named_no_product
 from evalgen.judge import find_disagreements, run_judge, shareable_report
 from evalgen.stability import decompose
 from evalgen.severity import (
@@ -182,6 +182,13 @@ APPLICATIONS: dict[str, ApplicationSpec] = {
     app_id: bound.spec for app_id, bound in BINDINGS.items()
 }
 
+# The binding used when a caller does not name one. Retention, because that is what every
+# run recorded before `--app` selected anything, and because these three helpers are also
+# called directly by tests that predate the seam. Named once here rather than repeated as
+# `bound or BINDINGS["retention"]` in each body, so the default is visible beside the
+# registry rather than buried three times in the middle of functions.
+_DEFAULT_BINDING: AppBinding = BINDINGS["retention"]
+
 
 def _application_spec(application_id: str) -> ApplicationSpec:
     """Return the reviewed application contract wired into this executable.
@@ -191,22 +198,38 @@ def _application_spec(application_id: str) -> ApplicationSpec:
     ``ApplicationSpec`` is the extension seam; this registry is the explicit point at
     which an implementation becomes executable.
     """
-    try:
-        return APPLICATIONS[application_id]
-    except KeyError as exc:
-        raise CliError(
-            f"application {application_id!r} has no executable application contract. "
-            "Define and review its adapter, prompt, schema, testset reference and "
-            "decision units before running models."
-        ) from exc
+    return _application_binding(application_id).spec
+
+
+def _binding_for_run(loaded: "LoadedRun") -> AppBinding:
+    """The binding a recorded run should be scored under, read off the run itself.
+
+    A run records the app it was produced for, so scoring reads it back rather than
+    taking it from the current command line -- otherwise `compare --app retention` over
+    two MNP runs would score them against the wrong vocabulary, which is the whole class
+    of defect the binding exists to close.
+
+    The `"retention"` default is what runs recorded before `--app` had any effect, and is
+    the same fallback `cmd_compare` has always used.
+    """
+    return _application_binding(str(loaded.meta.get("app", "retention")))
 
 
 def _application_binding(application_id: str) -> AppBinding:
     """The contract PLUS the code implementing it.
 
-    Everything that used to read a module-level retention constant -- the scorers, the
-    schema, the flattener, the ground-truth loader, the dimension order, the report title
-    -- now reads it from here, so `--app` selects behaviour instead of labelling it.
+    Supplied by the binding today, and read from it at every call site: the **scorers**
+    (and therefore the label spaces), the **flattener**, the **ground-truth adapter**, the
+    **report title** and the **dimension order**. `--app` selects those rather than
+    labelling them.
+
+    Declared on `AppBinding` and NOT yet consumed, stated here rather than left for a
+    reader to discover: `schema_path` (the module constant `SCHEMA_PATH` is still what
+    `response_format` reads), `decoding_transform`, `default_testset`/`default_gt` (still
+    argparse defaults, bound before `--app` is known) and `diagnostics`. `spec.prompt` has
+    no binding field at all. Each is a real seam for the second application and none of
+    them is finished; an earlier version of this docstring claimed otherwise, which is
+    worse than saying nothing, because it reads as done.
     """
     try:
         return _binding_for(application_id)
@@ -249,15 +272,17 @@ EXIT_OK = 0
 EXIT_PROBLEMS = 1  # the harness ran; the inputs or the arms have problems
 EXIT_REFUSED = 2  # the harness declined to run, or to compare
 
-# The order dimensions are scored and printed in. `report._DIMENSION_ORDER` prints in
-# the same order; this decides which scorers actually run.
+# `_SCORERS` used to live here as a hand-written tuple. It is now DERIVED from
+# the retention contract's own dimensions and `labelspaces.RETENTION`, by
+# `apps.build_binding`,
+# so the contract a run hashes and the scorers that run cannot disagree.
 #
-# No longer written out here: it is DERIVED from `RETENTION_APPLICATION.dimensions` and
-# `labelspaces.RETENTION` by `apps.build_binding`, so the contract a run hashes and the
-# scorers that run cannot disagree. Retained under its old name because it is the
-# retention default every existing caller resolves to, and
-# `tests/test_apps.py` asserts the derived table equals what used to be typed here.
-_SCORERS = BINDINGS["retention"].scorers
+# It was briefly retained here as `_SCORERS = BINDINGS["retention"].scorers`, and that was
+# a mistake worth recording: `tests/test_apps.py` asserted the binding against it, so the
+# assertion became `x == x` -- green, still described as load-bearing, and incapable of
+# failing. The hand-written expectation now lives in that test as
+# `_HAND_WRITTEN_RETENTION_SCORERS`, which is where an expectation belongs; an alias here
+# would only put it back inside the thing under test.
 
 # How many lines of the assembled prompt a dry run echoes. Enough to show the Role
 # line, the transcript/audio repair and the opening of the product rules, which is the
@@ -267,7 +292,8 @@ DRY_RUN_PROMPT_LINES = 40
 # Which scored dimension defines "a correct answer" for the cost-per-correct figure.
 #
 # `call_result` and NOT a new notion of correctness invented for a cost table. It is the
-# label the Retention app acts on, it is first in `_SCORERS`, and its one-vs-rest
+# label the Retention app acts on, it is the first dimension the retention binding
+# declares, and its one-vs-rest
 # true-positive count is already the arithmetic section 5's weighted recall is built
 # from -- so the ratio divides a number the report prints two sections earlier rather
 # than one only this line knows about.
@@ -344,14 +370,14 @@ def _load_testset(path: Path, *, app: str = "retention") -> TestSet:
         raise CliError(str(exc)) from exc
 
 
-def _load_gt(path: Path, *, bound: AppBinding | None = None) -> list[Record]:
+def _load_gt(path: Path, *, bound: AppBinding = _DEFAULT_BINDING) -> list[Record]:
     """Load ground truth through the adapter the application contract names.
 
     `bound` defaults to retention so every existing caller is unchanged; the loader it
     resolves to is the one inside `application_contract_sha`, not a separately imported
     function that happened to agree with it.
     """
-    loader = (bound or BINDINGS["retention"]).load_gt
+    loader = bound.load_gt
     try:
         return loader(path)
     except FileNotFoundError as exc:
@@ -1119,7 +1145,7 @@ def replicate_records(
     result: RunResult,
     items: Sequence[TestItem],
     *,
-    bound: AppBinding | None = None,
+    bound: AppBinding = _DEFAULT_BINDING,
 ) -> list[list[Record]]:
     """Model payloads -> scorable records, one list per replicate, in replicate order.
 
@@ -1145,7 +1171,7 @@ def replicate_records(
     seam where `len(rows)` and `len({record.key})` are both in scope, so it is the only
     place the loss can be turned into a number.
     """
-    flatten_rows = (bound or BINDINGS["retention"]).flatten_rows
+    flatten_rows = bound.flatten_rows
     by_id = {item.item_id: item for item in items}
     per_replicate: dict[int, list[Record]] = {}
     for row in result.results:
@@ -1235,7 +1261,7 @@ def _score(
     gt: Sequence[Record],
     pred: Sequence[Record],
     *,
-    bound: AppBinding | None = None,
+    bound: AppBinding = _DEFAULT_BINDING,
 ) -> dict[str, object]:
     """Each declared dimension with its own denominator. See `metrics.py:11-13`.
 
@@ -1243,7 +1269,7 @@ def _score(
     contract's declared dimensions and that application's label space. Retention still
     resolves to exactly the three-entry tuple this function used to close over.
     """
-    scorers = (bound or BINDINGS["retention"]).scorers
+    scorers = bound.scorers
     return {
         name: scorer(list(gt), list(pred), classes) for name, scorer, classes in scorers
     }
@@ -1654,7 +1680,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     is why `_gt_disagreements` exists.
     """
     testset = _load_testset(Path(args.testset), app=args.app)
-    gt = _load_gt(Path(args.gt))
+    gt = _load_gt(Path(args.gt), bound=_application_binding(args.app))
     prompt = _prompt(args.prompt_id)
 
     print(f"testset      {args.testset}")
@@ -1760,7 +1786,7 @@ def _preflight(testset: TestSet, gt_path: Path) -> None:
             "path would otherwise raise once every call had already been paid for."
         )
     call_ids = {item.call_id for item in testset.items}
-    scoped_gt = [record for record in _load_gt(gt_path) if record.call_id in call_ids]
+    scoped_gt = [record for record in _load_gt(gt_path, bound=_application_binding(testset.app)) if record.call_id in call_ids]
     problems = validate(testset) + _gt_disagreements(testset, scoped_gt)
     if problems:
         raise CliError(
@@ -2435,12 +2461,14 @@ def cmd_stability(args: argparse.Namespace) -> int:
     if code != EXIT_OK or loaded is None:
         return code
 
+    bound = _binding_for_run(loaded)
     gt = _load_gt(
-        _recorded_artifact_path(loaded.directory, loaded.meta["gt_path"])
+        _recorded_artifact_path(loaded.directory, loaded.meta["gt_path"]),
+        bound=bound,
     )
     call_ids = {item.call_id for item in testset.items}
     scoped_gt = [record for record in gt if record.call_id in call_ids]
-    per_replicate = replicate_records(loaded.result, testset.items)
+    per_replicate = replicate_records(loaded.result, testset.items, bound=bound)
 
     flips = n_flip(per_replicate)
     print(f"\nN_flip = {flips} over {len(per_replicate)} replicates")
@@ -2890,10 +2918,11 @@ def cmd_experiment_report(args: argparse.Namespace) -> int:
                 f"concurrency={run_data.result.config.concurrency}"
             )
     incumbent = loaded[incumbent_id]
-    gt = _load_gt(_plan_asset(plan, "ground_truth"))
+    plan_binding = _application_binding(str(plan["app"]))
+    gt = _load_gt(_plan_asset(plan, "ground_truth"), bound=plan_binding)
     testset = _load_testset(_plan_asset(plan, "testset"), app=plan["app"])
     per_rep = {
-        name: replicate_records(run_data.result, testset.items)
+        name: replicate_records(run_data.result, testset.items, bound=plan_binding)
         for name, run_data in loaded.items()
     }
     item_call = {item.item_id: item.call_id for item in testset.items}
@@ -3367,7 +3396,12 @@ def cmd_compare(args: argparse.Namespace) -> int:
     _require_run_matrix(incumbent, testset)
     _require_run_matrix(candidate, testset)
 
-    gt = _load_gt(gt_path)
+    # Resolved here rather than just before `render`: the adapter, the flattener and the
+    # scorers all depend on it, and resolving it after they had run would mean the report
+    # was titled by one application and computed by another.
+    bound = _binding_for_run(incumbent)
+
+    gt = _load_gt(gt_path, bound=bound)
     if manifest_mod.file_hash(gt_path) != incumbent.meta["gt_sha"]:
         raise CliError(
             f"{gt_path} has changed since the run. Refusing rather than scoring against "
@@ -3397,7 +3431,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
         raise CliError(str(exc)) from exc
 
     per_replicate = {
-        loaded.arm: replicate_records(loaded.result, testset.items)
+        loaded.arm: replicate_records(loaded.result, testset.items, bound=bound)
         for loaded in (incumbent, candidate)
     }
     try:
@@ -3457,11 +3491,9 @@ def cmd_compare(args: argparse.Namespace) -> int:
         for loaded in (incumbent, candidate)
     }
 
-    # Title and dimension order come from the application, so a second app does not
-    # print "RETENTION EVAL" over its own numbers or rank its dimensions by retention's.
-    compare_binding = _application_binding(
-        str(incumbent.meta.get("app", "retention"))
-    )
+    # Title and dimension order come from the same binding the scoring used, so a second
+    # app cannot print "RETENTION EVAL" over its own numbers or rank its dimensions by
+    # retention's.
     text = render(
         summaries[incumbent.arm],
         summaries[candidate.arm],
@@ -3469,8 +3501,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
         disagreements,
         regression_rows,
         decompositions,
-        title=compare_binding.report_title,
-        dimension_order=compare_binding.dimension_ids,
+        title=bound.report_title,
+        dimension_order=bound.dimension_ids,
     )
     if prompts_may_differ:
         # `report._header` already warns when the shas differ, but that warning sits
@@ -3571,7 +3603,8 @@ def _adjudication_inputs(args: argparse.Namespace) -> _AdjudicationInputs:
             "about labels the arms were not scored against"
         )
     testset = _load_testset(testset_path, app=incumbent.meta.get("app", "retention"))
-    gt = _load_gt(gt_path)
+    bound = _binding_for_run(incumbent)
+    gt = _load_gt(gt_path, bound=bound)
     _require_run_matrix(incumbent, testset)
     _require_run_matrix(candidate, testset)
 
@@ -3616,7 +3649,7 @@ def _adjudication_inputs(args: argparse.Namespace) -> _AdjudicationInputs:
     )
 
     per_replicate = {
-        loaded.arm: replicate_records(loaded.result, testset.items)
+        loaded.arm: replicate_records(loaded.result, testset.items, bound=bound)
         for loaded in (incumbent, candidate)
     }
     inc_rows = per_replicate[incumbent.arm][0]

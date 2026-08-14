@@ -62,6 +62,27 @@ def _build(spec=RETENTION_APPLICATION, *, label_space=RETENTION, implementations
 
 # --- the equivalence gate -------------------------------------------------------------
 
+# The scorer table exactly as it was hand-written in `cli.py` before `apps.py` derived it,
+# transcribed here and nowhere else.
+#
+# **This literal is the independent derivation, and it has to live in the test.** It first
+# lived in `cli._SCORERS`, and the assertion below compared the binding against it -- a real
+# check, because the two were written by different means. Then `cli._SCORERS` was changed to
+# `BINDINGS["retention"].scorers` and the assertion silently became `x == x`: still green,
+# still described as load-bearing, and incapable of failing.
+#
+# That is `retention_expected.csv`'s rule in miniature (`CLAUDE.md`: "Editing an expectation
+# so a test goes green collapses three independent checks into one, and the one that
+# survives is the code checking itself"). The fix is not to restore the alias in `cli.py` --
+# that would put the expectation back inside the thing under test. It is to keep the
+# expectation here, where changing it is a visible edit to a test.
+_HAND_WRITTEN_RETENTION_SCORERS = (
+    ("call_result", score_call_result, RETENTION.call_result),
+    ("reason", score_reason, RETENTION.reason),
+    ("product", score_product, RETENTION.product),
+)
+
+
 def test_the_retention_binding_reproduces_the_hand_written_scorer_table_exactly():
     """Derived from the contract must equal what was previously typed by hand.
 
@@ -70,7 +91,7 @@ def test_the_retention_binding_reproduces_the_hand_written_scorer_table_exactly(
     paired `reason` with `score_product` would satisfy a names-only check and score two
     dimensions wrongly.
     """
-    assert binding("retention").scorers == cli._SCORERS
+    assert binding("retention").scorers == _HAND_WRITTEN_RETENTION_SCORERS
 
 
 def test_the_retention_binding_reproduces_every_other_constant_it_replaces():

@@ -105,12 +105,24 @@ def scoring_code_sha(*, root: Path | None = None) -> str:
     `cli.py` is intentionally included because it chooses replicate 1 and performs the
     grain-changing wiring. The digest is narrower than repository HEAD while retaining
     the one orchestration file capable of silently changing the reported number.
+
+    **`apps.py` is included for exactly the same reason, added 2026-08-12.** It holds the
+    dimension-to-scorer pairing that `cli.py` used to hold: which function scores which
+    dimension, against which class list. Editing one entry there -- pairing `reason` with
+    `score_product`, say -- changes every number this harness reports.
+
+    It was outside the digest for one commit and that was a provenance regression, not a
+    style question. `application_contract_sha` does not cover it either: the contract
+    names an application's *dimensions*, never the implementations bound to them, so a
+    swapped scorer leaves both the contract hash and every BLOCKING field untouched. The
+    test for inclusion here is not which package a file lives in; it is whether the file
+    can silently change the reported number, and this one can.
     """
     repo = (root or _repository_root()).resolve()
     paths = list((repo / "src" / "evalharness").rglob("*.py"))
     paths.extend(
         repo / "src" / "evalgen" / name
-        for name in ("cli.py", "flatten.py", "report.py")
+        for name in ("apps.py", "cli.py", "flatten.py", "report.py")
     )
     return _tree_hash(paths, root=repo)
 
