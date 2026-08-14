@@ -94,9 +94,17 @@ class AppBinding:
     cost_per_correct_dimension: str
     report_title: str
     # Diagnostics coupled to this application's PAYLOAD shape rather than its record
-    # shape. An app absent from a diagnostic's set must be refused by the command, not
-    # scored: `fabrication` against the wrong payload shape returns "0 fabricated
-    # labels", which is the shape of a clean bill of health.
+    # shape, so that an app absent from a diagnostic's set can be refused by the command
+    # rather than silently mis-scored: `fabrication` run against the wrong payload shape
+    # returns "0 fabricated labels", which is the shape of a clean bill of health.
+    #
+    # DECLARED AND NOT YET CONSUMED. `cmd_judge` and `cmd_severity` do not read this, so
+    # the refusal it is for does not exist yet. It is stated now because the set is part
+    # of what makes an application reviewable, and it lands with the second application --
+    # which is when there is a second value to refuse. Recorded plainly rather than
+    # written as though finished: retention is the only binding, so nothing here can be
+    # exercised, and a comment describing a working refusal would be the only evidence of
+    # one.
     diagnostics: frozenset[str]
 
     @property

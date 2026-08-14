@@ -47,6 +47,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from evalgen import report as report_mod  # noqa: E402
 from evalgen.report import (  # noqa: E402
     ArmSummary,
     MechanismRow,
@@ -975,3 +976,76 @@ def test_a_real_pack_item_that_never_works_fails_its_mechanism(real_pack):
         "one item of six broke, and the rate is the only part of this row that says so. "
         "The letter reads the same here as it would with all six broken."
     )
+
+
+# --- the dimension order is the application's, not a constant -------------------------
+#
+# `render` gained `dimension_order` when the application seam was wired, and for one
+# commit it was accepted and never read: `_metrics_section` still closed over the module
+# constant. The parameter existed, the call site passed it, a comment claimed a second
+# application would not "rank its dimensions by retention's", and none of it was true.
+#
+# An unused parameter is worse than a missing one, because it reads as done. These tests
+# assert the value reaches the output, which is the only claim worth making about it.
+
+
+def _scored(name, **rates):
+    """A minimal DimensionResult-shaped stand-in is not enough here -- the section reads
+    real fields -- so build one through the real scorer on a one-row fixture."""
+    gt = [rec("5001", "postpaid", "save", "network")]
+    pred = list(gt)
+    from evalharness.metrics import score_call_result, score_product, score_reason
+
+    scorers = {
+        "call_result": (score_call_result, RETENTION.call_result),
+        "reason": (score_reason, RETENTION.reason),
+        "product": (score_product, RETENTION.product),
+    }
+    scorer, classes = scorers[name]
+    return scorer(gt, pred, classes)
+
+
+def _metrics_lines(order):
+    scored = {name: _scored(name) for name in ("call_result", "reason", "product")}
+    arms = [arm("incumbent", dimensions=scored), arm("candidate", dimensions=scored)]
+    return report_mod._metrics_section(arms, dimension_order=order)
+
+
+def _first_appearance(lines, names):
+    """Index of the first line naming each dimension, in output order."""
+    seen = []
+    for line in lines:
+        for name in names:
+            if line.strip().startswith(name) and name not in seen:
+                seen.append(name)
+    return seen
+
+
+def test_the_metrics_section_prints_dimensions_in_the_order_it_is_given():
+    names = ("call_result", "reason", "product")
+    assert _first_appearance(_metrics_lines(names), names) == list(names)
+
+
+def test_a_different_order_actually_changes_the_output():
+    """The assertion that would have caught the parameter being ignored.
+
+    Without it, `dimension_order` could go back to being decorative and every other test
+    in the suite -- including the byte-for-byte report golden, which only ever renders
+    retention -- would stay green.
+    """
+    names = ("call_result", "reason", "product")
+    reversed_order = tuple(reversed(names))
+    assert _first_appearance(_metrics_lines(reversed_order), names) == list(reversed_order)
+
+
+def test_a_dimension_missing_from_the_order_is_still_printed_not_dropped():
+    """The pre-existing contract, preserved: extras are appended sorted rather than lost.
+
+    A second application whose contract omits a dimension some arm nonetheless scored must
+    still see it -- silently dropping a scored number is the failure this whole section is
+    written to avoid.
+    """
+    lines = _metrics_lines(("reason",))
+    printed = _first_appearance(lines, ("call_result", "reason", "product"))
+    assert printed[0] == "reason"
+    assert set(printed) == {"call_result", "reason", "product"}

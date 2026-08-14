@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import sys
 from pathlib import Path
 
@@ -13,6 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from evalharness.adapters.retention import load_csv  # noqa: E402
 from evalharness.manifest import (  # noqa: E402
     Manifest,
+    scoring_code_sha,
     ManifestMismatch,
     assert_comparable,
     items_hash,
@@ -167,3 +169,82 @@ def test_the_refusal_names_every_offending_field_not_just_the_first():
         workload_sha(dict(_WORKLOAD, model="m", provider="p"))
     message = str(excinfo.value)
     assert "'model'" in message and "'provider'" in message
+
+
+# --- what the scoring digest actually covers ------------------------------------------
+#
+# `scorer_sha` is BLOCKING: two arms whose scoring code differs refuse to compare. That
+# promise is only as good as the file list behind it, and for one commit the list was
+# wrong in a way nothing would have caught.
+#
+# `apps.py` holds the dimension-to-scorer pairing that `cli.py` used to hold. Pairing
+# `reason` with `score_product` there changes every number this harness reports.
+# `application_contract_sha` does not cover it -- the contract names an application's
+# dimensions, never the implementations bound to them -- so before 2026-08-12 that edit
+# moved no BLOCKING field at all.
+#
+# These tests are built on a synthetic tree via `root=`, so they assert what the function
+# INCLUDES rather than re-deriving today's digest, which would just be the code checking
+# itself again.
+
+_SCORING_FILES = (
+    ("src/evalharness/metrics.py", "# scorer\n"),
+    ("src/evalharness/records.py", "# record\n"),
+    ("src/evalharness/adapters/retention.py", "# adapter\n"),
+    ("src/evalgen/apps.py", "# bindings\n"),
+    ("src/evalgen/cli.py", "# wiring\n"),
+    ("src/evalgen/flatten.py", "# grain\n"),
+    ("src/evalgen/report.py", "# render\n"),
+)
+
+
+def _tree(root: Path, files=_SCORING_FILES) -> Path:
+    for relative, body in files:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8", newline="\n")
+    return root
+
+
+@pytest.mark.parametrize("changed", [relative for relative, _ in _SCORING_FILES])
+def test_every_file_that_can_change_a_number_moves_the_scoring_digest(tmp_path, changed):
+    """Each covered file, one at a time. A parametrised failure names the file dropped.
+
+    `apps.py` is in this list because it decides which scorer runs for which dimension.
+    The test for inclusion is not which package a file lives in; it is whether editing it
+    can silently change the reported number.
+    """
+    before = scoring_code_sha(root=_tree(tmp_path / "a"))
+    other = _tree(tmp_path / "b")
+    (other / changed).write_text("# edited\n", encoding="utf-8", newline="\n")
+    assert scoring_code_sha(root=other) != before, (
+        f"editing {changed} left the BLOCKING scoring digest unchanged, so two arms "
+        "scored by different code would still compare as though they matched"
+    )
+
+
+def test_a_file_outside_the_scoring_path_does_not_move_the_digest(tmp_path):
+    """The digest is deliberately narrower than HEAD; this is the other half of that.
+
+    Without it, "include apps.py" could be satisfied by hashing the whole repository,
+    which would make every unrelated commit incomparable with every earlier run.
+    """
+    before = scoring_code_sha(root=_tree(tmp_path / "a"))
+    other = _tree(tmp_path / "b")
+    unrelated = other / "src" / "evalgen" / "console.py"
+    unrelated.parent.mkdir(parents=True, exist_ok=True)
+    unrelated.write_text("# stdout handling, cannot change a score\n", encoding="utf-8")
+    assert scoring_code_sha(root=other) == before
+
+
+def test_the_real_repository_digest_covers_apps_py():
+    """Belt and braces on the live tree, not a synthetic one.
+
+    Reads the function's own source rather than recomputing a digest, so it states the
+    inclusion as a fact a reader can check against `manifest.py` directly.
+    """
+    source = inspect.getsource(scoring_code_sha)
+    assert '"apps.py"' in source, (
+        "apps.py decides which scorer runs for which dimension and must stay inside the "
+        "BLOCKING scoring digest"
+    )
