@@ -1,0 +1,433 @@
+openapi: 3.1.0
+info:
+  title: Token Factory API
+  version: 1.0.0
+  summary: OpenAI-compatible model API for approved business units
+  description: >-
+    The Token Factory POC exposes a tested subset of the OpenAI-compatible Models,
+    Responses, and Chat Completions APIs. The model catalog is dynamic; clients must
+    discover authorized model identifiers with GET /v1/models instead of assuming a
+    fixed list. This contract does not include key-management or administrative APIs.
+  contact:
+    name: Thanawat Kaewboworn
+    email: Thanawat.Kaewboworn@truecorp.co.th
+servers:
+  - url: https://token-fac-api.truecorp.co.th
+    description: Token Factory HTTPS endpoint
+tags:
+  - name: Models
+    description: Discover model identifiers available to the current API key.
+  - name: Responses
+    description: Generate a response from text input using the supported Responses subset.
+  - name: Chat
+    description: Generate an assistant message using chat-formatted input.
+security:
+  - bearerAuth: []
+paths:
+  /v1/models:
+    get:
+      tags: [Models]
+      operationId: listModels
+      summary: List models available to the current key
+      description: >-
+        Returns the authoritative model catalog for the supplied Token Factory API key.
+        The list can change as models are provisioned, retired, or restricted.
+      responses:
+        '200':
+          description: Models available to the current key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /v1/responses:
+    post:
+      tags: [Responses]
+      operationId: createResponse
+      summary: Create a model response
+      description: >-
+        Generates output for text input. Only the fields defined here are part of the
+        Token Factory POC contract. Model-specific behavior must be validated before use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResponseRequest'
+      responses:
+        '200':
+          description: Completed response, or a Server-Sent Events stream when stream is true.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseObject'
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream. Each event is separated by a blank line.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /v1/chat/completions:
+    post:
+      tags: [Chat]
+      operationId: createChatCompletion
+      summary: Create a chat completion
+      description: >-
+        Generates an assistant message from an ordered list of messages. Text input is
+        supported for text-generation models. Image input is model-dependent and must be
+        selected from the catalog provisioned for the calling key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatCompletionRequest'
+      responses:
+        '200':
+          description: Chat completion, or a Server-Sent Events stream when stream is true.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletion'
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream ending with a terminal event or [DONE].
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token Factory API key
+      description: Use the virtual API key provisioned for the approved BU use case.
+  schemas:
+    Model:
+      type: object
+      required: [id, object]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          description: Model identifier to pass in generation requests.
+        object:
+          type: string
+          const: model
+        created:
+          type: integer
+          format: int64
+        owned_by:
+          type: string
+      additionalProperties: true
+    ModelList:
+      type: object
+      required: [object, data]
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+      additionalProperties: true
+    CreateResponseRequest:
+      type: object
+      required: [model, input]
+      properties:
+        model:
+          type: string
+          minLength: 1
+          description: Identifier returned by GET /v1/models.
+        input:
+          type: string
+          minLength: 1
+          description: Text input. Structured and multimodal Responses input is not part of the current supported contract.
+        stream:
+          type: boolean
+          default: false
+        max_output_tokens:
+          type: integer
+          minimum: 1
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+      additionalProperties: false
+    ResponseObject:
+      type: object
+      required: [id, object, model, output]
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: response
+        created_at:
+          type: integer
+          format: int64
+        status:
+          type: string
+        model:
+          type: string
+        output:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        output_text:
+          type: string
+        usage:
+          $ref: '#/components/schemas/Usage'
+      additionalProperties: true
+    CreateChatCompletionRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+          minLength: 1
+          description: Identifier returned by GET /v1/models.
+        messages:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        stream:
+          type: boolean
+          default: false
+        max_tokens:
+          type: integer
+          minimum: 1
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+        top_p:
+          type: number
+          minimum: 0
+          maximum: 1
+      additionalProperties: false
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, developer, user, assistant]
+        content:
+          oneOf:
+            - type: string
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/ChatContentPart'
+      additionalProperties: false
+    ChatContentPart:
+      oneOf:
+        - $ref: '#/components/schemas/ChatTextPart'
+        - $ref: '#/components/schemas/ChatImagePart'
+    ChatTextPart:
+      type: object
+      required: [type, text]
+      properties:
+        type:
+          type: string
+          const: text
+        text:
+          type: string
+      additionalProperties: false
+    ChatImagePart:
+      type: object
+      required: [type, image_url]
+      properties:
+        type:
+          type: string
+          const: image_url
+        image_url:
+          type: object
+          required: [url]
+          properties:
+            url:
+              type: string
+              description: HTTPS URL or data URL accepted by the selected multimodal model.
+          additionalProperties: false
+      additionalProperties: false
+    ChatCompletion:
+      type: object
+      required: [id, object, created, model, choices]
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: chat.completion
+        created:
+          type: integer
+          format: int64
+        model:
+          type: string
+        choices:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ChatChoice'
+        usage:
+          $ref: '#/components/schemas/Usage'
+      additionalProperties: true
+    ChatChoice:
+      type: object
+      required: [index, message]
+      properties:
+        index:
+          type: integer
+        message:
+          type: object
+          required: [role, content]
+          properties:
+            role:
+              type: string
+            content:
+              type: [string, 'null']
+          additionalProperties: true
+        finish_reason:
+          type: [string, 'null']
+      additionalProperties: true
+    Usage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: 0
+        output_tokens:
+          type: integer
+          minimum: 0
+        total_tokens:
+          type: integer
+          minimum: 0
+        prompt_tokens:
+          type: integer
+          minimum: 0
+        completion_tokens:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          oneOf:
+            - type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                type:
+                  type: [string, 'null']
+                param:
+                  type: [string, 'null']
+                code:
+                  type: [string, integer, 'null']
+              additionalProperties: true
+            - type: string
+      additionalProperties: true
+  responses:
+    BadRequest:
+      description: Invalid JSON, unsupported parameter, or invalid request for the selected model.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing, invalid, expired, or suspended API key.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: The key or source is not authorized for this operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Requested model is unavailable to the current key.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Request throttled because of configured or emergency capacity controls.
+      headers:
+        Retry-After:
+          description: Optional number of seconds to wait before retrying.
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: Gateway or model processing error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadGateway:
+      description: The model backend returned an invalid or failed upstream response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: The gateway or selected model is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
