@@ -27,7 +27,9 @@ regression that started making calls fails here rather than on an invoice.
 
 from __future__ import annotations
 
+import difflib
 import json
+import re
 import shutil
 import sys
 import time
@@ -2027,3 +2029,100 @@ def test_severity_refuses_a_dimension_outside_its_declared_scope(capsys):
         ])
     assert excinfo.value.code == 2
     assert "product" in capsys.readouterr().err
+
+
+# --- the report, byte for byte ------------------------------------------------------
+#
+# Added 2026-08-12, deliberately BEFORE the application-seam refactor rather than after.
+#
+# That refactor makes `--app` select the scorers, schema, prompt base and dimension order
+# instead of reading them off module-level constants hardcoded to Retention. Its governing
+# rule is that no Retention number moves -- but "the report is unchanged" was, until this
+# file existed, an opinion. `tests/test_report.py` asserts many properties of the renderer
+# and no test pinned the document it produces, so a refactor could have reordered a
+# section, dropped a caveat, or changed a heading and every test would still have passed.
+#
+# The rendered report is already deterministic apart from two lines. Two runs of the same
+# arms differ only in the absolute run-directory paths in section "HOW THIS REPORT WAS
+# PRODUCED", which carry a tmp_path and a second-resolution timestamp. Those two lines are
+# masked; the other 303 are compared exactly. Masking more would weaken the gate, and
+# masking less would make it fail for a reason that has nothing to do with the report.
+#
+# When this test fails, the diff is the answer: either the change to the renderer was
+# intended, in which case regenerate the golden IN THE SAME COMMIT and let a reviewer read
+# the diff, or it was not, in which case the refactor moved something it promised not to.
+# Never regenerate it to make a red suite green -- that converts the only record of what
+# the report used to say into a record of what it happens to say now.
+
+GOLDEN = ROOT / "tests" / "fixtures" / "report_golden_v9_16_base.txt"
+
+_VOLATILE = re.compile(r"^((?:incumbent|candidate) run  ).*$", re.M)
+
+
+def _normalise(report: str) -> str:
+    """Mask the only two lines that legitimately differ between runs."""
+    return _VOLATILE.sub(r"\1<RUN DIRECTORY>", report)
+
+
+def test_the_rendered_report_is_byte_identical_to_the_committed_golden(
+    run_arm, perfect, testset, env, capsys
+):
+    """The whole document, pinned. 303 of 305 lines exactly, two masked.
+
+    Uses the same two arms as `test_a_broken_arm_fails_exactly_its_own_mechanism`: a
+    perfect incumbent and a candidate wrong on RET-10 only. A report over two identical
+    arms would have empty disagreement and regression sections, so most of the document
+    would not be covered at all.
+    """
+    by_id = {item.item_id: item for item in testset.items}
+
+    def broken(item_id, _nth):
+        item = by_id[item_id]
+        if item_id == "RET-10":
+            return answer(item, payload=payload_for(item, call_result="save"))
+        return answer(item)
+
+    incumbent = run_arm("incumbent", perfect, repeats=2)
+    candidate = run_arm("candidate", broken, repeats=2)
+    capsys.readouterr()
+
+    main(["compare", "--incumbent", str(incumbent), "--candidate", str(candidate)])
+    produced = _normalise(capsys.readouterr().out)
+    expected = GOLDEN.read_text(encoding="utf-8")
+
+    if produced != expected:
+        produced_lines = produced.splitlines()
+        expected_lines = expected.splitlines()
+        diff = "\n".join(
+            difflib.unified_diff(
+                expected_lines, produced_lines,
+                fromfile="committed golden", tofile="produced now", lineterm="",
+            )
+        )
+        raise AssertionError(
+            "the rendered report changed.\n\n"
+            "If the change was intended, regenerate the golden in the SAME commit so a "
+            "reviewer reads this diff. If it was not, something moved that promised not "
+            f"to.\n\n{diff}"
+        )
+
+
+def test_the_golden_masks_only_the_run_directory_lines(run_arm, perfect, env, capsys):
+    """The mask must not be broad enough to hide a real change.
+
+    Without this, widening `_VOLATILE` to something like `.*` would make the golden pass
+    against any report at all, and nothing would say so.
+    """
+    incumbent = run_arm("incumbent", perfect, repeats=1)
+    capsys.readouterr()
+    raw = (incumbent / "run.json").read_text(encoding="utf-8")
+
+    masked = _normalise(raw + "\nincumbent run  /some/path\n")
+    assert "<RUN DIRECTORY>" in masked
+    # Every other line survives untouched.
+    assert raw in masked
+
+    golden = GOLDEN.read_text(encoding="utf-8")
+    assert golden.count("<RUN DIRECTORY>") == 2, (
+        "the golden should carry exactly two masked lines; more means the mask widened"
+    )
