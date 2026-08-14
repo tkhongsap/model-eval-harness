@@ -19,18 +19,20 @@
 #    and that the IP below is infrastructure detail -- one more reason this repository
 #    stays private (AGENTS.md, "Open items").
 #
-# 2. `-k` disables TLS certificate verification, and that is a real cost, not a nit.
-#    Connecting by pinned IP means the presented certificate will not match the name
-#    being requested, so verification fails on a connection that is otherwise fine. `-k`
-#    buys past that and simultaneously gives up the guarantee that the host on the other
-#    end is the one intended -- on an internal network, against a hardcoded RFC1918
-#    address, over a bearer token that is being sent regardless.
+# 2. `--cacert` replaced `-k`, and the reason is worth reading before anyone puts `-k`
+#    back. The original script disabled verification entirely. The diagnosis behind that
+#    was wrong: the certificate does not fail because the pinned IP mismatches the name,
+#    it fails because it is **self-signed**, so no public CA vouches for it.
 #
-#    Left in because it is what makes the probe work today, and removing it without a
-#    trusted certificate chain would just make the script fail. It is recorded rather
-#    than silently accepted, and it should not be copied into anything that carries real
-#    data or runs unattended. If this endpoint becomes a real evaluation arm, the right
-#    fix is a certificate the client can verify -- not `-k` in more places.
+#    Its SAN covers both `token-fac-api.truecorp.co.th` and `10.94.154.102`, so trusting
+#    that one certificate -- and only it -- verifies cleanly. Verification here is now
+#    STRONGER than the public-CA default: a substituted host fails even if it presents a
+#    certificate some public CA signed. `-k` would accept anything at all, on a
+#    connection carrying a bearer token.
+#
+#    Rotation breaks this deliberately. A changed certificate should stop the probe and
+#    be re-reviewed, not be trusted silently. Re-pin with
+#    `ssl.get_server_certificate(('10.94.154.102', 443))` and read the diff.
 #
 # The key is read interactively, converted for the one call that needs it, and cleared.
 # It is never a parameter, never an environment variable that outlives the script, and
@@ -42,7 +44,8 @@ $env:TOKEN_FACTORY_BASE_URL = "https://token-fac-api.truecorp.co.th"
 $secureKey = Read-Host "Token Factory API key" -AsSecureString
 $apiKey = [System.Net.NetworkCredential]::new("", $secureKey).Password
 
-curl.exe -k -sS `
+curl.exe -sS `
+  --cacert "$PSScriptRoot\configs\token-factory.crt.pem" `
   --resolve "token-fac-api.truecorp.co.th:443:10.94.154.102" `
   "$env:TOKEN_FACTORY_BASE_URL/v1/models" `
   -H "Authorization: Bearer $apiKey"
