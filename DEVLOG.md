@@ -269,15 +269,51 @@ Frequency before the fix was roughly **1 in 40 full runs** (one failure across ~
 2026-08-11). A recurrence *after* this change means the budget expired, which would be new
 information: it would point at an in-process holder rather than a scanner.
 
-**Status 2026-08-12: no confirmed recurrence, and one unattributable failure.** Twelve
-consecutive differential runs immediately after the mitigation were green. A separate drift
-audit later the same day observed **one failure in eight runs and did not capture the test
-id**, so it cannot be attributed to this bug, to a different flake, or to the audit's own
-environment. It is recorded because an uncaptured red run is exactly what let this bug stay
-undiagnosed for three occurrences, and *not* counted as a fifth occurrence, because that
-would be inventing evidence that was not collected. **If it fires again, capture the
-traceback before doing anything else** -- `-x --tb=long` with the output saved, which is how
-the fourth occurrence was finally diagnosed.
+**Status 2026-08-12: no confirmed recurrence of the RENAME case -- but the family was
+bigger than this entry said, and the rest of it was in harness code.**
+
+Twelve consecutive differential runs immediately after the mitigation were green. A later
+drift audit observed one failure in eight runs and did not capture the test id, so it was
+recorded as unattributable rather than counted as a fifth occurrence.
+
+Hunting that unattributable failure with every failure saved rather than grep-filtered
+caught the real one, and it is **not** the tests' own directory manipulation:
+
+```
+src/evalgen/artifacts.py:120, in atomic_write_bytes
+    os.replace(tmp, target)
+PermissionError: [WinError 5] Access is denied:
+  ...\.run.state.json.vl3ce_xk.tmp -> ...\run.state.json
+```
+
+Once in ten full suite runs, in `atomic_write_bytes` -- **`src/`, not `tests/`**. POSIX
+`rename(2)` over an open file always succeeds; Windows refuses while any process holds the
+destination, and a real-time scanner opens files it has just seen written, which is
+exactly what the preceding `fsync` guarantees it noticed.
+
+**This could lose paid work.** `run.state.json` is the crash-safe-resume record and
+`atomic_write_text` writes it after every checkpoint, so an unhandled failure there aborts
+a run that has already been paid for -- the precise loss the state file exists to prevent.
+The same call writes `run.json` and the journal header. It was invisible for as long as it
+was because it is rare, it looks like a test flake when it lands in a test, and nobody had
+saved a traceback.
+
+**Fixed**, not merely recorded: `artifacts._replace` retries `os.replace` for five seconds
+and then re-raises. Same discipline as `move_run_dir` -- a handle held by *this* process is
+never released while the write is blocked, so the budget expires and the original error
+propagates. Both directions are proved on Windows in `tests/test_artifacts.py`: a holder
+released after 400 ms is absorbed and the write lands; a holder that never releases still
+raises inside a shortened budget, and neither path leaves a `.tmp` behind. Moves no
+manifest sha -- `artifacts.py` is in neither `generation_contract_sha` nor
+`scoring_code_sha`.
+
+**Not fixed, and deliberately so:** `append_jsonl` and `RunJournal.append` open the same
+directory with `O_APPEND` and could in principle fail the same way. There is no measurement
+of that happening, and a retry added on suspicion would be a guess dressed as a control.
+Recorded so the next occurrence is recognised rather than investigated from scratch.
+
+The lesson that generalises: **save every failing run in full.** Both times this family hid
+from diagnosis, it was because output was filtered to what someone expected to see.
 
 
 **Four coverage/configuration gaps, recorded 2026-08-08 -- three closed 2026-08-12, one

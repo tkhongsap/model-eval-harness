@@ -649,6 +649,9 @@ def render(
     disagreements: Sequence[Disagreement],
     regressions: Sequence[RegressionRow],
     decompositions: Mapping[str, Mapping[str, Any]] | None = None,
+    *,
+    title: str = "RETENTION EVAL",
+    dimension_order: Sequence[str] = _DIMENSION_ORDER,
 ) -> str:
     """The whole report, as one string. Print it or write it; this function does neither.
 
@@ -685,7 +688,7 @@ def render(
     arms = (incumbent, candidate)
 
     lines: list[str] = []
-    lines += _header(incumbent, candidate)
+    lines += _header(incumbent, candidate, title=title)
     lines += _mechanism_section(incumbent, candidate, mechanisms)
     lines += _disagreement_section(disagreements, regressions)
     lines += _returned_section(arms)
@@ -698,10 +701,15 @@ def render(
     return "\n".join(line.rstrip() for line in lines) + "\n"
 
 
-def _header(incumbent: ArmSummary, candidate: ArmSummary) -> list[str]:
+def _header(
+    incumbent: ArmSummary,
+    candidate: ArmSummary,
+    *,
+    title: str = "RETENTION EVAL",
+) -> list[str]:
     lines = [
         _RULE,
-        "RETENTION EVAL - PAIRED COMPARISON",
+        f"{title} - PAIRED COMPARISON",
         _RULE,
         "RECONCILED: NO",
         "PROMPT: RECONSTRUCTED",

@@ -18,6 +18,7 @@ import json
 import os
 import re
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -106,6 +107,54 @@ def require_private_destination(path: Path) -> Path:
     return candidate
 
 
+# How long `_replace` will keep trying past a transient Windows sharing failure.
+# Five seconds: long enough to outlast a real-time scanner holding a file it has just
+# seen written, short enough that a genuine deadlock still surfaces inside one test run.
+_REPLACE_BUDGET_S = 5.0
+
+
+def _replace(tmp: Path, target: Path) -> None:
+    """`os.replace`, retried past a transient sharing failure. MEASURED 2026-08-12.
+
+    POSIX `rename(2)` over an open file always succeeds. Windows does not: `os.replace`
+    raises `PermissionError [WinError 5]` while any process holds the destination open,
+    and a real-time scanner opens files it has just seen written -- which is precisely
+    what the line above does, microseconds earlier, with an `fsync` to make sure the
+    scanner notices.
+
+    Caught in the act writing `run.state.json`::
+
+        PermissionError: [WinError 5] Access is denied:
+          ...\.run.state.json.vl3ce_xk.tmp -> ...\run.state.json
+
+    once in ten full suite runs. **This is not a test-only problem.** `run.state.json` is
+    the crash-safe-resume record, `atomic_write_text` writes it after every checkpoint,
+    and an unhandled failure here aborts a run that has already been paid for -- the
+    exact loss the state file exists to prevent. The same call writes `run.json` and the
+    journal header.
+
+    The retry cannot hide a real bug. A handle held by THIS process is never released
+    while the write is blocked, so the budget expires and the original `PermissionError`
+    propagates with its traceback. Only an external holder that lets go is absorbed, and
+    absorbing that is correct: the write is genuinely retryable, and the alternative is
+    losing a run to another program's file scan.
+
+    Related and NOT fixed here: `append_jsonl` and `RunJournal.append` open with
+    `O_APPEND` on the same directory and could in principle fail the same way. There is
+    no measurement of that happening, and a retry added on suspicion would be a guess
+    dressed as a control. Recorded so the next occurrence is recognised.
+    """
+    deadline = time.monotonic() + _REPLACE_BUDGET_S
+    while True:
+        try:
+            os.replace(tmp, target)
+            return
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.02)
+
+
 def atomic_write_bytes(path: Path, content: bytes) -> None:
     """Write bytes durably, then atomically replace the destination."""
     target = Path(path)
@@ -117,7 +166,7 @@ def atomic_write_bytes(path: Path, content: bytes) -> None:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(tmp, target)
+        _replace(tmp, target)
         _fsync_directory(target.parent)
     except BaseException:
         try:

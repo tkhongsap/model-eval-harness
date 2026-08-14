@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **`scoring_code_sha` moved: `cefd4ae9…` → `d33f1d44…`.** Recorded here rather than left
+  to be discovered, because it is a **BLOCKING** manifest field: a run recorded before this
+  change and one recorded after will refuse to compare, by design. The digest rglobs
+  `src/evalharness/**/*.py` plus `cli.py`, `flatten.py` and `report.py`, all of which the
+  application-seam work touches, so the move is unavoidable. It was **not** worked around
+  by narrowing the digest — that would be weakening a gate to avoid an inconvenience.
+  Two arms of any *new* comparison both carry the new value and compare normally.
+  **`decision_policy_sha` is unchanged at `3d5f3e60…`**, which is itself the evidence that
+  `compare.py` and `experiments.py` were not touched.
+
+### Fixed
+
+- **`atomic_write_bytes` could abort a paid run on Windows, and now retries.** MEASURED
+  2026-08-12, once in ten full suite runs: `os.replace` raised
+  `PermissionError [WinError 5]` writing `run.state.json`. POSIX `rename(2)` over an open
+  file always succeeds; Windows refuses while any process holds the destination, and a
+  real-time scanner opens files it has just seen written — which the preceding `fsync`
+  guarantees it noticed. This is harness code, not test code: `run.state.json` is the
+  crash-safe-resume record written after every checkpoint, so an unhandled failure there
+  loses a run that has already been paid for. `artifacts._replace` now retries for five
+  seconds and then re-raises, so a handle held by *this* process still surfaces as an
+  error rather than being slept away. Both directions proved on Windows; moves no manifest
+  sha. It hid for so long because it looks like a test flake when it lands in a test and
+  nobody had saved a traceback — see DEVLOG, Known Bugs.
+
 ### Added
 
 - **`tests/fixtures/testsets/retention_challenge_v1.*`: a harder, original pack.** 50
