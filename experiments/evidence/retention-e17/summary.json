@@ -1,0 +1,486 @@
+{
+  "schema_version": 1,
+  "experiment_id": "retention-e17",
+  "recorded_utc": "2026-08-14T14:15:00Z",
+  "classification": "synthetic_aggregate_only",
+  "reconciled": false,
+  "plan": "docs/experiment17-plan.md",
+  "results": "docs/experiment17-results.md",
+  "preregistration_note": "Recorded as a prose plan, not experiments/retention-e17.plan.json. experiments.validate_plan is a validator for the E5/E7 contract specifically (experiments.py:117 allowlists two ids; :190-207 pin top_p=0, max_attempts=1 and three OpenRouter model ids). E17 differs on all of those by design, so admitting it would have meant relaxing the validator rather than satisfying it.",
+  "decision": {
+    "outcome": "RETAIN_GEMINI_REFERENCE",
+    "migration_status": "INCONCLUSIVE",
+    "reason": "gemma-4-12b-it is BEHIND on all three dimensions. qwen3.6-27b-fp8 is INDISTINGUISHABLE on both powered dimensions and the most stable arm by scored instability, but product is UNDERPOWERED and throughput is ~11x worse. The blocking issue is the reference point: Gemini 2.5 Flash went from raw-unstable 0/138 on 2026-08-10 to 111/138 on 2026-08-14 under a byte-identical workload.",
+    "not_a_production_verdict": true
+  },
+  "headline_finding": {
+    "what": "The incumbent's determinism collapsed between 2026-08-10 and 2026-08-14.",
+    "evidence": {
+      "2026-08-10": {
+        "run": "20260810-165653Z-e10-gemini-base",
+        "raw_unstable": 0,
+        "scored_unstable": 0,
+        "n_flip": 0
+      },
+      "2026-08-14": {
+        "run": "20260814-132425Z-e17-gemini",
+        "raw_unstable": 111,
+        "scored_unstable": 29,
+        "n_flip": 34
+      }
+    },
+    "held_constant": [
+      "model id google/gemini-2.5-flash, provider pinned Google",
+      "prompt v9_16_base, prompt_tokens 1237746 in both runs, per-item spread identical",
+      "temperature 0, top_p 1.0, seed 0, max_tokens 8000, reasoning_effort none",
+      "max_attempts 3, concurrency 8, 0 resumed cells, 0 truncated, 414/414 ok"
+    ],
+    "scorer_ruled_out": "scoring_code_sha moved cefd4ae9->9b4afc95 on 2026-08-12, confounding 'scorer changed' with 'model changed'. Re-scoring the 2026-08-10 outputs with today's code reproduces 0.955/0.823/0.960 and N_flip=0 exactly. See out/reports/control-e10-rescored-at-head.txt.",
+    "consequence": "Experiment 7 disqualified Qwen on stability against a Gemini that never varied. That reference point no longer exists, and on this run the incumbent is the least stable of the three arms by scored instability."
+  },
+  "method": {
+    "testset": "retention_v3",
+    "testset_sha256": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+    "ground_truth_sha256": "a7fddd189a98710576cc70a258e5eb7f4a74df0fbae83e21344c9248a4d92d14",
+    "synthetic_items": 138,
+    "scored_product_rows": 150,
+    "replicates_per_model": 3,
+    "calls_per_model": 414,
+    "prompt_id": "v9_16_base",
+    "prompt_sha256": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+    "paired_inference_unit": "call_cluster",
+    "alpha_per_side": 0.015625,
+    "aggregate_score_replicate": 1,
+    "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+    "scoring_code_sha_moved_during_experiment": false,
+    "load_probes_included": false
+  },
+  "declared_deviations": [
+    "top_p=1.0 rather than production's 0: the endpoint returns 400 'top_p must be in (0, 1]'. Greedy at temperature 0, so inert, and it is the value E10's Gemini used.",
+    "reasoning_effort: none on Gemini, provider-default on the Token Factory arms.",
+    "fp8 quantisation. qwen3.6-27b-fp8 is not E7's qwen/qwen3.6-27b on Chutes, and gemma-4-12b-it is not E10's gemma-4-12b on Modellismz."
+  ],
+  "not_tested": {
+    "qwen3-asr-1.7b": "speech model; this repository has no audio fixtures"
+  },
+  "models": {
+    "gemini-2.5-flash": {
+      "model": "google/gemini-2.5-flash",
+      "runtime": "openrouter",
+      "backend": "openrouter",
+      "provider": "Google",
+      "parse_valid_calls": 414,
+      "outcome_counts": {
+        "ok": 414
+      },
+      "truncated_rate": 0.0,
+      "total_api_attempts": 416,
+      "weighted_f1": {
+        "call_result": 0.955,
+        "reason": 0.838,
+        "product": 0.96
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 145,
+          "parse_failures": 0,
+          "weighted_precision": 0.974,
+          "weighted_recall": 0.94,
+          "weighted_f1": 0.955
+        },
+        "reason": {
+          "denominator": 157,
+          "joined": 145,
+          "parse_failures": 0,
+          "weighted_precision": 0.763,
+          "weighted_recall": 0.964,
+          "weighted_f1": 0.838
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "weighted_precision": 0.954,
+          "weighted_recall": 0.967,
+          "weighted_f1": 0.96
+        }
+      },
+      "n_flip_over_3_replicates": 34,
+      "replicate_instability": {
+        "observable_calls": 138,
+        "raw_unstable": 111,
+        "scored_unstable": 29,
+        "cosmetic": 82,
+        "cosmetic_share_pct": 73.9
+      },
+      "input_tokens": 1237746,
+      "output_tokens": 86449,
+      "reported_cost_usd": 0.56157004,
+      "calls_without_reported_cost": 0,
+      "latency_seconds": {
+        "p50": 2.062,
+        "p95": 2.797,
+        "p99": 3.922,
+        "max": 11.359,
+        "convention": "nearest-rank"
+      },
+      "wall_seconds": 114.899,
+      "throughput_calls_per_second": 3.603,
+      "concurrency": 8,
+      "decoding": {
+        "max_tokens": 8000,
+        "reasoning_effort": "none",
+        "seed": 0,
+        "temperature": 0.0,
+        "top_p": 1.0
+      },
+      "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+      "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe"
+    },
+    "gemma-4-12b-it": {
+      "model": "gemma-4-12b-it",
+      "runtime": "true-token-factory-poc",
+      "backend": "openai-compatible",
+      "provider": "<not reported>",
+      "parse_valid_calls": 414,
+      "outcome_counts": {
+        "ok": 414
+      },
+      "truncated_rate": 0.0,
+      "total_api_attempts": 414,
+      "weighted_f1": {
+        "call_result": 0.929,
+        "reason": 0.792,
+        "product": 0.933
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 142,
+          "parse_failures": 0,
+          "weighted_precision": 0.959,
+          "weighted_recall": 0.907,
+          "weighted_f1": 0.929
+        },
+        "reason": {
+          "denominator": 164,
+          "joined": 142,
+          "parse_failures": 0,
+          "weighted_precision": 0.713,
+          "weighted_recall": 0.934,
+          "weighted_f1": 0.792
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "weighted_precision": 0.922,
+          "weighted_recall": 0.947,
+          "weighted_f1": 0.933
+        }
+      },
+      "n_flip_over_3_replicates": 25,
+      "replicate_instability": {
+        "observable_calls": 138,
+        "raw_unstable": 133,
+        "scored_unstable": 15,
+        "cosmetic": 118,
+        "cosmetic_share_pct": 88.7
+      },
+      "input_tokens": 1245198,
+      "output_tokens": 104839,
+      "reported_cost_usd": 0,
+      "calls_without_reported_cost": 414,
+      "latency_seconds": {
+        "p50": 12.0,
+        "p95": 16.625,
+        "p99": 20.422,
+        "max": 22.594,
+        "convention": "nearest-rank"
+      },
+      "wall_seconds": 1278.357,
+      "throughput_calls_per_second": 0.324,
+      "concurrency": 4,
+      "decoding": {
+        "max_tokens": 8000,
+        "reasoning_effort": "provider-default",
+        "seed": 0,
+        "temperature": 0.0,
+        "top_p": 1.0
+      },
+      "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+      "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+      "paired_vs_gemini": {
+        "call_result": {
+          "both_right": 118,
+          "both_wrong": 8,
+          "incumbent_only": 11,
+          "candidate_only": 1,
+          "discordant": 12,
+          "net": -10,
+          "exact_band": "+/-10",
+          "verdict": "BEHIND"
+        },
+        "reason": {
+          "both_right": 61,
+          "both_wrong": 48,
+          "incumbent_only": 21,
+          "candidate_only": 8,
+          "discordant": 29,
+          "net": -13,
+          "exact_band": "+/-13",
+          "verdict": "BEHIND"
+        },
+        "product": {
+          "both_right": 124,
+          "both_wrong": 5,
+          "incumbent_only": 9,
+          "candidate_only": 0,
+          "discordant": 9,
+          "net": -9,
+          "exact_band": "+/-9",
+          "verdict": "BEHIND"
+        }
+      },
+      "mechanisms_vs_gemini": {
+        "clear": {
+          "n": 30,
+          "incumbent_always_correct": 16,
+          "candidate_always_correct": 13,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "thai_linguistic": {
+          "n": 30,
+          "incumbent_always_correct": 15,
+          "candidate_always_correct": 13,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "tiebreak": {
+          "n": 17,
+          "incumbent_always_correct": 9,
+          "candidate_always_correct": 7,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "multislot": {
+          "n": 10,
+          "incumbent_always_correct": 4,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "escape": {
+          "n": 13,
+          "incumbent_always_correct": 6,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "long_context": {
+          "n": 12,
+          "incumbent_always_correct": 9,
+          "candidate_always_correct": 7,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "asr_noise": {
+          "n": 10,
+          "incumbent_always_correct": 5,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "code_switch": {
+          "n": 10,
+          "incumbent_always_correct": 3,
+          "candidate_always_correct": 2,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "regression": {
+          "n": 6,
+          "incumbent_always_correct": 4,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        }
+      }
+    },
+    "qwen3.6-27b-fp8": {
+      "model": "qwen3.6-27b-fp8",
+      "runtime": "true-token-factory-poc",
+      "backend": "openai-compatible",
+      "provider": "<not reported>",
+      "parse_valid_calls": 414,
+      "outcome_counts": {
+        "ok": 414
+      },
+      "truncated_rate": 0.0,
+      "total_api_attempts": 414,
+      "weighted_f1": {
+        "call_result": 0.962,
+        "reason": 0.821,
+        "product": 0.932
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 141,
+          "parse_failures": 0,
+          "weighted_precision": 0.993,
+          "weighted_recall": 0.933,
+          "weighted_f1": 0.962
+        },
+        "reason": {
+          "denominator": 160,
+          "joined": 141,
+          "parse_failures": 0,
+          "weighted_precision": 0.776,
+          "weighted_recall": 0.922,
+          "weighted_f1": 0.821
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "weighted_precision": 0.924,
+          "weighted_recall": 0.94,
+          "weighted_f1": 0.932
+        }
+      },
+      "n_flip_over_3_replicates": 15,
+      "replicate_instability": {
+        "observable_calls": 138,
+        "raw_unstable": 129,
+        "scored_unstable": 8,
+        "cosmetic": 121,
+        "cosmetic_share_pct": 93.8
+      },
+      "input_tokens": 1131948,
+      "output_tokens": 95337,
+      "reported_cost_usd": 0,
+      "calls_without_reported_cost": 414,
+      "latency_seconds": {
+        "p50": 11.375,
+        "p95": 17.609,
+        "p99": 21.734,
+        "max": 23.546,
+        "convention": "nearest-rank"
+      },
+      "wall_seconds": 1228.845,
+      "throughput_calls_per_second": 0.337,
+      "concurrency": 4,
+      "decoding": {
+        "max_tokens": 8000,
+        "reasoning_effort": "provider-default",
+        "seed": 0,
+        "temperature": 0.0,
+        "top_p": 1.0
+      },
+      "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+      "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+      "paired_vs_gemini": {
+        "call_result": {
+          "both_right": 125,
+          "both_wrong": 6,
+          "incumbent_only": 4,
+          "candidate_only": 3,
+          "discordant": 7,
+          "net": -1,
+          "exact_band": "+/-7",
+          "verdict": "INDISTINGUISHABLE"
+        },
+        "reason": {
+          "both_right": 67,
+          "both_wrong": 42,
+          "incumbent_only": 15,
+          "candidate_only": 14,
+          "discordant": 29,
+          "net": -1,
+          "exact_band": "+/-13",
+          "verdict": "INDISTINGUISHABLE"
+        },
+        "product": {
+          "both_right": 129,
+          "both_wrong": 5,
+          "incumbent_only": 4,
+          "candidate_only": 0,
+          "discordant": 4,
+          "net": -4,
+          "exact_band": "--",
+          "verdict": "UNDERPOWERED"
+        }
+      },
+      "mechanisms_vs_gemini": {
+        "clear": {
+          "n": 30,
+          "incumbent_always_correct": 16,
+          "candidate_always_correct": 16,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "thai_linguistic": {
+          "n": 30,
+          "incumbent_always_correct": 15,
+          "candidate_always_correct": 16,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "tiebreak": {
+          "n": 17,
+          "incumbent_always_correct": 9,
+          "candidate_always_correct": 9,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "multislot": {
+          "n": 10,
+          "incumbent_always_correct": 4,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "escape": {
+          "n": 13,
+          "incumbent_always_correct": 6,
+          "candidate_always_correct": 7,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "long_context": {
+          "n": 12,
+          "incumbent_always_correct": 9,
+          "candidate_always_correct": 11,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FLAKY"
+        },
+        "asr_noise": {
+          "n": 10,
+          "incumbent_always_correct": 5,
+          "candidate_always_correct": 4,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "code_switch": {
+          "n": 10,
+          "incumbent_always_correct": 3,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        },
+        "regression": {
+          "n": 6,
+          "incumbent_always_correct": 4,
+          "candidate_always_correct": 5,
+          "incumbent_verdict": "FAIL",
+          "candidate_verdict": "FAIL"
+        }
+      }
+    }
+  },
+  "raw_outputs_committed": false,
+  "local_runtime_root": "out/runs"
+}

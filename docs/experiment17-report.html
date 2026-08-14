@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experiment 17 Readout</title>
+
+<style>
+  /* ---- LIGHT: the complete palette lives here on bare :root ---- */
+  :root {
+    --ground:        #F4F6F8;
+    --raised:        #FFFFFF;
+    --sunken:        #EDF0F3;
+    --ink:           #151B23;
+    --ink-muted:     #57626F;
+    --ink-faint:     #838E9C;
+    --hairline:      #DDE2E8;
+    --hairline-firm: #C3CBD4;
+
+    /* categorical series &mdash; fixed order, never cycled. validated light. */
+    --s-gemini: #2E74B5;
+    --s-gemma:  #C2661A;
+    --s-qwen:   #7B4BB7;
+
+    /* status &mdash; reserved, never reused as a series colour */
+    --st-bad:     #B3261E;
+    --st-bad-bg:  #FBEDEC;
+    --st-good:    #1F6F4A;
+    --st-good-bg: #EAF4EF;
+    --st-unknown: #64707E;
+    --st-unknown-bg: #EEF1F4;
+
+    --track:  #E4E8ED;
+    --shadow: 0 1px 2px rgba(21,27,35,.05), 0 4px 14px rgba(21,27,35,.045);
+
+    --serif: "Charter", "Bitstream Charter", "Iowan Old Style", "Source Serif 4", Cambria, Georgia, serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono:  ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:        #11151A;
+      --raised:        #191F26;
+      --sunken:        #151A20;
+      --ink:           #E4E9EF;
+      --ink-muted:     #9AA5B2;
+      --ink-faint:     #6F7B89;
+      --hairline:      #29313A;
+      --hairline-firm: #3A444F;
+      --s-gemini: #4E90CE;
+      --s-gemma:  #CE7C2E;
+      --s-qwen:   #9C71D2;
+      --st-bad:     #E8776C;
+      --st-bad-bg:  #2C1B1A;
+      --st-good:    #5FBF90;
+      --st-good-bg: #14261E;
+      --st-unknown: #8B96A3;
+      --st-unknown-bg: #1E242B;
+      --track:  #232B33;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:        #11151A;
+    --raised:        #191F26;
+    --sunken:        #151A20;
+    --ink:           #E4E9EF;
+    --ink-muted:     #9AA5B2;
+    --ink-faint:     #6F7B89;
+    --hairline:      #29313A;
+    --hairline-firm: #3A444F;
+    --s-gemini: #4E90CE;
+    --s-gemma:  #CE7C2E;
+    --s-qwen:   #9C71D2;
+    --st-bad:     #E8776C;
+    --st-bad-bg:  #2C1B1A;
+    --st-good:    #5FBF90;
+    --st-good-bg: #14261E;
+    --st-unknown: #8B96A3;
+    --st-unknown-bg: #1E242B;
+    --track:  #232B33;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .prose { max-width: 68ch; }
+
+  /* ---------- masthead ---------- */
+  .masthead { padding: 56px 0 28px; border-bottom: 2px solid var(--ink); }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-muted); margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 700; font-size: clamp(34px, 5.5vw, 54px);
+    line-height: 1.02; letter-spacing: -.02em; margin: 0 0 14px; text-wrap: balance;
+  }
+  .standfirst {
+    font-family: var(--serif); font-size: clamp(17px, 2.1vw, 21px); line-height: 1.5;
+    color: var(--ink-muted); margin: 0; max-width: 62ch;
+  }
+
+  .provenance {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 1px; background: var(--hairline); border: 1px solid var(--hairline);
+    margin: 28px 0 0;
+  }
+  .provenance div { background: var(--ground); padding: 11px 13px; }
+  .provenance dt {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 3px;
+  }
+  .provenance dd {
+    font-family: var(--mono); font-size: 13px; margin: 0; font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 52px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; }
+  .sec-num {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+    letter-spacing: .1em; padding-top: 4px; flex: none;
+  }
+  h2 {
+    font-family: var(--serif); font-size: clamp(23px, 3vw, 31px); font-weight: 700;
+    letter-spacing: -.015em; line-height: 1.15; margin: 0; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans); font-size: 15px; font-weight: 650; margin: 30px 0 10px;
+    letter-spacing: -.005em;
+  }
+  .lede { color: var(--ink-muted); margin: 10px 0 0; }
+  p { margin: 0 0 14px; }
+  a { color: inherit; }
+  strong { font-weight: 650; }
+  :focus-visible { outline: 2px solid var(--s-gemini); outline-offset: 3px; border-radius: 2px; }
+
+  .note {
+    font-size: 13.5px; line-height: 1.55; color: var(--ink-muted);
+    border-left: 2px solid var(--hairline-firm); padding: 2px 0 2px 14px; margin: 16px 0 0;
+    max-width: 72ch;
+  }
+
+  /* ---------- the finding ---------- */
+  .finding {
+    margin-top: 34px; background: var(--raised); border: 1px solid var(--hairline);
+    border-top: 3px solid var(--st-bad); box-shadow: var(--shadow);
+  }
+  .finding-body { padding: 24px 26px 4px; }
+  .finding h2 { font-size: clamp(21px, 2.7vw, 27px); }
+  .ba {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px; background: var(--hairline); border-top: 1px solid var(--hairline); margin-top: 20px;
+  }
+  .ba > div { background: var(--raised); padding: 20px 26px 22px; }
+  .ba-when {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0 0 12px;
+  }
+  .ba-row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 6px 0; border-bottom: 1px dotted var(--hairline); font-size: 13.5px;
+  }
+  .ba-row:last-child { border-bottom: 0; }
+  .ba-row span:first-child { color: var(--ink-muted); }
+  .ba-num {
+    font-family: var(--mono); font-size: 19px; font-variant-numeric: tabular-nums; font-weight: 600;
+  }
+  .then .ba-num { color: var(--st-good); }
+  .now  .ba-num { color: var(--st-bad); }
+  .now { position: relative; }
+
+  /* ---------- scorecards ---------- */
+  .cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+    gap: 16px; margin-top: 30px;
+  }
+  .card {
+    background: var(--raised); border: 1px solid var(--hairline);
+    border-top: 3px solid var(--rail); padding: 20px 20px 22px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+  }
+  .card-name {
+    font-family: var(--mono); font-size: 14.5px; font-weight: 600; margin: 0 0 2px;
+    overflow-wrap: anywhere;
+  }
+  .card-role {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0 0 16px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px; align-self: flex-start;
+    font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .07em;
+    padding: 5px 10px; border-radius: 2px; margin-bottom: 14px; text-transform: uppercase;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  .chip-bad     { color: var(--st-bad);     background: var(--st-bad-bg); }
+  .chip-good    { color: var(--st-good);    background: var(--st-good-bg); }
+  .chip-unknown { color: var(--st-unknown); background: var(--st-unknown-bg); }
+  .chip-ref     { color: var(--ink-muted);  background: var(--sunken); }
+  .card p { font-size: 13.5px; line-height: 1.5; color: var(--ink-muted); margin: 0; }
+  .card dl {
+    display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; margin: 0 0 15px;
+    font-size: 12.5px; font-family: var(--mono); font-variant-numeric: tabular-nums;
+  }
+  .card dt { color: var(--ink-muted); }
+  .card dd { margin: 0; text-align: right; font-weight: 600; }
+
+  /* ---------- figures & tables ---------- */
+  figure { margin: 26px 0 0; }
+  figcaption {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 14px;
+  }
+  .scroller { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .chartbox {
+    background: var(--raised); border: 1px solid var(--hairline); padding: 20px 22px;
+  }
+  svg { display: block; max-width: 100%; height: auto; }
+  svg text { font-family: var(--mono); fill: var(--ink-muted); }
+
+  table {
+    border-collapse: collapse; width: 100%; font-size: 13px;
+    font-variant-numeric: tabular-nums; min-width: 560px; background: var(--raised);
+  }
+  caption {
+    text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--ink-faint); padding-bottom: 12px;
+  }
+  th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--hairline); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 500; border-bottom: 1px solid var(--hairline-firm);
+    white-space: nowrap;
+  }
+  tbody td { font-family: var(--mono); white-space: nowrap; }
+  tbody th { font-family: var(--mono); font-weight: 600; font-size: 13px; white-space: nowrap; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  .ref-row th, .ref-row td { color: var(--ink-faint); font-style: italic; }
+  .best { font-weight: 700; color: var(--ink); }
+  .swatch {
+    display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px;
+    vertical-align: baseline; flex: none;
+  }
+  .grp-head th {
+    background: var(--sunken); font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-muted); text-align: left; font-weight: 600;
+  }
+
+  .verdict-tag { font-weight: 700; font-size: 11.5px; letter-spacing: .05em; }
+  .v-bad { color: var(--st-bad); }
+  .v-good { color: var(--st-good); }
+  .v-unknown { color: var(--st-unknown); }
+
+  /* ---------- legend ---------- */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 16px;
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted);
+  }
+  .legend span { display: inline-flex; align-items: center; }
+
+  /* ---------- deviations ---------- */
+  ol.dev { margin: 20px 0 0; padding-left: 0; list-style: none; counter-reset: d; max-width: 74ch; }
+  ol.dev li {
+    counter-increment: d; position: relative; padding-left: 40px; margin-bottom: 18px;
+    font-size: 14.5px; line-height: 1.55;
+  }
+  ol.dev li::before {
+    content: counter(d, decimal-leading-zero); position: absolute; left: 0; top: 1px;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+    border: 1px solid var(--hairline-firm); padding: 1px 6px;
+  }
+
+  .next { margin-top: 22px; border-top: 1px solid var(--hairline); max-width: 78ch; }
+  .next ol { list-style: none; margin: 0; padding: 0; counter-reset: n; }
+  .next li {
+    position: relative; padding: 15px 0 15px 40px; border-bottom: 1px solid var(--hairline);
+    font-size: 14.5px; line-height: 1.55;
+  }
+  .next li::before {
+    content: counter(n); counter-increment: n; position: absolute; left: 0; top: 16px;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+    border: 1px solid var(--hairline-firm); padding: 1px 7px; line-height: 1.4;
+  }
+
+  footer {
+    margin-top: 60px; padding-top: 22px; border-top: 2px solid var(--ink);
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); line-height: 1.7;
+  }
+
+  /* ---------- tooltip ---------- */
+  #tip {
+    position: fixed; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--ink); color: var(--ground); font-family: var(--mono); font-size: 11.5px;
+    padding: 6px 9px; border-radius: 3px; z-index: 50; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .hit { cursor: crosshair; }
+</style>
+</head>
+<body>
+<div id="tip" role="status" aria-live="off"></div>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="kicker">True Retention &middot; model-eval-harness &middot; 2026-08-14</p>
+    <h1>Experiment&nbsp;17</h1>
+    <p class="standfirst">
+      Two internally-served GPU models put against Gemini 2.5&nbsp;Flash on Experiment&nbsp;7's pack.
+      One candidate is statistically indistinguishable from the incumbent &mdash; and the incumbent
+      stopped being deterministic four days before the run.
+    </p>
+
+    <dl class="provenance">
+      <div><dt>Testset</dt><dd>retention_v3<br>138 items / 150 rows</dd></div>
+      <div><dt>Prompt</dt><dd>v9_16_base<br>968a2974&hellip;</dd></div>
+      <div><dt>Calls</dt><dd>1,242<br>414 &times; 3 arms</dd></div>
+      <div><dt>Replicates</dt><dd>3</dd></div>
+      <div><dt>scoring_code_sha</dt><dd>9b4afc95&hellip;<br>unchanged</dd></div>
+      <div><dt>Parse failures</dt><dd>0 / 1,242</dd></div>
+      <div><dt>Refusals</dt><dd>none</dd></div>
+      <div><dt>Reconciled</dt><dd style="color:var(--st-bad)">NO</dd></div>
+    </dl>
+  </header>
+
+  <!-- =================== THE FINDING =================== -->
+  <div class="finding">
+    <div class="finding-body">
+      <p class="kicker" style="margin-bottom:10px">The headline is the incumbent</p>
+      <h2>Gemini 2.5 Flash stopped being deterministic</h2>
+      <p class="lede prose">
+        Between 2026-08-10 and 2026-08-14, under a workload identical byte for byte: same model id,
+        same <code>Google</code> provider pin, <strong>1,237,746 prompt tokens in both runs</strong>
+        with the per-item spread matching entry for entry, same decoding, same retry budget, zero
+        resumed cells.
+      </p>
+    </div>
+    <div class="ba">
+      <div class="then">
+        <p class="ba-when">2026-08-10 &middot; e10-gemini-base</p>
+        <div class="ba-row"><span>Calls whose raw text varied</span><span class="ba-num">0 / 138</span></div>
+        <div class="ba-row"><span>&hellip;of which moved a scored label</span><span class="ba-num">0</span></div>
+        <div class="ba-row"><span>N_flip over 3 replicates</span><span class="ba-num">0</span></div>
+      </div>
+      <div class="now">
+        <p class="ba-when">2026-08-14 &middot; e17-gemini</p>
+        <div class="ba-row"><span>Calls whose raw text varied</span><span class="ba-num">111 / 138</span></div>
+        <div class="ba-row"><span>&hellip;of which moved a scored label</span><span class="ba-num">29</span></div>
+        <div class="ba-row"><span>N_flip over 3 replicates</span><span class="ba-num">34</span></div>
+      </div>
+    </div>
+    <div class="finding-body" style="padding-top:20px;padding-bottom:22px">
+      <p class="note" style="margin-top:0">
+        <strong>The scorer was ruled out before the arms ran, not argued about afterwards.</strong>
+        <code>scoring_code_sha</code> moved <code>cefd4ae9&hellip;</code> &rarr; <code>9b4afc95&hellip;</code> on
+        2026-08-12, which confounds &ldquo;the scorer changed&rdquo; with &ldquo;the model changed&rdquo;. Re-scoring the
+        <em>2026-08-10 outputs</em> with <em>today's</em> code returns 0.955 / 0.823 / 0.960 and
+        N_flip&nbsp;=&nbsp;0 &mdash; unchanged to three decimals. The digest moved; the arithmetic did not.
+      </p>
+      <p class="note">
+        <strong>This reaches back into the decision Experiment 7 made.</strong> E7 disqualified Qwen
+        on stability while Gemini never varied. On this run the incumbent is the
+        <em>least</em> stable of the three arms by the measure the scorer can see.
+      </p>
+    </div>
+  </div>
+
+  <!-- =================== SCORECARDS =================== -->
+  <div class="cards">
+    <div class="card" style="--rail:var(--s-gemini)">
+      <p class="card-name">google/gemini-2.5-flash</p>
+      <p class="card-role">Incumbent &middot; OpenRouter</p>
+      <span class="chip chip-ref">Reference</span>
+      <dl>
+        <dt>call_result F1</dt><dd>0.955</dd>
+        <dt>reason F1</dt><dd>0.838</dd>
+        <dt>product F1</dt><dd>0.960</dd>
+        <dt>Scored-unstable</dt><dd style="color:var(--st-bad)">29</dd>
+        <dt>Median latency</dt><dd>2.06 s</dd>
+      </dl>
+      <p>Fastest by an order of magnitude, and the only arm that costs money. Now also the least
+         stable.</p>
+    </div>
+
+    <div class="card" style="--rail:var(--s-gemma)">
+      <p class="card-name">gemma-4-12b-it <span style="color:var(--ink-faint)">fp8</span></p>
+      <p class="card-role">Candidate &middot; Token Factory</p>
+      <span class="chip chip-bad">Behind on all three</span>
+      <dl>
+        <dt>call_result F1</dt><dd>0.929</dd>
+        <dt>reason F1</dt><dd>0.792</dd>
+        <dt>product F1</dt><dd>0.933</dd>
+        <dt>Scored-unstable</dt><dd>15</dd>
+        <dt>Median latency</dt><dd>12.00 s</dd>
+      </dl>
+      <p>BEHIND on every dimension, each at or beyond its band, and at or below Gemini on 7 of 9
+         mechanisms. Not a candidate.</p>
+    </div>
+
+    <div class="card" style="--rail:var(--s-qwen)">
+      <p class="card-name">qwen3.6-27b-fp8</p>
+      <p class="card-role">Candidate &middot; Token Factory</p>
+      <span class="chip chip-good">Indistinguishable &times;2</span>
+      <dl>
+        <dt>call_result F1</dt><dd class="best">0.962</dd>
+        <dt>reason F1</dt><dd>0.821</dd>
+        <dt>product F1</dt><dd>0.932</dd>
+        <dt>Scored-unstable</dt><dd class="best" style="color:var(--st-good)">8</dd>
+        <dt>Median latency</dt><dd>11.38 s</dd>
+      </dl>
+      <p>Indistinguishable on both powered dimensions, ahead on call_result, and the most stable
+         arm here. <code>product</code> is unmeasured and throughput is ~11&times; worse.</p>
+    </div>
+  </div>
+
+  <!-- =================== 1 STABILITY =================== -->
+  <section id="stability">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Stability, read first</h2></div>
+    <p class="lede prose">
+      The harness prescribes this reading order, and it is not a formality: Experiment 7's F1 table
+      alone would have selected Qwen, and the stability gate is what disqualified it. A cell is
+      (scored row &times; dimension), so one call can contribute more than one flip.
+    </p>
+
+    <figure>
+      <figcaption>Replicate instability across 138 observable calls &middot; 3 replicates</figcaption>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--st-bad)"></i>Moved a scored label</span>
+        <span><i class="swatch" style="background:var(--ink-faint)"></i>Raw text changed, labels did not</span>
+        <span><i class="swatch" style="background:var(--track);border:1px solid var(--hairline-firm)"></i>Byte-identical across replicates</span>
+      </div>
+      <div class="chartbox scroller"><div id="c-stab"></div></div>
+    </figure>
+
+    <div class="scroller" style="margin-top:22px">
+      <table>
+        <caption>Instability, and how much of it the scorer can see</caption>
+        <thead>
+          <tr><th>Arm</th><th>N_flip</th><th>Raw-unstable</th><th>Scored-unstable</th><th>Cosmetic</th><th>Cosmetic share</th></tr>
+        </thead>
+        <tbody>
+          <tr><th><i class="swatch" style="background:var(--s-gemini)"></i>e17-gemini</th>
+              <td>34</td><td>111 / 138</td><td style="color:var(--st-bad);font-weight:700">29</td><td>82</td><td>73.9%</td></tr>
+          <tr><th><i class="swatch" style="background:var(--s-gemma)"></i>e17-tf-gemma</th>
+              <td>25</td><td>133 / 138</td><td>15</td><td>118</td><td>88.7%</td></tr>
+          <tr><th><i class="swatch" style="background:var(--s-qwen)"></i>e17-tf-qwen</th>
+              <td class="best">15</td><td>129 / 138</td><td class="best" style="color:var(--st-good)">8</td><td>121</td><td>93.8%</td></tr>
+          <tr class="ref-row"><th>e10-gemini-base &middot; 08-10</th><td>0</td><td>0 / 138</td><td>0</td><td>0</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      &ldquo;Cosmetic&rdquo; means the raw text changed and every label the scorer reads did not. It is
+      <strong>not</strong> a claim that the change does not matter: the unscored
+      <code>recommendation</code> field moved on 80&ndash;121 calls per arm, and nothing here measures
+      what reads it downstream.
+    </p>
+  </section>
+
+  <!-- =================== 2 QUALITY =================== -->
+  <section id="quality">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Quality</h2></div>
+    <p class="lede prose">
+      Weighted F1 on replicate 1, at production scorer grain. Three dimensions carry three different
+      denominators and are meant to: <code>call_result</code> drops rows with no ground-truth outcome,
+      <code>reason</code> drops nothing, <code>product</code> groups rows into a call-level exact set.
+    </p>
+
+    <figure>
+      <figcaption>Weighted F1 by dimension &middot; dots, not bars, because the scale is truncated</figcaption>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--s-gemini)"></i>gemini-2.5-flash</span>
+        <span><i class="swatch" style="background:var(--s-gemma)"></i>gemma-4-12b-it</span>
+        <span><i class="swatch" style="background:var(--s-qwen)"></i>qwen3.6-27b-fp8</span>
+      </div>
+      <div class="chartbox scroller"><div id="c-f1"></div></div>
+    </figure>
+
+    <div class="scroller" style="margin-top:22px">
+      <table>
+        <caption>F1 with the denominators it was computed over</caption>
+        <thead>
+          <tr><th>Dimension / arm</th><th>Denom</th><th>Joined</th><th>Parse fail</th><th>w-Prec</th><th>w-Recall</th><th>w-F1</th></tr>
+        </thead>
+        <tbody id="t-f1"></tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      Gemini's <code>call_result</code> and <code>product</code> landed <strong>exactly</strong> on
+      their 08-10 values and <code>reason</code> moved only 0.823&nbsp;&rarr;&nbsp;0.838. Two of three
+      reproduced to three decimals while the model's determinism collapsed &mdash; so aggregate F1 was
+      nearly blind to a change this large. The plan's trip-wire was written in F1 and
+      <strong>would not have fired</strong>.
+    </p>
+  </section>
+
+  <!-- =================== 3 VERDICT =================== -->
+  <section id="verdict">
+    <div class="sec-head"><span class="sec-num">03</span><h2>The paired verdict</h2></div>
+    <p class="lede prose">
+      One Bernoulli pair per call cluster, so a transcript with several products cannot inflate the
+      sample. The exact band is the smallest absolute net whose one-sided binomial tail is at most
+      1/64. Fewer than six discordant clusters is UNDERPOWERED &mdash; which means
+      <strong>not measured</strong>, never a tie.
+    </p>
+
+    <div class="scroller" style="margin-top:26px">
+      <table>
+        <caption>Candidate vs Gemini &middot; discordant call clusters only</caption>
+        <thead>
+          <tr><th>Candidate / dimension</th><th>Both right</th><th>Both wrong</th><th>Gemini only</th><th>Cand. only</th><th>Discordant</th><th>Net</th><th>Band</th><th>Verdict</th></tr>
+        </thead>
+        <tbody id="t-paired"></tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      Gemma's nets sit <em>exactly</em> on their bands in all three dimensions &mdash; one discordant pair
+      the other way and <code>call_result</code> would read INDISTINGUISHABLE. That is a real BEHIND
+      under a pre-registered rule, and it is one pair from not being one. Both facts belong in any
+      quotation of it.
+    </p>
+  </section>
+
+  <!-- =================== 4 OPERATIONS =================== -->
+  <section id="ops">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Tokens, latency and throughput</h2></div>
+    <p class="lede prose">
+      What each arm spent, over all 414 calls. These are run totals; they are not a claim about what
+      a model is worth.
+    </p>
+
+    <h3>Input and output tokens</h3>
+    <figure style="margin-top:12px">
+      <figcaption>Tokens per call &middot; two charts, two scales &mdash; never one axis for both</figcaption>
+      <div class="chartbox scroller"><div id="c-tok"></div></div>
+    </figure>
+
+    <p class="note" style="margin-top:18px">
+      <strong>Qwen's tokenizer is 8.6% cheaper on this Thai text than Gemini's</strong> &mdash; 2,734 input
+      tokens per call against 2,990 for the identical transcripts, with gemma at 3,008. On a
+      per-token-priced endpoint that is a real discount before any quality argument. It also runs the
+      other way on output: both GPU models are more verbose, gemma by 21%.
+    </p>
+
+    <h3>Latency distribution</h3>
+    <figure style="margin-top:12px">
+      <figcaption>Per-call latency &middot; p50 &rarr; max, marked at p95 and p99</figcaption>
+      <div class="chartbox scroller"><div id="c-lat"></div></div>
+    </figure>
+
+    <div class="scroller" style="margin-top:26px">
+      <table>
+        <caption>Full operations table &middot; 414 calls per arm</caption>
+        <thead>
+          <tr>
+            <th>Arm</th><th>Attempts</th>
+            <th>Input tok</th><th>In / call</th><th>Output tok</th><th>Out / call</th>
+            <th>p50</th><th>p95</th><th>p99</th><th>Max</th>
+            <th>Conc.</th><th>Wall</th><th>Calls/s</th><th>Cost USD</th>
+          </tr>
+        </thead>
+        <tbody id="t-ops"></tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      <strong>Throughput is the real gap, and it is ~11&times;.</strong> Both GPU arms land on 0.32&ndash;0.34
+      calls/s &mdash; the same figure the shakedown measured on a different pack, and identical between two
+      different models, so the gateway is the bottleneck rather than either model. Concurrency 8 was
+      measured at 0.96&times; concurrency 4, so there is no headroom above 4.
+    </p>
+    <p class="note">
+      <strong>The one column where the internal endpoint wins outright:</strong> both GPU arms took
+      414 API attempts for 414 calls &mdash; <em>zero retries</em> &mdash; against Gemini's 416, with a budget of
+      3 available on every arm. Slow, but not flaky. Cost reads 0 for Token Factory because it
+      reports none; that is &ldquo;not metered here&rdquo;, not &ldquo;free&rdquo;.
+    </p>
+  </section>
+
+  <!-- =================== MECHANISMS =================== -->
+  <section id="mech">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Where each model breaks</h2></div>
+    <p class="lede prose">
+      Items always correct on <em>every</em> replicate, by mechanism. Every cell in the verdict column
+      is FAIL at 138 items &mdash; the bar is total &mdash; so the counts are the signal, not the verdicts.
+    </p>
+    <div class="scroller" style="margin-top:24px">
+      <table>
+        <caption>Always-correct items per mechanism &middot; higher is better</caption>
+        <thead><tr><th>Mechanism</th><th>Items</th><th>Gemini</th><th>gemma</th><th>qwen</th></tr></thead>
+        <tbody id="t-mech"></tbody>
+      </table>
+    </div>
+    <p class="note">
+      Qwen matches or beats Gemini on <strong>8 of 9</strong>, losing only <code>asr_noise</code>.
+      Its <code>long_context</code> row &mdash; 11 of 12 on the 12&ndash;18k-character dilated transcripts &mdash; is
+      the only non-FAIL verdict anywhere in this experiment.
+    </p>
+  </section>
+
+  <!-- =================== DEVIATIONS =================== -->
+  <section id="deviations">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Declared deviations</h2></div>
+    <p class="lede prose">All three were declared in the plan before the run, and all three are
+      recorded, non-blocking arm differences rather than anything the harness had to be talked past.</p>
+    <ol class="dev">
+      <li><strong><code>top_p = 1.0</code>, not production's <code>0</code>.</strong> The endpoint
+        returns <code>400 top_p must be in (0, 1]</code>. At temperature 0 the decode is greedy, so
+        <code>top_p</code> is inert &mdash; and it is the same value Gemini's 08-10 baseline used, so it
+        introduces no asymmetry between these arms.</li>
+      <li><strong><code>reasoning_effort</code></strong> is <code>none</code> on Gemini and
+        <code>provider-default</code> on the Token Factory arms, where the field means nothing to the
+        gateway. Zero reasoning tokens reported on all three arms.</li>
+      <li><strong>fp8, and four distinct deployments.</strong> <code>qwen3.6-27b-fp8</code> is
+        <em>not</em> Experiment 7's <code>qwen/qwen3.6-27b</code> on Chutes, and
+        <code>gemma-4-12b-it</code> is <em>not</em> Experiment 10's <code>gemma-4-12b</code> on
+        Modellismz. Those earlier numbers do not transfer to these arms.</li>
+    </ol>
+    <p class="note">
+      None joins the closed deviation list. That list is about deviations from <em>production
+      semantics</em>; these are runtime facts about an endpoint.
+    </p>
+  </section>
+
+  <!-- =================== WHAT NEXT =================== -->
+  <section id="next">
+    <div class="sec-head"><span class="sec-num">07</span><h2>What this cannot buy, and what comes next</h2></div>
+    <p class="lede prose">
+      <code>retention_v3</code> is synthetic and authored in-project, so every number here &mdash; Gemini's
+      included &mdash; is an upper bound. <code>RECONCILED</code> stays <strong>NO</strong>: only a run
+      against real labelled data moves it.
+    </p>
+    <p class="prose" style="margin-top:16px">
+      And neither candidate result is a migration verdict &mdash; not out of caution, but because the
+      comparison rests on a reference point that moved during the experiment. Until Gemini's
+      instability is understood, &ldquo;Qwen is indistinguishable from Gemini&rdquo; describes Gemini
+      <em>as it behaved on 2026-08-14</em>, not a stable incumbent.
+    </p>
+    <div class="next">
+      <ol>
+        <li><strong>Re-run the Gemini arm on consecutive days.</strong> ~2 minutes and $0.56 each.
+          This is the blocking question: was 08-14 an episode or a permanent change?</li>
+        <li><strong>Get <code>product</code> powered for Qwen.</strong> Four discordant clusters
+          against a threshold of six. A larger pack or the 89-item holdout would settle it.</li>
+        <li><strong>Ask why the gateway caps at 0.33 calls/s.</strong> Two different models hit the
+          identical figure on two different packs &mdash; that points at LiteLLM or the vLLM scheduler,
+          not at the models.</li>
+        <li><strong><code>qwen3-asr-1.7b</code> remains untested.</strong> It is a speech model and
+          this repository has no audio fixtures.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    Runs 20260814-132425Z-e17-gemini &middot; 20260814-132642Z-e17-tf-gemma &middot; 20260814-134803Z-e17-tf-qwen<br>
+    scoring_code_sha 9b4afc95&hellip; on all three, unchanged start to finish &middot; workload_sha 6b1ab3ed&hellip; &middot;
+    testset ff7f728c&hellip; &middot; gt a7fddd18&hellip;<br>
+    Both comparisons exited 1 &mdash; the harness ran and found problems, which is a result. Exit 2 is a
+    refusal; neither refused.<br>
+    Sources: docs/experiment17-results.md &middot; docs/experiment17-plan.md &middot;
+    experiments/evidence/retention-e17/summary.json. Raw completions and per-item records stay
+    under out/ and are never committed.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ARMS = [
+    { key: "gemini", label: "gemini-2.5-flash", short: "Gemini",  css: "--s-gemini" },
+    { key: "gemma",  label: "gemma-4-12b-it",   short: "gemma",   css: "--s-gemma" },
+    { key: "qwen",   label: "qwen3.6-27b-fp8",  short: "qwen",    css: "--s-qwen" }
+  ];
+
+  var F1 = {
+    call_result: { gemini: 0.955, gemma: 0.929, qwen: 0.962 },
+    reason:      { gemini: 0.838, gemma: 0.792, qwen: 0.821 },
+    product:     { gemini: 0.960, gemma: 0.933, qwen: 0.932 }
+  };
+  var DETAIL = {
+    call_result: {
+      gemini: [150, 145, 0, 0.974, 0.940, 0.955],
+      gemma:  [150, 142, 0, 0.959, 0.907, 0.929],
+      qwen:   [150, 141, 0, 0.993, 0.933, 0.962]
+    },
+    reason: {
+      gemini: [157, 145, 0, 0.763, 0.964, 0.838],
+      gemma:  [164, 142, 0, 0.713, 0.934, 0.792],
+      qwen:   [160, 141, 0, 0.776, 0.922, 0.821]
+    },
+    product: {
+      gemini: [138, 138, 0, 0.954, 0.967, 0.960],
+      gemma:  [138, 138, 0, 0.922, 0.947, 0.933],
+      qwen:   [138, 138, 0, 0.924, 0.940, 0.932]
+    }
+  };
+  var STAB = {
+    gemini: { scored: 29, cosmetic: 82,  stable: 27 },
+    gemma:  { scored: 15, cosmetic: 118, stable: 5  },
+    qwen:   { scored: 8,  cosmetic: 121, stable: 9  }
+  };
+  var OPS = {
+    gemini: { att: 416, inTok: 1237746, inPer: 2990, outTok: 86449,  outPer: 209,
+              p50: 2.062, p95: 2.797, p99: 3.922, max: 11.359, conc: 8, wall: 114.9, tput: 3.603, cost: "0.5616" },
+    gemma:  { att: 414, inTok: 1245198, inPer: 3008, outTok: 104839, outPer: 253,
+              p50: 12.000, p95: 16.625, p99: 20.422, max: 22.594, conc: 4, wall: 1278.4, tput: 0.324, cost: "\u2014" },
+    qwen:   { att: 414, inTok: 1131948, inPer: 2734, outTok: 95337,  outPer: 230,
+              p50: 11.375, p95: 17.609, p99: 21.734, max: 23.546, conc: 4, wall: 1228.8, tput: 0.337, cost: "\u2014" }
+  };
+  var PAIRED = {
+    gemma: {
+      call_result: [118, 8, 11, 1, 12, -10, "\u00B110", "BEHIND"],
+      reason:      [61, 48, 21, 8, 29, -13, "\u00B113", "BEHIND"],
+      product:     [124, 5, 9, 0, 9, -9, "\u00B19", "BEHIND"]
+    },
+    qwen: {
+      call_result: [125, 6, 4, 3, 7, -1, "\u00B17", "INDISTINGUISHABLE"],
+      reason:      [67, 42, 15, 14, 29, -1, "\u00B113", "INDISTINGUISHABLE"],
+      product:     [129, 5, 4, 0, 4, -4, "\u2014", "UNDERPOWERED"]
+    }
+  };
+  var MECH = [
+    ["clear", 30, 16, 13, 16], ["thai_linguistic", 30, 15, 13, 16], ["tiebreak", 17, 9, 7, 9],
+    ["multislot", 10, 4, 5, 5], ["escape", 13, 6, 5, 7], ["long_context", 12, 9, 7, 11],
+    ["asr_noise", 10, 5, 5, 4], ["code_switch", 10, 3, 2, 5], ["regression", 6, 4, 5, 5]
+  ];
+  var DIMS = ["call_result", "reason", "product"];
+
+  var NS = "http://www.w3.org/2000/svg";
+  function el(name, attrs, text) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) { if (attrs[k] !== null) n.setAttribute(k, attrs[k]); }
+    if (text !== undefined) { n.textContent = text; }
+    return n;
+  }
+  function v(name) { return "var(" + name + ")"; }
+
+  // ---- tooltip -------------------------------------------------------------
+  var tip = document.getElementById("tip");
+  function bind(node, text) {
+    node.classList.add("hit");
+    node.addEventListener("mousemove", function (e) {
+      tip.textContent = text;
+      tip.style.opacity = "1";
+      var x = e.clientX + 14, y = e.clientY - 34;
+      if (x + tip.offsetWidth > window.innerWidth - 8) { x = e.clientX - tip.offsetWidth - 14; }
+      tip.style.left = x + "px"; tip.style.top = y + "px";
+    });
+    node.addEventListener("mouseleave", function () { tip.style.opacity = "0"; });
+    var t = el("title", {}, text);
+    node.appendChild(t);
+  }
+
+  // ---- 1. stability: stacked, parts of 138 ---------------------------------
+  (function () {
+    var W = 780, rowH = 46, padL = 132, padR = 20, padT = 30, padB = 34;
+    var H = padT + ARMS.length * rowH + padB;
+    var barW = W - padL - padR, total = 138, gap = 2;
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H,
+                          role: "img", "aria-label": "Replicate instability by arm" });
+
+    [0, 34.5, 69, 103.5, 138].forEach(function (t) {
+      var x = padL + (t / total) * barW;
+      svg.appendChild(el("line", { x1: x, y1: padT - 8, x2: x, y2: padT + ARMS.length * rowH - 8,
+                                   stroke: v("--hairline"), "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: x, y: H - 12, "font-size": 10.5, "text-anchor": "middle" },
+                          String(t)));
+    });
+    svg.appendChild(el("text", { x: padL + barW / 2, y: 12, "font-size": 10,
+                                 "text-anchor": "middle", "letter-spacing": "1.2" }, "CALLS"));
+
+    ARMS.forEach(function (arm, i) {
+      var d = STAB[arm.key], y = padT + i * rowH, h = 22;
+      svg.appendChild(el("text", { x: padL - 12, y: y + 15, "font-size": 12, "text-anchor": "end",
+                                   fill: v(arm.css), "font-weight": 600 }, arm.short));
+      var segs = [
+        { n: d.scored,   fill: v("--st-bad"),     name: "moved a scored label" },
+        { n: d.cosmetic, fill: v("--ink-faint"),  name: "raw text changed only" },
+        { n: d.stable,   fill: v("--track"),      name: "byte-identical" }
+      ];
+      var x = padL;
+      segs.forEach(function (s) {
+        var w = (s.n / total) * barW - gap;
+        if (w <= 0) { x += (s.n / total) * barW; return; }
+        // The "stable" segment is painted in --track, which sits a hair off the ground in
+        // dark mode and would read as empty space. An outline keeps it a visible quantity.
+        var faint = s.fill === v("--track");
+        var r = el("rect", { x: x, y: y, width: w, height: h, rx: 2, fill: s.fill,
+                             stroke: faint ? v("--hairline-firm") : null,
+                             "stroke-width": faint ? 1 : null });
+        bind(r, arm.short + " \u2014 " + s.n + " of 138 calls " + s.name);
+        svg.appendChild(r);
+        if (s.n >= 14) {
+          svg.appendChild(el("text", { x: x + w / 2, y: y + 15, "font-size": 11,
+                                       "text-anchor": "middle", "font-weight": 600,
+                                       fill: s.fill === v("--track") ? v("--ink-muted") : v("--raised") },
+                             String(s.n)));
+        }
+        x += w + gap;
+      });
+      svg.appendChild(el("text", { x: padL - 12, y: y + 32, "font-size": 10,
+                                   "text-anchor": "end", fill: v("--ink-faint") },
+                         "N_flip " + (arm.key === "gemini" ? 34 : arm.key === "gemma" ? 25 : 15)));
+    });
+    document.getElementById("c-stab").appendChild(svg);
+  })();
+
+  // ---- 2. F1 dot plot (truncated scale, so dots not bars) ------------------
+  (function () {
+    var W = 780, padL = 118, padR = 74, padT = 28, padB = 36, rowH = 84;
+    var H = padT + DIMS.length * rowH + padB;
+    var lo = 0.70, hi = 1.00, trackW = W - padL - padR;
+    function X(val) { return padL + ((val - lo) / (hi - lo)) * trackW; }
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H,
+                          role: "img", "aria-label": "Weighted F1 by dimension and arm" });
+
+    [0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00].forEach(function (t) {
+      svg.appendChild(el("line", { x1: X(t), y1: padT - 6, x2: X(t), y2: padT + DIMS.length * rowH - 24,
+                                   stroke: v("--hairline"), "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: X(t), y: H - 14, "font-size": 10.5, "text-anchor": "middle" },
+                          t.toFixed(2)));
+    });
+    svg.appendChild(el("text", { x: padL + trackW / 2, y: H - 1, "font-size": 9.5,
+                                 "text-anchor": "middle", "letter-spacing": "1.2",
+                                 fill: v("--ink-faint") }, "WEIGHTED F1 \u2014 SCALE STARTS AT 0.70"));
+
+    DIMS.forEach(function (dim, i) {
+      var y = padT + i * rowH + 18;
+      svg.appendChild(el("text", { x: padL - 14, y: y + 4, "font-size": 12, "text-anchor": "end",
+                                   fill: v("--ink"), "font-weight": 600 }, dim));
+      svg.appendChild(el("line", { x1: padL, y1: y, x2: padL + trackW, y2: y,
+                                   stroke: v("--track"), "stroke-width": 2, "stroke-linecap": "round" }));
+      var vals = ARMS.map(function (a) { return { a: a, val: F1[dim][a.key] }; });
+      var best = Math.max.apply(null, vals.map(function (o) { return o.val; }));
+      var order = vals.slice().sort(function (p, q) { return p.val - q.val; });
+
+      // De-collide vertically. product has gemma 0.933 and qwen 0.932 two pixels apart:
+      // drawn on one line the later mark's halo erases the earlier one and a whole series
+      // silently disappears. The x position stays truthful; only y moves, and a hairline
+      // ties the mark back to the axis so the offset cannot be read as a value.
+      var COLLIDE = 20, placed = [];
+      order.forEach(function (o, j) {
+        var cx = X(o.val), dy = 0;
+        if (j > 0 && cx - placed[j - 1].cx < COLLIDE) {
+          dy = placed[j - 1].dy <= 0 ? 12 : -12;
+        }
+        placed.push({ o: o, cx: cx, dy: dy });
+      });
+
+      placed.forEach(function (p, j) {
+        var cy = y + p.dy;
+        if (p.dy !== 0) {
+          svg.appendChild(el("line", { x1: p.cx, y1: y, x2: p.cx, y2: cy,
+                                       stroke: v(p.o.a.css), "stroke-width": 1, opacity: .5 }));
+        }
+        svg.appendChild(el("circle", { cx: p.cx, cy: cy, r: 8, fill: v("--raised") }));
+        var dot = el("circle", { cx: p.cx, cy: cy, r: 6, fill: v(p.o.a.css) });
+        bind(dot, p.o.a.label + " \u00B7 " + dim + " \u00B7 weighted F1 " + p.o.val.toFixed(3) +
+                  (p.o.val === best ? "  (best)" : ""));
+        svg.appendChild(dot);
+        // A mark that stayed on the line still has to dodge the label of a neighbour that
+        // did not: send it to the side the offset neighbour vacated.
+        var next = placed[j + 1];
+        var above = p.dy !== 0
+          ? (p.dy < 0)
+          : (next && next.dy !== 0 ? next.dy > 0 : (j % 2 === 0));
+        svg.appendChild(el("text", {
+          x: p.cx, y: above ? cy - 13 : cy + 22, "font-size": 11.5, "text-anchor": "middle",
+          fill: v(p.o.a.css), "font-weight": p.o.val === best ? 700 : 500
+        }, p.o.val.toFixed(3)));
+      });
+    });
+    document.getElementById("c-f1").appendChild(svg);
+  })();
+
+  // ---- 3. tokens: TWO charts, two scales -----------------------------------
+  (function () {
+    var W = 780, half = W / 2, padT = 34, rowH = 40, padB = 30;
+    var H = padT + ARMS.length * rowH + padB;
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H,
+                          role: "img", "aria-label": "Input and output tokens per call" });
+
+    function panel(x0, w, title, field, maxV, ticks, unitFmt) {
+      var padL = 76, barW = w - padL - 66;
+      svg.appendChild(el("text", { x: x0 + padL, y: 12, "font-size": 10, "letter-spacing": "1.2",
+                                   fill: v("--ink-faint") }, title));
+      ticks.forEach(function (t) {
+        var x = x0 + padL + (t / maxV) * barW;
+        svg.appendChild(el("line", { x1: x, y1: padT - 10, x2: x, y2: padT + ARMS.length * rowH - 12,
+                                     stroke: v("--hairline"), "stroke-width": 1 }));
+        svg.appendChild(el("text", { x: x, y: H - 14, "font-size": 10, "text-anchor": "middle" },
+                            unitFmt(t)));
+      });
+      ARMS.forEach(function (arm, i) {
+        var val = OPS[arm.key][field], y = padT + i * rowH, h = 18;
+        var bw = (val / maxV) * barW;
+        svg.appendChild(el("text", { x: x0 + padL - 10, y: y + 13, "font-size": 11,
+                                     "text-anchor": "end", fill: v(arm.css), "font-weight": 600 },
+                           arm.short));
+        var r = el("rect", { x: x0 + padL, y: y, width: Math.max(bw, 1), height: h, rx: 2,
+                             fill: v(arm.css) });
+        bind(r, arm.label + " \u2014 " + val.toLocaleString() + " " +
+                (field === "inPer" ? "input" : "output") + " tokens per call");
+        svg.appendChild(r);
+        svg.appendChild(el("text", { x: x0 + padL + bw + 8, y: y + 13, "font-size": 11,
+                                     fill: v("--ink"), "font-weight": 600 }, val.toLocaleString()));
+      });
+    }
+    panel(0, half, "INPUT TOKENS / CALL", "inPer", 3200, [0, 1600, 3200],
+          function (t) { return t === 0 ? "0" : (t / 1000) + "k"; });
+    svg.appendChild(el("line", { x1: half - 6, y1: 4, x2: half - 6, y2: H - 26,
+                                 stroke: v("--hairline"), "stroke-width": 1 }));
+    panel(half, half, "OUTPUT TOKENS / CALL", "outPer", 280, [0, 140, 280],
+          function (t) { return String(t); });
+    document.getElementById("c-tok").appendChild(svg);
+  })();
+
+  // ---- 4. latency ranges ---------------------------------------------------
+  (function () {
+    var W = 780, padL = 118, padR = 78, padT = 30, rowH = 58, padB = 36;
+    var H = padT + ARMS.length * rowH + padB;
+    var maxS = 24, trackW = W - padL - padR;
+    function X(s) { return padL + (s / maxS) * trackW; }
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, width: W, height: H,
+                          role: "img", "aria-label": "Latency percentiles by arm" });
+
+    [0, 6, 12, 18, 24].forEach(function (t) {
+      svg.appendChild(el("line", { x1: X(t), y1: padT - 8, x2: X(t), y2: padT + ARMS.length * rowH - 20,
+                                   stroke: v("--hairline"), "stroke-width": 1 }));
+      svg.appendChild(el("text", { x: X(t), y: H - 14, "font-size": 10.5, "text-anchor": "middle" },
+                          t + "s"));
+    });
+    svg.appendChild(el("text", { x: padL + trackW / 2, y: 12, "font-size": 9.5,
+                                 "text-anchor": "middle", "letter-spacing": "1.2",
+                                 fill: v("--ink-faint") }, "SECONDS PER CALL"));
+
+    ARMS.forEach(function (arm, i) {
+      var d = OPS[arm.key], y = padT + i * rowH + 14;
+      svg.appendChild(el("text", { x: padL - 14, y: y + 4, "font-size": 12, "text-anchor": "end",
+                                   fill: v(arm.css), "font-weight": 600 }, arm.short));
+      svg.appendChild(el("text", { x: padL - 14, y: y + 19, "font-size": 9.5, "text-anchor": "end",
+                                   fill: v("--ink-faint") }, "p50 " + d.p50.toFixed(2) + "s"));
+      // full track
+      svg.appendChild(el("line", { x1: padL, y1: y, x2: padL + trackW, y2: y,
+                                   stroke: v("--track"), "stroke-width": 2 }));
+      // p50 -> max span
+      var span = el("line", { x1: X(d.p50), y1: y, x2: X(d.max), y2: y,
+                              stroke: v(arm.css), "stroke-width": 6, "stroke-linecap": "round",
+                              opacity: .34 });
+      bind(span, arm.label + " \u2014 p50 " + d.p50.toFixed(2) + "s to max " + d.max.toFixed(2) + "s");
+      svg.appendChild(span);
+      // markers
+      [["p99", d.p99, 4.5], ["p95", d.p95, 5]].forEach(function (m) {
+        var t = el("line", { x1: X(m[1]), y1: y - 7, x2: X(m[1]), y2: y + 7,
+                             stroke: v(arm.css), "stroke-width": 2 });
+        bind(t, arm.label + " \u2014 " + m[0] + " " + m[1].toFixed(3) + "s");
+        svg.appendChild(t);
+      });
+      svg.appendChild(el("circle", { cx: X(d.p50), cy: y, r: 7.5, fill: v("--raised") }));
+      var dot = el("circle", { cx: X(d.p50), cy: y, r: 5.5, fill: v(arm.css) });
+      bind(dot, arm.label + " \u2014 p50 " + d.p50.toFixed(3) + "s");
+      svg.appendChild(dot);
+      var mx = el("circle", { cx: X(d.max), cy: y, r: 4, fill: v("--raised"),
+                              stroke: v(arm.css), "stroke-width": 2 });
+      bind(mx, arm.label + " \u2014 max " + d.max.toFixed(3) + "s");
+      svg.appendChild(mx);
+      svg.appendChild(el("text", { x: X(d.max) + 10, y: y + 4, "font-size": 10,
+                                   fill: v("--ink-faint") }, "max " + d.max.toFixed(1) + "s"));
+    });
+    svg.appendChild(el("text", { x: padL, y: H - 1, "font-size": 9.5, fill: v("--ink-faint") },
+                        "\u25CF p50   \u2502 p95, p99   \u25CB max"));
+    document.getElementById("c-lat").appendChild(svg);
+  })();
+
+  // ---- tables ---------------------------------------------------------------
+  function td(text, cls) {
+    var c = document.createElement("td");
+    c.textContent = text;
+    if (cls) { c.className = cls; }
+    return c;
+  }
+  function swatchTh(arm, text) {
+    var th = document.createElement("th");
+    th.setAttribute("scope", "row");
+    var s = document.createElement("i");
+    s.className = "swatch";
+    s.style.background = v(arm.css);
+    th.appendChild(s);
+    th.appendChild(document.createTextNode(text));
+    return th;
+  }
+
+  // F1 detail
+  (function () {
+    var tb = document.getElementById("t-f1");
+    DIMS.forEach(function (dim) {
+      var hr = document.createElement("tr");
+      hr.className = "grp-head";
+      var h = document.createElement("th");
+      h.setAttribute("colspan", "7");
+      h.textContent = dim;
+      hr.appendChild(h);
+      tb.appendChild(hr);
+      var best = Math.max.apply(null, ARMS.map(function (a) { return DETAIL[dim][a.key][5]; }));
+      ARMS.forEach(function (arm) {
+        var d = DETAIL[dim][arm.key], tr = document.createElement("tr");
+        tr.appendChild(swatchTh(arm, arm.short));
+        tr.appendChild(td(String(d[0])));
+        tr.appendChild(td(String(d[1])));
+        tr.appendChild(td(String(d[2])));
+        tr.appendChild(td(d[3].toFixed(3)));
+        tr.appendChild(td(d[4].toFixed(3)));
+        tr.appendChild(td(d[5].toFixed(3), d[5] === best ? "best" : null));
+        tb.appendChild(tr);
+      });
+    });
+    var ref = document.createElement("tr");
+    ref.className = "ref-row";
+    var rh = document.createElement("th");
+    rh.setAttribute("scope", "row");
+    rh.textContent = "e10-gemini \u00B7 2026-08-10, same scorer";
+    ref.appendChild(rh);
+    ["\u2014", "\u2014", "0", "\u2014", "\u2014", "0.955 / 0.823 / 0.960"].forEach(function (t) { ref.appendChild(td(t)); });
+    tb.appendChild(ref);
+  })();
+
+  // paired
+  (function () {
+    var tb = document.getElementById("t-paired");
+    [["gemma", ARMS[1]], ["qwen", ARMS[2]]].forEach(function (pair) {
+      var key = pair[0], arm = pair[1];
+      var hr = document.createElement("tr");
+      hr.className = "grp-head";
+      var h = document.createElement("th");
+      h.setAttribute("colspan", "9");
+      h.textContent = arm.label + "  vs  gemini-2.5-flash";
+      hr.appendChild(h);
+      tb.appendChild(hr);
+      DIMS.forEach(function (dim) {
+        var d = PAIRED[key][dim], tr = document.createElement("tr");
+        tr.appendChild(swatchTh(arm, dim));
+        for (var i = 0; i < 5; i++) { tr.appendChild(td(String(d[i]))); }
+        tr.appendChild(td(d[5] > 0 ? "+" + d[5] : String(d[5])));
+        tr.appendChild(td(d[6]));
+        var cls = d[7] === "BEHIND" ? "v-bad" : d[7] === "UNDERPOWERED" ? "v-unknown" : "v-good";
+        tr.appendChild(td(d[7] === "INDISTINGUISHABLE" ? "INDIST." : d[7], "verdict-tag " + cls));
+        tb.appendChild(tr);
+      });
+    });
+  })();
+
+  // ops
+  (function () {
+    var tb = document.getElementById("t-ops");
+    ARMS.forEach(function (arm) {
+      var d = OPS[arm.key], tr = document.createElement("tr");
+      tr.appendChild(swatchTh(arm, "e17-" + (arm.key === "gemini" ? "gemini" : "tf-" + arm.key)));
+      tr.appendChild(td(String(d.att), d.att === 414 ? "best" : null));
+      tr.appendChild(td(d.inTok.toLocaleString()));
+      tr.appendChild(td(d.inPer.toLocaleString(), arm.key === "qwen" ? "best" : null));
+      tr.appendChild(td(d.outTok.toLocaleString()));
+      tr.appendChild(td(String(d.outPer)));
+      tr.appendChild(td(d.p50.toFixed(2) + "s"));
+      tr.appendChild(td(d.p95.toFixed(2) + "s"));
+      tr.appendChild(td(d.p99.toFixed(2) + "s"));
+      tr.appendChild(td(d.max.toFixed(2) + "s"));
+      tr.appendChild(td(String(d.conc)));
+      tr.appendChild(td(d.wall >= 600 ? (d.wall / 60).toFixed(1) + " min" : d.wall.toFixed(1) + " s"));
+      tr.appendChild(td(d.tput.toFixed(3)));
+      tr.appendChild(td(d.cost));
+      tb.appendChild(tr);
+    });
+  })();
+
+  // mechanisms
+  (function () {
+    var tb = document.getElementById("t-mech");
+    MECH.forEach(function (row) {
+      var tr = document.createElement("tr");
+      var th = document.createElement("th");
+      th.setAttribute("scope", "row");
+      th.textContent = row[0];
+      tr.appendChild(th);
+      tr.appendChild(td(String(row[1])));
+      var best = Math.max(row[2], row[3], row[4]);
+      for (var i = 2; i <= 4; i++) {
+        tr.appendChild(td(String(row[i]), row[i] === best ? "best" : null));
+      }
+      tb.appendChild(tr);
+    });
+  })();
+})();
+</script>
+</body>
+</html>

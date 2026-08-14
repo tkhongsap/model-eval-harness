@@ -16,7 +16,7 @@ was served by more than one build and its numbers are a blend of two systems.
 `cost` is a LOWER BOUND — OpenRouter reports `usage.cost` only for providers that
 supply it, and a missing value stays absent rather than becoming zero.
 
-**46 runs recorded.**
+**64 runs recorded.**
 
 | run_id | arm | model requested | provider | prompt | items x reps | outcomes | pin proof | cost USD | testset | scorer |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -66,8 +66,26 @@ supply it, and a missing value stays absent rather than becoming zero.
 | `20260810-173749Z-e14-hold-gemma-e1` | e14-hold-gemma-e1 | `gemma-4-12b` | *unpinned* | v9_16_e1 | 89 x 3 | ok=267 | 89/89 | 0.000000 | `fd535588658e` | `cefd4ae9` |
 | `20260810-235325Z-e15-kimi-k3` | e15-kimi-k3 | `moonshotai/kimi-k3` | DeepInfra | v9_16_base | 138 x 3 | ok=414 | 138/138 | 11.749772 | `ff7f728ca597` | `cefd4ae9` |
 | `20260810-235341Z-e16-glm-52` | e16-glm-52 | `z-ai/glm-5.2` | Sail Research | v9_16_base | 138 x 3 | ok=408, **transport_error=6** | 137/137 | 1.027984 | `ff7f728ca597` | `cefd4ae9` |
+| `20260814-121114Z-tf-smoke` | tf-smoke | `gemma-4-12b-it` | *unpinned* | v9_16_base | 2 x 2 | ok=4 | 2/2 | 0.000000 | `8e1e47e6a525` | `9b4afc95` |
+| `20260814-121245Z-tf-gemma-4-12b-it` | tf-gemma-4-12b-it | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 3 | ok=9 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-121327Z-tf-qwen3.6-27b-fp8` | tf-qwen3.6-27b-fp8 | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 3 x 3 | ok=9 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-121438Z-tf-gemma-4-12b-it` | tf-gemma-4-12b-it | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 5 | ok=15 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-121540Z-tf-qwen3.6-27b-fp8` | tf-qwen3.6-27b-fp8 | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 3 x 5 | ok=15 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-121643Z-tf-c1` | tf-c1 | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 2 | ok=6 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-121730Z-tf-c8` | tf-c8 | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 2 | ok=6 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-121756Z-tf-base-gemma-4-12b-it` | tf-base-gemma-4-12b-it | `gemma-4-12b-it` | *unpinned* | v9_16_base | 20 x 2 | ok=40 | 20/20 | 0.000000 | `c367a478d89b` | `9b4afc95` |
+| `20260814-122001Z-tf-base-qwen3.6-27b-fp8` | tf-base-qwen3.6-27b-fp8 | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 20 x 2 | ok=40 | 20/20 | 0.000000 | `c367a478d89b` | `9b4afc95` |
+| `20260814-122400Z-tf-det-1` | tf-det-1 | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 5 | ok=15 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-122503Z-tf-det-2` | tf-det-2 | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 5 | ok=15 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-122605Z-tf-det-3` | tf-det-3 | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 5 | ok=15 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-122708Z-tf-det-4` | tf-det-4 | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 5 | ok=15 | 3/3 | 0.000000 | `6c23873417ab` | `9b4afc95` |
+| `20260814-132318Z-e17-smoke-gemma` | e17-smoke-gemma | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 1 | ok=3 | n/a (1 rep) | 0.000000 | `a6d070bf789f` | `9b4afc95` |
+| `20260814-132345Z-e17-smoke-qwen` | e17-smoke-qwen | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 3 x 1 | ok=3 | n/a (1 rep) | 0.000000 | `a6d070bf789f` | `9b4afc95` |
+| `20260814-132425Z-e17-gemini` | e17-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.561570 | `ff7f728ca597` | `9b4afc95` |
+| `20260814-132642Z-e17-tf-gemma` | e17-tf-gemma | `gemma-4-12b-it` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
+| `20260814-134803Z-e17-tf-qwen` | e17-tf-qwen | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
 
-**Total recorded spend: $33.4296 (lower bound) over 8606 calls.**
+**Total recorded spend: $33.9912 (lower bound) over 10058 calls.**
 
 ## Directories with no `run.json`
 
