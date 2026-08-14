@@ -2,6 +2,37 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-14, Experiment 17): the internal GPUs ran E7's pack, and the finding is
+about the incumbent.** Gemini 2.5 Flash **stopped being deterministic between 2026-08-10 and
+2026-08-14** under a byte-identical workload — same model id, same `Google` pin, same 1,237,746
+prompt tokens with the per-item spread identical entry for entry, same decoding, same retries.
+Raw-unstable went **0/138 → 111/138**, scored-unstable **0 → 29**, `N_flip` **0 → 34**. The
+scorer was ruled out first: re-scoring the *2026-08-10 outputs* with *today's* code returns
+0.955 / 0.823 / 0.960 and `N_flip = 0` exactly, so the `cefd4ae9…→9b4afc95…` digest move is
+numerically inert here. On Token Factory (LiteLLM/vLLM, fp8), **`gemma-4-12b-it` is BEHIND on
+all three dimensions** and **`qwen3.6-27b-fp8` is INDISTINGUISHABLE on both powered
+dimensions** — ahead on `call_result` F1 (0.962 vs 0.955), the *most* stable arm by scored
+instability (8 against Gemini's 29), at or above Gemini on 8 of 9 mechanisms, and the only arm
+in the table with a non-FAIL mechanism row (`long_context` FLAKY 11/12). Against it: `product`
+is UNDERPOWERED (4 discordant, threshold 6) and therefore **not measured**, and throughput is
+**~11× worse** — both GPU arms pin to 0.32–0.34 calls/s regardless of model, so the gateway is
+the bottleneck. Zero retries on both GPU arms (414 attempts / 414 calls) against Gemini's 416.
+
+**Next action: re-run the Gemini arm on consecutive days** (~2 min, $0.56 each) to establish
+whether 08-14's instability is an episode or permanent. Until that is known, "Qwen is
+indistinguishable from Gemini" describes Gemini *as it behaved on 2026-08-14*, not a stable
+incumbent — and E15/E16, which both reuse E10's Gemini arm and quote `raw-unstable 0/138` as
+the baseline, now rest on a premise with a date on it.
+
+**A lesson worth carrying:** the plan's invariance trip-wire was "stop if Gemini does not
+reproduce 0.955 / 0.823 / 0.960." Two of the three reproduced *exactly* while the model's
+determinism collapsed, so **it would not have fired**. Only the stability columns caught it. An
+invariance control stated in aggregate F1 alone is too coarse.
+
+`docs/experiment17-plan.md`, `docs/experiment17-results.md`,
+`experiments/evidence/retention-e17/summary.json`, `scripts/experiment17.py`. Suite: 887
+passed / 12 skipped standalone, 898 / 1 differential. Still `RECONCILED: NO`.
+
 **Latest (2026-08-11, Experiments 15-16): two frontier open models now match or beat Gemini
 on quality, and neither is deployable on this evidence.** **GLM 5.2 is AHEAD on `reason`**
 (+14 of 32 against a +/-14 band, exactly at the boundary) -- the first open model to clear

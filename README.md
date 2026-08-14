@@ -30,6 +30,13 @@ the replicate-stability gate despite a slightly higher call-result F1, and Qwen3
 testset, not a production verdict. Read the [Experiment 7 handoff](./docs/experiment7-results.md)
 or its [safe aggregate JSON](./experiments/evidence/retention-e7/summary.json).
 
+**Updated 2026-08-14 by [Experiment 17](./docs/experiment17-results.md).** Running the same pack
+on True's internal GPUs found `qwen3.6-27b-fp8` indistinguishable from Gemini on both powered
+dimensions — and, more importantly, found that **Gemini itself stopped being deterministic**
+between 08-10 and 08-14 under a byte-identical workload (raw-unstable 0/138 → 111/138). The
+stability gate that decided Experiment 7 was measured against a reference point that has since
+moved, so E7's conclusion should be read with that date attached.
+
 ## Documentation
 
 | If you need... | Read this |
@@ -48,7 +55,8 @@ or its [safe aggregate JSON](./experiments/evidence/retention-e7/summary.json).
 | Experiment 5 decision, operations and safe report set | [docs/experiment5-results.md](./docs/experiment5-results.md) |
 | Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
 | What the overnight audit found, and how the independent-judge experiment works | [docs/overnight-audit-and-experiment-6-report.md](./docs/overnight-audit-and-experiment-6-report.md) |
-| Latest three-model result, judge audit and team handoff | [docs/experiment7-results.md](./docs/experiment7-results.md) |
+| **Latest result — the internal-GPU arms, and Gemini's determinism collapsing** | [docs/experiment17-results.md](./docs/experiment17-results.md) and its [plan](./docs/experiment17-plan.md) |
+| Decision-grade three-model result, judge audit and team handoff | [docs/experiment7-results.md](./docs/experiment7-results.md) |
 | Reproducible Experiment 7 draft and safe aggregate evidence | [experiments/retention-e7.plan.json](./experiments/retention-e7.plan.json) and [summary.json](./experiments/evidence/retention-e7/summary.json) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | What to request from the app team, and why | [docs/data-contract.md](./docs/data-contract.md) |

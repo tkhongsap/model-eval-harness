@@ -2307,3 +2307,120 @@ minimum is real and predates these runs (`experiments.py:738`), but
 **8. The quantisation confound was named but not labelled.** Kimi ran bf16 and GLM ran fp8.
 Kimi-versus-GLM is as much a bf16-versus-fp8 comparison as a model comparison, and the
 summary says so.
+
+## Experiment 17 — the internal GPUs, and the day the incumbent stopped being deterministic
+
+Experiment 7's plan named a phase three: *"When internal GPUs are ready, rerun this locked
+plan unchanged except for the provider/runtime identity recorded as a new arm."* This is it.
+True's Token Factory (LiteLLM over vLLM, self-signed TLS pinned at
+`configs/token-factory.crt.pem`) against the same pack, the same prompt and the same three
+replicates. Plan: `docs/experiment17-plan.md`. Results: `docs/experiment17-results.md`.
+
+Three arms, 1,242 calls, `retention_v3`, `v9_16_base`, `scoring_code_sha 9b4afc95…` on all
+three and unchanged start to finish. **414/414 `ok` on every arm, zero parse failures, zero
+truncation.** Neither compare refused.
+
+| | Gemini 2.5 Flash | gemma-4-12b-it (fp8) | qwen3.6-27b-fp8 |
+|---|---:|---:|---:|
+| call_result w-F1 | 0.955 | 0.929 | **0.962** |
+| reason w-F1 | **0.838** | 0.792 | 0.821 |
+| product w-F1 | **0.960** | 0.933 | 0.932 |
+| paired verdict, call_result | — | **BEHIND** (−10, band ±10) | INDISTINGUISHABLE (−1, ±7) |
+| paired verdict, reason | — | **BEHIND** (−13, band ±13) | INDISTINGUISHABLE (−1, ±13) |
+| paired verdict, product | — | **BEHIND** (−9, band ±9) | UNDERPOWERED (4 discordant) |
+| `N_flip` | 34 | 25 | **15** |
+| raw-unstable / 138 | 111 | 133 | 129 |
+| **of which scored** | 29 | 15 | **8** |
+| attempts for 414 calls | 416 | **414** | **414** |
+| p50 / p95 / max latency | **2.06 / 2.80 / 11.36 s** | 12.00 / 16.63 / 22.59 s | 11.38 / 17.61 / 23.55 s |
+| throughput | **3.64 calls/s** @ c8 | 0.324 @ c4 | 0.336 @ c4 |
+| cost, 414 calls | $0.5616 | not metered | not metered |
+
+### The finding is about Gemini, not the candidates
+
+| `google/gemini-2.5-flash`, pinned `Google` | raw-unstable / 138 | scored-unstable | `N_flip` |
+|---|---:|---:|---:|
+| 2026-08-10 (`e10-gemini-base`) | **0** | **0** | **0** |
+| 2026-08-14 (`e17-gemini`) | **111** | **29** | **34** |
+
+Byte-identical workload: same model id, same provider pin, `prompt_tokens` 1,237,746 in both
+runs with the per-item spread identical entry for entry, same decoding, same `max_attempts 3`,
+same concurrency, zero resumed cells. On 08-10 the model returned byte-identical text on all
+three replicates for all 138 calls. Four days later it varied on 111 of them, and on 29 the
+variation moved a scored label.
+
+**The scorer was ruled out before the arms ran, not argued about after.** `scoring_code_sha`
+moved `cefd4ae9…` → `9b4afc95…` on 2026-08-12 when `apps.py` joined the digest, which confounds
+"the scorer changed" with "the model changed". Re-scoring the *2026-08-10 outputs* with
+*today's* code — legal, since both E10 runs carry the old digest — returns 0.955 / 0.823 / 0.960
+and `N_flip = 0`, unchanged to three decimals (`out/reports/control-e10-rescored-at-head.txt`).
+
+**This reaches back into Experiments 15 and 16.** Both reuse E10's Gemini arm and both quote
+`raw-unstable 0/138` as the incumbent's baseline. Those tables are not wrong — they compare
+against outputs that really were bit-stable — but the premise that Gemini *is* a stable
+reference now has a date on it. Any future arm compared against E10's Gemini is compared
+against a build that may no longer be what Google serves.
+
+**And it reaches back into Experiment 7's decision.** E7 disqualified Qwen on stability while
+Gemini never varied. On this run the incumbent is the *least* stable arm by the measure the
+scorer can see (29 scored-unstable cells against Qwen's 8).
+
+### What the aggregate table could not see
+
+Gemini's `call_result` and `product` F1 landed **exactly** on their 08-10 values, and `reason`
+moved only 0.823 → 0.838. Two of three reproduced to three decimals while the model's
+determinism collapsed. The plan's trip-wire was written as "if it does not reproduce
+0.955 / 0.823 / 0.960, stop" — and it would not have fired. Only the stability columns caught
+it. An invariance control stated in F1 alone is too coarse; that is the transferable lesson.
+
+### The candidates
+
+**`gemma-4-12b-it` is not a candidate.** BEHIND on all three dimensions, each at or beyond the
+band, and at or below Gemini on 7 of 9 mechanisms.
+
+**`qwen3.6-27b-fp8` is worth pursuing.** INDISTINGUISHABLE on both powered dimensions, ahead on
+`call_result` F1, the most stable arm by scored instability, at or above Gemini on 8 of 9
+mechanisms, and the only arm anywhere in the table with a non-FAIL mechanism row —
+`long_context` FLAKY at 11/12, on the 12–18k-character dilated items. Against it: `product` is
+UNDERPOWERED (4 discordant clusters, threshold 6) and so **not measured**, `reason` trails, and
+throughput is ~11× worse.
+
+The one column where the internal endpoint beats OpenRouter outright: **both GPU arms used 414
+attempts for 414 calls — zero retries**, with a budget of 3 available. Slow, but not flaky.
+
+### Deviations, declared in the plan
+
+1. **`top_p = 1.0`, not production's `0`.** The endpoint returns `400 top_p must be in (0, 1]`.
+   Greedy at temperature 0, so inert; invisible to `workload_sha`; and the same value E10's
+   Gemini already used, so it introduces no asymmetry between these arms.
+2. **`reasoning_effort`** `none` on Gemini, `provider-default` on Token Factory. Zero reasoning
+   tokens reported on all three arms.
+3. **fp8, and four distinct deployments.** `qwen3.6-27b-fp8` is not E7's `qwen/qwen3.6-27b` on
+   Chutes; `gemma-4-12b-it` is not E10's `gemma-4-12b` on Modellismz. Those numbers do not
+   transfer.
+
+None joins the closed deviation list: that list is about deviations from production semantics,
+and these are runtime facts about an endpoint.
+
+### Not pre-registered through `experiment-check`, and why
+
+`experiments.validate_plan` is a validator for the E5/E7 contract specifically, not a generic
+schema check: `experiments.py:117` allowlists exactly two experiment ids, and `:190-207` pin
+`top_p = 0`, `max_attempts = 1` and the three OpenRouter model ids E7 ran. E17 differs on all of
+those by design. Admitting it would have meant relaxing the assertions that pin E7's approved
+sample size and retry policy, so the contract was recorded as prose in
+`docs/experiment17-plan.md` — the form `docs/gpu-shakedown-plan.md` already uses — and
+`experiments.py` was left alone. **Recorded as a real gap: this repository has no generic
+preregistration validator, only an E5/E7-specific one.**
+
+### Where it leaves the decision
+
+`RETAIN_GEMINI_REFERENCE`, migration `INCONCLUSIVE` — and the reason is not caution. The
+comparison rests on a reference point that moved during the experiment. Until Gemini's
+instability is understood, "Qwen is indistinguishable from Gemini" describes Gemini as it
+behaved on 2026-08-14, not a stable incumbent. The blocking next step is cheap: re-run the
+Gemini arm on consecutive days, ~2 minutes and $0.56 each, and find out whether 08-14 was an
+episode or a permanent change.
+
+`RECONCILED` stays **NO**. `retention_v3` is synthetic, so every number here — Gemini's
+included — is an upper bound.

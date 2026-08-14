@@ -11,7 +11,10 @@ The workspace source is `/home/tkhongsap/my-github/s42/canon`.
 
 At session start, read `DEVLOG.md` for the active decision and next action, then
 `AGENTS.md` for durable architecture and `TESTING.md` for the verification contract.
-The latest result handoff is `docs/experiment7-results.md`.
+The latest result handoff is `docs/experiment17-results.md` (2026-08-14, the internal-GPU
+arms). `docs/experiment7-results.md` remains the reference write-up for the decision-grade
+OpenRouter three-model repeat that everything since is measured against — but note that E17
+found Gemini's determinism, which E7's decision leaned on, no longer holds.
 
 ## Before you change anything
 
