@@ -21,12 +21,17 @@ the runtime, artifact, application-contract, and decision-grade tests in the cur
 tree. Run the suite and report the observed current count instead of treating 524 as an
 expectation.
 
-Current pinned standalone measurement on 2026-08-08, after the Experiment 7 support
-and handoff changes: **649 passed, 33 skipped in 16.05s**. This is the current reference,
-not a magic assertion; print skip reasons and report what your checkout actually ran.
-With `TRUE_SOURCE_ROOT=production-reference/sentiment-batch-retention-main`, the same
-checkout measured **660 passed, 22 skipped in 15.38s**; all remaining skips required
-historical ignored `out/` directories.
+Current pinned standalone measurement on **2026-08-12**, after the drift-audit fixes and
+the coverage work that closed four recorded gaps: **840 passed, 12 skipped**. This is the
+current reference, not a magic assertion; print skip reasons and report what your checkout
+actually ran. With `TRUE_SOURCE_ROOT=production-reference/sentiment-batch-retention-main`,
+the same checkout measured **851 passed, 1 skipped** -- the single remaining skip is
+symlink creation being unavailable on this Windows environment, not anything about the
+harness.
+
+*(The previous reference here read 649 / 33 and 660 / 22 on 2026-08-08 and had been stale
+for roughly 170 tests. Six documents carried that figure; all were corrected together on
+2026-08-12.)*
 
 At that baseline, 11 skips needed production source/pins and 22 integration checks
 needed historical gitignored `out/` run directories that a fresh checkout did not
@@ -66,8 +71,8 @@ whichever number you actually ran, and say which mode.
 
 | Mode | Command | Evidence to report |
 |---|---|---|
-| **Fresh standalone checkout** | `PYTHONPATH=src pytest tests/ -q -rs` | Observed pass/skip count and every skip reason. Current reference: **649 passed, 33 skipped** on 2026-08-08. |
-| **With production source** | `PYTHONPATH=src TRUE_SOURCE_ROOT=<path> pytest tests/ -q -rs` | Observed count and resolved source path. Current tracked-reference result: **660 passed, 22 skipped** on 2026-08-08; skips are historical ignored `out/` checks. |
+| **Fresh standalone checkout** | `PYTHONPATH=src pytest tests/ -q -rs` | Observed pass/skip count and every skip reason. Current reference: **840 passed, 12 skipped** on 2026-08-12. |
+| **With production source** | `PYTHONPATH=src TRUE_SOURCE_ROOT=<path> pytest tests/ -q -rs` | Observed count and resolved source path. Current tracked-reference result: **851 passed, 1 skipped** on 2026-08-12; the one skip is an unavailable symlink capability, not a harness gap. |
 | **With production source and complete historical local `out/`** | same command | Observed count plus evidence-root inventory. Historical reference only: **557 passed, 0 skipped** on 2026-08-07 before the current additions. |
 
 For the Experiment 5 implementation audit, the focused production differential,

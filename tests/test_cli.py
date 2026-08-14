@@ -1946,3 +1946,84 @@ def test_the_workload_contract_has_exactly_one_definition():
     # and no runtime knob leaked into the common workload
     for forbidden in ("provider", "model", "concurrency", "timeout", "reasoning_effort"):
         assert forbidden not in with_plan
+
+
+# --- `severity` through the CLI, which nothing exercised -----------------------------
+#
+# `cmd_severity` is ~250 lines wired to its own argparse block, and until 2026-08-12 no
+# test invoked it through `main()`. `tests/test_severity.py` is large but imports only
+# `evalgen.severity` and the scoring modules -- never `evalgen.cli` -- so the command
+# itself, its argument handling and its report writer were unproved. `qualify` and
+# `severity` were the only two subcommands in that position.
+#
+# This is the same class of gap DEVLOG records as High for `cmd_qualify`, and it was not
+# recorded at all. It is cheap to close because `--deterministic-only` is a real, declared
+# no-call path: it exists so the spend can be sized before it is approved, which makes it
+# exactly the mode a test should drive.
+
+
+def test_severity_runs_through_the_cli_and_makes_no_call_in_deterministic_mode(
+    run_arm, perfect, testset, env, monkeypatch, capsys
+):
+    """Two arms in, a severity profile out, and a client factory that would raise.
+
+    Asserts the report's own content rather than just an exit code: a command that
+    printed nothing and returned 0 would satisfy the weaker check, and this diagnostic
+    exists to say HOW an arm failed, not that it ran.
+
+    The candidate is wrong on RET-10 so there is a real substitution to classify. Against
+    two identical arms the profile would be empty, and an empty profile is exactly what a
+    broken classifier also produces.
+    """
+    by_id = {item.item_id: item for item in testset.items}
+
+    def broken(item_id, _nth):
+        item = by_id[item_id]
+        if item_id == "RET-10":
+            return answer(item, payload=payload_for(item, call_result="save"))
+        return answer(item)
+
+    incumbent = run_arm("incumbent", perfect, repeats=1)
+    candidate = run_arm("candidate", broken, repeats=1)
+    capsys.readouterr()
+
+    def _explode(*args, **kwargs):
+        raise AssertionError("--deterministic-only must not construct a client")
+
+    monkeypatch.setattr(cli, "build_client", _explode)
+
+    code = main([
+        "severity",
+        "--incumbent", str(incumbent),
+        "--candidate", str(candidate),
+        "--deterministic-only",
+    ])
+
+    assert code == EXIT_OK
+    out = capsys.readouterr().out
+    # The banner that keeps this out of the verdict path.
+    assert "DIAGNOSTIC ONLY, NOT A SCORED DIMENSION" in out
+    # The no-call disclosure: without it a reader cannot tell an unjudged remainder from
+    # a judged one that came back clean.
+    assert "NOT JUDGED: --deterministic-only" in out
+    # Both arms are profiled, named.
+    assert "incumbent" in out and "candidate" in out
+
+
+def test_severity_refuses_a_dimension_outside_its_declared_scope(capsys):
+    """`product` is deliberately out of scope, and argparse is where that is enforced.
+
+    Recorded in docs/severity-plan-2026-08-09.md. If `product` were quietly accepted the
+    command would report a severity profile for a dimension whose error taxonomy was
+    never derived, and it would look exactly like the two that were.
+    """
+    with pytest.raises(SystemExit) as excinfo:
+        main([
+            "severity",
+            "--incumbent", "x",
+            "--candidate", "y",
+            "--dimension", "product",
+            "--deterministic-only",
+        ])
+    assert excinfo.value.code == 2
+    assert "product" in capsys.readouterr().err

@@ -13,5 +13,11 @@
 # scoring runs wherever the differential test runs, generation only where a key exists.
 #
 # Same reasoning, and the same file, as scripts/openrouter-smoketest/requirements.txt.
-# This exact SDK version is validated by the runtime/client suite on Python 3.12.
-openai==2.17.0
+#
+# Moved 2.17.0 -> 2.53.0 on 2026-08-12. The line below used to read "this exact SDK
+# version is validated by the runtime/client suite" while 2.53.0 was installed and 2.17.0
+# had not been run in months -- the claim named a version nobody was testing. The pin now
+# names the version that was: tests/test_runtime.py, test_artifacts.py and test_runner.py,
+# 76 passed on Python 3.12.10, plus a live OpenRouter call through client.complete.
+# This SDK is not a production mirror -- moving it cannot change what the scorer computes.
+openai==2.53.0

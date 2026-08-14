@@ -6,7 +6,7 @@ Scores model outputs against human labels for the Gemini to self-hosted migratio
 **Two halves, and only one of them calls a model.** `src/evalharness/` scores;
 `src/evalgen/` generates, running an arm through either OpenRouter or a declared
 OpenAI-compatible runtime such as a company GPU endpoint
-(`scripts/evalgen.py check|baseline|stability|compare`). An earlier version of this line
+(`scripts/evalgen.py check|baseline|stability|compare|judge|severity`). An earlier version of this line
 read *"It does not run models. The app team runs both arms; this scores what they
 produce."* That was true of the whole repository once, and stopped being true when
 `src/evalgen/` landed.
@@ -102,12 +102,12 @@ the 26 self-contained tests `judge.py` and its regression fixes added on
 `test_testset_pack.py`), none of which needs `out/` or `TRUE_SOURCE_ROOT` -- computed,
 not independently re-measured against an actual fresh clone.
 
-The current pinned environment was measured on 2026-08-08 after the Experiment 7
-support and documentation work: **649 passed, 33 skipped**. The skips still name missing
-optional production source or historical ignored evidence; always report the count and
-skip reasons from the environment you actually ran. With `TRUE_SOURCE_ROOT` pointed at
-the tracked Retention production reference, the same checkout measured **660 passed,
-22 skipped**; the remaining skips require deliberately ignored historical `out/` runs.
+The current pinned environment was measured on **2026-08-12** after the drift-audit fixes
+and the coverage work that closed four recorded gaps: **840 passed, 12 skipped**. The skips
+name missing optional production source, plus one environment-specific symlink skip; always
+report the count and skip reasons from the environment you actually ran. With
+`TRUE_SOURCE_ROOT` pointed at the tracked Retention production reference, the same checkout
+measured **851 passed, 1 skipped**.
 
 ## What it cannot prove
 
@@ -218,7 +218,9 @@ src/evalgen/       the generator half. Calls models on purpose, so the scorer ma
   experiments.py   machine plans, provider qualification, reliability and decision gates
   (also config, console, evidence, fabrication, testsets)
 scripts/
-  evalgen.py       CLI: check/baseline/stability/compare plus experiment check/budget/qualify/reclassify/run/report
+  evalgen.py       CLI: check/baseline/stability/compare/judge/severity, plus
+                   experiment-check/experiment-budget/qualify/qualification-report/
+                   experiment-run/experiment-report
   run_index.py     regenerates RUNS.md from each run's `run.json` provenance, never its payload
   run_report.py    everything one run directory has to answer for, in one place
   export_xlsx.py   the comparison as a workbook, with its caveats on the first sheet

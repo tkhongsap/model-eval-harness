@@ -2,4 +2,5 @@
 # True's production dependency versions for the differential test and must not carry
 # unrelated packages.
 # Keep this exact pin aligned with src/evalgen/requirements.txt.
-openai==2.17.0
+# Moved 2.17.0 -> 2.53.0 on 2026-08-12 alongside it.
+openai==2.53.0

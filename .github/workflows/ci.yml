@@ -72,7 +72,7 @@ jobs:
       # ground-truth CSV, and it proves the prompt still assembles from its committed
       # assets. Neither is covered for these packs anywhere else.
       #
-      # All three packs are named explicitly, including v1, which is the CLI default
+      # All four packs are named explicitly, including v1, which is the CLI default
       # (cli.py:131-132). Relying on the default would leave CI checking whichever pack
       # that constant happens to point at, and silently checking one pack twice the day
       # it moves. `test_testset_pack.py` also discovers packs by glob, while these calls
@@ -88,6 +88,17 @@ jobs:
           python scripts/evalgen.py check \
             --testset tests/fixtures/testsets/retention_v3.jsonl \
             --gt tests/fixtures/testsets/retention_v3.gt.csv
+          python scripts/evalgen.py check \
+            --testset tests/fixtures/testsets/retention_challenge_v1.jsonl \
+            --gt tests/fixtures/testsets/retention_challenge_v1.gt.csv
+
+      # RUNS.md is the only committed record that the runs cited in EXPERIMENTS.md ever
+      # existed, and it went stale by 16 runs before anything noticed. `out/` is
+      # gitignored, so here this step reports NOT CHECKED and proves nothing -- it is in
+      # CI so the command is exercised and so a machine that DOES hold the runs fails on
+      # a stale index. The real gate is local.
+      - name: Verify the committed run index is not stale
+        run: python scripts/run_index.py --check
 
       - name: Validate the Experiment 7 reproduction plan
         run: |

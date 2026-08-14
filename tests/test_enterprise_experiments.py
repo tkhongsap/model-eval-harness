@@ -1043,3 +1043,331 @@ def test_locked_experiment_runs_and_reports_are_reproducible_without_network(
     for arm in plan["arms"]:
         assert (first / f"arm-{arm['id']}.json").is_file()
         assert (first / f"arm-{arm['id']}.md").is_file()
+
+
+# --- the three experiment-run safety gates, exercised with values that FAIL ----------
+#
+# Recorded as a High-priority gap on 2026-08-08 and still open on 2026-08-12: all three
+# gates below existed and were reachable, but every test drove them with a value that
+# PASSES. `--confirm-plan-sha` was only ever given the correct sha, `--concurrency-level`
+# only ever a member of the allowed list, and the string "UNAVAILABLE" appeared nowhere
+# in tests/ at all. A gate whose refusal branch is never taken is indistinguishable from
+# an `if` that was deleted, and these three stand between a stale or tampered approval and
+# real, paid calls.
+#
+# Each test installs a client factory that RAISES, so the assertion is not only "it
+# refused" but "it refused before it could spend anything" -- the same discipline
+# `check` and `--dry-run` are held to in tests/test_cli.py.
+
+
+def _locked_plan_on_disk(tmp_path):
+    """A locked, valid plan plus its sha. Shared by the three gate tests."""
+    plan = _lock_with_fake_qualifications(
+        json.loads(json.dumps(load_plan(PLAN))), tmp_path
+    )
+    path = tmp_path / "locked.plan.json"
+    path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    assert validate_plan(plan, root=ROOT) == []
+    return plan, path, canonical_sha(plan)
+
+
+@pytest.fixture
+def no_calls_allowed(monkeypatch):
+    """Any attempt to build a client is a test failure, not a mock."""
+    def _explode(*args, **kwargs):
+        raise AssertionError("a refused experiment-run must not construct a client")
+
+    monkeypatch.setattr(cli, "build_client", _explode)
+
+
+def test_experiment_run_refuses_a_confirm_sha_that_does_not_match_the_plan(
+    tmp_path, no_calls_allowed, capsys
+):
+    """The human-approval gate. A stale approval must not execute a changed plan."""
+    plan, plan_path, plan_sha = _locked_plan_on_disk(tmp_path)
+    stale = "0" * 64
+    assert stale != plan_sha
+
+    code = main([
+        "experiment-run",
+        "--plan", str(plan_path),
+        "--arm", plan["arms"][0]["id"],
+        "--confirm-plan-sha", stale,
+        "--out", str(tmp_path / "runs"),
+    ])
+
+    assert code == EXIT_REFUSED
+    message = capsys.readouterr().err
+    # Both shas must appear: a refusal that hides which plan is current cannot be acted on.
+    assert stale in message and plan_sha in message
+
+
+def _make_arm_validly_unavailable(plan, arm, directory: Path):
+    """Turn a QUALIFIED arm into a *legitimately* UNAVAILABLE one.
+
+    Not just `availability = "UNAVAILABLE"`: `validate_plan` (experiments.py:417-436)
+    requires unavailability evidence covering every candidate provider, and refuses an
+    arm that claims UNAVAILABLE while one of its artifacts says QUALIFIED. Flipping only
+    the label is caught by the plan validator long before the run gate -- which is itself
+    worth knowing, and is why this helper exists rather than a one-line edit.
+    """
+    for provider, artifact_path in arm["qualification_evidence"].items():
+        path = Path(artifact_path)
+        artifact = json.loads(path.read_text(encoding="utf-8"))
+        artifact["qualification"] = {
+            "status": "REQUEST_INCOMPATIBLE",
+            "passed": False,
+            "calls": 6,
+        }
+        artifact.pop("qualification_sha", None)
+        artifact["qualification_sha"] = canonical_sha(artifact)
+        path.write_text(json.dumps(artifact), encoding="utf-8")
+
+    arm["availability"] = "UNAVAILABLE"
+    arm["unavailability_evidence"] = dict(arm["qualification_evidence"])
+    arm.pop("selected_provider", None)
+    arm.pop("qualification_sha", None)
+    arm.pop("qualification_artifact", None)
+
+    counts: dict[str, int] = {}
+    for other in plan["arms"]:
+        status = (
+            "REQUEST_INCOMPATIBLE"
+            if other["id"] == arm["id"]
+            else "QUALIFIED"
+        )
+        for _ in other["qualification_evidence"]:
+            counts[status] = counts.get(status, 0) + 1
+    plan["qualification_evidence_summary"]["status_counts"] = counts
+    return plan
+
+
+def test_experiment_run_refuses_an_arm_locked_as_unavailable(
+    tmp_path, no_calls_allowed, capsys
+):
+    """UNAVAILABLE is a recorded finding, not a transient error to retry past.
+
+    Experiment 5B locked arms this way when no provider could serve the
+    production-shaped regime. Executing one anyway would either invent a provider or
+    silently fall back to a different one, and the run would look like evidence.
+    """
+    plan, plan_path, plan_sha = _locked_plan_on_disk(tmp_path)
+    _make_arm_validly_unavailable(plan, plan["arms"][0], tmp_path)
+    assert validate_plan(plan, root=ROOT) == [], (
+        "the plan must be VALID and unavailable, or this test proves the plan validator "
+        "rather than the run gate"
+    )
+    plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+    plan_sha = canonical_sha(plan)
+
+    code = main([
+        "experiment-run",
+        "--plan", str(plan_path),
+        "--arm", plan["arms"][0]["id"],
+        "--confirm-plan-sha", plan_sha,
+        "--out", str(tmp_path / "runs"),
+    ])
+
+    assert code == EXIT_REFUSED
+    assert "UNAVAILABLE" in capsys.readouterr().err
+
+
+def test_experiment_run_refuses_a_load_concurrency_outside_the_locked_list(
+    tmp_path, no_calls_allowed, capsys
+):
+    """The load levels are part of what was reviewed and costed, not a free parameter."""
+    plan, plan_path, plan_sha = _locked_plan_on_disk(tmp_path)
+    allowed = plan["operations"]["concurrency_levels"]
+    outside = max(allowed) + 1
+    assert outside not in allowed
+
+    code = main([
+        "experiment-run",
+        "--plan", str(plan_path),
+        "--arm", plan["arms"][0]["id"],
+        "--confirm-plan-sha", plan_sha,
+        "--mode", "load",
+        "--concurrency-level", str(outside),
+        "--out", str(tmp_path / "runs"),
+    ])
+
+    assert code == EXIT_REFUSED
+    message = capsys.readouterr().err
+    assert str(allowed) in message and str(outside) in message
+
+
+# --- cmd_qualify, which had no test at all ------------------------------------------
+#
+# Recorded High on 2026-08-08, still uncovered on 2026-08-12: `cmd_qualify` spends six
+# real calls and decides QUALIFIED / REQUEST_INCOMPATIBLE / SCHEMA_INCOMPATIBLE, which is
+# the gate between an unvetted endpoint and a paid qualification run -- and no test
+# invoked it, through the CLI or otherwise. `qualify` and `severity` were the only two
+# subcommands never driven through main().
+#
+# Its three refusals are tested with a client factory that RAISES, so each asserts the
+# stronger property: not merely that it refused, but that it refused before it could
+# spend. The fourth test drives the paid path with deterministic completions and checks
+# the artifact it writes, because a probe that silently wrote the wrong verdict would be
+# worse than one that crashed.
+
+
+def _draft_plan_on_disk(tmp_path):
+    """The committed plan is locked; qualification is only legal while it is not."""
+    draft = json.loads(json.dumps(load_plan(PLAN)))
+    draft["status"] = "draft"
+    path = tmp_path / "draft.plan.json"
+    path.write_text(json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8")
+    return draft, path
+
+
+def test_qualify_refuses_a_locked_plan_without_spending(
+    tmp_path, no_calls_allowed, capsys
+):
+    """Adding provider evidence to an approved plan is a review, not a probe."""
+    code = main([
+        "qualify",
+        "--plan", str(PLAN),
+        "--arm", "gemini-2.5-flash",
+        "--provider", "Google",
+        "--out", str(tmp_path / "runs"),
+    ])
+    assert code == EXIT_REFUSED
+    assert "locked" in capsys.readouterr().err
+
+
+def test_qualify_refuses_an_unknown_arm_without_spending(
+    tmp_path, no_calls_allowed, capsys
+):
+    _draft, draft_path = _draft_plan_on_disk(tmp_path)
+    code = main([
+        "qualify",
+        "--plan", str(draft_path),
+        "--arm", "no-such-arm",
+        "--provider", "Google",
+        "--out", str(tmp_path / "runs"),
+    ])
+    assert code == EXIT_REFUSED
+    assert "no-such-arm" in capsys.readouterr().err
+
+
+def test_qualify_refuses_a_provider_that_was_never_preregistered(
+    tmp_path, no_calls_allowed, capsys
+):
+    """The candidate list is part of what was reviewed.
+
+    Probing an endpoint nobody listed produces evidence for a provider the plan does not
+    know about, and the natural next step is to paste it in beside the reviewed ones.
+    """
+    draft, draft_path = _draft_plan_on_disk(tmp_path)
+    candidates = draft["arms"][0]["provider_candidates"]
+    assert "Nowhere Inc" not in candidates
+
+    code = main([
+        "qualify",
+        "--plan", str(draft_path),
+        "--arm", draft["arms"][0]["id"],
+        "--provider", "Nowhere Inc",
+        "--out", str(tmp_path / "runs"),
+    ])
+    assert code == EXIT_REFUSED
+    message = capsys.readouterr().err
+    assert "Nowhere Inc" in message and str(candidates) in message
+
+
+def test_qualify_writes_a_qualified_artifact_from_six_conforming_calls(
+    monkeypatch, tmp_path, capsys
+):
+    """The paid path, driven offline: six calls, one artifact, QUALIFIED.
+
+    Pins the shape the locked-plan gate later depends on --
+    `_lock_with_fake_qualifications` fabricates artifacts of exactly this form, so if the
+    real writer drifted from it, every locked-plan test in this file would be validating
+    a shape production never produces.
+    """
+    draft, draft_path = _draft_plan_on_disk(tmp_path)
+    arm = draft["arms"][0]
+    provider = arm["provider_candidates"][0]
+
+    testset = load_testset(ROOT / draft["assets"]["testset"]["path"])
+    by_transcript = {item.transcript_th: item for item in testset.items}
+    calls: list[str] = []
+
+    class QualifyingClient:
+        def complete(
+            self, *, model, messages, max_tokens, temperature, top_p=None, seed=None,
+            response_format=None, provider=None, reasoning_effort="provider-default",
+        ):
+            assert reasoning_effort == "none", "qualification pins the regime explicitly"
+            item = by_transcript[messages[1]["content"]]
+            calls.append(item.item_id)
+            payload = {
+                "product": {
+                    row["product"]: {
+                        "main": {"reason": row.get("main") or "", "keyword": ""},
+                        "secondary": {
+                            "reason": row.get("secondary") or "",
+                            "keyword": "",
+                        },
+                        "third": {"reason": row.get("third") or "", "keyword": ""},
+                        "retention_outcome": row.get("call_result") or "",
+                    }
+                    for row in item.gt
+                },
+                "call_event_detection": "Emerging or Undefined Events",
+                "recommendation": "retain the exact current offer",
+            }
+            return SimpleNamespace(
+                content=json.dumps(payload, ensure_ascii=False),
+                finish_reason="stop",
+                observed_model=model,
+                generation_id=f"qual-{item.item_id}",
+                provider=provider,
+                # Stable per item and positive: the qualification contract requires both,
+                # because a varying count means two backends behind one model id.
+                prompt_tokens=1000 + len(item.transcript_th),
+                completion_tokens=100,
+                reasoning_tokens=0,
+                cost=0.0001,
+                latency_s=0.001,
+                runtime_id="openrouter",
+                runtime_backend="openrouter",
+                runtime_fingerprint=cli.OPENROUTER_RUNTIME.fingerprint(),
+                system_fingerprint="fake-openrouter-build",
+            )
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-fake-not-a-real-key")
+    monkeypatch.setenv("EVAL_HARNESS_KEY_HMAC", "qualify-test-key")
+    monkeypatch.setattr(cli, "build_client", lambda *a, **k: QualifyingClient())
+
+    run_root = tmp_path / "runs"
+    assert main([
+        "qualify",
+        "--plan", str(draft_path),
+        "--arm", arm["id"],
+        "--provider", provider,
+        "--out", str(run_root),
+    ]) == EXIT_OK
+    capsys.readouterr()
+
+    # Six logical calls: 3 preregistered items x 2 replicates, and no more.
+    expected_calls = (
+        len(draft["qualification"]["item_ids"]) * draft["qualification"]["replicates"]
+    )
+    assert len(calls) == expected_calls == 6
+    assert sorted(set(calls)) == sorted(draft["qualification"]["item_ids"])
+
+    created = sorted(run_root.iterdir())
+    assert len(created) == 1
+    artifact = json.loads(
+        (created[0] / "qualification.json").read_text(encoding="utf-8")
+    )
+
+    assert artifact["arm"] == arm["id"]
+    assert artifact["provider"] == provider
+    assert artifact["model"] == arm["model"]
+    assert artifact["qualification"]["status"] == "QUALIFIED"
+    assert artifact["qualification"]["passed"] is True
+    assert artifact["qualification"]["calls"] == 6
+    assert artifact["qualification_sha"] == canonical_sha(
+        {k: v for k, v in artifact.items() if k != "qualification_sha"}
+    )

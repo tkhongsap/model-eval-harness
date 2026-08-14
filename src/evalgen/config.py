@@ -7,7 +7,9 @@ imported, and that is a decision rather than an oversight.
 **Why this duplicates the smoke test instead of importing it.** AGENTS.md documents
 `scripts/openrouter-smoketest/` as the one deliberate exception to "no model calls in
 this repository", and the reason it survives review is that it depends on nothing:
-its own `requirements.txt`, its own `.env.example`, and **no import from `src/`**. An
+its own `requirements.txt` and **no import from `src/`**. (Both files used to claim it
+also had its own `.env.example`; it never did -- its README points at the repo-root one.
+Corrected 2026-08-12.) An
 import in either direction ends that. If `src/evalgen/` imported the script, the
 script would stop being standalone exploratory tooling and become a library module
 that happens to live in `scripts/`, which is exactly the drift the exception was

@@ -69,7 +69,7 @@ to the scoring path "just for a moment" breaks a build rather than a rule.
 PYTHONPATH=src python -m pytest tests/ -q -rs
 ```
 
-Current measured reference (2026-08-08): **649 passed, 33 skipped** in the pinned
+Current measured reference (2026-08-12): **840 passed, 12 skipped** in the pinned
 standalone environment. Treat this as evidence, not a hardcoded expectation: report
 your observed count and every skip reason. Validate the Experiment 7 reproduction plan
 with `PYTHONPATH=src python scripts/evalgen.py experiment-check --plan
@@ -88,11 +88,22 @@ Full detail, including how to make the differential test actually run, is in
   is approved for Git.
 - Keep customer identifiers out of examples, commit messages and test fixtures. The
   synthetic phone block is `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`) —
-  `0810000000`–`0810000999`, 1000 numbers, of which 100 are in use and 900 are free.
-  Every committed fixture value still sits in the original `08100000xx` hundred; the
-  block was widened on 2026-08-06 because `retention_v2` used all 100 of them, and the
-  new pattern is a strict superset, so no fixture number moved. Widening it again is a
-  reviewed change to a data-safety control, never a convenience.
+  `0810000000`–`0810000999`, 1000 numbers, of which **188 are in use and 812 are free**
+  (measured 2026-08-12 across every pack under `tests/fixtures/testsets/`):
+
+  | range | count | packs |
+  |---|---:|---|
+  | `0810000000`–`0810000099` | 100 | `retention_v1`, `retention_v2`, the four `block_*` fixtures |
+  | `0810000101`–`0810000138` | 38 | `retention_v3`'s phase-two items RET-101…138 |
+  | `0810000201`–`0810000250` | 50 | `retention_challenge_v1` (RTC-*) |
+
+  The block was widened on 2026-08-06 because `retention_v2` used all 100 of the original
+  `08100000xx` hundred, and the new pattern is a strict superset, so no fixture number
+  moved. ~~Every committed fixture value still sits in the original hundred.~~ *(Corrected
+  2026-08-12: that stopped being true the moment the widening was used. 88 values now sit
+  outside it — all still inside the sanctioned block, so this is a bookkeeping correction
+  and not a leak, but the count is how anyone knows the block has not drifted.)* Widening
+  it again is a reviewed change to a data-safety control, never a convenience.
 
 ## Build and Verification Contract
 

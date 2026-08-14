@@ -7,4 +7,10 @@ pandas==2.3.3
 numpy==2.3.4
 openpyxl==3.1.5
 # Test-runner pin validated with the Python 3.12 production-pin environment.
-pytest==9.0.2
+# Moved 9.0.2 -> 9.1.1 on 2026-08-12: 9.0.2 was pinned here while 9.1.1 was what every
+# recent run actually used, so the file described an environment nobody had. Unlike the
+# three pins above, pytest mirrors nothing in production and cannot change what the
+# scorer computes -- it only decides whether the suite runs. Validated by the full suite
+# in both modes on 3.12.10: 820 passed / 12 skipped standalone, 831 / 1 with
+# TRUE_SOURCE_ROOT set.
+pytest==9.1.1

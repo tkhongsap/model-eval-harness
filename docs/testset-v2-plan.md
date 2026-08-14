@@ -60,8 +60,13 @@ would have to be. One digit moves from the fixed prefix to the variable tail, wh
 the new block a strict superset: every number allocated in the table above still matches,
 so no file listed here changed and `validate()` returns the same empty problem list on
 `retention_v1.jsonl` and `retention_v2.jsonl` under either pattern. Capacity is now 1000
-— `0810000000`–`0810000999` — with the same 100 in use and 900 free. The `call_id` row is
-untouched and still has 899.
+— `0810000000`–`0810000999` — with the same 100 in use and 900 free **at the time this
+plan was written**. The `call_id` row is untouched and still has 899.
+
+*(Standing count, refreshed 2026-08-12: **188 in use, 812 free**. `retention_v3` and
+`retention_challenge_v1` both drew on the widened block after this document was written,
+so the figure above is correct as history and stale as a current count. `CLAUDE.md` and
+`AGENTS.md` carry the live number and the per-range breakdown.)*
 
 ### Family distribution
 

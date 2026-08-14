@@ -17,6 +17,7 @@ from evalharness.manifest import (  # noqa: E402
     assert_comparable,
     items_hash,
     provenance_banner,
+    workload_sha,
 )
 
 FIX = ROOT / "tests" / "fixtures"
@@ -107,3 +108,62 @@ def test_items_hash_is_order_independent():
 def test_items_hash_detects_a_changed_item_set():
     gt = load_csv(FIX / "retention_gt.csv")
     assert items_hash(gt) != items_hash(gt[:-1])
+
+
+# --- workload identity --------------------------------------------------------
+#
+# `workload_sha` answers "were these two arms given the same job?", which is only a
+# meaningful question if the answer cannot depend on WHO did the job. The guard below is
+# what enforces that, and until 2026-08-12 nothing exercised it: `workload_sha` was called
+# in exactly one place in `src/` and imported by no test, so the refusal could have been
+# deleted and the suite would have stayed green.
+#
+# The failure it prevents is specific. If `model` were allowed into the contract, every
+# arm would hash to a different workload by construction, `_refuse_incomparable` would fire
+# on every honest comparison, and the natural fix under deadline is to stop comparing
+# workload shas at all -- losing the check that two arms ran the same items, prompt and
+# schema. A contract that silently absorbs arm identity is worse than no contract.
+
+_WORKLOAD = {
+    "app": "retention",
+    "testset_sha": "a" * 64,
+    "gt_sha": "b" * 64,
+    "prompt_sha": "c" * 64,
+    "schema_sha": "d" * 64,
+    "repeats": 3,
+    "application_contract_sha": "e" * 64,
+}
+
+
+def test_workload_sha_is_stable_and_key_order_independent():
+    """The same job hashes the same however the dict was built."""
+    reordered = dict(reversed(list(_WORKLOAD.items())))
+    assert workload_sha(dict(_WORKLOAD)) == workload_sha(reordered)
+    assert len(workload_sha(dict(_WORKLOAD))) == 64
+
+
+def test_workload_sha_changes_when_the_job_changes():
+    """Otherwise it would certify two different jobs as the same one."""
+    other = dict(_WORKLOAD, repeats=1)
+    assert workload_sha(dict(_WORKLOAD)) != workload_sha(other)
+
+
+@pytest.mark.parametrize(
+    "field", ["model", "model_id", "provider", "provider_requested", "arm"]
+)
+def test_workload_sha_refuses_every_arm_specific_field(field):
+    """Each of the five is refused, and the message names which one.
+
+    Parametrised rather than checked as a set so that removing one name from `forbidden`
+    fails a test that says which name was removed.
+    """
+    with pytest.raises(ValueError, match="workload identity cannot contain"):
+        workload_sha(dict(_WORKLOAD, **{field: "x"}))
+
+
+def test_the_refusal_names_every_offending_field_not_just_the_first():
+    """A caller passing two arm fields should not have to fix them one run at a time."""
+    with pytest.raises(ValueError) as excinfo:
+        workload_sha(dict(_WORKLOAD, model="m", provider="p"))
+    message = str(excinfo.value)
+    assert "'model'" in message and "'provider'" in message

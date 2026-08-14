@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **`tests/fixtures/testsets/retention_challenge_v1.*`: a harder, original pack.** 50
+  items (`RTC-001`…`RTC-050`), 64 scored rows, five families of ten. Deliberately **not**
+  named `retention_v4`: it is not a byte-exact superset of the frozen `retention_v*`
+  prefix chain and is not part of it. Every call is an 18-turn conversation of at least
+  1,000 codepoints, every evidence span occurs exactly once in its own transcript, and
+  every `ev_reason:*` span is customer speech rather than the agent's. Gated by
+  `tests/test_retention_challenge_pack.py` (label contract, identity and synthetic-key
+  ranges, no id collision with any frozen pack, conversation shape, evidence uniqueness,
+  exact CSV↔JSONL agreement, class-support budgets, manifest integrity) and by
+  `evalgen check` in CI. Plan and acceptance contract in
+  `docs/retention-challenge-v1-plan.md`. *Added 2026-08-11; recorded here 2026-08-12,
+  having been absent from CHANGELOG, DEVLOG, AGENTS.md and README.*
+- **`tests/test_phone_block_allocation.py`: the synthetic phone block's own bookkeeping,
+  gated.** `PHONE_PATTERN` is one of the three controls keeping customer identifiers out
+  of this repository, and every committed number was already proved to match it — but the
+  *accounting* was unverified and had gone wrong. Four documents read "100 in use, 900
+  free, all in the original `08100000xx` hundred" while 188 were in use and 88 sat outside
+  that hundred. Nothing leaked; what broke was the number that says whether the block is
+  drifting. The census is now computed across every pack and the documents are held to it,
+  matched on the number rather than the prose so rewording is free and drifting is not.
 - **`src/evalgen/severity.py`: how an arm was wrong, not just how often.** The scorer is
   all-or-nothing, so answering `promotion related` where the truth is `save cost` -- two
   classes the production prompt separates with one CRITICAL line -- scores exactly the
