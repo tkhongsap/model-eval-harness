@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "runtime_id": "true-token-factory-poc",
+  "backend": "openai-compatible",
+  "base_url": "https://10.94.154.102/v1",
+  "api_key_env": "TOKEN_FACTORY_API_KEY",
+  "organization": null,
+  "project": null,
+  "headers": {
+    "X-Eval-Runtime": "model-eval-harness"
+  },
+  "build_metadata": {
+    "gateway": "litellm",
+    "serving_stack": "vllm",
+    "tls": "self-signed, pinned at configs/token-factory.crt.pem",
+    "tls_sha256_der": "3d9f563957908054aa573eaeaf016064bbd6c8d9584561c3ec5dc56c9c3f07b4",
+    "note": "address used directly because the certificate SAN covers the IP; public DNS for the hostname resolves elsewhere and times out"
+  },
+  "allow_insecure_http": false
+}

@@ -49,6 +49,18 @@ credentials.json
 secrets.json
 **/secrets/
 
+# One narrow exception, and only one. A server's TLS CERTIFICATE is public by
+# construction -- it is handed to every client that connects, so committing it discloses
+# nothing that a `curl` would not. Token Factory's is self-signed, so pinning it is what
+# lets the probes VERIFY the connection instead of falling back to `verify=False`, which
+# would give up the guarantee that the host is the intended one on a connection carrying
+# a bearer token. Committing it makes verification possible; the `*.pem` rule above is
+# about PRIVATE KEYS, which this is not and which stay ignored.
+#
+# Un-ignore this file BY NAME rather than relaxing `*.pem`: the next `.pem` to appear
+# should still have to argue for itself.
+!configs/token-factory.crt.pem
+
 # ===================================================================
 # Python
 # ===================================================================

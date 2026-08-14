@@ -14,22 +14,25 @@ is not pedantic: the Modellismz endpoint listed its models cleanly and then **re
 `top_p = 0`**, which every committed experiment plan pins. A `/v1/models` 200 is worth very
 little on its own.
 
-The network path, which is the part that looks wrong and is not
---------------------------------------------------------------
+The network path, and the certificate
+------------------------------------
 `token-fac-api.truecorp.co.th` resolves publicly to an address that does **not** serve this
-API -- measured 2026-08-14: `111.84.54.29:443` times out, while the internal
-`10.94.154.102:443` connects in ~25 ms. So the hostname is deliberately overridden, the
-same thing `--resolve` does in the PowerShell one-liner at `token-factory-probe.ps1`. Here
-that is expressed as *IP in the URL, hostname in the `Host` header*.
+API -- measured 2026-08-14: `111.84.54.29:443` times out, while `10.94.154.102:443`
+connects in ~25 ms. So the address is used directly.
 
-Because the connection is made by IP, the presented certificate cannot match the requested
-name, so verification is disabled. **That is a real cost, not a nit**: it gives up the
-guarantee that the host on the other end is the intended one, on a connection that carries
-a bearer token regardless. It is accepted here because this is an on-network reachability
-probe against a hardcoded RFC1918 address and nothing else makes it work today. It should
-not be copied into anything that carries real data or runs unattended, and the fix when
-this becomes an evaluation arm is a certificate the client can verify -- not `verify=False`
-in more places.
+That normally forces a choice between a Host-header override and a certificate mismatch.
+Here it forces neither. The endpoint's certificate is **self-signed**, which is why the
+public trust store rejects it -- not a name mismatch -- and its SAN covers **both** the
+hostname and `10.94.154.102`. So pinning that one certificate
+(`configs/token-factory.crt.pem`) and verifying against it works when connecting by
+address, with the stock client and no transport tricks.
+
+**Verification is ON, and is stronger than the public-CA default**: exactly one certificate
+is trusted, so a substituted host fails even if it holds a certificate some public CA
+signed. An earlier version of this script used `verify=False`; that was the wrong fix and
+gave up the guarantee that the host is the intended one, on a connection carrying a bearer
+token. Rotation breaks the pin deliberately -- a changed certificate should stop the probe
+and be re-reviewed.
 
 The credential
 --------------
@@ -65,6 +68,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 KEY_VAR = "TOKEN_FACTORY_API_KEY"
 HOSTNAME = "token-fac-api.truecorp.co.th"
 INTERNAL_IP = "10.94.154.102"
+CERT_PATH = REPO_ROOT / "configs" / "token-factory.crt.pem"
 
 DEFAULT_PROMPT = (
     "Reply with exactly one short sentence confirming you are running, "
@@ -93,27 +97,28 @@ def _load_key() -> str | None:
 
 
 def _client(key: str, timeout: float):
-    """An OpenAI client pointed at the internal address, with the hostname preserved.
+    """An OpenAI client pointed at the endpoint, verifying against the pinned certificate.
 
     Built on the same `openai` SDK the harness itself calls through, rather than a
     curl-shaped approximation, so a failure here is a failure the harness would also hit.
+    Because the certificate's SAN covers the IP, this needs no Host override and no
+    disabled verification -- see the module docstring.
     """
     import httpx
     from openai import OpenAI
 
-    # Only the certificate check is suppressed, and only for this client.
-    warnings.filterwarnings("ignore", message="Unverified HTTPS request")
-    http_client = httpx.Client(
-        verify=False,
-        timeout=timeout,
-        headers={"Host": HOSTNAME},  # the `--resolve` equivalent
-    )
+    if not CERT_PATH.is_file():
+        raise SystemExit(
+            f"pinned certificate missing at {CERT_PATH}. Re-pin it with "
+            "ssl.get_server_certificate(('10.94.154.102', 443)) and review the change."
+        )
     return OpenAI(
         api_key=key,
         base_url=f"https://{INTERNAL_IP}/v1",
-        http_client=http_client,
+        http_client=httpx.Client(verify=str(CERT_PATH), timeout=timeout),
         max_retries=0,  # a probe reports the first failure; it does not paper over it
     )
+
 
 
 def _reachable() -> tuple[bool, str]:
@@ -144,7 +149,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="answer question 1 and stop; makes no generation call")
     args = parser.parse_args(argv)
 
-    print(f"endpoint   https://{HOSTNAME}/v1  (via {INTERNAL_IP}, TLS verification off)")
+    print(f"endpoint   https://{HOSTNAME}/v1  (via {INTERNAL_IP})")
+    print(f"tls        verified against the pinned {CERT_PATH.name}")
 
     ok, detail = _reachable()
     print(f"tcp        {'reachable, ' + detail if ok else 'UNREACHABLE -- ' + detail}")

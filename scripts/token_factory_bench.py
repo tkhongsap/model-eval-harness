@@ -37,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 KEY_VAR = "TOKEN_FACTORY_API_KEY"
 HOSTNAME = "token-fac-api.truecorp.co.th"
 INTERNAL_IP = "10.94.154.102"
+CERT_PATH = REPO_ROOT / "configs" / "token-factory.crt.pem"
 
 # Four questions, deliberately different in shape: a definition, an explanation with an
 # example, a structured trade-off list, and code generation. Together they show how each
@@ -79,18 +80,28 @@ def _load_key() -> str | None:
 
 
 def _client(key: str, timeout: float):
+    """An OpenAI client pointed at the endpoint, verifying against the pinned certificate.
+
+    Built on the same `openai` SDK the harness itself calls through, rather than a
+    curl-shaped approximation, so a failure here is a failure the harness would also hit.
+    Because the certificate's SAN covers the IP, this needs no Host override and no
+    disabled verification -- see the module docstring.
+    """
     import httpx
     from openai import OpenAI
 
-    warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+    if not CERT_PATH.is_file():
+        raise SystemExit(
+            f"pinned certificate missing at {CERT_PATH}. Re-pin it with "
+            "ssl.get_server_certificate(('10.94.154.102', 443)) and review the change."
+        )
     return OpenAI(
         api_key=key,
         base_url=f"https://{INTERNAL_IP}/v1",
-        http_client=httpx.Client(
-            verify=False, timeout=timeout, headers={"Host": HOSTNAME}
-        ),
-        max_retries=0,
+        http_client=httpx.Client(verify=str(CERT_PATH), timeout=timeout),
+        max_retries=0,  # a probe reports the first failure; it does not paper over it
     )
+
 
 
 def main(argv: list[str] | None = None) -> int:
