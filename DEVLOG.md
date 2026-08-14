@@ -191,7 +191,11 @@ kept in place and corrected, because the wrong inference is the useful part:
       production is under-tested here. That pack also consumed the synthetic phone block
       whole: all 100 numbers `08100000xx` could spell. The block was widened to
       `0810000xxx` on 2026-08-06 (`src/evalgen/testsets.py:135`) so the next item has a
-      number to take -- 100 in use, 900 free, and no existing number moved.
+      number to take, and no existing number moved. ~~100 in use, 900 free.~~ **As of
+      2026-08-12: 188 in use, 812 free** -- `0810000000`-`0810000099` (v1/v2 and the
+      `block_*` fixtures), `0810000101`-`0810000138` (v3 phase two),
+      `0810000201`-`0810000250` (`retention_challenge_v1`). The widening has been used
+      twice since; the "100 in use" figure was left behind by both.
 - [ ] Receive the count of rows whose `phone_number` is null, blank or `0`. That
       number is the size of a blind spot in the current product metric.
 - [ ] Implement `load_workbook()` once the header layout is known.
@@ -265,28 +269,68 @@ Frequency before the fix was roughly **1 in 40 full runs** (one failure across ~
 2026-08-11). A recurrence *after* this change means the budget expired, which would be new
 information: it would point at an in-process holder rather than a scanner.
 
+**Status 2026-08-12: no confirmed recurrence, and one unattributable failure.** Twelve
+consecutive differential runs immediately after the mitigation were green. A separate drift
+audit later the same day observed **one failure in eight runs and did not capture the test
+id**, so it cannot be attributed to this bug, to a different flake, or to the audit's own
+environment. It is recorded because an uncaptured red run is exactly what let this bug stay
+undiagnosed for three occurrences, and *not* counted as a fifth occurrence, because that
+would be inventing evidence that was not collected. **If it fires again, capture the
+traceback before doing anything else** -- `-x --tb=long` with the output saved, which is how
+the fourth occurrence was finally diagnosed.
 
-**Four remaining coverage/configuration gaps, refreshed 2026-08-08.** These do not
-invalidate Experiment 7's recorded output, but they belong in the next harness-hardening
-change before a production-data run:
 
-- [ ] `cmd_qualify` (spends real API calls, decides QUALIFIED/INCOMPATIBLE) has zero test
-      coverage anywhere in the suite. (Priority: High -- it is the gate between an
-      unvetted provider and a paid qualification run. Needs a mocked client.)
-- [ ] `cmd_experiment_run`'s three safety gates -- `--confirm-plan-sha` mismatch, an
-      `UNAVAILABLE` arm, an out-of-list `--concurrency-level` -- are each only ever
-      exercised with a value that passes. No test supplies a wrong sha, an unavailable
-      arm, or a bad concurrency level, so a broken gate would not be caught.
-      (Priority: High -- this is the human-approval gate stopping a stale or tampered
-      plan from spending real, paid calls.)
-- [ ] `manifest.workload_sha`'s forbidden-field guard and `_refuse_incomparable`'s
-      era-mixing/mismatch checks for `outcome_contract_sha`/`workload_sha` are untested.
-      (Priority: Med -- these are the checks stopping two genuinely incompatible runs
-      from being silently compared.)
+**Four coverage/configuration gaps, recorded 2026-08-08 -- three closed 2026-08-12, one
+open.** These did not invalidate Experiment 7's recorded output; they were the
+harness-hardening owed before a production-data run.
+
+- [x] **CLOSED 2026-08-12.** `cmd_qualify` (spends real API calls, decides
+      QUALIFIED/INCOMPATIBLE) had zero test coverage anywhere in the suite. Now four tests
+      in `tests/test_enterprise_experiments.py`: its three refusals (locked plan, unknown
+      arm, unregistered provider), each driven with a client factory that **raises**, so
+      the assertion is that it refused *before it could spend*; plus the paid path with
+      deterministic completions, asserting six logical calls and a `QUALIFIED` artifact
+      whose `qualification_sha` recomputes. All three refusals were confirmed to fail with
+      their gate removed.
+- [x] **CLOSED 2026-08-12.** `cmd_experiment_run`'s three safety gates -- a
+      `--confirm-plan-sha` mismatch, an `UNAVAILABLE` arm, an out-of-list
+      `--concurrency-level` -- were each only ever exercised with a value that passes, and
+      the string `UNAVAILABLE` appeared nowhere in `tests/`. Each now has a
+      failing-value test, all three confirmed to fail with their gate removed.
+      *Found while writing them:* flipping `availability` to `UNAVAILABLE` alone is
+      rejected by `validate_plan` first (`experiments.py:417-436` requires unavailability
+      evidence for every candidate provider and refuses an arm claiming UNAVAILABLE while
+      an artifact says QUALIFIED), so the test builds a *legitimately* unavailable arm.
+      The plan validator is a stronger gate here than the run gate, which was not obvious.
+- [x] **CLOSED 2026-08-12, and the bullet was wrong to pair them.**
+      `_refuse_incomparable`'s era-mixing/mismatch checks were already covered when this
+      was written (`tests/test_cli.py:1845-1888` covers the `workload_sha` mismatch, the
+      `--prompts-may-differ` escape, that escape *not* laundering a second change, the
+      legacy path, and a testset-sha divergence). Only `manifest.workload_sha`'s
+      forbidden-field guard was genuinely untested -- `workload_sha` was called in exactly
+      one place in `src/` and imported by no test. Now five tests in
+      `tests/test_manifest.py`, parametrised over all five forbidden fields so removing one
+      name fails a test that says which; six of them fail with the guard removed.
 - [ ] `reliability_gate`'s 0.99 threshold is a hardcoded Python default, not read from
       the plan's own `quality_gates.minimum_parse_valid_rate` field that `validate_plan`
       computes and displays as authoritative. Currently harmless (both are 0.99).
       (Priority: Low today, real if a future plan sets a different value.)
+      **Mitigating fact this bullet did not state:** `validate_plan` at
+      `experiments.py:246` asserts the plan's declared rate *equals* 0.99, so a plan
+      setting a different value is **rejected**, not silently ignored. The real gap
+      underneath is broader and belongs with the multi-application work:
+      `validate_plan` hardcodes Experiment 5/7's exact numbers throughout
+      (`:236-258` -- item id lists, 410/414, alpha 1/64, concurrency levels), so it is a
+      single-experiment validator wearing a generic name.
+
+**A fifth gap, of the same class, was not on that list and is now closed.** `cmd_severity`
+(~250 lines plus its own argparse block) was never invoked through `main()` by any test --
+`tests/test_severity.py` is 1,442 lines and imports `evalgen.severity` but never
+`evalgen.cli`. With `cmd_qualify` closed, those two were the only subcommands in that
+position. Covered by two tests in `tests/test_cli.py`: the `--deterministic-only` path
+end to end with a client factory that raises, asserting the report's own content rather
+than an exit code; and that `--dimension product` is refused, since `product` is
+deliberately outside the severity taxonomy.
 
 **Two gate-logic gaps found by the same audit were fixed the same night** (both were
 mechanical, well-scoped, and safe to verify before merging): `decision()` silently

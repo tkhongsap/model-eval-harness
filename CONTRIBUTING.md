@@ -34,9 +34,9 @@ git diff --check
 ```
 
 **Both modes.** A green standalone run does not prove the differential still agrees,
-because standalone skips it. The 2026-08-08 standalone reference is 649 passed and
-33 skipped; report your observed count and each skip reason instead of editing a test
-to match that number. If production source is unavailable, say so explicitly in the PR.
+because standalone skips it. The 2026-08-12 standalone reference is 840 passed and
+12 skipped (851 / 1 with production source); report your observed count and each skip
+reason instead of editing a test to match that number. If production source is unavailable, say so explicitly in the PR.
 
 Use `.github/PULL_REQUEST_TEMPLATE.md`. Identify the decision grain, privacy class,
 runtime/network behavior, tests actually run and whether `RECONCILED` remains `NO`.

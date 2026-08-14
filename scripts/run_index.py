@@ -207,7 +207,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    rows, dry = collect(Path(args.runs))
+    runs_dir = Path(args.runs)
+
+    # `out/` is gitignored, so a fresh clone and CI have no run directories at all.
+    # There, regenerating would produce an empty index and report every committed row as
+    # stale -- a failure that says nothing about whether RUNS.md is actually current.
+    # Report that the check did not run, in the same spirit as the differential test
+    # skipping when production source is absent, rather than passing quietly or failing
+    # loudly for the wrong reason. On a machine that HAS the runs it still exits 1.
+    if args.check and not runs_dir.exists():
+        print(
+            f"NOT CHECKED: no run directory at {runs_dir}. `out/` is gitignored, so this "
+            "proves nothing here -- run it on a machine holding the runs.",
+        )
+        return 0
+
+    rows, dry = collect(runs_dir)
     text = render(rows, dry)
     target = Path(args.out)
 

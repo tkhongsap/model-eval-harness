@@ -16,7 +16,7 @@ was served by more than one build and its numbers are a blend of two systems.
 `cost` is a LOWER BOUND — OpenRouter reports `usage.cost` only for providers that
 supply it, and a missing value stays absent rather than becoming zero.
 
-**31 runs recorded.**
+**46 runs recorded.**
 
 | run_id | arm | model requested | provider | prompt | items x reps | outcomes | pin proof | cost USD | testset | scorer |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -51,8 +51,23 @@ supply it, and a missing value stays absent rather than becoming zero.
 | `20260806-025645Z-v3-qwen27b` | v3-qwen27b | `qwen/qwen3.6-27b` | CoreWeave | v9_16_base | 138 x 3 | ok=413, **empty_length=1** | 138/138 | 6.553065 | `ff7f728ca597` | `e0462c9` |
 | `20260806-043135Z-v3-qwen35a3b` | v3-qwen35a3b | `qwen/qwen3.6-35b-a3b` | AkashML | v9_16_base | 138 x 3 | ok=400, **empty_length=14** | 138/138 | 1.962569 | `ff7f728ca597` | `e0462c9` |
 | `20260806-061714Z-v3-gemini-rescored` | v3-gemini-rescored | `google/gemini-2.5-flash` | Google | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.483005 | `ff7f728ca597` | `e0462c9` |
+| `20260809-165844Z-q1-tune` | q1-tune | `qwen/qwen3.6-27b` | Chutes | v9_16_q1 | 49 x 3 | ok=147 | 49/49 | 0.115353 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260809-165958Z-base-tune` | base-tune | `qwen/qwen3.6-27b` | Chutes | v9_16_base | 49 x 3 | ok=147 | 49/49 | 0.124445 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260809-170730Z-q2-tune` | q2-tune | `qwen/qwen3.6-27b` | Chutes | v9_16_q2 | 49 x 3 | ok=147 | 49/49 | 0.122237 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260810-162103Z-modellismz-probe` | modellismz-probe | `gemma-4-12b` | *unpinned* | v9_16_base | 3 x 2 | ok=6 | 3/3 | 0.000000 | `42ffd4f38337` | `cefd4ae9` |
+| `20260810-165653Z-e10-gemini-base` | e10-gemini-base | `google/gemini-2.5-flash` | Google | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.517276 | `ff7f728ca597` | `cefd4ae9` |
+| `20260810-165637Z-e10-gemma-base` | e10-gemma-base | `gemma-4-12b` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `cefd4ae9` |
+| `20260810-171026Z-e11-tune-base` | e11-tune-base | `gemma-4-12b` | *unpinned* | v9_16_base | 49 x 3 | ok=147 | 49/49 | 0.000000 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260810-171026Z-e11-tune-e1` | e11-tune-e1 | `gemma-4-12b` | *unpinned* | v9_16_e1 | 49 x 3 | ok=147 | 49/49 | 0.000000 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260810-172001Z-e12-tune-g1` | e12-tune-g1 | `gemma-4-12b` | *unpinned* | v9_16_g1 | 49 x 3 | ok=147 | 49/49 | 0.000000 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260810-172001Z-e13-tune-g2` | e13-tune-g2 | `gemma-4-12b` | *unpinned* | v9_16_g2 | 49 x 3 | ok=147 | 49/49 | 0.000000 | `a6409c05d9d2` | `cefd4ae9` |
+| `20260810-172653Z-e14-hold-gemini` | e14-hold-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 89 x 3 | ok=267 | 89/89 | 0.303032 | `fd535588658e` | `cefd4ae9` |
+| `20260810-173734Z-e14-hold-gemma-base` | e14-hold-gemma-base | `gemma-4-12b` | *unpinned* | v9_16_base | 89 x 3 | ok=267 | 89/89 | 0.000000 | `fd535588658e` | `cefd4ae9` |
+| `20260810-173749Z-e14-hold-gemma-e1` | e14-hold-gemma-e1 | `gemma-4-12b` | *unpinned* | v9_16_e1 | 89 x 3 | ok=267 | 89/89 | 0.000000 | `fd535588658e` | `cefd4ae9` |
+| `20260810-235325Z-e15-kimi-k3` | e15-kimi-k3 | `moonshotai/kimi-k3` | DeepInfra | v9_16_base | 138 x 3 | ok=414 | 138/138 | 11.749772 | `ff7f728ca597` | `cefd4ae9` |
+| `20260810-235341Z-e16-glm-52` | e16-glm-52 | `z-ai/glm-5.2` | Sail Research | v9_16_base | 138 x 3 | ok=408, **transport_error=6** | 137/137 | 1.027984 | `ff7f728ca597` | `cefd4ae9` |
 
-**Total recorded spend: $19.4695 (lower bound) over 5114 calls.**
+**Total recorded spend: $33.4296 (lower bound) over 8606 calls.**
 
 ## Directories with no `run.json`
 
@@ -62,3 +77,4 @@ with the directory listing:
 
 - `20260804-144616Z-incumbent`
 - `20260805-130628Z-show-inputs`
+- `20260810-162043Z-modellismz-probe`

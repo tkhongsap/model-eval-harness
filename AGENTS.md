@@ -110,7 +110,12 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
 - `tests/fixtures/testsets/`: the synthetic Thai packs `evalgen` runs against.
   `retention_v1.*` (20 items, 22 scored rows) is frozen and is what Experiments 1-2 used;
   `retention_v2.*` (100 items, 108 scored rows) is Experiment 3's; `retention_v3.*`
-  (138 items, 150 scored rows) is the robustness pack used by Experiments 5 and 7.
+  (138 items, 150 scored rows) is the robustness pack used by Experiments 5 and 7. Those
+  three form a byte-exact prefix chain, discovered by glob in `tests/test_testset_pack.py`.
+  `retention_challenge_v1.*` (50 items, 64 scored rows, `RTC-*`) is **not** part of that
+  chain and is deliberately not named `v4`: longer original multi-turn calls, its own
+  gate in `tests/test_retention_challenge_pack.py`, plan in
+  `docs/retention-challenge-v1-plan.md`. No experiment has used it yet.
 - `tests/fixtures/WORKED-COMPUTATION.md`: the hand arithmetic every expectation comes from.
 - `tests/production_ref.py`: test-only scaffolding to import True's real scorer.
 - `tests/test_boundary.py`: turns "the scoring library makes no model calls" from prose
@@ -158,7 +163,7 @@ the only model call in the repository was this script's; `src/evalgen/` is now t
 other, and it is inside `src/` by design rather than by exception.) The script exists to
 answer one question, whether an OpenRouter key works through the OpenAI SDK, asked
 before any real candidate-generation work happened. It is exploratory tooling: separate
-`requirements.txt`, own `.env.example`, no import from `src/`, and it produces no scored
+`requirements.txt`, no import from `src/`, and it produces no scored
 output. Per canon, since it does make a model call, it correctly routes through
 OpenRouter rather than a provider SDK directly.
 
@@ -233,10 +238,16 @@ re-checked if either changes:
 - It contains **no customer data**, and the controls in `keys.py`, `paths.py` and
   `.gitignore` exist to keep it that way. Fixture phone numbers come from the synthetic
   block `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`), `0810000000`–`0810000999`,
-  outside anything True's systems issue. 100 of the 1000 are used, all of them in the
-  `08100000xx` hundred this block was widened from on 2026-08-06 once `retention_v2`
-  exhausted it; the wider pattern admits every number the narrower one did, so no
-  committed value changed.
+  outside anything True's systems issue. **188 of the 1000 are used, 812 free** (measured
+  2026-08-12): `0810000000`–`0810000099` for `retention_v1`/`v2` and the `block_*`
+  fixtures, `0810000101`–`0810000138` for `retention_v3`'s phase two, and
+  `0810000201`–`0810000250` for `retention_challenge_v1`. The block was widened from the
+  `08100000xx` hundred on 2026-08-06 once `retention_v2` exhausted it; the wider pattern
+  admits every number the narrower one did, so no committed value changed. *(Corrected
+  2026-08-12 — this read "100 of the 1000 are used, all of them in the `08100000xx`
+  hundred", which the widening's own first use made false. Everything remains inside the
+  sanctioned block; what was wrong was the count, which is the thing that tells anyone
+  whether the block is drifting.)*
 
 Revisit if the True GitHub Enterprise org becomes available, or if anyone outside
 True needs access.

@@ -22,7 +22,14 @@ import sys
 import types
 from pathlib import Path
 
-# Set TRUE_SOURCE_ROOT to override; defaults to the vendored archive in this repo.
+# Set TRUE_SOURCE_ROOT to override. The default resolves OUTSIDE this repository --
+# `parents[2]` is the repo's parent directory, not the repo -- so a fresh standalone
+# checkout skips the differential tests instead of silently picking up the vendored copy
+# at `production-reference/`. That is deliberate (TESTING.md:87-90): the two modes are
+# meant to prove different things, and a default that auto-discovered the in-repo tree
+# would erase the distinction. `parents[1]` would be the in-repo copy, one index away,
+# which is why this comment now says which one it is -- it previously read "the vendored
+# archive in this repo" and described the opposite of what the code does.
 DEFAULT_SOURCE = (
     Path(__file__).resolve().parents[2]
     / "production-reference"
