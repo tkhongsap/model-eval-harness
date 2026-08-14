@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Token Factory API Guide">
+  <title>Token Factory API Guide</title>
+  <style>:root {
+  color-scheme: light;
+  --ink: #14233d;
+  --muted: #52627a;
+  --line: #d7deea;
+  --paper: #ffffff;
+  --canvas: #f4f7fb;
+  --navy: #12315b;
+  --blue: #1769c2;
+  --teal: #087f78;
+  --code: #0f1b2d;
+  --code-ink: #eef6ff;
+  --warning: #805600;
+  --warning-bg: #fff7dd;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(18, 49, 91, 0.08);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--canvas);
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+a { color: #075da8; text-underline-offset: 0.16em; }
+a:hover { color: #003f77; }
+a:focus-visible, button:focus-visible {
+  outline: 3px solid #ffbf47;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  padding: 0.7rem 1rem;
+  color: #fff;
+  background: var(--navy);
+  border-radius: 8px;
+}
+.skip-link:focus { top: 1rem; }
+
+.masthead {
+  background: linear-gradient(135deg, #0d2749 0%, #164f83 65%, #087f78 100%);
+  color: #fff;
+  padding: 2.7rem max(1.25rem, calc((100vw - 1240px) / 2));
+}
+.brand { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.86; }
+.masthead h1 { max-width: 900px; margin: 0.4rem 0 0.5rem; color: #fff; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.08; }
+.masthead p { max-width: 820px; margin: 0; color: #e8f2ff; overflow-wrap: anywhere; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 900px);
+  gap: 2rem;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.toc {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-width: 100%;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+.toc strong { display: block; margin-bottom: 0.5rem; color: var(--navy); }
+.toc ul { list-style: none; margin: 0; padding: 0; }
+.toc li { margin: 0.22rem 0; }
+.toc li.level-3 { padding-left: 0.9rem; font-size: 0.92rem; }
+.toc a { display: block; padding: 0.32rem 0.45rem; color: var(--muted); text-decoration: none; border-radius: 6px; }
+.toc a:hover { color: var(--navy); background: #edf4fc; }
+
+main {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: clamp(1.3rem, 4vw, 3.25rem);
+}
+
+main > h1:first-child { display: none; }
+h1, h2, h3, h4 { color: var(--navy); line-height: 1.2; scroll-margin-top: 1.2rem; }
+h2 { margin-top: 2.7rem; padding-bottom: 0.45rem; border-bottom: 2px solid #dce7f5; font-size: 1.65rem; }
+h3 { margin-top: 2rem; font-size: 1.25rem; }
+p, li { max-width: 78ch; overflow-wrap: anywhere; }
+
+blockquote {
+  margin: 1.4rem 0;
+  padding: 0.85rem 1rem;
+  color: #5b4100;
+  background: var(--warning-bg);
+  border-left: 5px solid #dca800;
+  border-radius: 0 9px 9px 0;
+}
+blockquote p { margin: 0; }
+
+table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1.2rem 0 1.7rem;
+  font-size: 0.94rem;
+}
+th, td { padding: 0.65rem 0.75rem; text-align: left; vertical-align: top; border: 1px solid var(--line); }
+th { color: #fff; background: var(--navy); }
+tbody tr:nth-child(even) { background: #f7f9fc; }
+
+code {
+  padding: 0.12em 0.36em;
+  color: #7a1741;
+  background: #f4edf2;
+  border-radius: 4px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+}
+.code-shell { position: relative; max-width: 100%; margin: 1.2rem 0 1.7rem; }
+.code-shell pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  color: var(--code-ink);
+  background: var(--code);
+  border-radius: 10px;
+  border: 1px solid #263a56;
+}
+.code-shell pre code { padding: 0; color: inherit; background: transparent; font-size: 0.88rem; }
+.copy-button {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  padding: 0.35rem 0.6rem;
+  color: #fff;
+  background: #284564;
+  border: 1px solid #6f88a2;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+}
+.copy-button:hover { background: #355a80; }
+
+.footer {
+  max-width: 1240px;
+  margin: -2rem auto 0;
+  padding: 0 1.25rem 2rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+@media (max-width: 820px) {
+  .masthead { width: 100vw; padding: 2rem 1rem; }
+  .layout { grid-template-columns: minmax(0, 1fr); width: 100vw; max-width: 100vw; padding: 1rem; }
+  .toc, main { width: calc(100vw - 2rem); }
+  .toc { position: static; max-height: 15rem; overflow: auto; }
+  main { padding: 1.25rem; }
+}
+
+@media print {
+  :root { --canvas: #fff; --shadow: none; }
+  body { font-size: 10.5pt; }
+  .masthead { color: #000; background: #fff; padding: 0 0 1rem; border-bottom: 2px solid #000; }
+  .masthead p { color: #333; }
+  .layout { display: block; max-width: none; padding: 0; }
+  .toc, .copy-button, .skip-link { display: none; }
+  main { border: 0; box-shadow: none; padding: 0; }
+  a { color: #000; text-decoration: none; }
+  .code-shell pre { white-space: pre-wrap; color: #000; background: #f3f3f3; border-color: #bbb; }
+  h2, h3 { break-after: avoid; }
+  table, pre, blockquote { break-inside: avoid; }
+  .footer { margin: 1rem 0 0; padding: 0; }
+}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="masthead">
+    <div class="brand">Token Factory</div>
+    <h1>Token Factory API Guide</h1>
+    <p>Approved External Business Units · Version 1.0.0 · Updated 14 August 2026</p>
+  </header>
+  <div class="layout">
+    <nav class="toc" aria-label="Table of contents">
+      <strong>On this page</strong>
+      <ul><li class="level-2"><a href="#quick-start">Quick start</a></li>
+<li class="level-3"><a href="#1-load-your-api-key">1. Load your API key</a></li>
+<li class="level-3"><a href="#2-check-which-models-your-key-can-use">2. Check which models your key can use</a></li>
+<li class="level-3"><a href="#3-make-your-first-request">3. Make your first request</a></li>
+<li class="level-2"><a href="#onboarding">Onboarding</a></li>
+<li class="level-2"><a href="#base-url-and-public-interface">Base URL and public interface</a></li>
+<li class="level-2"><a href="#authentication">Authentication</a></li>
+<li class="level-2"><a href="#model-discovery">Model discovery</a></li>
+<li class="level-2"><a href="#responses-api">Responses API</a></li>
+<li class="level-3"><a href="#curl">cURL</a></li>
+<li class="level-3"><a href="#python-with-the-openai-sdk">Python with the OpenAI SDK</a></li>
+<li class="level-3"><a href="#server-side-javascript">Server-side JavaScript</a></li>
+<li class="level-2"><a href="#chat-completions-api">Chat Completions API</a></li>
+<li class="level-3"><a href="#curl-2">cURL</a></li>
+<li class="level-3"><a href="#python-with-the-openai-sdk-2">Python with the OpenAI SDK</a></li>
+<li class="level-3"><a href="#server-side-javascript-2">Server-side JavaScript</a></li>
+<li class="level-2"><a href="#streaming">Streaming</a></li>
+<li class="level-2"><a href="#supported-request-fields">Supported request fields</a></li>
+<li class="level-2"><a href="#errors-and-retries">Errors and retries</a></li>
+<li class="level-2"><a href="#limits-and-service-behavior">Limits and service behavior</a></li>
+<li class="level-2"><a href="#data-policy">Data policy</a></li>
+<li class="level-2"><a href="#support-request-checklist">Support request checklist</a></li>
+<li class="level-2"><a href="#contract-references">Contract references</a></li></ul>
+    </nav>
+    <main id="main-content" tabindex="-1"><h1 id="token-factory-api-guide">Token Factory API Guide</h1>
+<p><strong>Document version:</strong> 1.0.0 <br>
+<strong>API version:</strong> 1.0.0 POC <br>
+<strong>Last updated:</strong> 2026-08-14 <br>
+<strong>Audience:</strong> Approved External Business Units <br>
+<strong>Support and key lifecycle:</strong> <a href="mailto:Thanawat.Kaewboworn@truecorp.co.th">Thanawat.Kaewboworn@truecorp.co.th</a></p>
+<p>Token Factory provides an OpenAI-compatible HTTPS API for approved business-unit use cases. This guide covers onboarding, authentication, model discovery, Responses, Chat Completions, streaming, errors, limits, and data handling.</p>
+<blockquote>
+<p>Token Factory is a POC service. Support is best effort. There is no formal SLA or backward-compatibility commitment during the POC.</p>
+</blockquote>
+<h2 id="quick-start">Quick start</h2>
+<p>Before making a request, you need:</p>
+<ol>
+<li><strong>API key</strong> — provided by Token Factory for your approved use case.</li>
+<li><strong>Model ID</strong> — the exact <code>id</code> returned by <code>GET /v1/models</code> for your key. It identifies the model to call; it is not an API key.</li>
+</ol>
+<p>The Token Factory base URL is fixed:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">export TOKEN_FACTORY_BASE_URL='https://token-fac-api.truecorp.co.th'
+</code></pre>
+</div><h3 id="1-load-your-api-key">1. Load your API key</h3>
+<p>Load the key from your approved secret store. Do not paste it into source code, tickets, chat, or screenshots.</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">read -s -p 'Token Factory API key: ' TOKEN_FACTORY_API_KEY; echo
+export TOKEN_FACTORY_API_KEY
+</code></pre>
+</div><h3 id="2-check-which-models-your-key-can-use">2. Check which models your key can use</h3>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">curl --fail-with-body --silent --show-error \
+  &quot;$TOKEN_FACTORY_BASE_URL/v1/models&quot; \
+  -H &quot;Authorization: Bearer $TOKEN_FACTORY_API_KEY&quot;
+</code></pre>
+</div><p>Look in the returned <code>data</code> list and copy the exact value of one <code>id</code> assigned to your use case:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy json code">Copy</button><pre><code class="language-json">{
+  &quot;data&quot;: [
+    { &quot;id&quot;: &quot;&lt;MODEL_ID_RETURNED_TO_YOU&gt;&quot; }
+  ]
+}
+</code></pre>
+</div><p>Set that value as your model. For this first text request, choose a text-generation model. If you are unsure which model to select, contact Token Factory support.</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">export TOKEN_FACTORY_MODEL='&lt;PASTE_MODEL_ID_HERE&gt;'
+</code></pre>
+</div><h3 id="3-make-your-first-request">3. Make your first request</h3>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">curl --fail-with-body --silent --show-error \
+  &quot;$TOKEN_FACTORY_BASE_URL/v1/responses&quot; \
+  -H &quot;Authorization: Bearer $TOKEN_FACTORY_API_KEY&quot; \
+  -H 'Content-Type: application/json' \
+  -d &quot;{
+    \&quot;model\&quot;: \&quot;$TOKEN_FACTORY_MODEL\&quot;,
+    \&quot;input\&quot;: \&quot;Reply with exactly: TOKEN FACTORY READY\&quot;,
+    \&quot;max_output_tokens\&quot;: 32,
+    \&quot;temperature\&quot;: 0
+  }&quot;
+</code></pre>
+</div><p>If the request succeeds, the response is JSON generated by the selected model. Keep using the same base URL, API key, and model ID in your application.</p>
+<p>Clear the sensitive shell variable when you finish:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">unset TOKEN_FACTORY_API_KEY
+</code></pre>
+</div><h2 id="onboarding">Onboarding</h2>
+<p>Before integration:</p>
+<ol>
+<li>Send the use-case name, BU name, technical contact, expected traffic pattern, and fixed outbound source IP to Token Factory support.</li>
+<li>Complete the network and use-case approval process for your BU.</li>
+<li>Receive a virtual API key through an approved secret-delivery channel.</li>
+<li>Verify strict HTTPS connectivity and call <code>GET /v1/models</code>.</li>
+<li>Use only the models returned for your key.</li>
+</ol>
+<p>An API key does not constitute Security, RAI, data, or business approval. Data sent to the API must remain within the approvals held by the calling BU and use case.</p>
+<h2 id="base-url-and-public-interface">Base URL and public interface</h2>
+<p>Base URL:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy text code">Copy</button><pre><code class="language-text">https://token-fac-api.truecorp.co.th
+</code></pre>
+</div><p>Supported public methods:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/v1/models</code></td>
+<td>Discover models available to the current key</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/responses</code></td>
+<td>Generate output using the supported Responses subset</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/v1/chat/completions</code></td>
+<td>Generate output from chat-formatted messages</td>
+</tr>
+</tbody>
+</table>
+<p>Token Factory does not expose API-key management methods to BU clients. Request new, renewed, rotated, or revoked keys through the support contact.</p>
+<p>The machine-readable contract is provided in <a href="openapi.yaml">openapi.yaml</a>.</p>
+<h2 id="authentication">Authentication</h2>
+<p>Every request requires an HTTP bearer token:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy http code">Copy</button><pre><code class="language-http">Authorization: Bearer &lt;TOKEN_FACTORY_API_KEY&gt;
+</code></pre>
+</div><p>Use a server-side secret manager or protected environment variable. Never place a key in:</p>
+<ul>
+<li>browser or mobile application code;</li>
+<li>public repositories or build artifacts;</li>
+<li>client-side JavaScript bundles;</li>
+<li>URLs, query strings, logs, or analytics events;</li>
+<li>email, chat, screenshots, or support tickets.</li>
+</ul>
+<p>Use a separate key for each approved BU use case. If a key might be exposed, stop using it and request revocation and replacement.</p>
+<h2 id="model-discovery">Model discovery</h2>
+<p><code>GET /v1/models</code> is the authoritative source for model identifiers available to your key. The catalog is dynamic and is not a compatibility guarantee.</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">curl --fail-with-body --silent --show-error \
+  &quot;$TOKEN_FACTORY_BASE_URL/v1/models&quot; \
+  -H &quot;Authorization: Bearer $TOKEN_FACTORY_API_KEY&quot;
+</code></pre>
+</div><p>Example response shape:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy json code">Copy</button><pre><code class="language-json">{
+  &quot;object&quot;: &quot;list&quot;,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;&lt;MODEL_ID&gt;&quot;,
+      &quot;object&quot;: &quot;model&quot;,
+      &quot;created&quot;: 0,
+      &quot;owned_by&quot;: &quot;token-factory&quot;
+    }
+  ]
+}
+</code></pre>
+</div><p>Clients should select an <code>id</code> at runtime or keep it in configuration. Do not hard-code an assumed catalog into application logic. A new model is provisioned to a BU only after internal capability testing.</p>
+<h2 id="responses-api">Responses API</h2>
+<p>Use <code>POST /v1/responses</code> for a simple input-to-output workflow.</p>
+<h3 id="curl">cURL</h3>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">curl --fail-with-body --silent --show-error \
+  &quot;$TOKEN_FACTORY_BASE_URL/v1/responses&quot; \
+  -H &quot;Authorization: Bearer $TOKEN_FACTORY_API_KEY&quot; \
+  -H 'Content-Type: application/json' \
+  -d &quot;{
+    \&quot;model\&quot;: \&quot;$TOKEN_FACTORY_MODEL\&quot;,
+    \&quot;input\&quot;: \&quot;Summarize the benefits of API key rotation in three bullets.\&quot;,
+    \&quot;max_output_tokens\&quot;: 160,
+    \&quot;temperature\&quot;: 0.2
+  }&quot;
+</code></pre>
+</div><h3 id="python-with-the-openai-sdk">Python with the OpenAI SDK</h3>
+<p>Install an OpenAI SDK version that supports the Responses API, then set the Token Factory base URL:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy python code">Copy</button><pre><code class="language-python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ[&quot;TOKEN_FACTORY_API_KEY&quot;],
+    base_url=&quot;https://token-fac-api.truecorp.co.th/v1&quot;,
+)
+
+response = client.responses.create(
+    model=os.environ[&quot;TOKEN_FACTORY_MODEL&quot;],
+    input=&quot;Reply with exactly: TOKEN FACTORY READY&quot;,
+    max_output_tokens=32,
+    temperature=0,
+)
+
+print(response.output_text)
+</code></pre>
+</div><h3 id="server-side-javascript">Server-side JavaScript</h3>
+<p>This example requires Node.js 18 or newer. It must run on a trusted server, never in a browser or frontend bundle.</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy javascript code">Copy</button><pre><code class="language-javascript">const baseUrl = &quot;https://token-fac-api.truecorp.co.th&quot;;
+const apiKey = process.env.TOKEN_FACTORY_API_KEY;
+const model = process.env.TOKEN_FACTORY_MODEL;
+
+if (!apiKey || !model) {
+  throw new Error(&quot;TOKEN_FACTORY_API_KEY and TOKEN_FACTORY_MODEL are required&quot;);
+}
+
+const response = await fetch(`${baseUrl}/v1/responses`, {
+  method: &quot;POST&quot;,
+  headers: {
+    Authorization: `Bearer ${apiKey}`,
+    &quot;Content-Type&quot;: &quot;application/json&quot;,
+  },
+  body: JSON.stringify({
+    model,
+    input: &quot;Reply with exactly: TOKEN FACTORY READY&quot;,
+    max_output_tokens: 32,
+    temperature: 0,
+  }),
+});
+
+if (!response.ok) {
+  throw new Error(`Token Factory HTTP ${response.status}: ${await response.text()}`);
+}
+
+console.log(await response.json());
+</code></pre>
+</div><h2 id="chat-completions-api">Chat Completions API</h2>
+<p>Use <code>POST /v1/chat/completions</code> when your application already uses role-based chat messages.</p>
+<h3 id="curl-2">cURL</h3>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">curl --fail-with-body --silent --show-error \
+  &quot;$TOKEN_FACTORY_BASE_URL/v1/chat/completions&quot; \
+  -H &quot;Authorization: Bearer $TOKEN_FACTORY_API_KEY&quot; \
+  -H 'Content-Type: application/json' \
+  -d &quot;{
+    \&quot;model\&quot;: \&quot;$TOKEN_FACTORY_MODEL\&quot;,
+    \&quot;messages\&quot;: [
+      {\&quot;role\&quot;: \&quot;system\&quot;, \&quot;content\&quot;: \&quot;Answer concisely.\&quot;},
+      {\&quot;role\&quot;: \&quot;user\&quot;, \&quot;content\&quot;: \&quot;What is key rotation?\&quot;}
+    ],
+    \&quot;max_tokens\&quot;: 160,
+    \&quot;temperature\&quot;: 0.2
+  }&quot;
+</code></pre>
+</div><h3 id="python-with-the-openai-sdk-2">Python with the OpenAI SDK</h3>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy python code">Copy</button><pre><code class="language-python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ[&quot;TOKEN_FACTORY_API_KEY&quot;],
+    base_url=&quot;https://token-fac-api.truecorp.co.th/v1&quot;,
+)
+
+completion = client.chat.completions.create(
+    model=os.environ[&quot;TOKEN_FACTORY_MODEL&quot;],
+    messages=[
+        {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;Answer concisely.&quot;},
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;What is key rotation?&quot;},
+    ],
+    max_tokens=160,
+    temperature=0.2,
+)
+
+print(completion.choices[0].message.content)
+</code></pre>
+</div><h3 id="server-side-javascript-2">Server-side JavaScript</h3>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy javascript code">Copy</button><pre><code class="language-javascript">const response = await fetch(
+  &quot;https://token-fac-api.truecorp.co.th/v1/chat/completions&quot;,
+  {
+    method: &quot;POST&quot;,
+    headers: {
+      Authorization: `Bearer ${process.env.TOKEN_FACTORY_API_KEY}`,
+      &quot;Content-Type&quot;: &quot;application/json&quot;,
+    },
+    body: JSON.stringify({
+      model: process.env.TOKEN_FACTORY_MODEL,
+      messages: [
+        { role: &quot;system&quot;, content: &quot;Answer concisely.&quot; },
+        { role: &quot;user&quot;, content: &quot;What is key rotation?&quot; },
+      ],
+      max_tokens: 160,
+      temperature: 0.2,
+    }),
+  },
+);
+
+if (!response.ok) {
+  throw new Error(`Token Factory HTTP ${response.status}: ${await response.text()}`);
+}
+
+const body = await response.json();
+console.log(body.choices[0].message.content);
+</code></pre>
+</div><h2 id="streaming">Streaming</h2>
+<p>Set <code>stream</code> to <code>true</code> to request Server-Sent Events. Process events incrementally and stop when the stream sends its terminal event or <code>[DONE]</code>.</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy bash code">Copy</button><pre><code class="language-bash">curl --no-buffer --fail-with-body --silent --show-error \
+  &quot;$TOKEN_FACTORY_BASE_URL/v1/chat/completions&quot; \
+  -H &quot;Authorization: Bearer $TOKEN_FACTORY_API_KEY&quot; \
+  -H 'Content-Type: application/json' \
+  -d &quot;{
+    \&quot;model\&quot;: \&quot;$TOKEN_FACTORY_MODEL\&quot;,
+    \&quot;messages\&quot;: [{\&quot;role\&quot;: \&quot;user\&quot;, \&quot;content\&quot;: \&quot;Count from one to five.\&quot;}],
+    \&quot;max_tokens\&quot;: 64,
+    \&quot;stream\&quot;: true
+  }&quot;
+</code></pre>
+</div><p>Python:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy python code">Copy</button><pre><code class="language-python">import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ[&quot;TOKEN_FACTORY_API_KEY&quot;],
+    base_url=&quot;https://token-fac-api.truecorp.co.th/v1&quot;,
+)
+
+stream = client.chat.completions.create(
+    model=os.environ[&quot;TOKEN_FACTORY_MODEL&quot;],
+    messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Count from one to five.&quot;}],
+    max_tokens=64,
+    stream=True,
+)
+
+for chunk in stream:
+    if chunk.choices and chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end=&quot;&quot;, flush=True)
+</code></pre>
+</div><p>Server-side JavaScript:</p>
+<div class="code-shell"><button class="copy-button" type="button" aria-label="Copy javascript code">Copy</button><pre><code class="language-javascript">const response = await fetch(
+  &quot;https://token-fac-api.truecorp.co.th/v1/chat/completions&quot;,
+  {
+    method: &quot;POST&quot;,
+    headers: {
+      Authorization: `Bearer ${process.env.TOKEN_FACTORY_API_KEY}`,
+      &quot;Content-Type&quot;: &quot;application/json&quot;,
+    },
+    body: JSON.stringify({
+      model: process.env.TOKEN_FACTORY_MODEL,
+      messages: [{ role: &quot;user&quot;, content: &quot;Count from one to five.&quot; }],
+      max_tokens: 64,
+      stream: true,
+    }),
+  },
+);
+
+if (!response.ok || !response.body) {
+  throw new Error(`Token Factory HTTP ${response.status}`);
+}
+
+for await (const chunk of response.body) {
+  process.stdout.write(Buffer.from(chunk).toString(&quot;utf8&quot;));
+}
+</code></pre>
+</div><h2 id="supported-request-fields">Supported request fields</h2>
+<p>The POC contract intentionally exposes a small subset. Fields outside this table are unsupported unless Token Factory confirms them in writing.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Supported request fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Responses</td>
+<td><code>model</code>, <code>input</code>, <code>stream</code>, <code>max_output_tokens</code>, <code>temperature</code>, <code>top_p</code></td>
+</tr>
+<tr>
+<td>Chat Completions</td>
+<td><code>model</code>, <code>messages</code>, <code>stream</code>, <code>max_tokens</code>, <code>temperature</code>, <code>top_p</code></td>
+</tr>
+</tbody>
+</table>
+<p>The current Responses contract accepts text input only. Model-specific capabilities such as image input can differ and may use Chat Completions instead. Confirm the capability assigned to your use case before sending non-text content.</p>
+<h2 id="errors-and-retries">Errors and retries</h2>
+<p>Error bodies normally contain an <code>error</code> object or string. Clients must not depend on one exact error message.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Status</th>
+<th>Meaning</th>
+<th>Client action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right"><code>400</code></td>
+<td>Malformed JSON or invalid input</td>
+<td>Correct the request; do not retry unchanged</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>401</code></td>
+<td>Missing, invalid, expired, or suspended key</td>
+<td>Load the correct key or contact support</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>403</code></td>
+<td>Source, key, model, or action is not authorized</td>
+<td>Confirm onboarding and model assignment</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>404</code></td>
+<td>Model is unavailable to the current key</td>
+<td>Refresh <code>/v1/models</code> and select a returned identifier</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>429</code></td>
+<td>Capacity control or emergency throttling</td>
+<td>Honor <code>Retry-After</code> when present; otherwise use backoff</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>500</code></td>
+<td>Processing error</td>
+<td>Retry a small number of times, then report the request time</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>502</code></td>
+<td>Upstream model failure</td>
+<td>Retry with backoff; report persistent failures</td>
+</tr>
+<tr>
+<td style="text-align:right"><code>503</code></td>
+<td>Service or model temporarily unavailable</td>
+<td>Retry with backoff or choose another approved model</td>
+</tr>
+</tbody>
+</table>
+<p>Recommended retry policy for <code>429</code>, <code>500</code>, <code>502</code>, and <code>503</code>:</p>
+<ol>
+<li>Retry no more than three times.</li>
+<li>Use exponential backoff with jitter, for example 1, 2, then 4 seconds plus a small random delay.</li>
+<li>Do not retry <code>400</code>, <code>401</code>, <code>403</code>, or <code>404</code> without changing the request or configuration.</li>
+<li>Use application timeouts and cancellation. Do not leave requests open indefinitely.</li>
+<li>Never log the Authorization header while troubleshooting.</li>
+</ol>
+<p>Fields outside the supported request table may be rejected or ignored. Do not depend on an unlisted field even if one request returns <code>200</code>.</p>
+<h2 id="limits-and-service-behavior">Limits and service behavior</h2>
+<ul>
+<li>During the first 30 days after key activation, no per-key RPM, TPM, or budget limit is configured by default. This is not a capacity guarantee.</li>
+<li>Planned limit changes will be communicated at least two business days in advance.</li>
+<li>Token Factory may apply immediate throttling or suspension when security, abuse, or capacity risk requires it.</li>
+<li>Key validity defaults to 90 days and can be renewed.</li>
+<li>Keys are provisioned by Thanawat Kaewboworn only.</li>
+<li>A key can be activated while Security or RAI approval evidence is pending. The approval reference must be supplied within 10 business days of activation or the key may be suspended.</li>
+<li>The model catalog and model behavior can change during the POC. Clients must check <code>/v1/models</code> and handle unavailable models.</li>
+<li>The POC has no formal backward-compatibility commitment. Validate critical client behavior before each release.</li>
+</ul>
+<h2 id="data-policy">Data policy</h2>
+<ul>
+<li>Send only data permitted by the BU's approved use case. Receiving an API key is not approval to send data.</li>
+<li>Operational API logging is metadata-only by default. Metadata can include key alias or hash, BU/team, model, request time, token counts, latency, status, and endpoint.</li>
+<li>Prompts, responses, images, audio, documents, and business payloads are not retained in operational logs by default.</li>
+<li>Prompt and response content may be retained only when the BU explicitly opts in to a separate evaluation dataset.</li>
+<li>An evaluation dataset must have separate access control and must be deleted within 90 days.</li>
+<li>Do not send secrets, credentials, production tokens, or data outside the approved classification and purpose.</li>
+</ul>
+<h2 id="support-request-checklist">Support request checklist</h2>
+<p>Send the following to <a href="mailto:Thanawat.Kaewboworn@truecorp.co.th">Thanawat.Kaewboworn@truecorp.co.th</a>:</p>
+<ul>
+<li>BU and use-case name;</li>
+<li>UTC or Thailand timestamp and timezone;</li>
+<li>method and path, without query secrets;</li>
+<li>HTTP status;</li>
+<li>selected model identifier;</li>
+<li>whether the failure is consistent or intermittent;</li>
+<li>sanitized error body;</li>
+<li>client-side latency;</li>
+<li>key alias if known, never the key value.</li>
+</ul>
+<p>Do not attach request payloads containing business data unless a separate secure diagnostic exchange is approved.</p>
+<h2 id="contract-references">Contract references</h2>
+<p>Token Factory follows the relevant OpenAI-compatible shapes while exposing only the subset defined in <a href="openapi.yaml">openapi.yaml</a>:</p>
+<ul>
+<li><a href="https://developers.openai.com/api/reference/resources/models">OpenAI Models API</a></li>
+<li><a href="https://developers.openai.com/api/reference/resources/responses/methods/create">OpenAI Responses API</a></li>
+<li><a href="https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create">OpenAI Chat Completions API</a></li>
+<li><a href="https://docs.litellm.ai/">LiteLLM documentation</a></li>
+<li><a href="https://docs.vllm.ai/en/v0.23.0/serving/online_serving/">vLLM OpenAI-compatible server</a></li>
+</ul>
+<p>OpenRouter documentation was reviewed for compatibility comparison only. OpenRouter-specific management methods are not part of Token Factory.</p>
+</main>
+  </div>
+  <footer class="footer">Token Factory POC documentation · Contact: Thanawat.Kaewboworn@truecorp.co.th</footer>
+  <script>
+    document.querySelectorAll('.copy-button').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const code = button.parentElement.querySelector('code').innerText;
+        await navigator.clipboard.writeText(code);
+        const previous = button.textContent;
+        button.textContent = 'Copied';
+        window.setTimeout(() => { button.textContent = previous; }, 1200);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -234,7 +234,13 @@ settled, not overlooked. Two conditions that make it defensible, and that should
 re-checked if either changes:
 
 - The repository **must stay private**. It cites internal SharePoint site names,
-  production file paths and line numbers.
+  production file paths and line numbers — and, since 2026-08-14, True's internal Token
+  Factory endpoint: its hostname, the RFC1918 address the probes pin
+  (`token-factory-probe.ps1`, `scripts/token_factory_probe.py`) and the support contact
+  named in the vendored `Token_Factory_API_Guide.md`. That is a **new category** of
+  internal detail — network topology and a named individual — so it is listed here rather
+  than folded into "file paths". No credential is committed: the key lives only in the
+  gitignored `.env`, and `.env.example` carries an empty `TOKEN_FACTORY_API_KEY=`.
 - It contains **no customer data**, and the controls in `keys.py`, `paths.py` and
   `.gitignore` exist to keep it that way. Fixture phone numbers come from the synthetic
   block `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`), `0810000000`–`0810000999`,
