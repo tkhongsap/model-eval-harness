@@ -14,6 +14,16 @@ Then, back where the soak ran:
     cp gpu.jsonl out/soak/<run>/gpu.jsonl
     python scripts/soak_report.py out/soak/<run>
 
+**If you cannot copy the file off the host** -- the common case, since the only open port there
+serves the chat API -- summarise it in place and send the ~23 lines instead:
+
+    python3 gpu_telemetry.py --summarise gpu.jsonl
+
+That prints GPU utilization, VRAM, temperature and power as min/mean/p95/max, plus KV-cache
+occupancy, queue depth and preemptions, plus five-minute buckets stamped with epoch time. The
+buckets are what let the numbers be joined back to the load phases without the raw file, so
+this is a complete substitute for the four required metrics, only coarser in time.
+
 **Standard library only, Python 3.8+.** No pip install, nothing to provision -- it has to run
 on a machine nobody wants to change.
 
@@ -108,8 +118,72 @@ def scrape_prometheus(url: str, keep: tuple[str, ...]) -> dict:
     return out
 
 
+def summarise(path: str) -> int:
+    """Print a paste-sized digest of an existing gpu.jsonl.
+
+    Exists because the realistic failure mode is not "nobody collected the data", it is
+    "nobody can get a 240 KB file off a host whose only open port serves the chat API". This
+    output is about 23 lines and carries every required metric; the five-minute buckets are
+    epoch-stamped so they can still be joined to the load phases afterwards.
+    """
+    import statistics
+
+    try:
+        rows = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
+    except OSError as exc:
+        print(f"cannot read {path}: {exc}", file=sys.stderr)
+        return 2
+    rolls = [r["rollup"] for r in rows if isinstance(r.get("rollup"), dict)]
+    if not rolls:
+        print(f"{path} has no rollup rows -- was it written by this script?", file=sys.stderr)
+        return 2
+
+    def stat(key: str):
+        vals = [r[key] for r in rolls if r.get(key) is not None]
+        if not vals:
+            return None
+        return (min(vals), round(statistics.mean(vals), 1),
+                sorted(vals)[int(.95 * len(vals))], max(vals))
+
+    print(f"samples {len(rolls)} span_min "
+          f"{round((rows[-1]['ts'] - rows[0]['ts']) / 60, 1)}")
+    print(f"vram_total_mib {rolls[0].get('vram_total_mib')} "
+          f"gpus {len(rows[0].get('gpus') or [])}")
+    print("METRIC min mean p95 max")
+    for key in ("util_pct_mean", "vram_used_pct", "vram_used_mib", "temp_c_max",
+                "power_w_total"):
+        print(key, stat(key))
+
+    print("BUCKETS ts util vram% temp power")
+    buckets: dict[int, list[dict]] = {}
+    for row in rows:
+        if isinstance(row.get("rollup"), dict):
+            buckets.setdefault(int(row["ts"] // 300) * 300, []).append(row["rollup"])
+    for stamp in sorted(buckets):
+        group = buckets[stamp]
+
+        def col(name: str) -> list[float]:
+            return [g[name] for g in group if g.get(name) is not None] or [0]
+        print(stamp, round(statistics.mean(col("util_pct_mean")), 1),
+              round(statistics.mean(col("vram_used_pct")), 1),
+              max(col("temp_c_max")), round(statistics.mean(col("power_w_total"))))
+
+    vllm = [r["vllm"] for r in rows
+            if isinstance(r.get("vllm"), dict) and "error" not in r["vllm"]]
+    for label, key in (("kv_cache", "vllm:gpu_cache_usage_perc"),
+                       ("waiting", "vllm:num_requests_waiting"),
+                       ("preemptions", "vllm:num_preemptions_total")):
+        vals = [v[key] for v in vllm if v.get(key) is not None]
+        if vals:
+            print(label, min(vals), round(statistics.mean(vals), 3), max(vals))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="gpu_telemetry", description=__doc__.splitlines()[0])
+    ap.add_argument("--summarise", metavar="GPU_JSONL", default=None,
+                    help="digest an existing gpu.jsonl to ~23 pasteable lines and exit; "
+                         "use when the raw file cannot leave the host")
     ap.add_argument("--out", default="gpu.jsonl")
     ap.add_argument("--interval", type=float, default=5.0, help="seconds between samples")
     ap.add_argument("--duration", type=float, default=0.0, help="seconds; 0 = until Ctrl-C")
@@ -118,6 +192,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dcgm", default=None,
                     metavar="URL", help="DCGM exporter, e.g. http://127.0.0.1:9400/metrics")
     args = ap.parse_args(argv)
+
+    if args.summarise:
+        return summarise(args.summarise)
 
     probe = sample_nvidia_smi()
     if probe is None:

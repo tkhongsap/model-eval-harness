@@ -1,0 +1,520 @@
+<title>Four-Model GPU Benchmark</title>
+<style>
+:root{--ground:#F4F6F8;--raised:#FFF;--sunken:#EDF0F3;--ink:#151B23;--ink-muted:#57626F;
+--ink-faint:#838E9C;--hairline:#DDE2E8;--hairline-firm:#C3CBD4;--s-prod:#2E74B5;
+--s-ours:#C2661A;--s-best:#1F6F4A;--st-bad:#B3261E;--st-bad-bg:#FBEDEC;--st-good:#1F6F4A;
+--st-good-bg:#EAF4EF;--st-unk:#64707E;--st-unk-bg:#EEF1F4;--track:#E4E8ED;
+--shadow:0 1px 2px rgba(21,27,35,.05),0 4px 14px rgba(21,27,35,.045);
+--serif:"Charter","Bitstream Charter","Iowan Old Style",Cambria,Georgia,serif;
+--sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+--mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#11151A;
+--raised:#191F26;--sunken:#151A20;--ink:#E4E9EF;--ink-muted:#9AA5B2;--ink-faint:#6F7B89;
+--hairline:#29313A;--hairline-firm:#3A444F;--s-prod:#4E90CE;--s-ours:#CE7C2E;--s-best:#5FBF90;
+--st-bad:#E8776C;--st-bad-bg:#2C1B1A;--st-good:#5FBF90;--st-good-bg:#14261E;--st-unk:#8B96A3;
+--st-unk-bg:#1E242B;--track:#232B33;
+--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3)}}
+:root[data-theme="dark"]{--ground:#11151A;--raised:#191F26;--sunken:#151A20;--ink:#E4E9EF;
+--ink-muted:#9AA5B2;--ink-faint:#6F7B89;--hairline:#29313A;--hairline-firm:#3A444F;
+--s-prod:#4E90CE;--s-ours:#CE7C2E;--s-best:#5FBF90;--st-bad:#E8776C;--st-bad-bg:#2C1B1A;
+--st-good:#5FBF90;--st-good-bg:#14261E;--st-unk:#8B96A3;--st-unk-bg:#1E242B;--track:#232B33;
+--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3)}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;
+line-height:1.6;margin:0;padding:0 20px 64px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto}
+header{padding:48px 0 22px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+color:var(--ink-muted);margin:0 0 14px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(29px,4.3vw,42px);line-height:1.05;
+letter-spacing:-.02em;margin:0 0 12px;text-wrap:balance}
+.standfirst{font-family:var(--serif);font-size:clamp(16.5px,2vw,19.5px);line-height:1.5;
+color:var(--ink-muted);margin:0;max-width:64ch}
+.safe{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
+font-weight:600;letter-spacing:.05em;padding:7px 12px;border-radius:2px;margin-top:18px;
+color:var(--st-good);background:var(--st-good-bg);text-transform:uppercase}
+.safe::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+section{padding-top:42px}
+h2{font-family:var(--serif);font-size:clamp(20px,2.7vw,26px);font-weight:700;
+letter-spacing:-.015em;line-height:1.15;margin:0 0 8px;text-wrap:balance}
+.lede{color:var(--ink-muted);margin:0 0 4px;max-width:72ch}
+p{margin:0 0 13px;max-width:72ch}
+figure{margin:20px 0 0}
+figcaption{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+color:var(--ink-faint);margin-bottom:12px}
+.chartbox{background:var(--raised);border:1px solid var(--hairline);padding:20px 22px}
+svg{display:block;max-width:100%;height:auto}
+svg text{font-family:var(--mono);fill:var(--ink-muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin-bottom:12px;font-family:var(--mono);
+font-size:11.5px;color:var(--ink-muted)}
+.legend span{display:inline-flex;align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px}
+.scroller{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--raised);
+font-variant-numeric:tabular-nums;min-width:620px}
+caption{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.11em;
+text-transform:uppercase;color:var(--ink-faint);padding-bottom:11px}
+th,td{padding:9px 11px;text-align:right;border-bottom:1px solid var(--hairline);
+vertical-align:top}
+th:first-child,td:first-child{text-align:left}
+thead th{font-family:var(--mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+color:var(--ink-faint);font-weight:500;border-bottom:1px solid var(--hairline-firm)}
+tbody td{font-family:var(--mono)}
+tbody th{font-family:var(--mono);font-weight:600;font-size:12.5px}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:0}
+.prod-row td,.prod-row th{background:var(--sunken)}
+.best{font-weight:700;color:var(--ink)}
+.tag{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;
+letter-spacing:.03em;padding:3px 6px;border-radius:2px;white-space:nowrap}
+.t-good{color:var(--st-good);background:var(--st-good-bg)}
+.t-bad{color:var(--st-bad);background:var(--st-bad-bg)}
+.t-unk{color:var(--st-unk);background:var(--st-unk-bg)}
+.sub{display:block;font-family:var(--sans);font-size:11px;color:var(--ink-faint);
+margin-top:3px;font-weight:400;letter-spacing:0;text-transform:none}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;
+margin-top:20px}
+.card{background:var(--raised);border:1px solid var(--hairline);border-top:3px solid var(--rail);
+padding:16px 18px 18px;box-shadow:var(--shadow)}
+.card h3{font-family:var(--mono);font-size:13px;margin:0 0 3px;font-weight:600}
+.card .cls{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin:0 0 10px}
+.card p{font-size:13.5px;line-height:1.5;color:var(--ink-muted);margin:0}
+.card code{font-size:12px;background:var(--sunken);padding:1px 4px;border-radius:2px}
+.callout{background:var(--raised);border:1px solid var(--hairline);
+border-left:3px solid var(--st-unk);padding:18px 20px;margin-top:20px}
+.callout.warn{border-left-color:var(--st-bad)}
+.callout h3{font-size:15px;margin:0 0 8px;font-weight:650}
+.callout p{font-size:14px;color:var(--ink-muted);margin:0 0 10px}
+.callout p:last-child{margin:0}
+.big{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--ink)}
+.note{font-size:13px;line-height:1.55;color:var(--ink-muted);border-left:2px solid
+var(--hairline-firm);padding:2px 0 2px 13px;margin:16px 0 0;max-width:74ch}
+footer{margin-top:46px;padding-top:18px;border-top:2px solid var(--ink);font-family:var(--mono);
+font-size:11.5px;color:var(--ink-faint);line-height:1.7}
+#tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--ink);
+color:var(--ground);font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:3px;
+z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.hit{cursor:crosshair}
+</style>
+<div id="tip" role="status" aria-live="off"></div>
+<div class="wrap">
+
+<header>
+  <p class="kicker">True &middot; Retention call labelling &middot; 138 transcripts
+  &middot; 414 calls per model</p>
+  <h1>Four models, one evaluation</h1>
+  <p class="standfirst">Production Gemini&nbsp;2.5&nbsp;Flash against three models running on
+  True&rsquo;s own GPU, measured on accuracy, tokens and speed. Every figure on this page is
+  computed from the recorded per-call logs.</p>
+  <div class="safe">Synthetic test set &middot; no customer data</div>
+</header>
+
+<section id="accuracy">
+  <h2>1. Accuracy</h2>
+  <p class="lede">Weighted F1, 0 to 1, higher is better. All four models saw the same
+  138 transcripts, the same prompt and the same settings, and were scored by
+  identical code. One chart per label type, because the three are scored differently and must
+  not be averaged together.</p>
+  <figure>
+    <figcaption>Weighted F1 by label type &middot; each scale starts at zero</figcaption>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--s-prod)"></i>Gemini 2.5 Flash &mdash; production</span>
+      <span><i class="sw" style="background:var(--s-ours)"></i>Running on our own GPU</span>
+    </div>
+    <div class="chartbox scroller"><div id="c-f1"></div></div>
+  </figure>
+  <div class="scroller" style="margin-top:22px">
+    <table><caption>Weighted F1, and the verdict against production Gemini</caption>
+    <thead><tr><th>Model</th><th>Call outcome</th><th>Reason</th><th>Product</th>
+    <th>Verdict vs Gemini</th></tr></thead>
+    <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash<span class=sub>production</span></th><td>0.955</td><td class=best>0.838</td><td class=best>0.960</td><td><span class="tag t-unk">REFERENCE</span></td></tr><tr><th scope=row>Qwen3.8 27B<span class=sub>our GPU</span></th><td class=best>0.966</td><td>0.834</td><td>0.950</td><td><span class="tag t-good">NO DIMENSION WORSE</span></td></tr><tr><th scope=row>Qwen3.6 27B<span class=sub>our GPU</span></th><td>0.962</td><td>0.821</td><td>0.932</td><td><span class="tag t-good">NO DIMENSION WORSE</span></td></tr><tr><th scope=row>Gemma 4 12B<span class=sub>our GPU</span></th><td>0.929</td><td>0.792</td><td>0.933</td><td><span class="tag t-bad">WORSE ON ALL THREE</span></td></tr></tbody></table>
+  </div>
+  <h3 style="font-size:16px;font-weight:650;margin:34px 0 6px">How the verdict is decided</h3>
+  <p class="lede">On most calls both models give the same answer, and those tell you nothing
+  about which is better. Only the calls where <em>one was right and the other wrong</em> carry
+  information. The question is then simply: <strong>is that scoreboard lopsided enough that
+  chance cannot explain it?</strong></p>
+
+  <div class="callout">
+    <h3>Worked example &mdash; Qwen3.8 on call outcome</h3>
+    <p>Of 138 calls, both models got <span class="big">128</span> right and
+    both got <span class="big">7</span> wrong. Those 135 are ties and are set aside. That leaves
+    <span class="big">3</span> calls where they differed: Qwen3.8 won 2, Gemini won 1.</p>
+    <p><strong>2&ndash;1 proves nothing.</strong> With only 3 disagreements, even a clean
+    3&ndash;0 sweep would happen by luck once in 8 times, and the bar for calling a result is
+    once in 64. So at 3 disagreements <em>no</em> outcome can clear the bar &mdash; which is why
+    the row reads &ldquo;too few disagreements to judge&rdquo; rather than naming a winner.
+    <strong>Six differences is the minimum</strong> that makes any verdict possible, because a
+    6&ndash;0 sweep is exactly a 1-in-64 event.</p>
+    <p>The required margin grows with the number of disagreements: at 28 differences you need a
+    14-point gap, and Qwen3.8&rsquo;s reason score fell 8 short of it &mdash; hence &ldquo;no
+    real difference&rdquo;. Gemma&rsquo;s call-outcome gap of 10 out of 12 differences landed
+    exactly on its threshold, so that one <em>does</em> count.</p>
+  </div>
+
+  <p class="lede" style="margin-top:26px">Every comparison below is
+  <strong>Gemini against one challenger</strong>, on the same
+  138 calls. The four counts on each row are what happened on those calls,
+  and they always add up to 138. Only the last two columns decide the
+  verdict &mdash; the first two are ties.</p>
+
+  <div class="scroller" style="margin-top:26px">
+    <table><caption>Call outcome &mdash; 138 calls each</caption>
+    <thead><tr><th>Head to head</th>
+      <th>Both<br>right</th><th>Both<br>wrong</th>
+      <th>Only Gemini<br>right</th><th>Only other<br>right</th>
+      <th style="text-align:left">Verdict</th></tr></thead>
+    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>128</td><td>7</td><td class="">1</td><td class="best">2</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>3 disagreements, need 6</span></td></tr><tr><th scope=row>Gemini vs Qwen3.6</th><td>125</td><td>6</td><td class="best">4</td><td class="">3</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 1, need 7</span></td></tr><tr><th scope=row>Gemini vs Gemma 4</th><td>118</td><td>8</td><td class="best">11</td><td class="">1</td><td style="text-align:left"><span class="tag t-bad">GEMINI BETTER</span><span class=sub>gap 10, need 10</span></td></tr></tbody></table>
+  </div>
+  <p style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:6px 0 0">
+    every row adds up &mdash; e.g. 128 + 7 + 1 + 2 = 138</p>
+
+  <div class="scroller" style="margin-top:26px">
+    <table><caption>Reason &mdash; 138 calls each</caption>
+    <thead><tr><th>Head to head</th>
+      <th>Both<br>right</th><th>Both<br>wrong</th>
+      <th>Only Gemini<br>right</th><th>Only other<br>right</th>
+      <th style="text-align:left">Verdict</th></tr></thead>
+    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>64</td><td>46</td><td class="best">18</td><td class="">10</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 8, need 14</span></td></tr><tr><th scope=row>Gemini vs Qwen3.6</th><td>67</td><td>42</td><td class="best">15</td><td class="">14</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 1, need 13</span></td></tr><tr><th scope=row>Gemini vs Gemma 4</th><td>61</td><td>48</td><td class="best">21</td><td class="">8</td><td style="text-align:left"><span class="tag t-bad">GEMINI BETTER</span><span class=sub>gap 13, need 13</span></td></tr></tbody></table>
+  </div>
+  <p style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:6px 0 0">
+    every row adds up &mdash; e.g. 64 + 46 + 18 + 10 = 138</p>
+
+  <div class="scroller" style="margin-top:26px">
+    <table><caption>Product &mdash; 138 calls each</caption>
+    <thead><tr><th>Head to head</th>
+      <th>Both<br>right</th><th>Both<br>wrong</th>
+      <th>Only Gemini<br>right</th><th>Only other<br>right</th>
+      <th style="text-align:left">Verdict</th></tr></thead>
+    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>132</td><td>5</td><td class="best">1</td><td class="">0</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>1 disagreement, need 6</span></td></tr><tr><th scope=row>Gemini vs Qwen3.6</th><td>129</td><td>5</td><td class="best">4</td><td class="">0</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>4 disagreements, need 6</span></td></tr><tr><th scope=row>Gemini vs Gemma 4</th><td>124</td><td>5</td><td class="best">9</td><td class="">0</td><td style="text-align:left"><span class="tag t-bad">GEMINI BETTER</span><span class=sub>gap 9, need 9</span></td></tr></tbody></table>
+  </div>
+  <p style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:6px 0 0">
+    every row adds up &mdash; e.g. 132 + 5 + 1 + 0 = 138</p>
+  <div class="note">Two things this makes visible that an average cannot.
+  <strong>First, why so many verdicts are &ldquo;too few to call&rdquo;:</strong> on product the
+  models agree on almost every call, so there is barely anything left to measure &mdash; that is
+  not a pass and not a fail, it means this test set cannot separate them.
+  <strong>Second, why Reason scores lower for everyone:</strong> on that dimension
+  46&ndash;48
+  of the 138 calls were failed by <em>both</em> models. It is hard for
+  everything we tested, not a weakness of one model.</div>
+</section>
+
+<section id="tokens">
+  <h2>2. Input and output tokens</h2>
+  <p class="lede">How much text each model consumed and produced for the identical workload.
+  Shown per call; totals are in the table. Two separate charts with two scales, because input is
+  roughly twelve times output and a shared axis would flatten the output panel to nothing.</p>
+  <figure>
+    <figcaption>Tokens per call &middot; two scales, never one axis for both</figcaption>
+    <div class="chartbox scroller"><div id="c-tok"></div></div>
+  </figure>
+  <div class="scroller" style="margin-top:22px">
+    <table><caption>Token usage over 414 calls per model</caption>
+    <thead><tr><th>Model</th><th>Input total</th><th>Input per call</th>
+    <th>Output total</th><th>Output per call</th></tr></thead>
+    <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash</th><td>1,237,746</td><td>2,990</td><td>86,449</td><td class=best>209</td></tr><tr><th scope=row>Qwen3.8 27B</th><td>1,131,948</td><td class=best>2,734</td><td>95,036</td><td>230</td></tr><tr><th scope=row>Qwen3.6 27B</th><td>1,131,948</td><td class=best>2,734</td><td>95,337</td><td>230</td></tr><tr><th scope=row>Gemma 4 12B</th><td>1,245,198</td><td>3,008</td><td>104,839</td><td>253</td></tr></tbody></table>
+  </div>
+  <div class="note"><strong>Both Qwen versions use exactly the same input tokens
+  (1,131,948) &mdash; identical on all
+  414 calls.</strong> That is expected rather than suspicious: they share a
+  tokenizer and were fed byte-identical prompts, and it is a positive integrity signal. Against
+  Gemini they need <strong>8.5% fewer input tokens</strong> for the same Thai text,
+  which matters on a metered API and not at all on hardware we own. Gemma&rsquo;s tokenizer is
+  the least efficient of the four on both input and output.</div>
+</section>
+
+<section id="latency">
+  <h2>3. Speed on our own GPU</h2>
+  <p class="lede">End-to-end response time &mdash; request sent to complete response received.
+  All three ran at concurrency 4 against the same vLLM host, so these
+  rows are directly comparable with each other.</p>
+  <div class="note" style="margin-top:12px"><strong>Why Gemini is not in this table.</strong>
+  For reference it answered in <strong>2.047 s</strong> at the
+  median and cost <strong>$0.5616</strong> for the same
+  414 calls &mdash; but it ran at concurrency 8 over the
+  public internet rather than concurrency 4 on our own network. Two
+  things differ besides the model, so putting it in the same table would invite a speed
+  comparison the measurement cannot support. Cost is left out of the table for the same reason:
+  the self-hosted endpoint reports no cost field at all, so those cells would be placeholders
+  rather than measurements.</div>
+  <figure>
+    <figcaption>End-to-end latency per call &middot; median, 95th percentile, maximum</figcaption>
+    <div class="chartbox scroller"><div id="c-lat"></div></div>
+  </figure>
+  <div class="scroller" style="margin-top:22px">
+    <table><caption>Our three GPU models over 414 calls each, concurrency
+    4</caption>
+    <thead><tr><th>Model</th><th>p50</th><th>p95</th><th>p99</th><th>Max</th>
+    <th>Calls/s</th><th>API attempts</th></tr></thead>
+    <tbody><tr><th scope=row>Qwen3.8 27B</th><td class="">11.625</td><td>17.563</td><td>23.109</td><td>24.735</td><td>0.325</td><td>414</td></tr><tr><th scope=row>Qwen3.6 27B</th><td class="best">11.375</td><td>17.609</td><td>21.734</td><td>23.546</td><td>0.337</td><td>414</td></tr><tr><th scope=row>Gemma 4 12B</th><td class="">12.000</td><td>16.625</td><td>20.422</td><td>22.594</td><td>0.324</td><td>414</td></tr></tbody></table>
+  </div>
+  <div class="note"><strong>There is no time-to-first-token here, and none was invented.</strong>
+  The evaluation harness does not stream responses, so the only interval ever measured is the
+  complete round trip. A partial-response time cannot be recovered from these logs, so the
+  column simply does not exist rather than being filled with end-to-end latency wearing a
+  different label. All three needed 414 API attempts for
+  414 calls &mdash; no retries.</div>
+</section>
+
+<section id="stability">
+  <h2>4. Consistency</h2>
+  <p class="lede">Each transcript was sent three times, byte-identically. A stable model returns
+  the same labels every time. This is where the four separate most sharply.</p>
+  <figure>
+    <figcaption>Scored label changes across three identical repeats &middot; lower is better</figcaption>
+    <div class="chartbox scroller"><div id="c-stab"></div></div>
+  </figure>
+  <div class="note"><strong>Qwen3.8 27B changed a scored label 6 times
+  across 414 calls; production Gemini changed one
+  29 times.</strong> All four rewrite their prose
+  between repeats &mdash; what differs is whether the change reaches a label anyone acts on.
+  <em>Caveat:</em> Gemini was bit-stable when measured on 10 August and had become variable by
+  14 August with no change on our side. That is under investigation; it does not affect the
+  accuracy figures above.</div>
+</section>
+
+<section id="dims">
+  <h2>What the three label types are</h2>
+  <p class="lede">Each model reads a Thai call-centre transcript and fills in three fields,
+  scored separately because they fail in different ways.</p>
+  <div class="cards">
+    <div class="card" style="--rail:var(--s-prod)"><h3>Call outcome</h3>
+      <p class="cls">4 possible values</p>
+      <p>How the call ended: <code>save</code> (customer stayed), <code>churn</code> (left),
+      <code>unknown</code>, <code>undefined</code>. Drives retention reporting.</p></div>
+    <div class="card" style="--rail:var(--s-ours)"><h3>Reason</h3>
+      <p class="cls">11 possible values, up to 3 per call</p>
+      <p>Why the customer wanted to cancel: <code>save cost</code>, <code>network</code>,
+      <code>contract end</code>, <code>post to pre</code> and others. The hardest of the three
+      &mdash; every model scores lowest here.</p></div>
+    <div class="card" style="--rail:var(--s-best)"><h3>Product</h3>
+      <p class="cls">4 possible values, all must be right</p>
+      <p>Which products the call was about: <code>postpaid</code>, <code>tol</code> (home
+      broadband), <code>tvs</code> (TrueVisions), <code>unknown</code>. Scored as an exact set.</p></div>
+  </div>
+</section>
+
+<section id="dataset">
+  <h2>What the evaluation set is</h2>
+  <p class="lede">138 Thai call-centre transcripts written in-house for
+  testing, with hand-checked correct answers. <strong>No customer data, no production
+  transcripts, nothing confidential.</strong> Each model made 414 calls
+  (138 transcripts &times; 3 repeats).</p>
+  <div class="scroller" style="margin-top:18px">
+    <table><caption>How the transcripts are made up</caption>
+    <thead><tr><th>Category</th><th>Count</th><th style="text-align:left">What it tests</th></tr>
+    </thead><tbody>
+      <tr><th scope=row>Clear</th><td>30</td><td style="text-align:left">Unambiguous calls &mdash; the baseline</td></tr>
+      <tr><th scope=row>Thai linguistic</th><td>30</td><td style="text-align:left">Politeness particles, negation, honorifics that flip meaning</td></tr>
+      <tr><th scope=row>Tie-break</th><td>17</td><td style="text-align:left">Two plausible reasons; only one correct by the rules</td></tr>
+      <tr><th scope=row>Escape</th><td>13</td><td style="text-align:left">Quotes and characters that break JSON output</td></tr>
+      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">12,000&ndash;18,000 character transcripts</td></tr>
+      <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call</td></tr>
+      <tr><th scope=row>ASR noise</th><td>10</td><td style="text-align:left">Speech-to-text errors left in deliberately</td></tr>
+      <tr><th scope=row>Code-switch</th><td>10</td><td style="text-align:left">Thai and English mixed mid-sentence</td></tr>
+      <tr><th scope=row>Regression</th><td>6</td><td style="text-align:left">Specific past failures, kept as guards</td></tr>
+    </tbody></table>
+  </div>
+  <div class="note">Because the set is synthetic, every accuracy figure here &mdash;
+  Gemini&rsquo;s included &mdash; is an <strong>upper bound</strong>. Real calls are messier.
+  This ranks the models against each other; it does not predict production accuracy.</div>
+</section>
+
+<section id="bottom">
+  <h2>Bottom line</h2>
+  <p><strong>Qwen3.8 27B on our own GPU is the strongest internal candidate.</strong> It is not
+  measurably behind production Gemini on any of the three label types, it is the most consistent
+  of the four, and it uses the fewest input tokens.</p>
+  <p><strong>The upgrade from Qwen3.6 was worth making</strong> &mdash; higher on all three
+  label types and materially more consistent, at no cost in speed.</p>
+  <p><strong>Gemma 4 12B is out.</strong> Measurably worse than Gemini on all three.</p>
+  <p><strong>What still blocks a migration decision:</strong> the speed gap (real, though
+  confounded by concurrency and network path &mdash; see section 3), and the fact that this is a
+  synthetic test set. Before any production call we would need the same comparison against real
+  labelled calls.</p>
+</section>
+
+<footer>
+  138 synthetic transcripts &middot; 414 calls per model
+  &middot; 3 repeats &middot; identical prompt, testset, ground truth and
+  scorer across all four arms<br>
+  scorer 9b4afc95c3d69876 &middot; workload
+  6b1ab3edf23a7c21 &middot; testset ff7f728ca597795e<br>
+  Percentiles by nearest rank, index = ceil(q * n), 1-based. Latency values sit on a 1&nbsp;ms clock grid, so
+  they are reported to 3 decimal places and no finer.<br>
+  Generated by <code>scripts/model_comparison_report.py</code> from
+  <code>raw run.jsonl + harness comparison reports; no hand-entered figures</code>. Figures also in
+  <code>docs/model-comparison-metrics.json</code>.
+</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var D={"order": ["gemini", "qwen38", "qwen36", "gemma"], "labels": {"gemini": {"name": "Gemini 2.5 Flash", "short": "Gemini", "ours": false}, "qwen38": {"name": "Qwen3.8 27B", "short": "Qwen3.8", "ours": true}, "qwen36": {"name": "Qwen3.6 27B", "short": "Qwen3.6", "ours": true}, "gemma": {"name": "Gemma 4 12B", "short": "Gemma 4", "ours": true}}, "f1": {"gemini": {"call_result": 0.955, "reason": 0.838, "product": 0.96}, "qwen38": {"call_result": 0.966, "reason": 0.834, "product": 0.95}, "qwen36": {"call_result": 0.962, "reason": 0.821, "product": 0.932}, "gemma": {"call_result": 0.929, "reason": 0.792, "product": 0.933}}, "tokens": {"gemini": {"inp": 2989.7, "out": 208.8}, "qwen38": {"inp": 2734.2, "out": 229.6}, "qwen36": {"inp": 2734.2, "out": 230.3}, "gemma": {"inp": 3007.7, "out": 253.2}}, "lat": {"gemini": {"p50": 2.047, "p90": 2.563, "p95": 2.797, "p99": 3.922, "min": 1.328, "max": 11.359, "mean": 2.169}, "qwen38": {"p50": 11.625, "p90": 14.36, "p95": 17.563, "p99": 23.109, "min": 7.125, "max": 24.735, "mean": 12.263}, "qwen36": {"p50": 11.375, "p90": 13.594, "p95": 17.609, "p99": 21.734, "min": 6.844, "max": 23.546, "mean": 11.823}, "gemma": {"p50": 12.0, "p90": 14.0, "p95": 16.625, "p99": 20.422, "min": 5.891, "max": 22.594, "mean": 12.306}}, "stab": {"gemini": 29, "qwen38": 6, "qwen36": 8, "gemma": 15}};
+var NS="http://www.w3.org/2000/svg";
+function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null)
+e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function v(n){return "var("+n+")";}
+var tip=document.getElementById("tip");
+function bind(node,text){node.classList.add("hit");
+node.addEventListener("mousemove",function(e){tip.textContent=text;tip.style.opacity="1";
+var x=e.clientX+14,y=e.clientY-34;
+if(x+tip.offsetWidth>window.innerWidth-8)x=e.clientX-tip.offsetWidth-14;
+tip.style.left=x+"px";tip.style.top=y+"px";});
+node.addEventListener("mouseleave",function(){tip.style.opacity="0";});
+node.appendChild(el("title",{},text));}
+function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
+
+// ---- 1. accuracy, faceted -------------------------------------------------------
+(function(){
+  var DIMS=[["call_result","Call outcome"],["reason","Reason"],["product","Product"]];
+  var W=860,padL=112,padR=64,rowH=30,facetH=4*rowH+44,gapY=18;
+  var H=DIMS.length*(facetH+gapY),barW=W-padL-padR;
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"Weighted F1 by label type"});
+  DIMS.forEach(function(dd,fi){
+    var top=fi*(facetH+gapY);
+    svg.appendChild(el("text",{x:0,y:top+13,"font-size":13,fill:v("--ink"),
+      "font-weight":700},dd[1]));
+    var best=Math.max.apply(null,D.order.map(function(k){return D.f1[k][dd[0]];}));
+    [0,0.25,0.5,0.75,1.0].forEach(function(t){
+      var x=padL+t*barW;
+      svg.appendChild(el("line",{x1:x,y1:top+24,x2:x,y2:top+24+4*rowH,
+        stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+      svg.appendChild(el("text",{x:x,y:top+24+4*rowH+16,"font-size":10,
+        "text-anchor":"middle"},t.toFixed(2)));
+    });
+    D.order.forEach(function(k,mi){
+      var val=D.f1[k][dd[0]],y=top+28+mi*rowH,w=val*barW;
+      svg.appendChild(el("text",{x:padL-10,y:y+14,"font-size":11.5,"text-anchor":"end",
+        fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+      var r=el("rect",{x:padL,y:y,width:Math.max(w,1),height:19,rx:2,fill:col(k)});
+      bind(r,D.labels[k].name+"  |  "+dd[1]+"  |  weighted F1 "+val.toFixed(3)+
+        (val===best?"  (highest)":""));
+      svg.appendChild(r);
+      svg.appendChild(el("text",{x:padL+w+9,y:y+14,"font-size":11.5,fill:v("--ink"),
+        "font-weight":val===best?700:600},val.toFixed(3)));
+    });
+  });
+  document.getElementById("c-f1").appendChild(svg);
+})();
+
+// ---- 2. tokens, two panels, two scales ------------------------------------------
+(function(){
+  var W=860,half=W/2,padT=32,rowH=32,padB=30;
+  var H=padT+D.order.length*rowH+padB;
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"Input and output tokens per call"});
+  function panel(x0,w,title,field,fmt){
+    var padL=78,barW=w-padL-72;
+    var vals=D.order.map(function(k){return D.tokens[k][field];});
+    var maxV=Math.max.apply(null,vals)*1.05, lo=Math.min.apply(null,vals);
+    svg.appendChild(el("text",{x:x0+padL,y:14,"font-size":10,"letter-spacing":"1.1",
+      fill:v("--ink-faint")},title));
+    [0,maxV/2,maxV].forEach(function(t){
+      var x=x0+padL+(t/maxV)*barW;
+      svg.appendChild(el("line",{x1:x,y1:padT-8,x2:x,y2:padT+D.order.length*rowH-10,
+        stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+      svg.appendChild(el("text",{x:x,y:H-12,"font-size":10,"text-anchor":"middle"},fmt(t)));
+    });
+    D.order.forEach(function(k,i){
+      var val=D.tokens[k][field],y=padT+i*rowH,bw=(val/maxV)*barW;
+      svg.appendChild(el("text",{x:x0+padL-10,y:y+14,"font-size":11,"text-anchor":"end",
+        fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+      var r=el("rect",{x:x0+padL,y:y,width:Math.max(bw,1),height:19,rx:2,
+        fill:val===lo?v("--s-best"):col(k)});
+      bind(r,D.labels[k].name+"  |  "+Math.round(val).toLocaleString()+" "+
+        (field==="inp"?"input":"output")+" tokens per call"+(val===lo?"  (fewest)":""));
+      svg.appendChild(r);
+      svg.appendChild(el("text",{x:x0+padL+bw+8,y:y+14,"font-size":11,fill:v("--ink"),
+        "font-weight":val===lo?700:600},Math.round(val).toLocaleString()));
+    });
+  }
+  panel(0,half,"INPUT TOKENS / CALL","inp",function(t){
+    return t===0?"0":Math.round(t/1000)+"k";});
+  svg.appendChild(el("line",{x1:half-8,y1:6,x2:half-8,y2:H-24,stroke:v("--hairline"),
+    "stroke-width":1}));
+  panel(half,half,"OUTPUT TOKENS / CALL","out",function(t){return String(Math.round(t));});
+  document.getElementById("c-tok").appendChild(svg);
+})();
+
+// ---- 3. latency: p50 bar, whisker to p95, marker at max -------------------------
+// Our three models only. Gemini ran at a different concurrency over a different network, so
+// charting it beside these would draw exactly the comparison the section says it cannot make.
+(function(){
+  var OURS=D.order.filter(function(k){return D.labels[k].ours;});
+  var W=860,padL=112,padR=92,padT=30,rowH=40,padB=36;
+  var H=padT+OURS.length*rowH+padB,trackW=W-padL-padR;
+  var maxV=Math.max.apply(null,OURS.map(function(k){return D.lat[k].max;}))*1.06;
+  function X(s){return padL+(s/maxV)*trackW;}
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"End-to-end latency by model"});
+  svg.appendChild(el("text",{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
+    fill:v("--ink-faint")},
+    "SECONDS PER CALL \u2014 BAR = MEDIAN, LINE TO P95, MARKER = SLOWEST"));
+  [0,5,10,15,20,25].forEach(function(t){
+    if(t>maxV)return;
+    svg.appendChild(el("line",{x1:X(t),y1:padT-6,x2:X(t),y2:padT+OURS.length*rowH-12,
+      stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+    svg.appendChild(el("text",{x:X(t),y:H-14,"font-size":10,"text-anchor":"middle"},t+"s"));
+  });
+  var fastest=Math.min.apply(null,OURS.map(function(k){return D.lat[k].p50;}));
+  OURS.forEach(function(k,i){
+    var s=D.lat[k],y=padT+i*rowH;
+    svg.appendChild(el("text",{x:padL-10,y:y+16,"font-size":11.5,"text-anchor":"end",
+      fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+    var r=el("rect",{x:padL,y:y+3,width:Math.max(X(s.p50)-padL,1),height:20,rx:2,fill:col(k)});
+    bind(r,D.labels[k].name+"  |  median "+s.p50.toFixed(3)+"s, p95 "+s.p95.toFixed(3)+
+      "s, p99 "+s.p99.toFixed(3)+"s, slowest "+s.max.toFixed(3)+"s"+
+      (s.p50===fastest?"  (fastest median)":""));
+    svg.appendChild(r);
+    svg.appendChild(el("line",{x1:X(s.p50),y1:y+13,x2:X(s.p95),y2:y+13,stroke:col(k),
+      "stroke-width":2,opacity:.55}));
+    svg.appendChild(el("line",{x1:X(s.p95),y1:y+6,x2:X(s.p95),y2:y+20,stroke:col(k),
+      "stroke-width":2}));
+    svg.appendChild(el("circle",{cx:X(s.max),cy:y+13,r:4,fill:v("--raised"),stroke:col(k),
+      "stroke-width":2}));
+    // Each label sits beside the thing it describes. Putting the median value next to the
+    // max marker -- as this did -- reads as if the median were 25 seconds.
+    svg.appendChild(el("text",{x:X(s.p50)-8,y:y+17,"font-size":11,"text-anchor":"end",
+      fill:v("--raised"),"font-weight":700},s.p50.toFixed(1)+"s"));
+    svg.appendChild(el("text",{x:X(s.max)+10,y:y+17,"font-size":10.5,
+      fill:v("--ink-faint")},"max "+s.max.toFixed(1)+"s"));
+  });
+  document.getElementById("c-lat").appendChild(svg);
+})();
+
+// ---- 4. stability ---------------------------------------------------------------
+(function(){
+  var W=860,padL=112,padR=100,padT=26,rowH=34,padB=34;
+  var H=padT+D.order.length*rowH+padB,barW=W-padL-padR;
+  var vals=D.order.map(function(k){return D.stab[k]||0;});
+  var maxV=Math.max.apply(null,vals)*1.15,best=Math.min.apply(null,vals);
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"Scored label changes across three repeats"});
+  svg.appendChild(el("text",{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
+    fill:v("--ink-faint")},"SCORED LABEL CHANGES ACROSS 3 IDENTICAL REPEATS (LOWER IS BETTER)"));
+  [0,10,20,30].forEach(function(t){
+    if(t>maxV)return;
+    var x=padL+(t/maxV)*barW;
+    svg.appendChild(el("line",{x1:x,y1:padT-6,x2:x,y2:padT+D.order.length*rowH-8,
+      stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+    svg.appendChild(el("text",{x:x,y:H-14,"font-size":10,"text-anchor":"middle"},String(t)));
+  });
+  D.order.forEach(function(k,i){
+    var val=D.stab[k]||0,y=padT+i*rowH,w=(val/maxV)*barW;
+    svg.appendChild(el("text",{x:padL-10,y:y+15,"font-size":11.5,"text-anchor":"end",
+      fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+    var r=el("rect",{x:padL,y:y,width:Math.max(w,1),height:21,rx:2,
+      fill:val===best?v("--s-best"):col(k)});
+    bind(r,D.labels[k].name+" changed a scored label "+val+" times"+
+      (val===best?"  (most consistent)":""));
+    svg.appendChild(r);
+    svg.appendChild(el("text",{x:padL+w+9,y:y+15,"font-size":12,fill:v("--ink"),
+      "font-weight":val===best?700:600},String(val)+(val===best?"  most consistent":"")));
+  });
+  document.getElementById("c-stab").appendChild(svg);
+})();
+})();
+</script>

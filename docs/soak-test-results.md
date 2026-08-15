@@ -32,6 +32,27 @@ Two separate judgements, and collapsing them would misrepresent the run:
 | **Temperature** | **NO** | Unobtainable from a client — see §3 |
 | **Power** | **NO** | Unobtainable from a client — see §3 |
 
+### How to close this — two commands, no file transfer
+
+On `10.94.154.102`, during a run:
+
+```bash
+python3 gpu_telemetry.py --out gpu.jsonl --duration 5400 --vllm http://127.0.0.1:8000/metrics
+```
+
+Then, because the only open port on that host serves the chat API and a 240&nbsp;KB file
+generally cannot leave it:
+
+```bash
+python3 gpu_telemetry.py --summarise gpu.jsonl     # ~23 lines: paste them back
+```
+
+That prints utilization, VRAM, temperature and power as min/mean/p95/max plus KV-cache
+occupancy, queue depth and preemptions, in five-minute buckets stamped with epoch time — the
+stamps are what let it be joined to the load phases afterwards without the raw file. Dropping
+the full `gpu.jsonl` into the run directory instead gives a finer join and needs no paste at
+all; either path closes the gap.
+
 **This test is not finished.** The four GPU metrics are a stated requirement and they are absent.
 They are blocked on one command being run on `10.94.154.102`, which no client-side work can
 substitute for — established exhaustively in §3, not assumed. `scripts/gpu_telemetry.py`
