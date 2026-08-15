@@ -1,0 +1,480 @@
+{
+  "generated_from": "raw run.jsonl + harness comparison reports; no hand-entered figures",
+  "percentile_method": "nearest rank, index = ceil(q * n), 1-based",
+  "shared_contract": {
+    "testset_sha": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+    "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+    "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+    "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+    "repeats": 3,
+    "items": 138,
+    "rows": 414
+  },
+  "models": {
+    "gemini": {
+      "run_id": "20260814-132425Z-e17-gemini",
+      "model_requested": "google/gemini-2.5-flash",
+      "observed_models": {
+        "google/gemini-2.5-flash": 414
+      },
+      "backend": "openrouter",
+      "concurrency": 8,
+      "rows": 414,
+      "ok": 414,
+      "input_tokens_total": 1237746,
+      "input_tokens_per_call": 2989.7,
+      "output_tokens_total": 86449,
+      "output_tokens_per_call": 208.8,
+      "latency_s": {
+        "p50": 2.047,
+        "p90": 2.563,
+        "p95": 2.797,
+        "p99": 3.922,
+        "min": 1.328,
+        "max": 11.359,
+        "mean": 2.169
+      },
+      "attempts_total": 416,
+      "rows_retried": 2,
+      "truncated": 0,
+      "wall_time_s": 114.9,
+      "throughput_calls_per_s": 3.603,
+      "cost_usd": 0.56157004,
+      "reasoning_effort": "none",
+      "shared": {
+        "testset_sha": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+        "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+        "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+        "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+        "repeats": 3,
+        "items": 138,
+        "rows": 414
+      },
+      "f1": {
+        "call_result": 0.955,
+        "reason": 0.838,
+        "product": 0.96
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 145,
+          "parse_failures": 0,
+          "precision": 0.974,
+          "recall": 0.94,
+          "f1": 0.955
+        },
+        "reason": {
+          "denominator": 157,
+          "joined": 145,
+          "parse_failures": 0,
+          "precision": 0.763,
+          "recall": 0.964,
+          "f1": 0.838
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "precision": 0.954,
+          "recall": 0.967,
+          "f1": 0.96
+        }
+      },
+      "paired_vs_gemini": null,
+      "n_flip": 34,
+      "instability": {
+        "observable": 138,
+        "raw_unstable": 111,
+        "scored_unstable": 29
+      }
+    },
+    "qwen38": {
+      "run_id": "20260815-124600Z-e18-tf-qwen38",
+      "model_requested": "qwen3.8-27b-fp8",
+      "observed_models": {
+        "qwen3.8-27b-fp8": 414
+      },
+      "backend": "openai-compatible",
+      "concurrency": 4,
+      "rows": 414,
+      "ok": 414,
+      "input_tokens_total": 1131948,
+      "input_tokens_per_call": 2734.2,
+      "output_tokens_total": 95036,
+      "output_tokens_per_call": 229.6,
+      "latency_s": {
+        "p50": 11.625,
+        "p90": 14.36,
+        "p95": 17.563,
+        "p99": 23.109,
+        "min": 7.125,
+        "max": 24.735,
+        "mean": 12.263
+      },
+      "attempts_total": 414,
+      "rows_retried": 0,
+      "truncated": 0,
+      "wall_time_s": 1275.5,
+      "throughput_calls_per_s": 0.325,
+      "cost_usd": null,
+      "reasoning_effort": "provider-default",
+      "shared": {
+        "testset_sha": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+        "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+        "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+        "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+        "repeats": 3,
+        "items": 138,
+        "rows": 414
+      },
+      "f1": {
+        "call_result": 0.966,
+        "reason": 0.834,
+        "product": 0.95
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 144,
+          "parse_failures": 0,
+          "precision": 0.986,
+          "recall": 0.947,
+          "f1": 0.966
+        },
+        "reason": {
+          "denominator": 159,
+          "joined": 144,
+          "parse_failures": 0,
+          "precision": 0.798,
+          "recall": 0.928,
+          "f1": 0.834
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "precision": 0.941,
+          "recall": 0.96,
+          "f1": 0.95
+        }
+      },
+      "paired_vs_gemini": {
+        "call_result": {
+          "both_right": 128,
+          "both_wrong": 7,
+          "incumbent_only": 1,
+          "candidate_only": 2,
+          "discordant": 3,
+          "net": 1,
+          "band": "--",
+          "verdict": "UNDERPOWERED"
+        },
+        "reason": {
+          "both_right": 64,
+          "both_wrong": 46,
+          "incumbent_only": 18,
+          "candidate_only": 10,
+          "discordant": 28,
+          "net": -8,
+          "band": "+/-14",
+          "verdict": "INDISTINGUISHABLE"
+        },
+        "product": {
+          "both_right": 132,
+          "both_wrong": 5,
+          "incumbent_only": 1,
+          "candidate_only": 0,
+          "discordant": 1,
+          "net": -1,
+          "band": "--",
+          "verdict": "UNDERPOWERED"
+        }
+      },
+      "n_flip": 6,
+      "instability": {
+        "observable": 138,
+        "raw_unstable": 127,
+        "scored_unstable": 6
+      }
+    },
+    "qwen36": {
+      "run_id": "20260814-134803Z-e17-tf-qwen",
+      "model_requested": "qwen3.6-27b-fp8",
+      "observed_models": {
+        "qwen3.6-27b-fp8": 414
+      },
+      "backend": "openai-compatible",
+      "concurrency": 4,
+      "rows": 414,
+      "ok": 414,
+      "input_tokens_total": 1131948,
+      "input_tokens_per_call": 2734.2,
+      "output_tokens_total": 95337,
+      "output_tokens_per_call": 230.3,
+      "latency_s": {
+        "p50": 11.375,
+        "p90": 13.594,
+        "p95": 17.609,
+        "p99": 21.734,
+        "min": 6.844,
+        "max": 23.546,
+        "mean": 11.823
+      },
+      "attempts_total": 414,
+      "rows_retried": 0,
+      "truncated": 0,
+      "wall_time_s": 1228.8,
+      "throughput_calls_per_s": 0.337,
+      "cost_usd": null,
+      "reasoning_effort": "provider-default",
+      "shared": {
+        "testset_sha": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+        "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+        "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+        "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+        "repeats": 3,
+        "items": 138,
+        "rows": 414
+      },
+      "f1": {
+        "call_result": 0.962,
+        "reason": 0.821,
+        "product": 0.932
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 141,
+          "parse_failures": 0,
+          "precision": 0.993,
+          "recall": 0.933,
+          "f1": 0.962
+        },
+        "reason": {
+          "denominator": 160,
+          "joined": 141,
+          "parse_failures": 0,
+          "precision": 0.776,
+          "recall": 0.922,
+          "f1": 0.821
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "precision": 0.924,
+          "recall": 0.94,
+          "f1": 0.932
+        }
+      },
+      "paired_vs_gemini": {
+        "call_result": {
+          "both_right": 125,
+          "both_wrong": 6,
+          "incumbent_only": 4,
+          "candidate_only": 3,
+          "discordant": 7,
+          "net": -1,
+          "band": "+/-7",
+          "verdict": "INDISTINGUISHABLE"
+        },
+        "reason": {
+          "both_right": 67,
+          "both_wrong": 42,
+          "incumbent_only": 15,
+          "candidate_only": 14,
+          "discordant": 29,
+          "net": -1,
+          "band": "+/-13",
+          "verdict": "INDISTINGUISHABLE"
+        },
+        "product": {
+          "both_right": 129,
+          "both_wrong": 5,
+          "incumbent_only": 4,
+          "candidate_only": 0,
+          "discordant": 4,
+          "net": -4,
+          "band": "--",
+          "verdict": "UNDERPOWERED"
+        }
+      },
+      "n_flip": 15,
+      "instability": {
+        "observable": 138,
+        "raw_unstable": 129,
+        "scored_unstable": 8
+      }
+    },
+    "gemma": {
+      "run_id": "20260814-132642Z-e17-tf-gemma",
+      "model_requested": "gemma-4-12b-it",
+      "observed_models": {
+        "gemma-4-12b-it": 414
+      },
+      "backend": "openai-compatible",
+      "concurrency": 4,
+      "rows": 414,
+      "ok": 414,
+      "input_tokens_total": 1245198,
+      "input_tokens_per_call": 3007.7,
+      "output_tokens_total": 104839,
+      "output_tokens_per_call": 253.2,
+      "latency_s": {
+        "p50": 12.0,
+        "p90": 14.0,
+        "p95": 16.625,
+        "p99": 20.422,
+        "min": 5.891,
+        "max": 22.594,
+        "mean": 12.306
+      },
+      "attempts_total": 414,
+      "rows_retried": 0,
+      "truncated": 0,
+      "wall_time_s": 1278.4,
+      "throughput_calls_per_s": 0.324,
+      "cost_usd": null,
+      "reasoning_effort": "provider-default",
+      "shared": {
+        "testset_sha": "ff7f728ca597795ea93497c244ccfb04e0c0846a1e5355662013b82456ad1dff",
+        "workload_sha": "6b1ab3edf23a7c21218cf1fa8824b661f5884dc4b676b1c7a7969661a9aeefbe",
+        "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+        "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+        "repeats": 3,
+        "items": 138,
+        "rows": 414
+      },
+      "f1": {
+        "call_result": 0.929,
+        "reason": 0.792,
+        "product": 0.933
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 150,
+          "joined": 142,
+          "parse_failures": 0,
+          "precision": 0.959,
+          "recall": 0.907,
+          "f1": 0.929
+        },
+        "reason": {
+          "denominator": 164,
+          "joined": 142,
+          "parse_failures": 0,
+          "precision": 0.713,
+          "recall": 0.934,
+          "f1": 0.792
+        },
+        "product": {
+          "denominator": 138,
+          "joined": 138,
+          "parse_failures": 0,
+          "precision": 0.922,
+          "recall": 0.947,
+          "f1": 0.933
+        }
+      },
+      "paired_vs_gemini": {
+        "call_result": {
+          "both_right": 118,
+          "both_wrong": 8,
+          "incumbent_only": 11,
+          "candidate_only": 1,
+          "discordant": 12,
+          "net": -10,
+          "band": "+/-10",
+          "verdict": "BEHIND"
+        },
+        "reason": {
+          "both_right": 61,
+          "both_wrong": 48,
+          "incumbent_only": 21,
+          "candidate_only": 8,
+          "discordant": 29,
+          "net": -13,
+          "band": "+/-13",
+          "verdict": "BEHIND"
+        },
+        "product": {
+          "both_right": 124,
+          "both_wrong": 5,
+          "incumbent_only": 9,
+          "candidate_only": 0,
+          "discordant": 9,
+          "net": -9,
+          "band": "+/-9",
+          "verdict": "BEHIND"
+        }
+      },
+      "n_flip": 25,
+      "instability": {
+        "observable": 138,
+        "raw_unstable": 133,
+        "scored_unstable": 15
+      }
+    }
+  },
+  "qwen36_vs_qwen38": {
+    "call_result": {
+      "both_right": 127,
+      "both_wrong": 7,
+      "incumbent_only": 1,
+      "candidate_only": 3,
+      "discordant": 4,
+      "net": 2,
+      "band": "--",
+      "verdict": "UNDERPOWERED"
+    },
+    "reason": {
+      "both_right": 65,
+      "both_wrong": 48,
+      "incumbent_only": 16,
+      "candidate_only": 9,
+      "discordant": 25,
+      "net": -7,
+      "band": "+/-13",
+      "verdict": "INDISTINGUISHABLE"
+    },
+    "product": {
+      "both_right": 129,
+      "both_wrong": 6,
+      "incumbent_only": 0,
+      "candidate_only": 3,
+      "discordant": 3,
+      "net": 3,
+      "band": "--",
+      "verdict": "UNDERPOWERED"
+    }
+  },
+  "order": [
+    "gemini",
+    "qwen38",
+    "qwen36",
+    "gemma"
+  ],
+  "labels": {
+    "gemini": {
+      "name": "Gemini 2.5 Flash",
+      "short": "Gemini",
+      "ours": false
+    },
+    "qwen38": {
+      "name": "Qwen3.8 27B",
+      "short": "Qwen3.8",
+      "ours": true
+    },
+    "qwen36": {
+      "name": "Qwen3.6 27B",
+      "short": "Qwen3.6",
+      "ours": true
+    },
+    "gemma": {
+      "name": "Gemma 4 12B",
+      "short": "Gemma 4",
+      "ours": true
+    }
+  }
+}
