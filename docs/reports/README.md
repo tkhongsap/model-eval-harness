@@ -1,0 +1,51 @@
+# Reports
+
+Rendered reports — the things you open in a browser or send to somebody. Everything here
+is a **finished artifact**, not an analysis: the written analyses live one level up in
+`docs/`, and the raw evidence lives in `out/`, which is gitignored.
+
+**The boundary is deliberate.** A file belongs here when it is a rendered deliverable
+whose numbers came from somewhere else. It does not belong here if it carries model
+output verbatim — that is the rule `.gitignore` enforces at `out/`, and this folder is
+inside the repository, so nothing with a transcript or a completion in it can live here.
+
+| Report | What it answers | Regenerate |
+|---|---|---|
+| [model-comparison.html](./model-comparison.html) | **The current headline.** Four models on `retention_v3` — accuracy, tokens, consistency, speed on our GPU, and the head-to-head verdicts against production Gemini. This is the one to send. | `PYTHONPATH=src python scripts/model_comparison_report.py` |
+| [model-comparison-fragment.html](./model-comparison-fragment.html) | The same page without the document shell, for publishing as an Artifact. | same command — both come from one computation |
+| [model-comparison-metrics.json](./model-comparison-metrics.json) | Every figure on that page, machine-readable. Read this rather than scraping the HTML. `scripts/case_explorer.py` consumes it. | same command |
+| [soak-test-report.html](./soak-test-report.html) | The 5-hour GPU soak: concurrency ramp, latency by phase, error rate, and the recommended operating concurrency. | `python scripts/soak_report_html.py out/soak/<run> --standalone --out docs/reports/soak-test-report.html` |
+| [experiment17-report.html](./experiment17-report.html) | Experiment 17 — the internal-GPU arms against Gemini, and the run where Gemini's determinism collapsed. | **Hand-written.** No script regenerates it; edit the file. |
+
+## The one that is not here
+
+The **case explorer** — 138 cases with transcripts, ground truth and all four models'
+answers — is generated to `out/case-explorer.html` and is **deliberately not committed**.
+It embeds raw completions and full transcripts, which is exactly what `out/` exists to
+keep out of git. Regenerate it in about a minute:
+
+```
+PYTHONPATH=src python scripts/case_explorer.py
+```
+
+See [docs/case-explorer.md](../case-explorer.md) for what it shows and how it checks
+itself.
+
+## Where the numbers come from
+
+Every report here is downstream of a run directory under `out/runs/`, which is gitignored.
+[RUNS.md](../../RUNS.md) is the committed index of those runs — provenance only, no
+payloads — so a `run_id` quoted in a report can always be resolved to what it was pinned
+to, even on a clone that has none of the runs.
+
+The four runs behind the current comparison:
+
+| Model | run_id |
+|---|---|
+| Gemini 2.5 Flash *(production)* | `20260814-132425Z-e17-gemini` |
+| Qwen3.8 27B | `20260815-124600Z-e18-tf-qwen38` |
+| Qwen3.6 27B | `20260814-134803Z-e17-tf-qwen` |
+| Gemma 4 12B | `20260814-132642Z-e17-tf-gemma` |
+
+All four share one `testset_sha`, `prompt_sha`, `scoring_code_sha`, `repeats` and `items`
+— the generator refuses to build a comparison out of runs that do not.

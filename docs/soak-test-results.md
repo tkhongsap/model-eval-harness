@@ -432,7 +432,7 @@ with the same methodology.
 |---|---|
 | Plan, criteria, amendments | `docs/soak-test-plan.md` |
 | This report | `docs/soak-test-results.md` |
-| Visual report | `docs/soak-test-report.html` |
+| Visual report | `docs/reports/soak-test-report.html` |
 | Load driver | `scripts/soak_test.py` |
 | **GPU telemetry collector** | `scripts/gpu_telemetry.py` &mdash; run ON the GPU host; stdlib only. Fills in utilization/VRAM/temperature/power. |
 | Analysis | `scripts/soak_report.py` → `analysis.json`, `report.md` |

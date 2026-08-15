@@ -5,9 +5,9 @@
 Reads the four `retention_v3` run directories and the harness's own comparison reports,
 recomputes every token and latency figure from the raw per-call logs, and emits:
 
-    docs/model-comparison-metrics.json   every number, machine-readable
-    docs/model-comparison.html           the standalone page
-    docs/model-comparison-fragment.html  the same page as an Artifact fragment
+    docs/reports/model-comparison-metrics.json   every number, machine-readable
+    docs/reports/model-comparison.html           the standalone page
+    docs/reports/model-comparison-fragment.html  the same page as an Artifact fragment
 
 The JSON and the HTML come from one computation, so they cannot disagree, and re-running this
 after a fifth model is evaluated regenerates a correct report with no editing.
@@ -43,7 +43,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 RUNS_DIR = REPO / "out" / "runs"
 REPORTS = REPO / "out" / "reports"
-DOCS = REPO / "docs"
+DOCS = REPO / "docs" / "reports"
 
 # (key, display name, short label, run directory, runs on our GPU?)
 MODELS = [
@@ -244,7 +244,7 @@ def main() -> int:
         print(f"  {data['labels'][key]['name']:18} F1 {m['f1']}  "
               f"in/call {m['input_tokens_per_call']:>7}  out/call {m['output_tokens_per_call']:>6}"
               f"  p50 {m['latency_s']['p50']:>7}s")
-    print(f"\nwrote docs/model-comparison-metrics.json, .html, -fragment.html "
+    print(f"\nwrote docs/reports/model-comparison-metrics.json, .html, -fragment.html "
           f"(ascii-only: {standalone.isascii()})")
     return 0
 

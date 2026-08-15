@@ -63,10 +63,10 @@ from evalharness import labelspaces, metrics  # noqa: E402
 from evalharness.records import Record  # noqa: E402
 
 # The four arms of the published comparison, in the order the report uses them.
-# Kept in step with docs/model-comparison-metrics.json rather than re-derived: if the
+# Kept in step with docs/reports/model-comparison-metrics.json rather than re-derived: if
 # report and this page ever disagree about which run is which model, that is a bug worth
 # a loud failure, and `check_shared_contract` below is where it surfaces.
-METRICS_JSON = REPO / "docs" / "model-comparison-metrics.json"
+METRICS_JSON = REPO / "docs" / "reports" / "model-comparison-metrics.json"
 OUT_HTML = REPO / "out" / "case-explorer.html"
 SPLIT_JSON = REPO / "tests" / "fixtures" / "testsets" / "retention_v3.split.json"
 
