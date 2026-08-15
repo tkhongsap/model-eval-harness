@@ -8,7 +8,7 @@ of the same computed object. No number is typed in here.
 
 Output is ASCII-only by construction (entities in markup, \\uXXXX in script) so it renders the
 same whether or not the host declares a charset. Design tokens match
-`docs/experiment17-report.html` -- same team, same reports, one visual identity.
+`docs/reports/experiment17-report.html` -- same team, same reports, one visual identity.
 """
 
 from __future__ import annotations

@@ -16,7 +16,7 @@ was served by more than one build and its numbers are a blend of two systems.
 `cost` is a LOWER BOUND — OpenRouter reports `usage.cost` only for providers that
 supply it, and a missing value stays absent rather than becoming zero.
 
-**64 runs recorded.**
+**66 runs recorded.**
 
 | run_id | arm | model requested | provider | prompt | items x reps | outcomes | pin proof | cost USD | testset | scorer |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -84,8 +84,10 @@ supply it, and a missing value stays absent rather than becoming zero.
 | `20260814-132425Z-e17-gemini` | e17-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.561570 | `ff7f728ca597` | `9b4afc95` |
 | `20260814-132642Z-e17-tf-gemma` | e17-tf-gemma | `gemma-4-12b-it` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
 | `20260814-134803Z-e17-tf-qwen` | e17-tf-qwen | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
+| `20260815-124507Z-e18-smoke-qwen38` | e18-smoke-qwen38 | `qwen3.8-27b-fp8` | *unpinned* | v9_16_base | 3 x 1 | ok=3 | n/a (1 rep) | 0.000000 | `a6d070bf789f` | `9b4afc95` |
+| `20260815-124600Z-e18-tf-qwen38` | e18-tf-qwen38 | `qwen3.8-27b-fp8` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
 
-**Total recorded spend: $33.9912 (lower bound) over 10058 calls.**
+**Total recorded spend: $33.9912 (lower bound) over 10475 calls.**
 
 ## Directories with no `run.json`
 
