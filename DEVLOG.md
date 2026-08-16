@@ -2,6 +2,175 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-16, tooling): Harbor was evaluated and DECLINED for now, with the trigger
+list written down so it is a decision and not a recurring debate.**
+[`harbor-framework/harbor`](https://github.com/harbor-framework/harbor) — Apache 2.0, Python,
+v0.16.1, 4.3k stars, 216 open issues. Built by the Laude Institute (the Terminal-Bench team),
+and the official harness for Terminal-Bench 2.0. Raised because LangChain's Harrison Chase is
+promoting it: *"a great framework for running evals for long running, stateful agents … its
+becoming industry standard."* LangChain integrated it across LangSmith, Sandboxes and Deep
+Agents, and LangSmith is one of its execution backends.
+
+**How it works**, recorded here so nobody re-researches it: a task is a directory —
+`instruction.md`, `task.toml` (timeouts, CPU/memory/GPU, network policy), `environment/`
+(Dockerfile or compose), `tests/test.sh` (the verifier), optional `solution/`. Per trial Harbor
+builds the container, installs an agent inside it, hands it the instruction, lets it run
+autonomously to `[agent].timeout_sec`, then runs the verifier — in the same container by
+default, or a separate grading container that receives only declared artifacts. The verifier
+writes `reward.txt` (one number) or `reward.json` (several floats) to `/logs/verifier/`. Agents
+ship built in (Terminus-2, Claude Code, Codex CLI, OpenHands, Gemini CLI, …) or you implement
+`BaseAgent` — `name()`, `version()`, `setup()`, `run()` — and pass
+`--agent path.to.agent:SomeAgent`. Backends: local Docker, Daytona, Modal, LangSmith, Blaxel,
+Novita, Kubernetes. `harbor datasets list` carries TB2.0, SWE-Bench, Aider Polyglot.
+
+**Why not now.** Harbor is a *runner*; it would replace `runner.py` and leave `compare.py`
+untouched, and `compare.py` is the asset. Its `reward.json` is **per trial**, while every
+verdict here is **cross-trial** — paired across 138 items x 3 replicates, exact bands,
+alpha 1/64, `N_flip`. It has no notion of a paired test, UNDERPOWERED, coverage refusal, or a
+differential against production's real scorer; it does not need one, because a container either
+ends in the right state or it does not. It also addresses none of the four things actually
+blocking this repository: gateway-bound throughput, no production-shaped labelled batch,
+statistical power, and the incumbent's determinism. Adopting it for the retention track is
+precisely what the 2026-08-08 entry below warns against — *more infrastructure built against
+the same synthetic comparison, which has now been decided twice.*
+
+**One first impression was wrong and is corrected here.** The integration was assumed to be
+awkward. It is not: a `BaseAgent` subclass that POSTs to Token Factory and populates
+`AgentContext` is about thirty lines. The case against adopting it is *not* effort — it is that
+the effort buys no measurement.
+
+**Adopt Harbor when any ONE of these becomes true:**
+
+1. **RL or SFT on the internal GPU is wanted.** Rollout interfaces are its reason for existing
+   and there is no comparable alternative. This is the strongest trigger.
+2. **An eval target becomes agentic or multi-step** — e.g. if ASR -> text -> QA becomes a
+   tool-using pipeline rather than two independent calls.
+3. **Soak or stress needs more concurrency than one client can drive.** This is the one place
+   Harbor would *delete* code rather than add a dependency: `scripts/soak_test.py`, the
+   shakedown and the GPU probes are all bespoke versions of its core competence. Note it does
+   NOT fix the real limit found on 2026-08-15 — 4 of 13 required metrics, GPU utilisation among
+   them, are unobtainable from any client and need host access.
+4. **Harbor reaches 1.0.** At v0.16.1 with 216 open issues it does not belong in the path of
+   paid runs in a repository whose `requirements.txt` header exists because a minor version
+   bump silently changed what the scorer computed.
+
+If a first trial is wanted before any trigger fires, the honest target is the **ASR track** —
+new, nothing depends on it yet, and containerised execution would eliminate the Windows
+file-lock class recorded under Known Bugs outright. Not the retention track.
+
+**Latest (2026-08-16, ASR track): the audio eval set shipped, and the first arm has now been
+scored on it.** `asr-eval/` (PR #28, merged) — 20 synthetic Thai call-centre recordings, 123.6 min,
+3.6-9.5 min each, 8 kHz mono PCM16, with exact ground truth, entity annotations, per-turn
+timelines, and validation / plotting / scoring tooling. It measures the component
+`.env.example:27-29` names as the whole migration problem: production sends audio, the
+candidate cannot receive it, so a separate ASR step and a transcript artifact have to exist
+that do not exist today.
+
+Every constant in `asr-eval/scripts/asr_common.py` cites the production file and line that
+fixes it. The load-bearing ones: `.wav` is the only extension past the upload filter
+(`upload_voice_task.py:352`); metadata is parsed positionally out of the filename in three
+places that must agree (`get_batch_result_task.py:302-319`); a `call_direction` that is not
+exactly `IN`/`OUT` **raises** rather than degrading (`prep_payload_task.py:335`); and the agent
+name occupies **two** positional fields, so an underscore in a name shifts every later index
+silently.
+
+**Ground truth is authored, then synthesised** — the reverse of the usual route. The text is
+written first and the audio generated from it, so the reference is exact by construction and
+reference error is removed as a term in every WER. The cost is stated in the README in these
+words: the audio is synthetic, so **a WER measured here is not a production WER estimate**,
+only a controlled arm-against-arm comparison. Ten mechanism families x 2 calls, seven of which
+are the acoustic *cause* of an artifact class `ASR-EXPECTATION.md` already argued as text.
+Phones reserve `0810000301`-`0810000320`, clear of all three spent sub-ranges.
+
+**An adversarial verification pass found five real defects, and one lesson about running it.**
+The critical one: the entity scorer compared a value as a *substring* of every digit in the
+transcript concatenated together, so `45` + `99` spliced to match amount `599` — a junk
+transcript mentioning none of the call scored **11.4% entity accuracy**, now **0.0%**. Also:
+`date` could never value-match at all; a production citation pointed at the wrong lines;
+`validation.json` embedded an absolute home path 40 times, the same leak class as 2026-08-09;
+and two DSP constants named effects the chain did not deliver — hum synthesised at 50/150 Hz
+was **entirely removed** by the 300-3400 Hz band-limit, and an L1-normalised reverb IR left
+`far_field` dry. **The fix for the reverb then overshot in the opposite direction**, burying
+the direct path and collapsing the syllable envelope from 5.18 Hz to 1.07 Hz; only the
+speech-rate check caught it. The process lesson: the verification ran while the files were
+being edited, so three verifiers reported "not reproducible" on defects already patched and
+three noted they had reproduced theirs "before it was patched mid-session." **An adversarial
+pass needs a frozen tree, or its verdicts are unusable.**
+
+Suite on this workstation: **861 passed / 38 skipped** standalone, **872 / 27** with
+`TRUE_SOURCE_ROOT` set — measured in a venv built to `requirements.txt` exactly, because the
+system interpreter carries pandas 3.0.0, which that file's header warns collapses
+`call_result` accuracy from 0.75 to 0.25. Every skip is environmental and self-describing
+(production source not at the default path; gitignored `out/` run directories). `asr-eval`:
+112 tests, 608 validation checks, 0 failures. Still `RECONCILED: NO`.
+
+**First arm scored (PR #29): Gemini 2.5 Flash, transcription-only, via OpenRouter.**
+Deliberately *not* production's one-call audio->JSON shape — Gemini is asked to do nothing but
+transcribe, so its output lands in the same form `transcribe.py` produces and both can go
+through the identical scorer. Mixing in the QA task would make a CER difference impossible to
+attribute to transcription versus labelling. This is also the first time anything in this
+repository has sent audio anywhere; `src/evalgen/prompts.py` sends Thai *text*.
+
+Pooled over the 20 calls: **CER 0.0445**, **WER 0.1176** (newmm tokens), **entity 320/465 =
+68.8%**.
+
+**The headline is the gap between those numbers, and it is exactly what the entity metric was
+built to expose.** A 4.45% CER reads as an excellent transcript. Underneath it, **31% of the
+entities the QA pipeline would write into a field are gone**:
+
+| type | recovered | | type | recovered |
+|---|---:|---|---|---:|
+| `id` | 64/64 — 100% | | `date` | 22/88 — **25.0%** |
+| `phone` | 87/88 — 98.9% | | `package` | 6/15 — **40.0%** |
+| `amount` | 101/118 — 85.6% | | `months` | 36/83 — **43.4%** |
+| | | | `speed` | 4/9 — **44.4%** |
+
+Digit strings read aloud survive almost perfectly; dates, durations, speeds and product names
+do not. A WER-only report would have called this arm a success.
+
+The families discriminate on CER as designed — `disfluency` 0.1211 and `far_field_low_gain`
+0.1133 are the hardest, `clean_baseline` 0.0063 the easiest, a 19x spread.
+
+**Two honest caveats on this run, both about the instrument rather than the model:**
+
+- **The normalisation was completely inert**: raw and normalised CER agree to five decimal
+  places (+0.00000). None of the three lossless classes ever fired, because neither the
+  reference nor Gemini's output contains Thai numerals, doubled SARA E or zero-width
+  characters. The raw/norm split cost nothing here and also proved nothing; it stays because
+  a different arm may well need it.
+- **Entity accuracy does not track acoustic difficulty, and the set cannot currently separate
+  the two.** `telephony_noise` has the *best* entity recovery in the set (97.2%) while
+  `clean_baseline` has 60.6%. That is not a finding about noise — it is that entity types are
+  not balanced across families, so a family's entity score mostly reflects which entity types
+  its calls happen to contain. **Do not read the per-family entity column as a difficulty
+  ranking.** Balancing entity types across families is the fix, and it is a change to
+  `compose_dialogues.py`, not to the scorer.
+
+**Next action: run the internal ASR arm** — `transcribe.py` against `qwen3-asr-1.7b`, then
+`score_asr.py`. One arm is a baseline, not a comparison, and this repository decides nothing
+off a single arm.
+
+**It is blocked on a DIFFERENT backend from the Gemma arm, which is easy to miss.** The probe
+in `docs/token-factory-outage-2026-08-16.txt` (2026-08-16 11:35Z) separates them:
+
+| model | status | backend |
+|---|---|---|
+| `qwen3.8-27b-fp8` | **HTTP 200**, 0.28 s — control, gateway is healthy | — |
+| `gemma-4-12b-it` | HTTP 500 | `10.94.154.104:`**`8000`** unreachable |
+| `qwen3-asr-1.7b` | HTTP 500 | `10.94.154.104:`**`8002`** unreachable |
+
+Two separate vLLM processes are down on the same host, on different ports. **Restoring :8000
+unblocks the Gemma rerun and does nothing for ASR**; the entry below asking only for :8000 is
+therefore incomplete as an ask. The gateway itself is fine — it is reached at
+`10.94.154.102` and the control model answers in under a third of a second.
+
+One thing the probe settles for free: `POST /v1/audio/transcriptions` **exists** on the
+gateway and fails with a connection error to the backend rather than a 404, so the endpoint
+shape `asr-eval/scripts/transcribe.py` was written against is the right one. What to ask the
+platform team for is drafted in `docs/token-factory-asr-request-draft.md`.
+**Bookkeeping:** Experiment 18 has no section in `EXPERIMENTS.md`; it lives only inside the
+generated comparison report, and every other experiment from 1-17 and 20 has one.
+
 **Latest (2026-08-16, Experiment 20): the challenge pack ran for the first time, and it cannot
 separate the models.** `retention_challenge_v1` (50 items, never previously evaluated) against
 Gemini 2.5 Flash and Qwen3.8 27B. Raw F1 reads Gemini 0.951 / 0.831 / 0.976 and Qwen3.8
