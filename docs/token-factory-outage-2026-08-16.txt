@@ -1,0 +1,56 @@
+TOKEN FACTORY ERROR LOG
+generated   2026-08-16 11:35:52Z / 18:35:52 +07
+endpoint    https://token-fac-api.truecorp.co.th/v1   (connect via 10.94.154.102, pinned self-signed cert)
+auth        TOKEN_FACTORY_API_KEY  (value never printed)
+
+==============================================================================
+1. CATALOG   GET /v1/models
+==============================================================================
+{"data":[{"id":"gemma-4-12b-it","object":"model","created":1677610602,"owned_by":"openai"},{"id":"qwen3-asr-1.7b","object":"model","created":1677610602,"owned_by":"openai"},{"id":"qwen3.8-27b-fp8","object":"model","created":1677610602,"owned_by":"openai"}],"object":"list"}
+
+==============================================================================
+2. GENERATION   POST /v1/chat/completions   (control model first)
+==============================================================================
+------------------------------------------------------------------------------
+model  qwen3.8-27b-fp8   <-- control: expected to work
+time   2026-08-16 11:35:52Z / 18:35:52 +07
+status HTTP 200   client latency 0.279522s
+response body (full, untruncated):
+{"id":"chatcmpl-a9d7c8615de701a5","created":1786880152,"model":"qwen3.8-27b-fp8","object":"chat.completion","system_fingerprint":"vllm-0.23.1rc1.dev245+g9037498c2-aba7bd5b","choices":[{"finish_reason":"stop","index":0,"message":{"content":"READY","role":"assistant","provider_specific_fields":{"reasoning":null,"refusal":null}},"provider_specific_fields":{"routed_experts":null,"token_ids":null,"stop_reason":null}}],"usage":{"completion_tokens":2,"prompt_tokens":16,"total_tokens":18}}
+
+------------------------------------------------------------------------------
+model  gemma-4-12b-it
+time   2026-08-16 11:35:53Z / 18:35:53 +07
+status HTTP 500   client latency 5.360643s
+response body (full, untruncated):
+{"error":{"message":"litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8000 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8000)]. Received Model Group=gemma-4-12b-it\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"500"}}
+
+------------------------------------------------------------------------------
+model  qwen3-asr-1.7b
+time   2026-08-16 11:35:59Z / 18:35:59 +07
+status HTTP 500   client latency 4.180293s
+response body (full, untruncated):
+{"error":{"message":"litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8002 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8002)]. Received Model Group=qwen3-asr-1.7b\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"500"}}
+
+==============================================================================
+3. AUDIO PATH   POST /v1/audio/transcriptions   (qwen3-asr-1.7b)
+==============================================================================
+Not in the published openapi.yaml, which defines only /v1/models, /v1/responses
+and /v1/chat/completions. Included so the team can see the gateway does route it.
+Probe audio is a 0.2s synthetic silent WAV -- no evaluation or customer audio.
+time   2026-08-16 11:36:03Z / 18:36:03 +07
+status HTTP 500   client latency 4.498418s
+response body (full, untruncated):
+{"error":{"message":"litellm.APIConnectionError: APIConnectionError: Hosted_vllmException - Connection error.. Received Model Group=qwen3-asr-1.7b\nAvailable Model Group Fallbacks=None","type":null,"param":null,"code":"500"}}
+
+==============================================================================
+SUMMARY
+==============================================================================
+2 of 3 models did not answer.
+
+If the control (qwen3.8-27b-fp8) returned 200 above, then the gateway, the API
+key, TLS, the pinned certificate and the VPN are all working, and the failure is
+specific to the backends the other models route to.
+
+The 'Cannot connect to host ...' text is the GATEWAY reporting that it could not
+reach its own backend. It is not our client, our request shape or our network.

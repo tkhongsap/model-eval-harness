@@ -1,0 +1,33 @@
+TOKEN FACTORY DIAGNOSTIC   generated 2026-08-16 11:20:22Z / 18:20:22+07
+endpoint https://token-fac-api.truecorp.co.th/v1  (connect via 10.94.154.102, pinned cert)
+auth     TOKEN_FACTORY_API_KEY (value never shown)
+
+-- 1. GET /v1/models ------------------------------------------------------
+   HTTP 200   3 models: gemma-4-12b-it, qwen3-asr-1.7b, qwen3.8-27b-fp8
+
+-- 2. POST /v1/chat/completions, 3 consecutive trials per model -----------
+   gemma-4-12b-it
+     try1 2026-08-16 11:20:27Z / 18:20:27+07  HTTP 500   4.45s
+           litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8000 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8000)]. Received Model Group=g
+     try2 2026-08-16 11:20:31Z / 18:20:31+07  HTTP 500   4.54s
+           litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8000 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8000)]. Received Model Group=g
+     try3 2026-08-16 11:20:35Z / 18:20:35+07  HTTP 500   4.26s
+           litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8000 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8000)]. Received Model Group=g
+   qwen3-asr-1.7b
+     try1 2026-08-16 11:20:40Z / 18:20:40+07  HTTP 500   4.51s
+           litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8002 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8002)]. Received Model Group=q
+     try2 2026-08-16 11:20:45Z / 18:20:45+07  HTTP 500   4.93s
+           litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8002 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8002)]. Received Model Group=q
+     try3 2026-08-16 11:20:50Z / 18:20:50+07  HTTP 500   4.71s
+           litellm.InternalServerError: InternalServerError: Hosted_vllmException - Cannot connect to host 10.94.154.104:8002 ssl:<ssl.SSLContext object at 0x7f91eaa34c30> [Connect call failed ('10.94.154.104', 8002)]. Received Model Group=q
+   qwen3.8-27b-fp8
+     try1 2026-08-16 11:20:50Z / 18:20:50+07  HTTP 200   0.19s  -> READY
+     try2 2026-08-16 11:20:50Z / 18:20:50+07  HTTP 200   0.19s  -> READY
+     try3 2026-08-16 11:20:50Z / 18:20:50+07  HTTP 200   0.17s  -> READY
+
+-- 3. Direct TCP reachability from this workstation (on VPN) --------------
+   10.94.154.102:443   gateway (LiteLLM)                OPEN    (43 ms)
+   10.94.154.104:8000  backend: gemma route target      TimeoutError (5000 ms)
+   10.94.154.104:8002  backend: qwen3-asr route target  TimeoutError (5012 ms)
+   10.94.154.104:22    backend: ssh                     TimeoutError (5003 ms)
+   10.94.154.104:443   backend: https                   ConnectionRefusedError (2166 ms)
