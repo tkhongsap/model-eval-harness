@@ -188,6 +188,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="experiment20")
     parser.add_argument("--smoke-only", action="store_true", help="cheap pre-flight, then stop")
     parser.add_argument("--skip-smoke", action="store_true", help="straight to the full arms")
+    parser.add_argument(
+        "--only", metavar="ARM", default=None,
+        help="run one arm and compare it against an existing incumbent (see --incumbent). "
+             "For re-running a single arm that failed, without paying for the others again.")
+    parser.add_argument(
+        "--incumbent", metavar="RUN_DIR", default=None,
+        help="the incumbent run directory to compare --only against")
     args = parser.parse_args(argv)
 
     REPORTS.mkdir(parents=True, exist_ok=True)
@@ -200,6 +207,35 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     steps: list[dict] = []
+
+    # Single-arm rerun. The Gemma arm failed on 2026-08-15 with 150/150 transport errors when
+    # its vLLM backend went down mid-experiment; the other two are recorded and paid for, so
+    # re-running them to recover one would be waste.
+    if args.only:
+        table = {a: m for a, m in (GEMINI_ARM, *GPU_ARMS)}
+        if args.only not in table:
+            print(f"unknown arm {args.only!r}; known: {sorted(table)}")
+            return 2
+        if not args.incumbent:
+            print("--only needs --incumbent RUN_DIR to compare against")
+            return 2
+        model = table[args.only]
+        gpu = args.only != GEMINI_ARM[0]
+        r = run(f"ARM {args.only} ({model})", _arm_args(args.only, model, gpu=gpu), pin_cert=gpu)
+        if r["exit_code"] != 0 or not r["run_dir"] or not _all_ok(r["run_dir"]):
+            print(f"\nARM {args.only} FAILED or did not answer cleanly. Nothing published.")
+            return 1
+        short = args.only.replace("e20-chal-", "")
+        report = REPORTS / f"compare-e20-{short}-vs-gemini.txt"
+        c = run(f"COMPARE {short} vs gemini",
+                ["compare", "--incumbent", args.incumbent, "--candidate", r["run_dir"],
+                 "--report", str(report)], pin_cert=False, timeout=1800)
+        if c["exit_code"] not in (0, 1):
+            print(f"\nCOMPARE REFUSED (exit {c['exit_code']}).")
+            return 1
+        print(f"\narm      {Path(r['run_dir']).name}")
+        print(f"compare  {report}")
+        return 0
 
     if not args.skip_smoke:
         items = _longest_items()

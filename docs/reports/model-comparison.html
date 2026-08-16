@@ -293,7 +293,7 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
       <tr><th scope=row>Thai linguistic</th><td>30</td><td style="text-align:left">Politeness particles, negation, honorifics that flip meaning</td></tr>
       <tr><th scope=row>Tie-break</th><td>17</td><td style="text-align:left">Two plausible reasons; only one correct by the rules</td></tr>
       <tr><th scope=row>Escape</th><td>13</td><td style="text-align:left">Quotes and characters that break JSON output</td></tr>
-      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">12,000-18,000 character transcripts</td></tr>
+      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">Transcripts up to 15,600 characters, the pack's longest</td></tr>
       <tr><th scope=row>ASR noise</th><td>10</td><td style="text-align:left">Speech-to-text errors left in deliberately</td></tr>
       <tr><th scope=row>Code-switch</th><td>10</td><td style="text-align:left">Thai and English mixed mid-sentence</td></tr>
       <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call</td></tr>
@@ -333,6 +333,7 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 (function(){
 "use strict";
 var D={"order": ["gemini", "qwen38", "qwen36", "gemma"], "labels": {"gemini": {"name": "Gemini 2.5 Flash", "short": "Gemini", "ours": false}, "qwen38": {"name": "Qwen3.8 27B", "short": "Qwen3.8", "ours": true}, "qwen36": {"name": "Qwen3.6 27B", "short": "Qwen3.6", "ours": true}, "gemma": {"name": "Gemma 4 12B", "short": "Gemma 4", "ours": true}}, "f1": {"gemini": {"call_result": 0.955, "reason": 0.838, "product": 0.96}, "qwen38": {"call_result": 0.966, "reason": 0.834, "product": 0.95}, "qwen36": {"call_result": 0.962, "reason": 0.821, "product": 0.932}, "gemma": {"call_result": 0.929, "reason": 0.792, "product": 0.933}}, "tokens": {"gemini": {"inp": 2989.7, "out": 208.8}, "qwen38": {"inp": 2734.2, "out": 229.6}, "qwen36": {"inp": 2734.2, "out": 230.3}, "gemma": {"inp": 3007.7, "out": 253.2}}, "lat": {"gemini": {"p50": 2.047, "p90": 2.563, "p95": 2.797, "p99": 3.922, "min": 1.328, "max": 11.359, "mean": 2.169}, "qwen38": {"p50": 11.625, "p90": 14.36, "p95": 17.563, "p99": 23.109, "min": 7.125, "max": 24.735, "mean": 12.263}, "qwen36": {"p50": 11.375, "p90": 13.594, "p95": 17.609, "p99": 21.734, "min": 6.844, "max": 23.546, "mean": 11.823}, "gemma": {"p50": 12.0, "p90": 14.0, "p95": 16.625, "p99": 20.422, "min": 5.891, "max": 22.594, "mean": 12.306}}, "stab": {"gemini": 29, "qwen38": 6, "qwen36": 8, "gemma": 15}};
+var SUF="";
 var NS="http://www.w3.org/2000/svg";
 function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null)
 e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
@@ -350,7 +351,8 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
 // ---- 1. accuracy, faceted -------------------------------------------------------
 (function(){
   var DIMS=[["call_result","Call outcome"],["reason","Reason"],["product","Product"]];
-  var W=860,padL=112,padR=64,rowH=30,facetH=4*rowH+44,gapY=18;
+  var NROW=D.order.length;
+  var W=860,padL=112,padR=64,rowH=30,facetH=NROW*rowH+44,gapY=18;
   var H=DIMS.length*(facetH+gapY),barW=W-padL-padR;
   var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
     "aria-label":"Weighted F1 by label type"});
@@ -361,9 +363,9 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
     var best=Math.max.apply(null,D.order.map(function(k){return D.f1[k][dd[0]];}));
     [0,0.25,0.5,0.75,1.0].forEach(function(t){
       var x=padL+t*barW;
-      svg.appendChild(el("line",{x1:x,y1:top+24,x2:x,y2:top+24+4*rowH,
+      svg.appendChild(el("line",{x1:x,y1:top+24,x2:x,y2:top+24+NROW*rowH,
         stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
-      svg.appendChild(el("text",{x:x,y:top+24+4*rowH+16,"font-size":10,
+      svg.appendChild(el("text",{x:x,y:top+24+NROW*rowH+16,"font-size":10,
         "text-anchor":"middle"},t.toFixed(2)));
     });
     D.order.forEach(function(k,mi){
@@ -378,7 +380,7 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
         "font-weight":val===best?700:600},val.toFixed(3)));
     });
   });
-  document.getElementById("c-f1").appendChild(svg);
+  document.getElementById("c-f1"+SUF).appendChild(svg);
 })();
 
 // ---- 2. tokens, two panels, two scales ------------------------------------------
@@ -417,7 +419,7 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
   svg.appendChild(el("line",{x1:half-8,y1:6,x2:half-8,y2:H-24,stroke:v("--hairline"),
     "stroke-width":1}));
   panel(half,half,"OUTPUT TOKENS / CALL","out",function(t){return String(Math.round(t));});
-  document.getElementById("c-tok").appendChild(svg);
+  document.getElementById("c-tok"+SUF).appendChild(svg);
 })();
 
 // ---- 3. latency: p50 bar, whisker to p95, marker at max -------------------------
@@ -463,7 +465,7 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
     svg.appendChild(el("text",{x:X(s.max)+10,y:y+17,"font-size":10.5,
       fill:v("--ink-faint")},"max "+s.max.toFixed(1)+"s"));
   });
-  document.getElementById("c-lat").appendChild(svg);
+  document.getElementById("c-lat"+SUF).appendChild(svg);
 })();
 
 // ---- 4. stability ---------------------------------------------------------------
@@ -471,12 +473,16 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
   var W=860,padL=112,padR=100,padT=26,rowH=34,padB=34;
   var H=padT+D.order.length*rowH+padB,barW=W-padL-padR;
   var vals=D.order.map(function(k){return D.stab[k]||0;});
-  var maxV=Math.max.apply(null,vals)*1.15,best=Math.min.apply(null,vals);
+  var ceiling=(D.stab_max!==undefined&&D.stab_max!==null)?D.stab_max
+    :Math.max.apply(null,vals);
+  var maxV=ceiling*1.15,best=Math.min.apply(null,vals);
   var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
     "aria-label":"Scored label changes across three repeats"});
   svg.appendChild(el("text",{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
     fill:v("--ink-faint")},"SCORED LABEL CHANGES ACROSS 3 IDENTICAL REPEATS (LOWER IS BETTER)"));
-  [0,10,20,30].forEach(function(t){
+  var TICKS=maxV>=10?[0,10,20,30]:[0,1,2,3,4,5,6,7,8,9].filter(function(n){
+    return n<=maxV;});
+  TICKS.forEach(function(t){
     if(t>maxV)return;
     var x=padL+(t/maxV)*barW;
     svg.appendChild(el("line",{x1:x,y1:padT-6,x2:x,y2:padT+D.order.length*rowH-8,
@@ -495,7 +501,7 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
     svg.appendChild(el("text",{x:padL+w+9,y:y+15,"font-size":12,fill:v("--ink"),
       "font-weight":val===best?700:600},String(val)+(val===best?"  most consistent":"")));
   });
-  document.getElementById("c-stab").appendChild(svg);
+  document.getElementById("c-stab"+SUF).appendChild(svg);
 })();
 })();
 </script>

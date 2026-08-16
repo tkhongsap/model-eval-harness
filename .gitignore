@@ -86,6 +86,7 @@ pip-log.txt
 
 # Virtual environments
 .venv/
+.venv-asr/
 venv/
 env/
 ENV/

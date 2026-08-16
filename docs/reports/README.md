@@ -16,7 +16,8 @@ the generator.
 
 | Report | What it answers | Regenerate |
 |---|---|---|
-| [model-comparison.html](./model-comparison.html) | **The current headline.** Four models on `retention_v3` — accuracy, tokens, consistency, speed on our GPU, and the head-to-head verdicts against production Gemini. This is the one to send. | `PYTHONPATH=src python scripts/model_comparison_report.py` |
+| **[model-comparison-combined.html](./model-comparison-combined.html)** | **Both evaluation sets in one document — the one to send.** What is being tested, what gets scored, what the two sets contain, and the results per set. Covers `retention_v3` and `retention_challenge_v1` side by side, never pooled. | `PYTHONPATH=src python scripts/combined_report.py` |
+| [model-comparison.html](./model-comparison.html) | Four models on `retention_v3` alone — the per-set detail behind the combined page. | `PYTHONPATH=src python scripts/model_comparison_report.py` |
 | [model-comparison-fragment.html](./model-comparison-fragment.html) | The same page without the document shell, for publishing as an Artifact. | same command — both come from one computation |
 | [model-comparison-metrics.json](./model-comparison-metrics.json) | Every figure on that page, machine-readable. Read this rather than scraping the HTML. `scripts/case_explorer.py` consumes it. | same command |
 | [model-comparison-challenge.html](./model-comparison-challenge.html) | **The harder pack.** Gemini vs Qwen3.8 vs Gemma 4 on `retention_challenge_v1` — 50 calls built to stress interaction *structure* (prior-contact history, mid-call reversal, competing issues, interruption and topic return), with 11 of 50 calls carrying more than one product. Same layout as the page above. | `PYTHONPATH=src python scripts/model_comparison_report.py --config configs/comparison/retention-challenge-v1.json` |
