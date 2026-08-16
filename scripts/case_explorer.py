@@ -66,9 +66,12 @@ from evalharness.records import Record  # noqa: E402
 # Kept in step with docs/reports/model-comparison-metrics.json rather than re-derived: if
 # report and this page ever disagree about which run is which model, that is a bug worth
 # a loud failure, and `check_shared_contract` below is where it surfaces.
-METRICS_JSON = REPO / "docs" / "reports" / "model-comparison-metrics.json"
-OUT_HTML = REPO / "out" / "case-explorer.html"
-SPLIT_JSON = REPO / "tests" / "fixtures" / "testsets" / "retention_v3.split.json"
+# Which comparison set to explore. Everything that used to be pinned to `retention_v3` -- the
+# metrics file, the output path, the tune/holdout split, the expected ground-truth row count --
+# is a property of the pack, so it comes from `configs/comparison/<pack>.json`, the same file
+# `model_comparison_report.py` reads. One config, one comparison, two views of it.
+CONFIG_DIR = REPO / "configs" / "comparison"
+DEFAULT_CONFIG = CONFIG_DIR / "retention-v3.json"
 
 SPACE = labelspaces.RETENTION
 DIMENSIONS = ("call_result", "reason", "product")
@@ -363,8 +366,10 @@ def check_shared_contract(arms: list[Arm]) -> dict:
     return shared
 
 
-def build() -> dict:
-    metrics_doc = json.loads(METRICS_JSON.read_text(encoding="utf-8"))
+def build(cfg: dict) -> dict:
+    metrics_path = (REPO / cfg["output"]["dir"]
+                    / f'{cfg["output"]["stem"]}-metrics.json')
+    metrics_doc = json.loads(metrics_path.read_text(encoding="utf-8"))
     order = metrics_doc["order"]
     labels = metrics_doc["labels"]
 
@@ -381,8 +386,10 @@ def build() -> dict:
     # produce a page that reads as complete.
     if len(items) != shared["items"]:
         raise BuildError(f"{len(items)} items loaded, contract says {shared['items']}")
-    if len(gt) != 150:
-        raise BuildError(f"{len(gt)} ground-truth rows, expected 150 for retention_v3")
+    expected_gt = cfg["expected_gt_rows"]
+    if len(gt) != expected_gt:
+        raise BuildError(
+            f"{len(gt)} ground-truth rows, expected {expected_gt} for {cfg['pack']}")
     for arm in arms:
         if len(arm.results) != shared["items"] * shared["repeats"]:
             raise BuildError(
@@ -392,8 +399,12 @@ def build() -> dict:
         if len(arm.replicates) != shared["repeats"]:
             raise BuildError(f"{arm.key}: {len(arm.replicates)} replicates")
 
-    split = json.loads(SPLIT_JSON.read_text(encoding="utf-8"))
-    tune = set(split["tune"])
+    # Not every pack has a tune/holdout split. retention_v3 does; retention_challenge_v1 was
+    # authored as a single block and has none, which is not a defect -- there is nothing to
+    # keep apart and, unlike v3's holdout, no contamination caveat to carry.
+    split_path = cfg.get("split")
+    split = json.loads((REPO / split_path).read_text(encoding="utf-8")) if split_path else None
+    tune = set(split["tune"]) if split else set()
     # `dilation_blocks` is keyed by MEMBER, not by base -- each member maps to the whole
     # block tuple, whose first element is the base (splits.py:88). Reading the key as the
     # base makes every member of a block overwrite the last, which is how RET-16 came to
@@ -432,7 +443,7 @@ def build() -> dict:
             "call_id": item.call_id,
             "phone": item.phone_number,
             "family": item.family,
-            "slice": "tune" if item.item_id in tune else "holdout",
+            "slice": (("tune" if item.item_id in tune else "holdout") if split else None),
             "turns": parse_turns(item.transcript_th),
             "chars": len(item.transcript_th),
             "mechanism": item.mechanism,
@@ -497,11 +508,12 @@ def build() -> dict:
     return {
         "generated_from": {
             "runs": {a.key: a.run_id for a in arms},
-            "testset": "retention_v3",
+            "testset": cfg["pack"],
             "scored_replicate": 1,
         },
         "shared_contract": shared,
-        "split_contamination": split["contamination"],
+        "split_contamination": (split["contamination"] if split else None),
+        "pack": cfg["pack"],
         "order": order,
         "models": [
             {
@@ -524,15 +536,25 @@ def build() -> dict:
 
 
 if __name__ == "__main__":
+    import argparse
+
     import case_explorer_html
 
-    data = build()
+    ap = argparse.ArgumentParser(prog="case_explorer")
+    ap.add_argument("--config", default=str(DEFAULT_CONFIG),
+                    help="comparison set under configs/comparison/ (default: retention-v3)")
+    cli_args = ap.parse_args()
+    config = json.loads(Path(cli_args.config).read_text(encoding="utf-8"))
+
+    data = build(config)
+    print(f"config: {Path(cli_args.config).name}  pack: {config['pack']}")
     print("atoms reproduce the scorer:")
     print("\n".join(data["verification"]))
     print()
     print("items          ", len(data["items"]))
     print("always correct ", {m["key"]: m["always_correct"] for m in data["models"]})
 
-    OUT_HTML.parent.mkdir(parents=True, exist_ok=True)
-    OUT_HTML.write_text(case_explorer_html.render(data), encoding="utf-8")
-    print("wrote          ", OUT_HTML, f"{OUT_HTML.stat().st_size / 1e6:.2f} MB")
+    out_html = REPO / config["explorer_output"]
+    out_html.parent.mkdir(parents=True, exist_ok=True)
+    out_html.write_text(case_explorer_html.render(data), encoding="utf-8")
+    print("wrote          ", out_html, f"{out_html.stat().st_size / 1e6:.2f} MB")

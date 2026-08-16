@@ -16,7 +16,7 @@ was served by more than one build and its numbers are a blend of two systems.
 `cost` is a LOWER BOUND — OpenRouter reports `usage.cost` only for providers that
 supply it, and a missing value stays absent rather than becoming zero.
 
-**66 runs recorded.**
+**72 runs recorded.**
 
 | run_id | arm | model requested | provider | prompt | items x reps | outcomes | pin proof | cost USD | testset | scorer |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -86,8 +86,14 @@ supply it, and a missing value stays absent rather than becoming zero.
 | `20260814-134803Z-e17-tf-qwen` | e17-tf-qwen | `qwen3.6-27b-fp8` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
 | `20260815-124507Z-e18-smoke-qwen38` | e18-smoke-qwen38 | `qwen3.8-27b-fp8` | *unpinned* | v9_16_base | 3 x 1 | ok=3 | n/a (1 rep) | 0.000000 | `a6d070bf789f` | `9b4afc95` |
 | `20260815-124600Z-e18-tf-qwen38` | e18-tf-qwen38 | `qwen3.8-27b-fp8` | *unpinned* | v9_16_base | 138 x 3 | ok=414 | 138/138 | 0.000000 | `ff7f728ca597` | `9b4afc95` |
+| `20260815-222821Z-e20-smoke-gemini` | e20-smoke-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 3 x 1 | ok=3 | n/a (1 rep) | 0.004370 | `90345ac59ee8` | `9b4afc95` |
+| `20260815-222828Z-e20-smoke-qwen38` | e20-smoke-qwen38 | `qwen3.8-27b-fp8` | *unpinned* | v9_16_base | 3 x 1 | ok=3 | n/a (1 rep) | 0.000000 | `90345ac59ee8` | `9b4afc95` |
+| `20260815-222844Z-e20-smoke-gemma` | e20-smoke-gemma | `gemma-4-12b-it` | *unpinned* | v9_16_base | 3 x 1 | ok=0, **transport_error=3** | n/a (1 rep) | 0.000000 | `90345ac59ee8` | `9b4afc95` |
+| `20260815-222917Z-e20-chal-gemini` | e20-chal-gemini | `google/gemini-2.5-flash` | Google | v9_16_base | 50 x 3 | ok=150 | 50/50 | 0.172988 | `a3029a7081a1` | `9b4afc95` |
+| `20260815-223004Z-e20-chal-qwen38` | e20-chal-qwen38 | `qwen3.8-27b-fp8` | *unpinned* | v9_16_base | 50 x 3 | ok=150 | 50/50 | 0.000000 | `a3029a7081a1` | `9b4afc95` |
+| `20260815-223809Z-e20-chal-gemma` | e20-chal-gemma | `gemma-4-12b-it` | *unpinned* | v9_16_base | 50 x 3 | ok=0, **transport_error=150** | 0/0 | 0.000000 | `a3029a7081a1` | `9b4afc95` |
 
-**Total recorded spend: $33.9912 (lower bound) over 10475 calls.**
+**Total recorded spend: $34.1685 (lower bound) over 10934 calls.**
 
 ## Directories with no `run.json`
 

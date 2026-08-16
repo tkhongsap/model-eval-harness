@@ -476,5 +476,64 @@
       "short": "Gemma 4",
       "ours": true
     }
+  },
+  "pack": "retention_v3",
+  "metrics_stem": "model-comparison",
+  "incumbent": "gemini",
+  "dataset": {
+    "families": [
+      {
+        "name": "Clear",
+        "count": 30,
+        "what": "Unambiguous calls -- the baseline"
+      },
+      {
+        "name": "Thai linguistic",
+        "count": 30,
+        "what": "Politeness particles, negation, honorifics that flip meaning"
+      },
+      {
+        "name": "Tie-break",
+        "count": 17,
+        "what": "Two plausible reasons; only one correct by the rules"
+      },
+      {
+        "name": "Escape",
+        "count": 13,
+        "what": "Quotes and characters that break JSON output"
+      },
+      {
+        "name": "Long context",
+        "count": 12,
+        "what": "12,000-18,000 character transcripts"
+      },
+      {
+        "name": "ASR noise",
+        "count": 10,
+        "what": "Speech-to-text errors left in deliberately"
+      },
+      {
+        "name": "Code-switch",
+        "count": 10,
+        "what": "Thai and English mixed mid-sentence"
+      },
+      {
+        "name": "Multi-product",
+        "count": 10,
+        "what": "Several products in one call"
+      },
+      {
+        "name": "Regression",
+        "count": 6,
+        "what": "Specific past failures, kept as guards"
+      }
+    ]
+  },
+  "head_to_head_key": "qwen36_vs_qwen38",
+  "copy": {
+    "title": "Four models, one evaluation",
+    "doc_title": "Four-Model GPU Benchmark",
+    "kicker_subject": "Retention call labelling",
+    "note": null
   }
 }

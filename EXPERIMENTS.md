@@ -2424,3 +2424,70 @@ episode or a permanent change.
 
 `RECONCILED` stays **NO**. `retention_v3` is synthetic, so every number here — Gemini's
 included — is an upper bound.
+
+## Experiment 20 — the challenge pack, and what 50 items cannot settle
+
+**2026-08-15/16. `retention_challenge_v1`, 50 items / 64 scored rows, prompt `v9_16_base`,
+3 replicates, `scoring_code_sha 9b4afc95…`. Two arms completed, one failed.**
+Full write-up: [`docs/experiment20-results.md`](./docs/experiment20-results.md).
+
+The pack had never been run by any model — its `testset_sha a3029a70…` appeared in no
+`out/runs/*/run.json`. It tests interaction structure rather than label semantics: 18 turns
+every item, five families of ten (`compound_history`, `negotiation_reversal`, `multi_product`,
+`interaction_noise`, `boundary_outcome`), and 11 of 50 calls carrying more than one product
+against 8 of 138 in v3.
+
+### The pack cannot separate the two models, and that is the result
+
+| | call outcome | reason | product |
+|---|---:|---:|---:|
+| Gemini 2.5 Flash | 0.951 | 0.831 | 0.976 |
+| Qwen3.8 27B | 0.930 | 0.833 | 0.970 |
+
+The 0.951-vs-0.930 gap on call outcome is **not** a difference: across 50 calls the two models
+disagreed on **exactly one**, and on product on **none at all**. Both come back UNDERPOWERED.
+Only `reason` had enough disagreement to judge (12 discordant, net +2 against a ±10 band) and
+it is INDISTINGUISHABLE. Reading the raw F1 as a ranking is precisely the error the paired test
+exists to prevent.
+
+Reason is hard for both: **19 of 50 calls failed by both models**.
+
+### Gemini did not vary on this run
+
+`raw-unstable 0/50`, `scored-unstable 0`, `N_flip 0` — byte-identical text on all three
+replicates of every call, under the same provider pin that produced **111/138** on 2026-08-14.
+Evidence that the determinism collapse was an episode, though **not a clean replication**: a
+different pack with shorter transcripts. Experiment 19 is still the right instrument.
+
+Qwen3.8 went the other way — 46/50 raw-unstable, only 2 reaching a scored label.
+
+### Gemma 4 12B did not run, and the pre-flight said so
+
+Every one of its 150 calls returned HTTP 500: the gateway could not reach its vLLM backend at
+`10.94.154.104:8000`. Three things came out of it, all now fixed in code:
+
+1. **The smoke had already failed** (`transport_error=3`) and `scripts/experiment20.py` gated
+   on the process exit code — which `evalgen stability` returns as 0 even when every call
+   fails. The runner announced "all three smokes passed" and spent 11 minutes rediscovering it.
+   `_all_ok()` now reads `outcome_counts`. **An exit code is not a result.**
+2. **`/v1/models` listed the model throughout the outage** and still did 90 minutes later.
+   `scripts/wait_for_model.py` sends a real generation and treats only a 200 as up.
+3. **A dead arm scores 1.000 on product** — `flatten.to_rows` emits a ground-truth-shaped
+   skeleton, so an arm that answered nothing carries the ground truth's own product names.
+   `model_comparison_report.read_run` now refuses any run with a non-`ok` row.
+
+### The reporting layer is now config-driven, and it was carrying a fabrication
+
+`configs/comparison/<pack>.json` declares the pack, arms, runs and expected shape; both the
+report and the case-explorer read the same file. The v3 config reproduces the previously
+hardcoded values, which is the regression test.
+
+An independent verification pass (7 agents re-deriving every figure from the raw logs) found
+that the report's "worked example" callout was **frozen literals from the v3 run**: on the
+50-item page it read "both models got 128 right and both got 7 wrong" — 128+7+3 = 138 — and
+credited a result to Gemma, which the same page said never ran. A second pass found the footer
+citing the wrong JSON file and a self-contradiction about which models rewrote their prose. All
+are now derived from the data. **Every figure the F1, token, latency and verdict tables carry
+was independently reproduced; every defect found was in ungated prose beside them.**
+
+`RECONCILED` stays **NO**.

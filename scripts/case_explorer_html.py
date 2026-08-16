@@ -584,7 +584,7 @@ function renderList(items) {
     html += '<div class="case" role="option" tabindex="0" data-id="' + it.item_id
       + '" aria-selected="' + (it.item_id === state.selected) + '">'
       + '<div class="id">' + esc(it.item_id) + "</div>"
-      + '<div class="meta">' + esc(it.family) + " &middot; " + it.slice
+      + '<div class="meta">' + esc(it.family) + (it.slice ? " &middot; " + it.slice : "")
       + (it.gt.length > 1 ? " &middot; " + it.gt.length + " products" : "")
       + "</div><div class='dots'>";
     for (const m of MODELS) {
@@ -739,7 +739,7 @@ function renderDetail(it) {
   const long = it.turns.length > 14;
   let h = '<div class="wrap"><div class="case-head"><h2>' + esc(it.item_id) + "</h2>"
     + '<span class="pill">' + esc(it.family) + "</span>"
-    + '<span class="pill">' + esc(it.slice) + "</span>"
+    + (it.slice ? '<span class="pill">' + esc(it.slice) + "</span>" : "")
     + '<span class="pill">call ' + esc(it.call_id) + "</span>"
     + '<span class="pill">' + it.chars + " chars</span>"
     + "</div>";
@@ -869,7 +869,9 @@ for (const chip of document.querySelectorAll(".chip[data-family]")) {
   };
 }
 const bind = (id, key, prop) => {
-  document.getElementById(id).addEventListener("change", e => {
+  const el = document.getElementById(id);
+  if (!el) return;   // the Split control is absent for packs with no tune/holdout split
+  el.addEventListener("change", e => {
     state[key] = prop === "checked" ? e.target.checked : e.target.value;
     render();
   });
@@ -889,7 +891,8 @@ document.getElementById("reset").onclick = () => {
   }
   for (const [id, v] of [["f-slice", "all"], ["f-verdict", "all"],
                           ["f-focus", ""], ["f-focusmode", "wrong"], ["f-q", ""]]) {
-    document.getElementById(id).value = v;
+    const el = document.getElementById(id);
+    if (el) el.value = v;
   }
   document.getElementById("f-unstable").checked = false;
   document.getElementById("f-multi").checked = false;
@@ -936,6 +939,20 @@ def render(data: dict) -> str:
         "{}: {}".format(m["short"], m["run_id"]) for m in data["models"]
     )
 
+    # A pack without a tune/holdout split gets no Split control rather than a dead one.
+    # retention_challenge_v1 was authored as a single block; there is nothing to keep apart.
+    has_split = any(i.get("slice") for i in data["items"])
+    split_filter = ("""<div>
+          <span class="flabel">Split</span>
+          <select id="f-slice">
+            <option value="all">Tune + holdout</option>
+            <option value="tune">Tune only</option>
+            <option value="holdout">Holdout only</option>
+          </select>
+        </div>""" if has_split else "<div></div>")
+    _COUNT = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six"}
+    n_models_word = _COUNT.get(len(data["models"]), str(len(data["models"])))
+
     blob = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     # `<` only ever appears inside JSON string values here, so escaping it is both safe
     # and sufficient to keep a transcript from closing the script element early.
@@ -956,9 +973,9 @@ def render(data: dict) -> str:
 
 <div class="top">
   <h1>Retention eval &mdash; case explorer</h1>
-  <span class="sub">138 calls &middot; ground truth, four models, one case at a time</span>
+  <span class="sub">{len(data["items"])} calls &middot; ground truth, {n_models_word} models, one case at a time</span>
   <span class="spacer"></span>
-  <span class="pill">retention_v3</span>
+  <span class="pill">{data.get("pack") or "retention_v3"}</span>
   <span class="pill">scored run: repeat 1 of 3</span>
   <button class="tbtn" id="theme" type="button">Light / dark</button>
 </div>
@@ -980,22 +997,15 @@ def render(data: dict) -> str:
         <div class="chips">{chips}</div>
       </div>
       <div class="frow two">
-        <div>
-          <span class="flabel">Split</span>
-          <select id="f-slice">
-            <option value="all">Tune + holdout</option>
-            <option value="tune">Tune only</option>
-            <option value="holdout">Holdout only</option>
-          </select>
-        </div>
+        {split_filter}
         <div>
           <span class="flabel">Who got it right</span>
           <select id="f-verdict">
             <option value="all">Any</option>
-            <option value="allright">All four correct</option>
+            <option value="allright">All {n_models_word} correct</option>
             <option value="anywrong">At least one wrong</option>
             <option value="split">They disagreed</option>
-            <option value="allwrong">All four wrong</option>
+            <option value="allwrong">All {n_models_word} wrong</option>
           </select>
         </div>
       </div>

@@ -1,0 +1,61 @@
+{
+  "pack": "retention_challenge_v1",
+  "title": "A harder test set, and what it can and cannot separate",
+  "doc_title": "Challenge Pack Benchmark",
+  "kicker_subject": "Retention call labelling, challenge pack",
+  "expected_rows": 150,
+  "expected_gt_rows": 64,
+  "incumbent": "gemini",
+  "models": [
+    {
+      "key": "gemini",
+      "name": "Gemini 2.5 Flash",
+      "short": "Gemini",
+      "arm": "e20-chal-gemini",
+      "run": "20260815-222917Z-e20-chal-gemini",
+      "ours": false
+    },
+    {
+      "key": "qwen38",
+      "name": "Qwen3.8 27B",
+      "short": "Qwen3.8",
+      "arm": "e20-chal-qwen38",
+      "run": "20260815-223004Z-e20-chal-qwen38",
+      "ours": true
+    }
+  ],
+  "vs_incumbent": {
+    "qwen38": "compare-e20-qwen38-vs-gemini.txt"
+  },
+  "head_to_head": null,
+  "output": {
+    "dir": "docs/reports",
+    "stem": "model-comparison-challenge"
+  },
+  "explorer_output": "out/case-explorer-challenge.html",
+  "split": null,
+  "note": "Gemma 4 12B was attempted and is NOT in this comparison: its vLLM backend at 10.94.154.104:8000 went down between the smoke test and the arm, and all 150 calls returned HTTP 500 from the gateway. The model stayed listed in /v1/models throughout. Run 20260815-223809Z-e20-chal-gemma is kept as the record of that failure. Add the arm back to this config and regenerate once the backend returns.",
+  "testset": "tests/fixtures/testsets/retention_challenge_v1.jsonl",
+  "family_labels": {
+    "compound_history": [
+      "Compound history",
+      "The customer has called before; the earlier contact changes the answer"
+    ],
+    "negotiation_reversal": [
+      "Negotiation reversal",
+      "The outcome flips mid-call after an offer is made or refused"
+    ],
+    "multi_product": [
+      "Multi-product",
+      "Several products in one call, reaching different outcomes"
+    ],
+    "interaction_noise": [
+      "Interaction noise",
+      "Holds, transfers, interruptions and returning to an earlier topic"
+    ],
+    "boundary_outcome": [
+      "Boundary outcome",
+      "The end state is negotiated explicitly and sits near a label boundary"
+    ]
+  }
+}
