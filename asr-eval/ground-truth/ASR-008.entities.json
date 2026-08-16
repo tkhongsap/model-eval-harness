@@ -1,0 +1,212 @@
+[
+  {
+    "type": "phone",
+    "value": "0810000308",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด",
+    "turn_idx": 5
+  },
+  {
+    "type": "phone",
+    "value": "0810000308",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด",
+    "turn_idx": 6
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 11
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 11
+  },
+  {
+    "type": "date",
+    "value": "2026-08-16",
+    "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+    "turn_idx": 14
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 20
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 50
+  },
+  {
+    "type": "id",
+    "value": "597029",
+    "spoken": "ห้า เก้า เจ็ด ศูนย์ สอง เก้า",
+    "turn_idx": 51
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 52
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 53
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 56
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 56
+  },
+  {
+    "type": "date",
+    "value": "2026-08-16",
+    "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+    "turn_idx": 60
+  },
+  {
+    "type": "phone",
+    "value": "0810000308",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด",
+    "turn_idx": 64
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 67
+  },
+  {
+    "type": "phone",
+    "value": "0810000328",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง แปด",
+    "turn_idx": 72
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 76
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 77
+  },
+  {
+    "type": "phone",
+    "value": "0810000328",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง แปด",
+    "turn_idx": 96
+  },
+  {
+    "type": "date",
+    "value": "2026-08-16",
+    "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+    "turn_idx": 108
+  },
+  {
+    "type": "phone",
+    "value": "0810000308",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด",
+    "turn_idx": 116
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 119
+  },
+  {
+    "type": "phone",
+    "value": "0810000328",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง แปด",
+    "turn_idx": 120
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 124
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 126
+  },
+  {
+    "type": "id",
+    "value": "597029",
+    "spoken": "ห้า เก้า เจ็ด ศูนย์ สอง เก้า",
+    "turn_idx": 126
+  },
+  {
+    "type": "amount",
+    "value": "599",
+    "spoken": "ห้าร้อยเก้าสิบเก้าบาท",
+    "turn_idx": 128
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 128
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 130
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 138
+  },
+  {
+    "type": "amount",
+    "value": "50",
+    "spoken": "ห้าสิบบาท",
+    "turn_idx": 144
+  },
+  {
+    "type": "months",
+    "value": "12",
+    "spoken": "สิบสอง เดือน",
+    "turn_idx": 144
+  },
+  {
+    "type": "date",
+    "value": "2026-08-16",
+    "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+    "turn_idx": 151
+  },
+  {
+    "type": "phone",
+    "value": "0810000308",
+    "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด",
+    "turn_idx": 155
+  },
+  {
+    "type": "id",
+    "value": "597029",
+    "spoken": "ห้า เก้า เจ็ด ศูนย์ สอง เก้า",
+    "turn_idx": 156
+  }
+]

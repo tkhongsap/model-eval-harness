@@ -1,0 +1,37 @@
+# Dependencies for the ASR audio eval set ONLY.
+#
+# DELIBERATELY SEPARATE FROM THE REPO ROOT requirements.txt. That file is pinned to
+# production's own versions and its header says why: under pandas 3.x a dtype guard in
+# production's pre_process stops firing and call_result accuracy collapses from 0.75 to
+# 0.25. Those pins change what the production scorer computes. Nothing here touches the
+# scoring path, and nothing here may be merged into that file.
+#
+# Install into a SEPARATE virtualenv:
+#     python -m venv .venv-asr
+#     .venv-asr/bin/pip install -r asr-eval/requirements-asr.txt
+#
+# Versions are the ones this set was built and validated with on 2026-08-16, Python 3.12.
+
+# Text-to-speech. Uses Microsoft's public Edge neural voices (th-TH-NiwatNeural,
+# th-TH-PremwadeeNeural). No API key. NOTE: this sends the dialogue text to an external
+# service -- see README.md, "What leaves this machine". Only needed to REGENERATE audio;
+# scoring and validation do not need it.
+edge-tts==7.2.8
+
+# Audio IO. The bundled libsndfile decodes the mp3 that edge-tts returns and writes the
+# 8 kHz PCM_16 wav that production accepts, so no ffmpeg is required anywhere.
+soundfile==0.14.0
+
+# Resampling, filtering, spectrogram.
+numpy==2.5.2
+scipy==1.18.0
+
+# Graph tools.
+matplotlib==3.11.1
+
+# Thai word segmentation for WER. Thai has no word spaces, so WER is undefined without a
+# tokeniser; CER does not need this and is the primary metric.
+pythainlp==5.3.7
+
+# Test runner for asr-eval/tests/.
+pytest==9.1.1

@@ -1,0 +1,14 @@
+# The 24 kHz masters. ~200 MB, and they exist only so a different delivery profile can be
+# re-derived without re-spending TTS calls. The delivered 8 kHz audio/ IS committed --
+# that is the eval set, and freezing it is what makes an arm-to-arm comparison meaningful.
+masters/
+
+# TTS response cache, keyed by sha256(text|voice|rate|pitch). Regenerable, and large.
+cache/
+
+# Model outputs under test. Never commit an arm's transcripts: they are model output over
+# audio, the same class of artifact the repo-root .gitignore keeps out of git for out/.
+hypotheses/
+
+# Generated plots and reports are re-derivable from the committed audio in one command.
+reports/plots/

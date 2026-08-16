@@ -1,0 +1,26 @@
+# Audio is binary. NOT optional, and not covered by the repo root.
+#
+# The root .gitattributes sets `* text=auto eol=lf` and then exempts a list of binary
+# extensions -- .png, .jpg, .pdf, .xlsx and so on. `.wav` is not on that list, so without
+# this file every WAV here would fall through to `text=auto` and depend on git's
+# NUL-byte heuristic to be left alone.
+#
+# That heuristic would almost certainly get it right. It is still the wrong thing to rely
+# on, for the reason the root file spends twenty lines explaining: `core.autocrlf`
+# silently rewrote every LF in tests/fixtures/testsets/retention_v1.jsonl on 2026-08-05,
+# the suite broke on a checkout that changed no committed content, and no diff was visible
+# because git's own autocrlf-aware diffing treated the two as equivalent. A single reflowed
+# byte in a WAV moves its sha256, and manifest.json pins a sha256 per file precisely so
+# that two ASR arms can be compared on identical bytes. Declared beats inferred.
+*.wav binary
+*.mp3 binary
+*.flac binary
+*.png binary
+
+# The ground truth is matched as verbatim Thai text and its bytes are the reference every
+# CER and WER is computed against. Inherit the root's LF rule explicitly rather than by
+# accident.
+*.txt text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.py text eol=lf
