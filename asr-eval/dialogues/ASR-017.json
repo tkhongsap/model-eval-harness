@@ -1,0 +1,1760 @@
+{
+  "item_id": "ASR-017",
+  "family": "overlap_crosstalk",
+  "scenario": "retention",
+  "call_direction": "IN",
+  "meta": {
+    "call_id": "7116",
+    "phone_number": "0810000317",
+    "call_time": "165334",
+    "agent_id": "A216",
+    "first_name": "rattana",
+    "last_name": "duangdee",
+    "provider": "D",
+    "record_date": "20260805",
+    "duration": 400,
+    "call_direction": "IN"
+  },
+  "turns": [
+    {
+      "idx": 0,
+      "speaker": "agent",
+      "text": "สวัสดีค่ะ ดิฉันรัตนา จากทรูค่ะ วันนี้มีเรื่องอะไรให้ดูแลไหมคะ",
+      "gap_before_s": 0.59,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 1,
+      "speaker": "customer",
+      "text": "สวัสดีครับ พอดีผมมีเรื่องจะสอบถามหน่อยครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.614,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 2,
+      "speaker": "customer",
+      "text": "คือผมอยากจะยกเลิกเบอร์นี้ครับ ใช้มานานแล้วแต่รู้สึกว่าค่าบริการมันแพงเกินไป",
+      "gap_before_s": 0.292,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 3,
+      "speaker": "agent",
+      "text": "อ๋อ เข้าใจแล้วค่ะ",
+      "gap_before_s": 0.675,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 4,
+      "speaker": "agent",
+      "text": "ก่อนอื่นรบกวนขอหมายเลขที่ต้องการให้ตรวจสอบค่ะ",
+      "gap_before_s": 0.474,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 5,
+      "speaker": "customer",
+      "text": "เป็นเบอร์ ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ครับ เบอร์นี้ใช้มาสิบกว่าปีแล้ว",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.529,
+      "entities": [
+        {
+          "type": "phone",
+          "value": "0810000317",
+          "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 6,
+      "speaker": "agent",
+      "text": "ขออนุญาตทวนข้อมูลนะคะ หมายเลข ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ชื่อคุณณัฐวุฒิ ถูกต้องไหมคะ",
+      "gap_before_s": 0.254,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "phone",
+          "value": "0810000317",
+          "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 7,
+      "speaker": "customer",
+      "text": "ถูกต้องครับ",
+      "gap_before_s": 0.458,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 8,
+      "speaker": "agent",
+      "text": "ขอบคุณค่ะ ตรวจสอบข้อมูลเรียบร้อยแล้วค่ะ",
+      "gap_before_s": 0.415,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 9,
+      "speaker": "agent",
+      "text": "ก่อนดำเนินการยกเลิก ขออนุญาตสอบถามหน่อยนะคะ ที่บอกว่าแพง คือแพงกว่าที่คาดไว้ประมาณเท่าไหร่คะ",
+      "gap_before_s": 0.255,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 10,
+      "speaker": "customer",
+      "text": "เรื่องนี้ผมโทรมาแจ้งเป็นรอบที่สามแล้วนะครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.391,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 11,
+      "speaker": "agent",
+      "text": "ถ้าคุณลูกค้ายังใช้บริการต่อ ดิฉันขออนุมัติส่วนลดพิเศษให้ แปดสิบบาท ต่อเดือน นาน ยี่สิบสี่ เดือน",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.539,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "80",
+          "spoken": "แปดสิบบาท",
+          "turn_idx": -1
+        },
+        {
+          "type": "months",
+          "value": "24",
+          "spoken": "ยี่สิบสี่ เดือน",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 12,
+      "speaker": "customer",
+      "text": "ที่บอกว่าจะติดต่อกลับ ก็ไม่เห็นมีใครโทรมาเลยครับ",
+      "gap_before_s": 0.422,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 13,
+      "speaker": "agent",
+      "text": "ขอบคุณที่แจ้งเข้ามานะคะ ข้อมูลนี้มีประโยชน์กับทีมงานมาก",
+      "gap_before_s": 0.511,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 14,
+      "speaker": "customer",
+      "text": "ทำไมลูกค้าใหม่ได้ราคาถูกกว่าลูกค้าเก่าล่ะครับ ผมอยู่มาสิบปีแล้วนะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.413,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 15,
+      "speaker": "agent",
+      "text": "ดิฉันจะบันทึกเป็นข้อร้องเรียนให้ด้วยค่ะ เพื่อให้มีการติดตามจากหัวหน้างาน",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.441,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 16,
+      "speaker": "agent",
+      "text": "ดิฉันมีข้อเสนอพิเศษสำหรับลูกค้าที่ใช้งานมานานนะคะ ลดค่าบริการเหลือเดือนละ สามร้อยสี่สิบเก้าบาท เป็นเวลา ยี่สิบสี่ เดือน",
+      "gap_before_s": 0.342,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "349",
+          "spoken": "สามร้อยสี่สิบเก้าบาท",
+          "turn_idx": -1
+        },
+        {
+          "type": "months",
+          "value": "24",
+          "spoken": "ยี่สิบสี่ เดือน",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 17,
+      "speaker": "customer",
+      "text": "ครับ ๆ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.367,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 18,
+      "speaker": "customer",
+      "text": "ขอโทษครับ ช่วยพูดอีกครั้งได้ไหมครับ สัญญาณขาดหายไปนิดหนึ่ง",
+      "gap_before_s": 0.36,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 19,
+      "speaker": "agent",
+      "text": "ขออนุญาตอ่านเงื่อนไขให้ฟังอีกครั้งนะคะ จะได้ไม่มีปัญหาภายหลัง",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.391,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 20,
+      "speaker": "customer",
+      "text": "ราคาไม่ต่างจากเดิมเท่าไหร่นี่ครับ ลดแค่ แปดสิบบาท เอง",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.311,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "80",
+          "spoken": "แปดสิบบาท",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 21,
+      "speaker": "agent",
+      "text": "ถ้าเทียบกันจริง ๆ แพ็กเกจนี้ได้มากกว่าที่คุณลูกค้าใช้อยู่ค่ะ",
+      "gap_before_s": 0.405,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 22,
+      "speaker": "customer",
+      "text": "ไม่เอาครับ ผมตัดสินใจแล้วจริง ๆ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.494,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 23,
+      "speaker": "agent",
+      "text": "ขอโทษแทนทีมงานด้วยค่ะ ครั้งนี้ดิฉันจะติดตามเรื่องให้เองจนจบ",
+      "gap_before_s": 0.639,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 24,
+      "speaker": "customer",
+      "text": "ฟังดูดี แต่ตอนใช้จริงมักไม่เป็นแบบนั้นครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.251,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 25,
+      "speaker": "agent",
+      "text": "ราคานี้รวมภาษีมูลค่าเพิ่มแล้วค่ะ ไม่มีบวกเพิ่มในบิล",
+      "gap_before_s": 0.452,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 26,
+      "speaker": "agent",
+      "text": "รบกวนสอบถามเหตุผลที่ต้องการยกเลิกหน่อยได้ไหมคะ เผื่อดิฉันพอจะช่วยหาทางออกให้ได้",
+      "gap_before_s": 0.499,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 27,
+      "speaker": "customer",
+      "text": "อ๋อ",
+      "gap_before_s": 0.348,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 28,
+      "speaker": "agent",
+      "text": "เข้าใจค่ะ ไม่ทราบว่าปัญหาหลักคือเรื่องราคา หรือเรื่องคุณภาพสัญญาณคะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.606,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 29,
+      "speaker": "customer",
+      "text": "ครับ",
+      "gap_before_s": 0.362,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 30,
+      "speaker": "agent",
+      "text": "มีสิทธิพิเศษสำหรับลูกค้าเก่าค่ะ รับส่วนลดค่าเครื่องสูงสุด ห้าร้อยเก้าสิบเก้าบาท พร้อมแพ็กเกจเดิมในราคาเดิม",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.575,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "599",
+          "spoken": "ห้าร้อยเก้าสิบเก้าบาท",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 31,
+      "speaker": "customer",
+      "text": "แล้วไงครับ",
+      "gap_before_s": 0.517,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 32,
+      "speaker": "customer",
+      "text": "ขอเวลาปรึกษาที่บ้านก่อนได้ไหมครับ",
+      "gap_before_s": 0.609,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 33,
+      "speaker": "agent",
+      "text": "เข้าใจค่ะ งั้นดิฉันขออนุญาตเช็กสิทธิ์เพิ่มเติมให้อีกครั้งนะคะ",
+      "gap_before_s": 0.511,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 34,
+      "speaker": "customer",
+      "text": "เรื่องนี้ผมโทรมาแจ้งเป็นรอบที่สามแล้วนะครับ",
+      "gap_before_s": 0.725,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 35,
+      "speaker": "agent",
+      "text": "ขออนุญาตอธิบายเงื่อนไขให้ฟังก่อนนะคะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.597,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 36,
+      "speaker": "customer",
+      "text": "แล้วรอบบิลถัดไปจะเปลี่ยนเลยใช่ไหมครับ",
+      "gap_before_s": 0.614,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 37,
+      "speaker": "agent",
+      "text": "ขออนุญาตบันทึกรายละเอียดลงในระบบก่อนนะคะ",
+      "gap_before_s": 0.748,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 38,
+      "speaker": "customer",
+      "text": "ตกลงผมต้องรออีกกี่วันครับ",
+      "gap_before_s": 0.327,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 39,
+      "speaker": "agent",
+      "text": "ระบบกำลังประมวลผลค่ะ รบกวนรอสักครู่",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.591,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 40,
+      "speaker": "agent",
+      "text": "ช่างจะเข้าตรวจสอบในวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ค่ะ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะคะ",
+      "gap_before_s": 0.384,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "date",
+          "value": "2026-08-05",
+          "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 41,
+      "speaker": "customer",
+      "text": "ครับ ๆ",
+      "gap_before_s": 0.658,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 42,
+      "speaker": "customer",
+      "text": "อันนี้มีผลกับเบอร์อื่นในชื่อเดียวกันด้วยไหมครับ",
+      "gap_before_s": 0.46,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 43,
+      "speaker": "agent",
+      "text": "ดิฉันจะติดตามเรื่องนี้ให้เป็นกรณีพิเศษค่ะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.573,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 44,
+      "speaker": "customer",
+      "text": "แล้วโปรนี้มีเงื่อนไขอะไรซ่อนอยู่หรือเปล่าครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.626,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 45,
+      "speaker": "agent",
+      "text": "ดิฉันจะบันทึกเป็นข้อร้องเรียนให้ด้วยค่ะ เพื่อให้มีการติดตามจากหัวหน้างาน",
+      "gap_before_s": 0.405,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 46,
+      "speaker": "customer",
+      "text": "อะไรนะครับ ไม่ค่อยได้ยินครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.677,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 47,
+      "speaker": "agent",
+      "text": "ขออนุญาตทวนสิ่งที่คุณลูกค้าแจ้งมาอีกครั้งนะคะ",
+      "gap_before_s": 0.585,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 48,
+      "speaker": "customer",
+      "text": "แล้วถ้าใช้ไม่ครบ ยี่สิบสี่ เดือน จะมีค่าปรับไหมครับ",
+      "gap_before_s": 0.298,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "months",
+          "value": "24",
+          "spoken": "ยี่สิบสี่ เดือน",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 49,
+      "speaker": "agent",
+      "text": "ไม่มีค่าปรับค่ะ สัญญานี้ยกเลิกได้ตลอด ไม่มีเงื่อนไขผูกมัด",
+      "gap_before_s": 0.291,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 50,
+      "speaker": "agent",
+      "text": "ขอโทษที่ทำให้ไม่สะดวกนะคะ ปกติคุณลูกค้าใช้เน็ตเดือนละประมาณกี่กิกะคะ",
+      "gap_before_s": 0.346,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 51,
+      "speaker": "customer",
+      "text": "แล้วยังไงต่อครับ",
+      "gap_before_s": 0.446,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 52,
+      "speaker": "customer",
+      "text": "ราคาที่ว่านี้รวมภาษีหรือยังครับ เดี๋ยวบิลมาแล้วบวกอีก",
+      "gap_before_s": 0.554,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 53,
+      "speaker": "agent",
+      "text": "ขอโทษแทนทีมงานด้วยค่ะ ครั้งนี้ดิฉันจะติดตามเรื่องให้เองจนจบ",
+      "gap_before_s": 0.498,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 54,
+      "speaker": "agent",
+      "text": "ทีมงานจะติดต่อกลับภายในยี่สิบสี่ชั่วโมงค่ะ ที่หมายเลข ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม เจ็ด",
+      "gap_before_s": 0.327,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "phone",
+          "value": "0810000337",
+          "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม เจ็ด",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 55,
+      "speaker": "customer",
+      "text": "เข้าใจแล้วครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.372,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 56,
+      "speaker": "agent",
+      "text": "ถ้าคุณลูกค้ายังใช้บริการต่อ ดิฉันขออนุมัติส่วนลดพิเศษให้ แปดสิบบาท ต่อเดือน นาน ยี่สิบสี่ เดือน",
+      "gap_before_s": 0.495,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "80",
+          "spoken": "แปดสิบบาท",
+          "turn_idx": -1
+        },
+        {
+          "type": "months",
+          "value": "24",
+          "spoken": "ยี่สิบสี่ เดือน",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 57,
+      "speaker": "customer",
+      "text": "ครับ",
+      "gap_before_s": 0.355,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 58,
+      "speaker": "agent",
+      "text": "ระบบจะส่งเอสเอ็มเอสยืนยันไปที่เบอร์ ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ภายในสิบห้านาทีค่ะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.278,
+      "entities": [
+        {
+          "type": "phone",
+          "value": "0810000317",
+          "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 59,
+      "speaker": "customer",
+      "text": "อืม",
+      "gap_before_s": 0.28,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 60,
+      "speaker": "customer",
+      "text": "แล้วถ้าไม่ได้ตามที่บอก ผมจะร้องเรียนที่ไหนครับ",
+      "gap_before_s": 0.472,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 61,
+      "speaker": "agent",
+      "text": "ส่วนนี้อาจใช้เวลาสักนิดค่ะ แต่ดิฉันจะเร่งให้เร็วที่สุด",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.552,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 62,
+      "speaker": "agent",
+      "text": "เข้าใจค่ะ ไม่ทราบว่าปัญหาหลักคือเรื่องราคา หรือเรื่องคุณภาพสัญญาณคะ",
+      "gap_before_s": 0.255,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 63,
+      "speaker": "customer",
+      "text": "อ่อ โอเค",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.538,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 64,
+      "speaker": "customer",
+      "text": "ขอเวลาปรึกษาที่บ้านก่อนได้ไหมครับ",
+      "gap_before_s": 0.417,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 65,
+      "speaker": "agent",
+      "text": "ดิฉันเข้าใจค่ะ ถ้าอย่างนั้นขออนุญาตเสนอเป็นสัญญาแบบไม่ผูกมัดแทน",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.346,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 66,
+      "speaker": "agent",
+      "text": "ช่างจะเข้าตรวจสอบในวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ค่ะ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะคะ",
+      "gap_before_s": 0.313,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "date",
+          "value": "2026-08-05",
+          "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 67,
+      "speaker": "customer",
+      "text": "ครับ ๆ",
+      "gap_before_s": 0.601,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 68,
+      "speaker": "agent",
+      "text": "ดิฉันเปิดเคสให้แล้วนะคะ เลขที่เคส ห้า ห้า เก้า ศูนย์ สาม หนึ่ง ใช้เวลาดำเนินการภายใน ยี่สิบสี่ เดือน",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.476,
+      "entities": [
+        {
+          "type": "months",
+          "value": "24",
+          "spoken": "ยี่สิบสี่ เดือน",
+          "turn_idx": -1
+        },
+        {
+          "type": "id",
+          "value": "559031",
+          "spoken": "ห้า ห้า เก้า ศูนย์ สาม หนึ่ง",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 69,
+      "speaker": "customer",
+      "text": "อ๋อ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.317,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 70,
+      "speaker": "customer",
+      "text": "เคยได้ยินแบบนี้มาแล้วครับ สุดท้ายบิลก็ขึ้นอยู่ดี",
+      "gap_before_s": 0.727,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 71,
+      "speaker": "agent",
+      "text": "ถ้าอย่างนั้น ดิฉันขออนุมัติเพิ่มส่วนลดให้อีก แปดสิบบาท ต่อเดือนค่ะ",
+      "gap_before_s": 0.574,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "80",
+          "spoken": "แปดสิบบาท",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 72,
+      "speaker": "customer",
+      "text": "ทำไมลูกค้าใหม่ได้ราคาถูกกว่าลูกค้าเก่าล่ะครับ ผมอยู่มาสิบปีแล้วนะ",
+      "gap_before_s": 0.252,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 73,
+      "speaker": "agent",
+      "text": "ขออนุญาตให้หัวหน้างานโทรกลับไปยืนยันอีกครั้งได้ไหมคะ",
+      "gap_before_s": 0.575,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 74,
+      "speaker": "customer",
+      "text": "มีค่าใช้จ่ายอะไรเพิ่มหรือเปล่าครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.456,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 75,
+      "speaker": "agent",
+      "text": "ระบบกำลังประมวลผลค่ะ รบกวนรอสักครู่",
+      "gap_before_s": 0.496,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 76,
+      "speaker": "agent",
+      "text": "รายการนี้จะมีผลในรอบบิลถัดไปค่ะ ตั้งแต่วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า เป็นต้นไป",
+      "gap_before_s": 0.542,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "date",
+          "value": "2026-08-05",
+          "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 77,
+      "speaker": "customer",
+      "text": "แล้วไงครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.393,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 78,
+      "speaker": "customer",
+      "text": "ถ้าผมไม่ทำอะไรเลย จะเป็นยังไงต่อครับ",
+      "gap_before_s": 0.425,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 79,
+      "speaker": "agent",
+      "text": "ขออนุญาตอธิบายเงื่อนไขให้ฟังก่อนนะคะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.467,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 80,
+      "speaker": "customer",
+      "text": "ถ้ายังไม่หายจะทำยังไงต่อครับ",
+      "gap_before_s": 0.441,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 81,
+      "speaker": "agent",
+      "text": "ตรงนี้ดิฉันอยากให้คุณลูกค้าเข้าใจตรงกันก่อนค่ะ",
+      "gap_before_s": 0.502,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 82,
+      "speaker": "customer",
+      "text": "ฟังดูดี แต่ตอนใช้จริงมักไม่เป็นแบบนั้นครับ",
+      "gap_before_s": 0.447,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 83,
+      "speaker": "agent",
+      "text": "รับทราบค่ะ ถ้าคุณลูกค้ายังไม่สะดวกตัดสินใจวันนี้ ดิฉันจะเก็บสิทธิ์ไว้ให้ถึงวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+      "gap_before_s": 0.697,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "date",
+          "value": "2026-08-05",
+          "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 84,
+      "speaker": "customer",
+      "text": "เดี๋ยว ๆ ครับ ย้อนกลับไปนิดหนึ่ง ตรงที่บอกเมื่อกี้",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.555,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 85,
+      "speaker": "agent",
+      "text": "ขออนุญาตทวนสิ่งที่คุณลูกค้าแจ้งมาอีกครั้งนะคะ",
+      "gap_before_s": 0.508,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 86,
+      "speaker": "customer",
+      "text": "แล้วถ้าใช้ไม่ครบ ยี่สิบสี่ เดือน จะมีค่าปรับไหมครับ",
+      "gap_before_s": 0.335,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "months",
+          "value": "24",
+          "spoken": "ยี่สิบสี่ เดือน",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 87,
+      "speaker": "agent",
+      "text": "ครั้งนี้ดิฉันจะส่งสรุปเป็นเอสเอ็มเอสไปให้ด้วยค่ะ จะได้มีหลักฐาน",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.397,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 88,
+      "speaker": "agent",
+      "text": "ระบบจะส่งเอสเอ็มเอสยืนยันไปที่เบอร์ ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ภายในสิบห้านาทีค่ะ",
+      "gap_before_s": 0.493,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "phone",
+          "value": "0810000317",
+          "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 89,
+      "speaker": "customer",
+      "text": "อืม",
+      "gap_before_s": 0.282,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 90,
+      "speaker": "agent",
+      "text": "ก่อนดำเนินการยกเลิก ขออนุญาตสอบถามหน่อยนะคะ ที่บอกว่าแพง คือแพงกว่าที่คาดไว้ประมาณเท่าไหร่คะ",
+      "gap_before_s": 0.724,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 91,
+      "speaker": "customer",
+      "text": "ครับ ๆ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.354,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 92,
+      "speaker": "agent",
+      "text": "รบกวนสอบถามเหตุผลที่ต้องการยกเลิกหน่อยได้ไหมคะ เผื่อดิฉันพอจะช่วยหาทางออกให้ได้",
+      "gap_before_s": 0.746,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 93,
+      "speaker": "customer",
+      "text": "ครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.65,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 94,
+      "speaker": "customer",
+      "text": "พูดตรง ๆ นะครับ ผมเริ่มไม่มั่นใจแล้ว",
+      "gap_before_s": 0.325,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 95,
+      "speaker": "agent",
+      "text": "ขออนุญาตตรวจสอบเพิ่มเติมอีกสักครู่นะคะ",
+      "gap_before_s": 0.296,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 96,
+      "speaker": "customer",
+      "text": "ขอโทษครับ ช่วยพูดอีกครั้งได้ไหมครับ สัญญาณขาดหายไปนิดหนึ่ง",
+      "gap_before_s": 0.55,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 97,
+      "speaker": "agent",
+      "text": "ขออนุญาตอ่านเงื่อนไขให้ฟังอีกครั้งนะคะ จะได้ไม่มีปัญหาภายหลัง",
+      "gap_before_s": 0.439,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 98,
+      "speaker": "agent",
+      "text": "อากาศร้อนมากเลยช่วงนี้ค่ะ",
+      "gap_before_s": 0.398,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 99,
+      "speaker": "customer",
+      "text": "แล้วยังไงต่อครับ",
+      "gap_before_s": 0.637,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 100,
+      "speaker": "customer",
+      "text": "ที่ผ่านมาแจ้งไปหลายรอบก็ไม่มีอะไรดีขึ้นครับ",
+      "gap_before_s": 0.39,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 101,
+      "speaker": "agent",
+      "text": "ไม่มีค่าปรับค่ะ สัญญานี้ยกเลิกได้ตลอด ไม่มีเงื่อนไขผูกมัด",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.383,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 102,
+      "speaker": "customer",
+      "text": "แล้วเน็ตจะช้าเหมือนเดิมหรือเปล่าครับ ถ้าช้าอีกผมก็ยกเลิกอยู่ดี",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.564,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 103,
+      "speaker": "agent",
+      "text": "ดิฉันจะบันทึกข้อตกลงนี้ไว้ในระบบให้ค่ะ เลขที่เคส ห้า ห้า เก้า ศูนย์ สาม หนึ่ง อ้างอิงได้ตลอด",
+      "gap_before_s": 0.423,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "id",
+          "value": "559031",
+          "spoken": "ห้า ห้า เก้า ศูนย์ สาม หนึ่ง",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 104,
+      "speaker": "customer",
+      "text": "ยังแพงอยู่ดีครับ ค่ายอื่นเขาให้ แปดสิบบาท ถูกกว่านี้อีก",
+      "gap_before_s": 0.417,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "amount",
+          "value": "80",
+          "spoken": "แปดสิบบาท",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 105,
+      "speaker": "agent",
+      "text": "ขออนุญาตให้หัวหน้างานโทรกลับไปยืนยันอีกครั้งได้ไหมคะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.485,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 106,
+      "speaker": "customer",
+      "text": "มีอะไรยืนยันเป็นลายลักษณ์อักษรไหมครับ",
+      "gap_before_s": 0.342,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 107,
+      "speaker": "agent",
+      "text": "ขออนุญาตสอบถามเพิ่มเพื่อความถูกต้องนะคะ",
+      "gap_before_s": 0.656,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 108,
+      "speaker": "agent",
+      "text": "ฝนตกหนักแถวนี้ด้วยค่ะ สัญญาณเลยอาจไม่ค่อยดี",
+      "gap_before_s": 0.594,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 109,
+      "speaker": "customer",
+      "text": "แล้วไงครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.573,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 110,
+      "speaker": "agent",
+      "text": "รายการนี้จะมีผลในรอบบิลถัดไปค่ะ ตั้งแต่วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า เป็นต้นไป",
+      "gap_before_s": 0.498,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "date",
+          "value": "2026-08-05",
+          "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 111,
+      "speaker": "customer",
+      "text": "อ่อ โอเค",
+      "gap_before_s": 0.552,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 112,
+      "speaker": "customer",
+      "text": "แล้วต้องเตรียมเอกสารอะไรไปบ้างครับ",
+      "gap_before_s": 0.493,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 113,
+      "speaker": "agent",
+      "text": "ดิฉันขอดูประวัติการใช้งานย้อนหลังให้นะคะ",
+      "gap_before_s": 0.343,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 114,
+      "speaker": "customer",
+      "text": "ที่บอกว่าจะติดต่อกลับ ก็ไม่เห็นมีใครโทรมาเลยครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.628,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 115,
+      "speaker": "agent",
+      "text": "ขออนุญาตทวนสิ่งที่คุณลูกค้าแจ้งมาอีกครั้งนะคะ",
+      "gap_before_s": 0.378,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 116,
+      "speaker": "customer",
+      "text": "ตกลงผมต้องรออีกกี่วันครับ",
+      "gap_before_s": 0.664,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 117,
+      "speaker": "agent",
+      "text": "ข้อมูลที่คุณลูกค้าแจ้งมา ดิฉันบันทึกไว้ครบแล้วค่ะ",
+      "gap_before_s": 0.711,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 118,
+      "speaker": "customer",
+      "text": "ถ้าผมไม่ทำอะไรเลย จะเป็นยังไงต่อครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.581,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 119,
+      "speaker": "agent",
+      "text": "ข้อมูลตรงนี้ดิฉันจะส่งต่อให้ทีมที่ดูแลโดยตรงค่ะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.622,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 120,
+      "speaker": "agent",
+      "text": "ก่อนดำเนินการยกเลิก ขออนุญาตสอบถามหน่อยนะคะ ที่บอกว่าแพง คือแพงกว่าที่คาดไว้ประมาณเท่าไหร่คะ",
+      "gap_before_s": 0.543,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 121,
+      "speaker": "customer",
+      "text": "อืม",
+      "gap_before_s": 0.686,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 122,
+      "speaker": "customer",
+      "text": "ขอคิดดูก่อนครับ เดี๋ยวผมโทรกลับมาใหม่",
+      "gap_before_s": 0.675,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 123,
+      "speaker": "agent",
+      "text": "ช่างจะเข้าตรวจสอบในวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ค่ะ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะคะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.586,
+      "entities": [
+        {
+          "type": "date",
+          "value": "2026-08-05",
+          "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 124,
+      "speaker": "agent",
+      "text": "ขออนุญาตสรุปอีกครั้งนะคะ เรื่องที่แจ้งไว้ ดิฉันดำเนินการให้แล้ว อ้างอิงเลขที่ ห้า ห้า เก้า ศูนย์ สาม หนึ่ง",
+      "gap_before_s": 0.338,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [
+        {
+          "type": "id",
+          "value": "559031",
+          "spoken": "ห้า ห้า เก้า ศูนย์ สาม หนึ่ง",
+          "turn_idx": -1
+        }
+      ],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 125,
+      "speaker": "agent",
+      "text": "ไม่ทราบว่ามีเรื่องอื่นให้ช่วยเหลือเพิ่มเติมไหมคะ",
+      "gap_before_s": 0.344,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 126,
+      "speaker": "customer",
+      "text": "ไม่มีแล้วครับ ขอบคุณมากครับ",
+      "gap_before_s": 0.74,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.0,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 127,
+      "speaker": "agent",
+      "text": "ขอบคุณมากค่ะ หากมีข้อสงสัยเพิ่มเติม โทร ๑๒๓๑ ได้ตลอดยี่สิบสี่ชั่วโมงค่ะ สวัสดีค่ะ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.307,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    },
+    {
+      "idx": 128,
+      "speaker": "customer",
+      "text": "ขอบคุณครับ สวัสดีครับ",
+      "gap_before_s": 0.0,
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "overlap_s": 0.482,
+      "entities": [],
+      "kind": "speech",
+      "hold_s": 0.0
+    }
+  ],
+  "agent_voice": "th-TH-PremwadeeNeural",
+  "customer_voice": "th-TH-NiwatNeural",
+  "target_duration_s": 415,
+  "seed": 20260832,
+  "notes": "thai_corpus",
+  "filename": "7116_0810000317_165334_A216_rattana_duangdee_D_20260805_400_IN.wav",
+  "reference_transcript": "สวัสดีค่ะ ดิฉันรัตนา จากทรูค่ะ วันนี้มีเรื่องอะไรให้ดูแลไหมคะ\nสวัสดีครับ พอดีผมมีเรื่องจะสอบถามหน่อยครับ\nคือผมอยากจะยกเลิกเบอร์นี้ครับ ใช้มานานแล้วแต่รู้สึกว่าค่าบริการมันแพงเกินไป\nอ๋อ เข้าใจแล้วค่ะ\nก่อนอื่นรบกวนขอหมายเลขที่ต้องการให้ตรวจสอบค่ะ\nเป็นเบอร์ ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ครับ เบอร์นี้ใช้มาสิบกว่าปีแล้ว\nขออนุญาตทวนข้อมูลนะคะ หมายเลข ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ชื่อคุณณัฐวุฒิ ถูกต้องไหมคะ\nถูกต้องครับ\nขอบคุณค่ะ ตรวจสอบข้อมูลเรียบร้อยแล้วค่ะ\nก่อนดำเนินการยกเลิก ขออนุญาตสอบถามหน่อยนะคะ ที่บอกว่าแพง คือแพงกว่าที่คาดไว้ประมาณเท่าไหร่คะ\nเรื่องนี้ผมโทรมาแจ้งเป็นรอบที่สามแล้วนะครับ\nถ้าคุณลูกค้ายังใช้บริการต่อ ดิฉันขออนุมัติส่วนลดพิเศษให้ แปดสิบบาท ต่อเดือน นาน ยี่สิบสี่ เดือน\nที่บอกว่าจะติดต่อกลับ ก็ไม่เห็นมีใครโทรมาเลยครับ\nขอบคุณที่แจ้งเข้ามานะคะ ข้อมูลนี้มีประโยชน์กับทีมงานมาก\nทำไมลูกค้าใหม่ได้ราคาถูกกว่าลูกค้าเก่าล่ะครับ ผมอยู่มาสิบปีแล้วนะ\nดิฉันจะบันทึกเป็นข้อร้องเรียนให้ด้วยค่ะ เพื่อให้มีการติดตามจากหัวหน้างาน\nดิฉันมีข้อเสนอพิเศษสำหรับลูกค้าที่ใช้งานมานานนะคะ ลดค่าบริการเหลือเดือนละ สามร้อยสี่สิบเก้าบาท เป็นเวลา ยี่สิบสี่ เดือน\nครับ ๆ\nขอโทษครับ ช่วยพูดอีกครั้งได้ไหมครับ สัญญาณขาดหายไปนิดหนึ่ง\nขออนุญาตอ่านเงื่อนไขให้ฟังอีกครั้งนะคะ จะได้ไม่มีปัญหาภายหลัง\nราคาไม่ต่างจากเดิมเท่าไหร่นี่ครับ ลดแค่ แปดสิบบาท เอง\nถ้าเทียบกันจริง ๆ แพ็กเกจนี้ได้มากกว่าที่คุณลูกค้าใช้อยู่ค่ะ\nไม่เอาครับ ผมตัดสินใจแล้วจริง ๆ\nขอโทษแทนทีมงานด้วยค่ะ ครั้งนี้ดิฉันจะติดตามเรื่องให้เองจนจบ\nฟังดูดี แต่ตอนใช้จริงมักไม่เป็นแบบนั้นครับ\nราคานี้รวมภาษีมูลค่าเพิ่มแล้วค่ะ ไม่มีบวกเพิ่มในบิล\nรบกวนสอบถามเหตุผลที่ต้องการยกเลิกหน่อยได้ไหมคะ เผื่อดิฉันพอจะช่วยหาทางออกให้ได้\nอ๋อ\nเข้าใจค่ะ ไม่ทราบว่าปัญหาหลักคือเรื่องราคา หรือเรื่องคุณภาพสัญญาณคะ\nครับ\nมีสิทธิพิเศษสำหรับลูกค้าเก่าค่ะ รับส่วนลดค่าเครื่องสูงสุด ห้าร้อยเก้าสิบเก้าบาท พร้อมแพ็กเกจเดิมในราคาเดิม\nแล้วไงครับ\nขอเวลาปรึกษาที่บ้านก่อนได้ไหมครับ\nเข้าใจค่ะ งั้นดิฉันขออนุญาตเช็กสิทธิ์เพิ่มเติมให้อีกครั้งนะคะ\nเรื่องนี้ผมโทรมาแจ้งเป็นรอบที่สามแล้วนะครับ\nขออนุญาตอธิบายเงื่อนไขให้ฟังก่อนนะคะ\nแล้วรอบบิลถัดไปจะเปลี่ยนเลยใช่ไหมครับ\nขออนุญาตบันทึกรายละเอียดลงในระบบก่อนนะคะ\nตกลงผมต้องรออีกกี่วันครับ\nระบบกำลังประมวลผลค่ะ รบกวนรอสักครู่\nช่างจะเข้าตรวจสอบในวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ค่ะ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะคะ\nครับ ๆ\nอันนี้มีผลกับเบอร์อื่นในชื่อเดียวกันด้วยไหมครับ\nดิฉันจะติดตามเรื่องนี้ให้เป็นกรณีพิเศษค่ะ\nแล้วโปรนี้มีเงื่อนไขอะไรซ่อนอยู่หรือเปล่าครับ\nดิฉันจะบันทึกเป็นข้อร้องเรียนให้ด้วยค่ะ เพื่อให้มีการติดตามจากหัวหน้างาน\nอะไรนะครับ ไม่ค่อยได้ยินครับ\nขออนุญาตทวนสิ่งที่คุณลูกค้าแจ้งมาอีกครั้งนะคะ\nแล้วถ้าใช้ไม่ครบ ยี่สิบสี่ เดือน จะมีค่าปรับไหมครับ\nไม่มีค่าปรับค่ะ สัญญานี้ยกเลิกได้ตลอด ไม่มีเงื่อนไขผูกมัด\nขอโทษที่ทำให้ไม่สะดวกนะคะ ปกติคุณลูกค้าใช้เน็ตเดือนละประมาณกี่กิกะคะ\nแล้วยังไงต่อครับ\nราคาที่ว่านี้รวมภาษีหรือยังครับ เดี๋ยวบิลมาแล้วบวกอีก\nขอโทษแทนทีมงานด้วยค่ะ ครั้งนี้ดิฉันจะติดตามเรื่องให้เองจนจบ\nทีมงานจะติดต่อกลับภายในยี่สิบสี่ชั่วโมงค่ะ ที่หมายเลข ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม เจ็ด\nเข้าใจแล้วครับ\nถ้าคุณลูกค้ายังใช้บริการต่อ ดิฉันขออนุมัติส่วนลดพิเศษให้ แปดสิบบาท ต่อเดือน นาน ยี่สิบสี่ เดือน\nครับ\nระบบจะส่งเอสเอ็มเอสยืนยันไปที่เบอร์ ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ภายในสิบห้านาทีค่ะ\nอืม\nแล้วถ้าไม่ได้ตามที่บอก ผมจะร้องเรียนที่ไหนครับ\nส่วนนี้อาจใช้เวลาสักนิดค่ะ แต่ดิฉันจะเร่งให้เร็วที่สุด\nเข้าใจค่ะ ไม่ทราบว่าปัญหาหลักคือเรื่องราคา หรือเรื่องคุณภาพสัญญาณคะ\nอ่อ โอเค\nขอเวลาปรึกษาที่บ้านก่อนได้ไหมครับ\nดิฉันเข้าใจค่ะ ถ้าอย่างนั้นขออนุญาตเสนอเป็นสัญญาแบบไม่ผูกมัดแทน\nช่างจะเข้าตรวจสอบในวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ค่ะ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะคะ\nครับ ๆ\nดิฉันเปิดเคสให้แล้วนะคะ เลขที่เคส ห้า ห้า เก้า ศูนย์ สาม หนึ่ง ใช้เวลาดำเนินการภายใน ยี่สิบสี่ เดือน\nอ๋อ\nเคยได้ยินแบบนี้มาแล้วครับ สุดท้ายบิลก็ขึ้นอยู่ดี\nถ้าอย่างนั้น ดิฉันขออนุมัติเพิ่มส่วนลดให้อีก แปดสิบบาท ต่อเดือนค่ะ\nทำไมลูกค้าใหม่ได้ราคาถูกกว่าลูกค้าเก่าล่ะครับ ผมอยู่มาสิบปีแล้วนะ\nขออนุญาตให้หัวหน้างานโทรกลับไปยืนยันอีกครั้งได้ไหมคะ\nมีค่าใช้จ่ายอะไรเพิ่มหรือเปล่าครับ\nระบบกำลังประมวลผลค่ะ รบกวนรอสักครู่\nรายการนี้จะมีผลในรอบบิลถัดไปค่ะ ตั้งแต่วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า เป็นต้นไป\nแล้วไงครับ\nถ้าผมไม่ทำอะไรเลย จะเป็นยังไงต่อครับ\nขออนุญาตอธิบายเงื่อนไขให้ฟังก่อนนะคะ\nถ้ายังไม่หายจะทำยังไงต่อครับ\nตรงนี้ดิฉันอยากให้คุณลูกค้าเข้าใจตรงกันก่อนค่ะ\nฟังดูดี แต่ตอนใช้จริงมักไม่เป็นแบบนั้นครับ\nรับทราบค่ะ ถ้าคุณลูกค้ายังไม่สะดวกตัดสินใจวันนี้ ดิฉันจะเก็บสิทธิ์ไว้ให้ถึงวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า\nเดี๋ยว ๆ ครับ ย้อนกลับไปนิดหนึ่ง ตรงที่บอกเมื่อกี้\nขออนุญาตทวนสิ่งที่คุณลูกค้าแจ้งมาอีกครั้งนะคะ\nแล้วถ้าใช้ไม่ครบ ยี่สิบสี่ เดือน จะมีค่าปรับไหมครับ\nครั้งนี้ดิฉันจะส่งสรุปเป็นเอสเอ็มเอสไปให้ด้วยค่ะ จะได้มีหลักฐาน\nระบบจะส่งเอสเอ็มเอสยืนยันไปที่เบอร์ ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด ภายในสิบห้านาทีค่ะ\nอืม\nก่อนดำเนินการยกเลิก ขออนุญาตสอบถามหน่อยนะคะ ที่บอกว่าแพง คือแพงกว่าที่คาดไว้ประมาณเท่าไหร่คะ\nครับ ๆ\nรบกวนสอบถามเหตุผลที่ต้องการยกเลิกหน่อยได้ไหมคะ เผื่อดิฉันพอจะช่วยหาทางออกให้ได้\nครับ\nพูดตรง ๆ นะครับ ผมเริ่มไม่มั่นใจแล้ว\nขออนุญาตตรวจสอบเพิ่มเติมอีกสักครู่นะคะ\nขอโทษครับ ช่วยพูดอีกครั้งได้ไหมครับ สัญญาณขาดหายไปนิดหนึ่ง\nขออนุญาตอ่านเงื่อนไขให้ฟังอีกครั้งนะคะ จะได้ไม่มีปัญหาภายหลัง\nอากาศร้อนมากเลยช่วงนี้ค่ะ\nแล้วยังไงต่อครับ\nที่ผ่านมาแจ้งไปหลายรอบก็ไม่มีอะไรดีขึ้นครับ\nไม่มีค่าปรับค่ะ สัญญานี้ยกเลิกได้ตลอด ไม่มีเงื่อนไขผูกมัด\nแล้วเน็ตจะช้าเหมือนเดิมหรือเปล่าครับ ถ้าช้าอีกผมก็ยกเลิกอยู่ดี\nดิฉันจะบันทึกข้อตกลงนี้ไว้ในระบบให้ค่ะ เลขที่เคส ห้า ห้า เก้า ศูนย์ สาม หนึ่ง อ้างอิงได้ตลอด\nยังแพงอยู่ดีครับ ค่ายอื่นเขาให้ แปดสิบบาท ถูกกว่านี้อีก\nขออนุญาตให้หัวหน้างานโทรกลับไปยืนยันอีกครั้งได้ไหมคะ\nมีอะไรยืนยันเป็นลายลักษณ์อักษรไหมครับ\nขออนุญาตสอบถามเพิ่มเพื่อความถูกต้องนะคะ\nฝนตกหนักแถวนี้ด้วยค่ะ สัญญาณเลยอาจไม่ค่อยดี\nแล้วไงครับ\nรายการนี้จะมีผลในรอบบิลถัดไปค่ะ ตั้งแต่วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า เป็นต้นไป\nอ่อ โอเค\nแล้วต้องเตรียมเอกสารอะไรไปบ้างครับ\nดิฉันขอดูประวัติการใช้งานย้อนหลังให้นะคะ\nที่บอกว่าจะติดต่อกลับ ก็ไม่เห็นมีใครโทรมาเลยครับ\nขออนุญาตทวนสิ่งที่คุณลูกค้าแจ้งมาอีกครั้งนะคะ\nตกลงผมต้องรออีกกี่วันครับ\nข้อมูลที่คุณลูกค้าแจ้งมา ดิฉันบันทึกไว้ครบแล้วค่ะ\nถ้าผมไม่ทำอะไรเลย จะเป็นยังไงต่อครับ\nข้อมูลตรงนี้ดิฉันจะส่งต่อให้ทีมที่ดูแลโดยตรงค่ะ\nก่อนดำเนินการยกเลิก ขออนุญาตสอบถามหน่อยนะคะ ที่บอกว่าแพง คือแพงกว่าที่คาดไว้ประมาณเท่าไหร่คะ\nอืม\nขอคิดดูก่อนครับ เดี๋ยวผมโทรกลับมาใหม่\nช่างจะเข้าตรวจสอบในวันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ค่ะ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะคะ\nขออนุญาตสรุปอีกครั้งนะคะ เรื่องที่แจ้งไว้ ดิฉันดำเนินการให้แล้ว อ้างอิงเลขที่ ห้า ห้า เก้า ศูนย์ สาม หนึ่ง\nไม่ทราบว่ามีเรื่องอื่นให้ช่วยเหลือเพิ่มเติมไหมคะ\nไม่มีแล้วครับ ขอบคุณมากครับ\nขอบคุณมากค่ะ หากมีข้อสงสัยเพิ่มเติม โทร ๑๒๓๑ ได้ตลอดยี่สิบสี่ชั่วโมงค่ะ สวัสดีค่ะ\nขอบคุณครับ สวัสดีครับ"
+}

@@ -1,0 +1,4586 @@
+{
+  "checks": [
+    {
+      "item": "ASR-001",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7100' vs composed '7100'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000301' vs composed '0810000301'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '140045' vs composed '140045'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A200' vs composed 'A200'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260803' vs composed '20260803'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000301', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-001",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "215.2s"
+    },
+    {
+      "item": "ASR-001",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 215s, audio is 215.2s"
+    },
+    {
+      "item": "ASR-001",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-001",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.8 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-001",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -3.56 dBFS"
+    },
+    {
+      "item": "ASR-001",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-001",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "26.1% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-001",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.18 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-001",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-001.txt"
+    },
+    {
+      "item": "ASR-001",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-001",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "17 entities"
+    },
+    {
+      "item": "ASR-001",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-001.timeline.json"
+    },
+    {
+      "item": "ASR-001",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 214.37s, audio is 215.17s"
+    },
+    {
+      "item": "ASR-001",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "57 segments vs 57 lines"
+    },
+    {
+      "item": "ASR-001",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7101' vs composed '7101'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000302' vs composed '0810000302'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '131617' vs composed '131617'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A201' vs composed 'A201'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260804' vs composed '20260804'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000302', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-002",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "247.7s"
+    },
+    {
+      "item": "ASR-002",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 248s, audio is 247.7s"
+    },
+    {
+      "item": "ASR-002",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-002",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.3 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-002",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-002",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-002",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "0.3% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-002",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.30 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-002",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-002.txt"
+    },
+    {
+      "item": "ASR-002",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-002",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "15 entities"
+    },
+    {
+      "item": "ASR-002",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-002.timeline.json"
+    },
+    {
+      "item": "ASR-002",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 246.90s, audio is 247.70s"
+    },
+    {
+      "item": "ASR-002",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "69 segments vs 69 lines"
+    },
+    {
+      "item": "ASR-002",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7102' vs composed '7102'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000303' vs composed '0810000303'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '175406' vs composed '175406'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A202' vs composed 'A202'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260805' vs composed '20260805'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000303', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-003",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "277.2s"
+    },
+    {
+      "item": "ASR-003",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 277s, audio is 277.2s"
+    },
+    {
+      "item": "ASR-003",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-003",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.8 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-003",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -3.68 dBFS"
+    },
+    {
+      "item": "ASR-003",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-003",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "24.1% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-003",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.59 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-003",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-003.txt"
+    },
+    {
+      "item": "ASR-003",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-003",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "12 entities"
+    },
+    {
+      "item": "ASR-003",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-003.timeline.json"
+    },
+    {
+      "item": "ASR-003",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 276.37s, audio is 277.17s"
+    },
+    {
+      "item": "ASR-003",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "71 segments vs 71 lines"
+    },
+    {
+      "item": "ASR-003",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7103' vs composed '7103'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000304' vs composed '0810000304'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '164152' vs composed '164152'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A203' vs composed 'A203'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260806' vs composed '20260806'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000304', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-004",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "316.0s"
+    },
+    {
+      "item": "ASR-004",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 316s, audio is 316.0s"
+    },
+    {
+      "item": "ASR-004",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-004",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.2 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-004",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-004",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-004",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "24.4% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-004",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.69 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-004",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-004.txt"
+    },
+    {
+      "item": "ASR-004",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-004",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "20 entities"
+    },
+    {
+      "item": "ASR-004",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-004.timeline.json"
+    },
+    {
+      "item": "ASR-004",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 315.17s, audio is 315.97s"
+    },
+    {
+      "item": "ASR-004",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "95 segments vs 95 lines"
+    },
+    {
+      "item": "ASR-004",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7104' vs composed '7104'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000305' vs composed '0810000305'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '135952' vs composed '135952'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A204' vs composed 'A204'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260807' vs composed '20260807'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'OUT' vs composed 'OUT'"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'OUT'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000305', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-005",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "342.1s"
+    },
+    {
+      "item": "ASR-005",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 342s, audio is 342.1s"
+    },
+    {
+      "item": "ASR-005",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-005",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.9 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-005",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -3.02 dBFS"
+    },
+    {
+      "item": "ASR-005",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-005",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "23.2% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-005",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.49 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-005",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-005.txt"
+    },
+    {
+      "item": "ASR-005",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-005",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "20 entities"
+    },
+    {
+      "item": "ASR-005",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-005.timeline.json"
+    },
+    {
+      "item": "ASR-005",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 341.33s, audio is 342.13s"
+    },
+    {
+      "item": "ASR-005",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "85 segments vs 85 lines"
+    },
+    {
+      "item": "ASR-005",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7105' vs composed '7105'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000306' vs composed '0810000306'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '192145' vs composed '192145'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A205' vs composed 'A205'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260808' vs composed '20260808'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000306', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-006",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "382.5s"
+    },
+    {
+      "item": "ASR-006",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 382s, audio is 382.5s"
+    },
+    {
+      "item": "ASR-006",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-006",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.2 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-006",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-006",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-006",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "19.9% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-006",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.30 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-006",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-006.txt"
+    },
+    {
+      "item": "ASR-006",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-006",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "30 entities"
+    },
+    {
+      "item": "ASR-006",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-006.timeline.json"
+    },
+    {
+      "item": "ASR-006",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 381.66s, audio is 382.46s"
+    },
+    {
+      "item": "ASR-006",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "101 segments vs 101 lines"
+    },
+    {
+      "item": "ASR-006",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7106' vs composed '7106'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000307' vs composed '0810000307'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '163528' vs composed '163528'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A206' vs composed 'A206'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260809' vs composed '20260809'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000307', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-007",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "395.1s"
+    },
+    {
+      "item": "ASR-007",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 395s, audio is 395.1s"
+    },
+    {
+      "item": "ASR-007",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-007",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-21.1 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-007",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-007",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-007",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "0.3% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-007",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.98 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-007",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-007.txt"
+    },
+    {
+      "item": "ASR-007",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-007",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "26 entities"
+    },
+    {
+      "item": "ASR-007",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-007.timeline.json"
+    },
+    {
+      "item": "ASR-007",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 394.32s, audio is 395.12s"
+    },
+    {
+      "item": "ASR-007",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "131 segments vs 131 lines"
+    },
+    {
+      "item": "ASR-007",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7107' vs composed '7107'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000308' vs composed '0810000308'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '181631' vs composed '181631'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A207' vs composed 'A207'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260810' vs composed '20260810'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000308', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-008",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "564.2s"
+    },
+    {
+      "item": "ASR-008",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 564s, audio is 564.2s"
+    },
+    {
+      "item": "ASR-008",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-008",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.8 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-008",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -2.48 dBFS"
+    },
+    {
+      "item": "ASR-008",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00001"
+    },
+    {
+      "item": "ASR-008",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "27.4% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-008",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.27 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-008",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-008.txt"
+    },
+    {
+      "item": "ASR-008",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-008",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "35 entities"
+    },
+    {
+      "item": "ASR-008",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-008.timeline.json"
+    },
+    {
+      "item": "ASR-008",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 563.38s, audio is 564.18s"
+    },
+    {
+      "item": "ASR-008",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "161 segments vs 161 lines"
+    },
+    {
+      "item": "ASR-008",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7108' vs composed '7108'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000309' vs composed '0810000309'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '093708' vs composed '093708'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A208' vs composed 'A208'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260811' vs composed '20260811'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000309', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-009",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "465.1s"
+    },
+    {
+      "item": "ASR-009",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 465s, audio is 465.1s"
+    },
+    {
+      "item": "ASR-009",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-009",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-34.4 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-009",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -14.91 dBFS"
+    },
+    {
+      "item": "ASR-009",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-009",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "0.2% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-009",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.27 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-009",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-009.txt"
+    },
+    {
+      "item": "ASR-009",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-009",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "25 entities"
+    },
+    {
+      "item": "ASR-009",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-009.timeline.json"
+    },
+    {
+      "item": "ASR-009",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 464.27s, audio is 465.07s"
+    },
+    {
+      "item": "ASR-009",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "139 segments vs 139 lines"
+    },
+    {
+      "item": "ASR-009",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7109' vs composed '7109'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000310' vs composed '0810000310'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '191202' vs composed '191202'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A209' vs composed 'A209'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260812' vs composed '20260812'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000310', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-010",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "495.7s"
+    },
+    {
+      "item": "ASR-010",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 496s, audio is 495.7s"
+    },
+    {
+      "item": "ASR-010",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-010",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-21.7 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-010",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-010",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-010",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "0.4% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-010",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.27 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-010",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-010.txt"
+    },
+    {
+      "item": "ASR-010",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-010",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "23 entities"
+    },
+    {
+      "item": "ASR-010",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-010.timeline.json"
+    },
+    {
+      "item": "ASR-010",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 494.89s, audio is 495.69s"
+    },
+    {
+      "item": "ASR-010",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "133 segments vs 133 lines"
+    },
+    {
+      "item": "ASR-010",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7110' vs composed '7110'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000311' vs composed '0810000311'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '100623' vs composed '100623'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A210' vs composed 'A210'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260813' vs composed '20260813'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'OUT' vs composed 'OUT'"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'OUT'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000311', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-011",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "219.2s"
+    },
+    {
+      "item": "ASR-011",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 219s, audio is 219.2s"
+    },
+    {
+      "item": "ASR-011",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-011",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.8 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-011",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -3.75 dBFS"
+    },
+    {
+      "item": "ASR-011",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00001"
+    },
+    {
+      "item": "ASR-011",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "28.2% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-011",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.37 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-011",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-011.txt"
+    },
+    {
+      "item": "ASR-011",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-011",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "16 entities"
+    },
+    {
+      "item": "ASR-011",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-011.timeline.json"
+    },
+    {
+      "item": "ASR-011",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 218.39s, audio is 219.19s"
+    },
+    {
+      "item": "ASR-011",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "65 segments vs 65 lines"
+    },
+    {
+      "item": "ASR-011",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7111' vs composed '7111'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000312' vs composed '0810000312'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '135201' vs composed '135201'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A211' vs composed 'A211'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260814' vs composed '20260814'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000312', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-012",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "263.0s"
+    },
+    {
+      "item": "ASR-012",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 263s, audio is 263.0s"
+    },
+    {
+      "item": "ASR-012",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-012",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.0 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-012",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.10 dBFS"
+    },
+    {
+      "item": "ASR-012",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-012",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "0.4% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-012",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.59 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-012",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-012.txt"
+    },
+    {
+      "item": "ASR-012",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-012",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "21 entities"
+    },
+    {
+      "item": "ASR-012",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-012.timeline.json"
+    },
+    {
+      "item": "ASR-012",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 262.17s, audio is 262.97s"
+    },
+    {
+      "item": "ASR-012",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "73 segments vs 73 lines"
+    },
+    {
+      "item": "ASR-012",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7112' vs composed '7112'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000313' vs composed '0810000313'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '151136' vs composed '151136'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A212' vs composed 'A212'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260815' vs composed '20260815'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000313', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-013",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "288.6s"
+    },
+    {
+      "item": "ASR-013",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 289s, audio is 288.6s"
+    },
+    {
+      "item": "ASR-013",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-013",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.7 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-013",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -3.72 dBFS"
+    },
+    {
+      "item": "ASR-013",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00001"
+    },
+    {
+      "item": "ASR-013",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "23.8% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-013",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.98 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-013",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-013.txt"
+    },
+    {
+      "item": "ASR-013",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-013",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "22 entities"
+    },
+    {
+      "item": "ASR-013",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-013.timeline.json"
+    },
+    {
+      "item": "ASR-013",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 287.84s, audio is 288.64s"
+    },
+    {
+      "item": "ASR-013",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "69 segments vs 69 lines"
+    },
+    {
+      "item": "ASR-013",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7113' vs composed '7113'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000314' vs composed '0810000314'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '123556' vs composed '123556'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A213' vs composed 'A213'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260816' vs composed '20260816'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000314', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-014",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "326.7s"
+    },
+    {
+      "item": "ASR-014",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 327s, audio is 326.7s"
+    },
+    {
+      "item": "ASR-014",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-014",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.0 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-014",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-014",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00001"
+    },
+    {
+      "item": "ASR-014",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "24.1% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-014",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.69 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-014",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-014.txt"
+    },
+    {
+      "item": "ASR-014",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-014",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "26 entities"
+    },
+    {
+      "item": "ASR-014",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-014.timeline.json"
+    },
+    {
+      "item": "ASR-014",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 325.88s, audio is 326.68s"
+    },
+    {
+      "item": "ASR-014",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "95 segments vs 95 lines"
+    },
+    {
+      "item": "ASR-014",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7114' vs composed '7114'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000315' vs composed '0810000315'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '191356' vs composed '191356'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A214' vs composed 'A214'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260803' vs composed '20260803'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'OUT' vs composed 'OUT'"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'OUT'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000315', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-015",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "348.6s"
+    },
+    {
+      "item": "ASR-015",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 349s, audio is 348.6s"
+    },
+    {
+      "item": "ASR-015",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-015",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.8 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-015",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -4.21 dBFS"
+    },
+    {
+      "item": "ASR-015",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00001"
+    },
+    {
+      "item": "ASR-015",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "23.4% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-015",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.08 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-015",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-015.txt"
+    },
+    {
+      "item": "ASR-015",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-015",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "26 entities"
+    },
+    {
+      "item": "ASR-015",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-015.timeline.json"
+    },
+    {
+      "item": "ASR-015",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 347.79s, audio is 348.59s"
+    },
+    {
+      "item": "ASR-015",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "81 segments vs 81 lines"
+    },
+    {
+      "item": "ASR-015",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7115' vs composed '7115'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000316' vs composed '0810000316'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '175048' vs composed '175048'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A215' vs composed 'A215'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260804' vs composed '20260804'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000316', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-016",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "392.7s"
+    },
+    {
+      "item": "ASR-016",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 393s, audio is 392.7s"
+    },
+    {
+      "item": "ASR-016",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-016",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.3 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-016",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-016",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00001"
+    },
+    {
+      "item": "ASR-016",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "20.7% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-016",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 5.47 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-016",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-016.txt"
+    },
+    {
+      "item": "ASR-016",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-016",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "17 entities"
+    },
+    {
+      "item": "ASR-016",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-016.timeline.json"
+    },
+    {
+      "item": "ASR-016",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 391.92s, audio is 392.72s"
+    },
+    {
+      "item": "ASR-016",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "111 segments vs 111 lines"
+    },
+    {
+      "item": "ASR-016",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7116' vs composed '7116'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000317' vs composed '0810000317'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '165334' vs composed '165334'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A216' vs composed 'A216'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260805' vs composed '20260805'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000317', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-017",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "412.7s"
+    },
+    {
+      "item": "ASR-017",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 413s, audio is 412.7s"
+    },
+    {
+      "item": "ASR-017",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-017",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-21.5 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-017",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-017",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-017",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "1.7% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-017",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.59 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-017",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-017.txt"
+    },
+    {
+      "item": "ASR-017",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-017",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "27 entities"
+    },
+    {
+      "item": "ASR-017",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-017.timeline.json"
+    },
+    {
+      "item": "ASR-017",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 411.91s, audio is 412.71s"
+    },
+    {
+      "item": "ASR-017",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "129 segments vs 129 lines"
+    },
+    {
+      "item": "ASR-017",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7117' vs composed '7117'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000318' vs composed '0810000318'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '133459' vs composed '133459'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A217' vs composed 'A217'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260806' vs composed '20260806'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000318', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-018",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "572.8s"
+    },
+    {
+      "item": "ASR-018",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 573s, audio is 572.8s"
+    },
+    {
+      "item": "ASR-018",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-018",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-23.6 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-018",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.84 dBFS"
+    },
+    {
+      "item": "ASR-018",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-018",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "27.4% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-018",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.88 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-018",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-018.txt"
+    },
+    {
+      "item": "ASR-018",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-018",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "34 entities"
+    },
+    {
+      "item": "ASR-018",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-018.timeline.json"
+    },
+    {
+      "item": "ASR-018",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 571.96s, audio is 572.76s"
+    },
+    {
+      "item": "ASR-018",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "163 segments vs 163 lines"
+    },
+    {
+      "item": "ASR-018",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7118' vs composed '7118'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000319' vs composed '0810000319'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '114805' vs composed '114805'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A218' vs composed 'A218'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260807' vs composed '20260807'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000319', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-019",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "431.8s"
+    },
+    {
+      "item": "ASR-019",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 432s, audio is 431.8s"
+    },
+    {
+      "item": "ASR-019",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-019",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-34.6 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-019",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -14.01 dBFS"
+    },
+    {
+      "item": "ASR-019",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-019",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "0.3% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-019",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 4.49 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-019",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-019.txt"
+    },
+    {
+      "item": "ASR-019",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-019",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "27 entities"
+    },
+    {
+      "item": "ASR-019",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-019.timeline.json"
+    },
+    {
+      "item": "ASR-019",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 431.04s, audio is 431.84s"
+    },
+    {
+      "item": "ASR-019",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "129 segments vs 129 lines"
+    },
+    {
+      "item": "ASR-019",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FORMAT",
+      "check": "extension is .wav",
+      "status": "PASS",
+      "detail": "got .wav (production's upload filter accepts .wav only)"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FORMAT",
+      "check": "sample rate 8000",
+      "status": "PASS",
+      "detail": "got 8000"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FORMAT",
+      "check": "mono",
+      "status": "PASS",
+      "detail": "got 1 channels"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FORMAT",
+      "check": "16-bit PCM",
+      "status": "PASS",
+      "detail": "got PCM_16"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "exactly 10 positional tokens",
+      "status": "PASS",
+      "detail": "got 10: an extra or missing '_' shifts every later field"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "call_id round-trips",
+      "status": "PASS",
+      "detail": "parsed '7119' vs composed '7119'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "phone_number round-trips",
+      "status": "PASS",
+      "detail": "parsed '0810000320' vs composed '0810000320'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "call_time round-trips",
+      "status": "PASS",
+      "detail": "parsed '184523' vs composed '184523'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "agent_id round-trips",
+      "status": "PASS",
+      "detail": "parsed 'A219' vs composed 'A219'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "provider round-trips",
+      "status": "PASS",
+      "detail": "parsed 'D' vs composed 'D'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "record_date round-trips",
+      "status": "PASS",
+      "detail": "parsed '20260808' vs composed '20260808'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "call_direction round-trips",
+      "status": "PASS",
+      "detail": "parsed 'IN' vs composed 'IN'"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "direction is IN or OUT",
+      "status": "PASS",
+      "detail": "got 'IN'; prep_payload_task.py:335 raises on anything else"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "phone inside sanctioned synthetic block",
+      "status": "PASS",
+      "detail": "got '0810000320', expected ^0810000[0-9]{3}$"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FILENAME",
+      "check": "record_date passes production regex",
+      "status": "PASS",
+      "detail": "production would fall back to the path, then to 99991231"
+    },
+    {
+      "item": "ASR-020",
+      "group": "DURATION",
+      "check": "inside 3-10 minute band",
+      "status": "PASS",
+      "detail": "458.2s"
+    },
+    {
+      "item": "ASR-020",
+      "group": "DURATION",
+      "check": "filename duration matches audio",
+      "status": "PASS",
+      "detail": "filename says 458s, audio is 458.2s"
+    },
+    {
+      "item": "ASR-020",
+      "group": "LEVELS",
+      "check": "not silent",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "item": "ASR-020",
+      "group": "LEVELS",
+      "check": "RMS in usable range",
+      "status": "PASS",
+      "detail": "-22.2 dBFS, expected -45.0..-12.0"
+    },
+    {
+      "item": "ASR-020",
+      "group": "LEVELS",
+      "check": "peak not clipping",
+      "status": "PASS",
+      "detail": "peak -1.00 dBFS"
+    },
+    {
+      "item": "ASR-020",
+      "group": "LEVELS",
+      "check": "no DC offset",
+      "status": "PASS",
+      "detail": "mean -0.00002"
+    },
+    {
+      "item": "ASR-020",
+      "group": "LEVELS",
+      "check": "silence ratio sane",
+      "status": "PASS",
+      "detail": "1.9% of frames below -50 dBFS"
+    },
+    {
+      "item": "ASR-020",
+      "group": "LEVELS",
+      "check": "envelope modulates at a speech rate",
+      "status": "PASS",
+      "detail": "envelope peaks at 3.32 Hz, expected 2.0-8.0 Hz (the syllable rate); outside this the file may not carry speech at all"
+    },
+    {
+      "item": "ASR-020",
+      "group": "CONTENT",
+      "check": "reference transcript exists and is non-empty",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-020.txt"
+    },
+    {
+      "item": "ASR-020",
+      "group": "CONTENT",
+      "check": "every annotated entity appears in the transcript",
+      "status": "PASS",
+      "detail": "0 missing, e.g. ''"
+    },
+    {
+      "item": "ASR-020",
+      "group": "CONTENT",
+      "check": "has at least one entity",
+      "status": "PASS",
+      "detail": "26 entities"
+    },
+    {
+      "item": "ASR-020",
+      "group": "CONTENT",
+      "check": "timeline exists",
+      "status": "PASS",
+      "detail": "ground-truth/ASR-020.timeline.json"
+    },
+    {
+      "item": "ASR-020",
+      "group": "CONTENT",
+      "check": "timeline ends within the audio",
+      "status": "PASS",
+      "detail": "last segment ends 457.41s, audio is 458.21s"
+    },
+    {
+      "item": "ASR-020",
+      "group": "CONTENT",
+      "check": "one timeline speech segment per reference line",
+      "status": "PASS",
+      "detail": "115 segments vs 115 lines"
+    },
+    {
+      "item": "ASR-020",
+      "group": "FORMAT",
+      "check": "sha256 matches manifest",
+      "status": "PASS",
+      "detail": "audio changed since the manifest was written"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "all 10 families present",
+      "status": "PASS",
+      "detail": "missing []"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "every family has >= 2 calls",
+      "status": "PASS",
+      "detail": "{'clean_baseline': 2, 'telephony_noise': 2, 'code_switch': 2, 'numeric_dense': 2, 'proper_nouns': 2, 'disfluency': 2, 'overlap_crosstalk': 2, 'long_context': 2, 'far_field_low_gain': 2, 'hold_ivr': 2}"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "both call directions present",
+      "status": "PASS",
+      "detail": "{'IN': 17, 'OUT': 3} -- prep_payload_task.py branches the prompt on this, so a set with one direction exercises half of production's prompt surface"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "phone numbers unique per call",
+      "status": "PASS",
+      "detail": "0 duplicates"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "all phones inside the reserved sub-range",
+      "status": "PASS",
+      "detail": "reserved 301-320"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "durations span at least 5 minutes",
+      "status": "PASS",
+      "detail": "215s to 573s, spread 358s"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "20 files delivered",
+      "status": "PASS",
+      "detail": "20 files"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
+      "check": "no two files are byte-identical",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "files": [
+    {
+      "item_id": "ASR-001",
+      "family": "clean_baseline",
+      "direction": "IN",
+      "filename": "7100_0810000301_140045_A200_somying_phakdee_D_20260803_215_IN.wav",
+      "duration_s": 215.17,
+      "rms_dbfs": -23.8,
+      "peak_dbfs": -3.56,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2612,
+      "modulation_hz": 5.18,
+      "entities": 17,
+      "sha256": "9ffe37038ccf213c3021260cbe720760912ad759b00f6a25b4e7dc051d40f4dc",
+      "bytes": 3442752,
+      "phone": "0810000301"
+    },
+    {
+      "item_id": "ASR-002",
+      "family": "telephony_noise",
+      "direction": "IN",
+      "filename": "7101_0810000302_131617_A201_wichai_srisuk_D_20260804_248_IN.wav",
+      "duration_s": 247.7,
+      "rms_dbfs": -22.26,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.0033,
+      "modulation_hz": 4.3,
+      "entities": 15,
+      "sha256": "30bd11f462cad671e43d2ed6839e24e444af62bf78b39b9b907a1b2e1b6ab56e",
+      "bytes": 3963170,
+      "phone": "0810000302"
+    },
+    {
+      "item_id": "ASR-003",
+      "family": "code_switch",
+      "direction": "IN",
+      "filename": "7102_0810000303_175406_A202_kanya_thongdee_D_20260805_277_IN.wav",
+      "duration_s": 277.17,
+      "rms_dbfs": -23.75,
+      "peak_dbfs": -3.68,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2412,
+      "modulation_hz": 4.59,
+      "entities": 12,
+      "sha256": "d8dd16d3e2e11345e66c72c84af762adef3fcf41e323eaec9bfe0b2b6349c89b",
+      "bytes": 4434798,
+      "phone": "0810000303"
+    },
+    {
+      "item_id": "ASR-004",
+      "family": "numeric_dense",
+      "direction": "IN",
+      "filename": "7103_0810000304_164152_A203_narong_boonmee_D_20260806_316_IN.wav",
+      "duration_s": 315.97,
+      "rms_dbfs": -22.16,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2442,
+      "modulation_hz": 4.69,
+      "entities": 20,
+      "sha256": "37ff395523743f0834214d83015fb49cb686b03239dbe08192a3f3245c5c3d83",
+      "bytes": 5055596,
+      "phone": "0810000304"
+    },
+    {
+      "item_id": "ASR-005",
+      "family": "proper_nouns",
+      "direction": "OUT",
+      "filename": "7104_0810000305_135952_A204_pimchanok_wongsa_D_20260807_342_OUT.wav",
+      "duration_s": 342.13,
+      "rms_dbfs": -23.93,
+      "peak_dbfs": -3.02,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2324,
+      "modulation_hz": 4.49,
+      "entities": 20,
+      "sha256": "ffd93c5cedf51d25a9deaceef296cc1d1b556e0b771d05f52f608c68a637a05b",
+      "bytes": 5474098,
+      "phone": "0810000305"
+    },
+    {
+      "item_id": "ASR-006",
+      "family": "disfluency",
+      "direction": "IN",
+      "filename": "7105_0810000306_192145_A205_anucha_chaiyo_D_20260808_382_IN.wav",
+      "duration_s": 382.46,
+      "rms_dbfs": -22.18,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.1994,
+      "modulation_hz": 4.3,
+      "entities": 30,
+      "sha256": "1b9294f851ee837e27f8feaa2c8a9547b0e27307c6b1f3ca498155c92fb7d3cc",
+      "bytes": 6119452,
+      "phone": "0810000306"
+    },
+    {
+      "item_id": "ASR-007",
+      "family": "overlap_crosstalk",
+      "direction": "IN",
+      "filename": "7106_0810000307_163528_A206_sirinya_kaewta_D_20260809_395_IN.wav",
+      "duration_s": 395.12,
+      "rms_dbfs": -21.13,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.0028,
+      "modulation_hz": 4.98,
+      "entities": 26,
+      "sha256": "8afb145b45bdd69f04a1f7b6e916bd118ec4e8bef90efe60ba7129b599455e29",
+      "bytes": 6321954,
+      "phone": "0810000307"
+    },
+    {
+      "item_id": "ASR-008",
+      "family": "long_context",
+      "direction": "IN",
+      "filename": "7107_0810000308_181631_A207_thanapon_rungroj_D_20260810_564_IN.wav",
+      "duration_s": 564.18,
+      "rms_dbfs": -23.81,
+      "peak_dbfs": -2.48,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2745,
+      "modulation_hz": 5.27,
+      "entities": 35,
+      "sha256": "a3d12c8be174ac0dc02a2f7ab3b924576c3fbab44d2cf04065487f1e8831572c",
+      "bytes": 9026900,
+      "phone": "0810000308"
+    },
+    {
+      "item_id": "ASR-009",
+      "family": "far_field_low_gain",
+      "direction": "IN",
+      "filename": "7108_0810000309_093708_A208_waraporn_sudsai_D_20260811_465_IN.wav",
+      "duration_s": 465.07,
+      "rms_dbfs": -34.44,
+      "peak_dbfs": -14.91,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.0024,
+      "modulation_hz": 5.27,
+      "entities": 25,
+      "sha256": "86d6f1d8eb56c023127f5a614c5ec4255d68831413985355f7ee861367d46821",
+      "bytes": 7441204,
+      "phone": "0810000309"
+    },
+    {
+      "item_id": "ASR-010",
+      "family": "hold_ivr",
+      "direction": "IN",
+      "filename": "7109_0810000310_191202_A209_kittipong_malai_D_20260812_496_IN.wav",
+      "duration_s": 495.69,
+      "rms_dbfs": -21.68,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.6e-05,
+      "silence_ratio": 0.0037,
+      "modulation_hz": 5.27,
+      "entities": 23,
+      "sha256": "52c0811867bd44ff9eab39bf409cc1b5bbb23379415a2f38af16744433099988",
+      "bytes": 7931162,
+      "phone": "0810000310"
+    },
+    {
+      "item_id": "ASR-011",
+      "family": "clean_baseline",
+      "direction": "OUT",
+      "filename": "7110_0810000311_100623_A210_nattaya_phromma_D_20260813_219_OUT.wav",
+      "duration_s": 219.19,
+      "rms_dbfs": -23.84,
+      "peak_dbfs": -3.75,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2821,
+      "modulation_hz": 5.37,
+      "entities": 16,
+      "sha256": "63fad807517dfcc9344349c671c3844091bc8fdbe4b43978e68c49e7187cd238",
+      "bytes": 3507086,
+      "phone": "0810000311"
+    },
+    {
+      "item_id": "ASR-012",
+      "family": "telephony_noise",
+      "direction": "IN",
+      "filename": "7111_0810000312_135201_A211_surachai_inta_D_20260814_263_IN.wav",
+      "duration_s": 262.97,
+      "rms_dbfs": -22.0,
+      "peak_dbfs": -1.1,
+      "dc_offset": -1.6e-05,
+      "silence_ratio": 0.0041,
+      "modulation_hz": 4.59,
+      "entities": 21,
+      "sha256": "2f17c1ce76363e55b997f3264669c06a3422bff8b000033d6bf4af32219afb3b",
+      "bytes": 4207624,
+      "phone": "0810000312"
+    },
+    {
+      "item_id": "ASR-013",
+      "family": "code_switch",
+      "direction": "IN",
+      "filename": "7112_0810000313_151136_A212_orawan_sopha_D_20260815_289_IN.wav",
+      "duration_s": 288.64,
+      "rms_dbfs": -23.73,
+      "peak_dbfs": -3.72,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2381,
+      "modulation_hz": 4.98,
+      "entities": 22,
+      "sha256": "79030c4d13d444dacf1ff885c7500e2257f1f8307cc73cd4cc30cb59a71d95b8",
+      "bytes": 4618254,
+      "phone": "0810000313"
+    },
+    {
+      "item_id": "ASR-014",
+      "family": "numeric_dense",
+      "direction": "IN",
+      "filename": "7113_0810000314_123556_A213_decha_nilobon_D_20260816_327_IN.wav",
+      "duration_s": 326.68,
+      "rms_dbfs": -21.99,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2406,
+      "modulation_hz": 4.69,
+      "entities": 26,
+      "sha256": "54b570a4709688a23e28c848d86b828abc71bc3cf5273698060d548602300b6c",
+      "bytes": 5226896,
+      "phone": "0810000314"
+    },
+    {
+      "item_id": "ASR-015",
+      "family": "proper_nouns",
+      "direction": "OUT",
+      "filename": "7114_0810000315_191356_A214_chalisa_auengchai_D_20260803_349_OUT.wav",
+      "duration_s": 348.59,
+      "rms_dbfs": -23.8,
+      "peak_dbfs": -4.21,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2341,
+      "modulation_hz": 5.08,
+      "entities": 26,
+      "sha256": "f1108a7b2fa66d13cef6b3bb54a1f291fbb3f38b2e1024830692f99ed45d34be",
+      "bytes": 5577522,
+      "phone": "0810000315"
+    },
+    {
+      "item_id": "ASR-016",
+      "family": "disfluency",
+      "direction": "IN",
+      "filename": "7115_0810000316_175048_A215_phubet_sangthong_D_20260804_393_IN.wav",
+      "duration_s": 392.72,
+      "rms_dbfs": -22.28,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2075,
+      "modulation_hz": 5.47,
+      "entities": 17,
+      "sha256": "5bc58b1bc3f8345b01dc9633321dbd50453329b6f792295a646e509edfe319b8",
+      "bytes": 6283626,
+      "phone": "0810000316"
+    },
+    {
+      "item_id": "ASR-017",
+      "family": "overlap_crosstalk",
+      "direction": "IN",
+      "filename": "7116_0810000317_165334_A216_rattana_duangdee_D_20260805_413_IN.wav",
+      "duration_s": 412.71,
+      "rms_dbfs": -21.5,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.0174,
+      "modulation_hz": 4.59,
+      "entities": 27,
+      "sha256": "cded76857cd1cf8e2ef69919804c31e15029fdcf6094abee3e3212be3e901f0c",
+      "bytes": 6603442,
+      "phone": "0810000317"
+    },
+    {
+      "item_id": "ASR-018",
+      "family": "long_context",
+      "direction": "IN",
+      "filename": "7117_0810000318_133459_A217_somchai_pinyo_D_20260806_573_IN.wav",
+      "duration_s": 572.76,
+      "rms_dbfs": -23.61,
+      "peak_dbfs": -1.84,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.2744,
+      "modulation_hz": 4.88,
+      "entities": 34,
+      "sha256": "aa40529032b87044b9b5f4101c58f6c277fdc167cea40dbeecd73c862b46f6ea",
+      "bytes": 9164272,
+      "phone": "0810000318"
+    },
+    {
+      "item_id": "ASR-019",
+      "family": "far_field_low_gain",
+      "direction": "IN",
+      "filename": "7118_0810000319_114805_A218_napaporn_kitcha_D_20260807_432_IN.wav",
+      "duration_s": 431.84,
+      "rms_dbfs": -34.6,
+      "peak_dbfs": -14.01,
+      "dc_offset": -1.5e-05,
+      "silence_ratio": 0.003,
+      "modulation_hz": 4.49,
+      "entities": 27,
+      "sha256": "4d76f60e379e526a1361dad5f007816edeaa8d5f54502937895cfcc69e99ce6e",
+      "bytes": 6909478,
+      "phone": "0810000319"
+    },
+    {
+      "item_id": "ASR-020",
+      "family": "hold_ivr",
+      "direction": "IN",
+      "filename": "7119_0810000320_184523_A219_weerachai_thonglor_D_20260808_458_IN.wav",
+      "duration_s": 458.21,
+      "rms_dbfs": -22.25,
+      "peak_dbfs": -1.0,
+      "dc_offset": -1.6e-05,
+      "silence_ratio": 0.0188,
+      "modulation_hz": 3.32,
+      "entities": 26,
+      "sha256": "ee88baf5a9b407e60794cf384a05afb786736fa549c500c734872596de4bcced",
+      "bytes": 7331368,
+      "phone": "0810000320"
+    }
+  ],
+  "summary": {
+    "pass": 608,
+    "fail": 0
+  }
+}

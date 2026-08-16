@@ -1,0 +1,1076 @@
+{
+  "item_id": "ASR-007",
+  "sample_rate": 8000,
+  "segments": [
+    {
+      "idx": 0,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 1.172,
+      "dur_s": 4.487,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 1,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 4.968,
+      "dur_s": 0.891,
+      "overlap_s": 0.691
+    },
+    {
+      "idx": 2,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 6.301,
+      "dur_s": 2.236,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 3,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 8.198,
+      "dur_s": 0.854,
+      "overlap_s": 0.339
+    },
+    {
+      "idx": 4,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 9.37,
+      "dur_s": 3.529,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 5,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 12.456,
+      "dur_s": 3.576,
+      "overlap_s": 0.443
+    },
+    {
+      "idx": 6,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 16.391,
+      "dur_s": 5.088,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 7,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 21.156,
+      "dur_s": 0.93,
+      "overlap_s": 0.323
+    },
+    {
+      "idx": 8,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 21.695,
+      "dur_s": 3.097,
+      "overlap_s": 0.391
+    },
+    {
+      "idx": 9,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 25.262,
+      "dur_s": 3.274,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 10,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 28.929,
+      "dur_s": 2.326,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 11,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 31.522,
+      "dur_s": 3.48,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 12,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 34.321,
+      "dur_s": 2.556,
+      "overlap_s": 0.682
+    },
+    {
+      "idx": 13,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 37.345,
+      "dur_s": 4.724,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 14,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 41.418,
+      "dur_s": 2.814,
+      "overlap_s": 0.651
+    },
+    {
+      "idx": 15,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 44.789,
+      "dur_s": 2.749,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 16,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 46.93,
+      "dur_s": 2.038,
+      "overlap_s": 0.608
+    },
+    {
+      "idx": 17,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 49.554,
+      "dur_s": 2.717,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 18,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 52.809,
+      "dur_s": 4.806,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 19,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 58.365,
+      "dur_s": 0.402,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 20,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 59.227,
+      "dur_s": 2.599,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 21,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 61.288,
+      "dur_s": 2.88,
+      "overlap_s": 0.538
+    },
+    {
+      "idx": 22,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 64.481,
+      "dur_s": 3.114,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 23,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 68.319,
+      "dur_s": 0.939,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 24,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 69.614,
+      "dur_s": 3.549,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 25,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 73.807,
+      "dur_s": 0.317,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 26,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 74.624,
+      "dur_s": 2.034,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 27,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 76.964,
+      "dur_s": 3.143,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 28,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 80.825,
+      "dur_s": 5.665,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 29,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 85.841,
+      "dur_s": 0.534,
+      "overlap_s": 0.648
+    },
+    {
+      "idx": 30,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 86.864,
+      "dur_s": 1.836,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 31,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 88.391,
+      "dur_s": 2.716,
+      "overlap_s": 0.309
+    },
+    {
+      "idx": 32,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 90.645,
+      "dur_s": 3.163,
+      "overlap_s": 0.462
+    },
+    {
+      "idx": 33,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 93.23,
+      "dur_s": 3.895,
+      "overlap_s": 0.578
+    },
+    {
+      "idx": 34,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 97.508,
+      "dur_s": 4.724,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 35,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 101.881,
+      "dur_s": 0.842,
+      "overlap_s": 0.351
+    },
+    {
+      "idx": 36,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 103.028,
+      "dur_s": 2.556,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 37,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 105.31,
+      "dur_s": 3.748,
+      "overlap_s": 0.274
+    },
+    {
+      "idx": 38,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 109.32,
+      "dur_s": 2.919,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 39,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 112.771,
+      "dur_s": 0.451,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 40,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 113.824,
+      "dur_s": 2.852,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 41,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 116.196,
+      "dur_s": 3.837,
+      "overlap_s": 0.48
+    },
+    {
+      "idx": 42,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 120.578,
+      "dur_s": 4.806,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 43,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 125.931,
+      "dur_s": 0.664,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 44,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 127.259,
+      "dur_s": 4.724,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 45,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 131.677,
+      "dur_s": 0.402,
+      "overlap_s": 0.307
+    },
+    {
+      "idx": 46,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 132.705,
+      "dur_s": 2.612,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 47,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 135.871,
+      "dur_s": 3.674,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 48,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 140.081,
+      "dur_s": 5.162,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 49,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 144.99,
+      "dur_s": 0.317,
+      "overlap_s": 0.253
+    },
+    {
+      "idx": 50,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 145.96,
+      "dur_s": 1.707,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 51,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 147.357,
+      "dur_s": 0.939,
+      "overlap_s": 0.31
+    },
+    {
+      "idx": 52,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 148.626,
+      "dur_s": 2.734,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 53,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 151.83,
+      "dur_s": 4.727,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 54,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 157.198,
+      "dur_s": 3.218,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 55,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 160.162,
+      "dur_s": 3.513,
+      "overlap_s": 0.253
+    },
+    {
+      "idx": 56,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 163.949,
+      "dur_s": 2.267,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 57,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 166.89,
+      "dur_s": 0.698,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 58,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 168.002,
+      "dur_s": 3.273,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 59,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 171.559,
+      "dur_s": 2.891,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 60,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 174.713,
+      "dur_s": 5.55,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 61,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 180.831,
+      "dur_s": 0.842,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 62,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 181.366,
+      "dur_s": 5.665,
+      "overlap_s": 0.308
+    },
+    {
+      "idx": 63,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 186.64,
+      "dur_s": 0.534,
+      "overlap_s": 0.391
+    },
+    {
+      "idx": 64,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 187.786,
+      "dur_s": 4.343,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 65,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 192.67,
+      "dur_s": 0.451,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 66,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 193.866,
+      "dur_s": 2.034,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 67,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 196.589,
+      "dur_s": 2.88,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 68,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 200.183,
+      "dur_s": 7.065,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 69,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 207.848,
+      "dur_s": 0.402,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 70,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 208.8,
+      "dur_s": 3.214,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 71,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 212.441,
+      "dur_s": 3.624,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 72,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 216.482,
+      "dur_s": 1.844,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 73,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 217.794,
+      "dur_s": 2.717,
+      "overlap_s": 0.531
+    },
+    {
+      "idx": 74,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 221.239,
+      "dur_s": 2.425,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 75,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 223.249,
+      "dur_s": 3.305,
+      "overlap_s": 0.415
+    },
+    {
+      "idx": 76,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 225.961,
+      "dur_s": 3.117,
+      "overlap_s": 0.593
+    },
+    {
+      "idx": 77,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 229.678,
+      "dur_s": 3.657,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 78,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 232.644,
+      "dur_s": 4.083,
+      "overlap_s": 0.691
+    },
+    {
+      "idx": 79,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 237.039,
+      "dur_s": 3.895,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 80,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 241.275,
+      "dur_s": 3.549,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 81,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 245.444,
+      "dur_s": 0.317,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 82,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 246.303,
+      "dur_s": 5.353,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 83,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 252.253,
+      "dur_s": 0.939,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 84,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 253.636,
+      "dur_s": 1.706,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 85,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 256.073,
+      "dur_s": 2.602,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 86,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 259.343,
+      "dur_s": 2.919,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 87,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 262.772,
+      "dur_s": 0.664,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 88,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 263.172,
+      "dur_s": 3.114,
+      "overlap_s": 0.264
+    },
+    {
+      "idx": 89,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 266.858,
+      "dur_s": 0.451,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 90,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 267.698,
+      "dur_s": 2.577,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 91,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 270.573,
+      "dur_s": 2.795,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 92,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 274.015,
+      "dur_s": 3.48,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 93,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 276.893,
+      "dur_s": 0.698,
+      "overlap_s": 0.603
+    },
+    {
+      "idx": 94,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 277.093,
+      "dur_s": 4.343,
+      "overlap_s": 0.498
+    },
+    {
+      "idx": 95,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 281.999,
+      "dur_s": 0.402,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 96,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 283.04,
+      "dur_s": 1.572,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 97,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 285.288,
+      "dur_s": 2.891,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 98,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 287.843,
+      "dur_s": 2.038,
+      "overlap_s": 0.336
+    },
+    {
+      "idx": 99,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 290.369,
+      "dur_s": 2.671,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 100,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 293.656,
+      "dur_s": 2.037,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 101,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 296.072,
+      "dur_s": 3.156,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 102,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 299.495,
+      "dur_s": 2.734,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 103,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 302.752,
+      "dur_s": 6.468,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 104,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 309.61,
+      "dur_s": 2.698,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 105,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 312.609,
+      "dur_s": 3.305,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 106,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 315.489,
+      "dur_s": 2.005,
+      "overlap_s": 0.425
+    },
+    {
+      "idx": 107,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 317.135,
+      "dur_s": 3.837,
+      "overlap_s": 0.359
+    },
+    {
+      "idx": 108,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 321.307,
+      "dur_s": 3.684,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 109,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 324.387,
+      "dur_s": 4.987,
+      "overlap_s": 0.604
+    },
+    {
+      "idx": 110,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 329.874,
+      "dur_s": 2.919,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 111,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 333.487,
+      "dur_s": 0.939,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 112,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 333.958,
+      "dur_s": 7.065,
+      "overlap_s": 0.469
+    },
+    {
+      "idx": 113,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 341.455,
+      "dur_s": 0.664,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 114,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 342.381,
+      "dur_s": 1.859,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 115,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 344.792,
+      "dur_s": 2.749,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 116,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 347.991,
+      "dur_s": 2.577,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 117,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 349.939,
+      "dur_s": 2.602,
+      "overlap_s": 0.629
+    },
+    {
+      "idx": 118,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 353.126,
+      "dur_s": 5.417,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 119,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 359.142,
+      "dur_s": 0.451,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 120,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 359.136,
+      "dur_s": 3.549,
+      "overlap_s": 0.457
+    },
+    {
+      "idx": 121,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 363.151,
+      "dur_s": 0.402,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 122,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 363.955,
+      "dur_s": 3.273,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 123,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 366.7,
+      "dur_s": 2.633,
+      "overlap_s": 0.528
+    },
+    {
+      "idx": 124,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 368.873,
+      "dur_s": 2.479,
+      "overlap_s": 0.46
+    },
+    {
+      "idx": 125,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 370.896,
+      "dur_s": 5.55,
+      "overlap_s": 0.457
+    },
+    {
+      "idx": 126,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 377.128,
+      "dur_s": 5.506,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 127,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 382.896,
+      "dur_s": 2.574,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 128,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 384.809,
+      "dur_s": 2.355,
+      "overlap_s": 0.66
+    },
+    {
+      "idx": 129,
+      "kind": "speech",
+      "speaker": "agent",
+      "start_s": 387.742,
+      "dur_s": 4.661,
+      "overlap_s": 0.0
+    },
+    {
+      "idx": 130,
+      "kind": "speech",
+      "speaker": "customer",
+      "start_s": 393.003,
+      "dur_s": 1.316,
+      "overlap_s": 0.0
+    }
+  ],
+  "dropout_spans": [
+    {
+      "start_s": 27.964,
+      "dur_s": 0.042
+    },
+    {
+      "start_s": 273.115,
+      "dur_s": 0.171
+    },
+    {
+      "start_s": 159.701,
+      "dur_s": 0.161
+    },
+    {
+      "start_s": 95.078,
+      "dur_s": 0.154
+    },
+    {
+      "start_s": 58.67,
+      "dur_s": 0.086
+    }
+  ]
+}
