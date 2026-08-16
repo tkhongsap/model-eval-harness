@@ -1,29 +1,39 @@
 """Generate the model-comparison report from recorded runs. No figure is ever typed by hand.
 
     python scripts/model_comparison_report.py
+    python scripts/model_comparison_report.py --config configs/comparison/retention-challenge-v1.json
 
-Reads the four `retention_v3` run directories and the harness's own comparison reports,
-recomputes every token and latency figure from the raw per-call logs, and emits:
+**Which comparison is a config, not a code change.** `configs/comparison/<pack>.json` names
+the pack, the arms, their run directories, the comparison reports, the expected shape and the
+output paths. Adding a pack or a model is a new config file; nothing here is edited. The
+`retention-v3.json` config reproduces the values this script used to hardcode, which is the
+regression test that the parameterisation changed no figure.
 
-    docs/reports/model-comparison-metrics.json   every number, machine-readable
-    docs/reports/model-comparison.html           the standalone page
-    docs/reports/model-comparison-fragment.html  the same page as an Artifact fragment
+It reads those run directories and the harness's own comparison reports, recomputes every
+token and latency figure from the raw per-call logs, and emits `<stem>-metrics.json`,
+`<stem>.html` (standalone) and `<stem>-fragment.html` (for publishing) into the configured
+directory. The JSON and the HTML come from one computation, so they cannot disagree.
 
-The JSON and the HTML come from one computation, so they cannot disagree, and re-running this
-after a fifth model is evaluated regenerates a correct report with no editing.
+**Every claim in the prose is derived, never asserted.** The bottom line, the "no retries"
+line, the tokenizer note and the incumbent's stability note are all computed from the data in
+front of them, because each is a measurement -- a page that prints "no retries" unconditionally
+is wrong the first time a gateway hiccups, and one that names a winner unconditionally is
+fabrication on the next pack.
 
-**Four refusals.** This exits non-zero rather than emitting a report that looks fine and is
-wrong. Each exists because the corresponding mistake is easy to make and invisible afterwards:
+**Refusals.** This exits non-zero rather than emitting a report that looks fine and is wrong.
+Each exists because the corresponding mistake is easy to make and invisible afterwards:
 
   1. The runs must share testset/workload/scorer/prompt/repeats/items. The comparability claim
      the page makes becomes a thing the code checks, not a thing someone remembered.
-  2. Gemini's F1 must be byte-identical across the three comparison reports it appears in. It is
-     the same 414 recorded outputs scored three times; if the three disagree, the scoring path
+  2. The incumbent's F1 must be byte-identical across every comparison report it appears in. It
+     is the same recorded outputs scored once per comparison; if they disagree, the scoring path
      is not deterministic and nothing downstream is trustworthy.
   3. No `ok` row may carry a null `prompt_tokens` or `completion_tokens`. `sum()` over a list
      containing None either raises or silently drops -- and a token total that quietly excluded
      rows would read as a real measurement.
-  4. Every run must have the full 414 rows.
+  4. Every run must have exactly `expected_rows` rows.
+  5. The config's incumbent must exist, keys must be unique, and every candidate must have a
+     comparison report -- otherwise it would render as blank cells rather than as an error.
 
 **Percentiles are nearest-rank: index = ceil(q * n), 1-based.** Written out because an earlier
 helper in this repo used `round(q*n + 0.5)`, which is off by one whenever `q*n` is an exact
@@ -33,6 +43,7 @@ correct value is 2.047 s. `scripts/soak_report.py` still carries the old form.
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import re
@@ -45,22 +56,14 @@ RUNS_DIR = REPO / "out" / "runs"
 REPORTS = REPO / "out" / "reports"
 DOCS = REPO / "docs" / "reports"
 
-# (key, display name, short label, run directory, runs on our GPU?)
-MODELS = [
-    ("gemini", "Gemini 2.5 Flash", "Gemini", "20260814-132425Z-e17-gemini", False),
-    ("qwen38", "Qwen3.8 27B", "Qwen3.8", "20260815-124600Z-e18-tf-qwen38", True),
-    ("qwen36", "Qwen3.6 27B", "Qwen3.6", "20260814-134803Z-e17-tf-qwen", True),
-    ("gemma", "Gemma 4 12B", "Gemma 4", "20260814-132642Z-e17-tf-gemma", True),
-]
-ARM_OF = {"gemini": "e17-gemini", "qwen38": "e18-tf-qwen38",
-          "qwen36": "e17-tf-qwen", "gemma": "e17-tf-gemma"}
+# The run list, the arm names and the expected shape all used to be module constants pinned
+# to `retention_v3`. They are a property of WHICH COMPARISON is being rendered, not of the
+# renderer, so they now live in `configs/comparison/<pack>.json` and the script takes
+# `--config`. The v3 config reproduces the previously hardcoded values exactly, which is the
+# regression test: regenerating it must yield a byte-identical report.
+CONFIG_DIR = REPO / "configs" / "comparison"
+DEFAULT_CONFIG = CONFIG_DIR / "retention-v3.json"
 
-# candidate key -> comparison report against Gemini
-VS_GEMINI = {
-    "qwen38": "compare-e18-qwen38-vs-gemini.txt",
-    "qwen36": "compare-e17-qwen.txt",
-    "gemma": "compare-e17-gemma.txt",
-}
 DIMS = ["call_result", "reason", "product"]
 DIM_LABEL = {"call_result": "Call outcome", "reason": "Reason", "product": "Product"}
 
@@ -95,15 +98,50 @@ def pct(values: list[float], q: float) -> float:
     return ordered[idx - 1]
 
 
-def read_run(key: str, directory: str) -> dict:
+def load_config(path: Path) -> dict:
+    cfg = json.loads(path.read_text(encoding="utf-8"))
+    keys = [m["key"] for m in cfg["models"]]
+    if cfg["incumbent"] not in keys:
+        raise Refused(f"incumbent {cfg['incumbent']!r} is not among the models {keys}")
+    if len(set(keys)) != len(keys):
+        raise Refused(f"duplicate model keys in {path.name}: {keys}")
+    # Every non-incumbent needs a comparison report; without one it has no F1, no paired
+    # verdict and no stability, and would render as blank cells rather than as an error.
+    missing = [k for k in keys if k != cfg["incumbent"] and k not in cfg["vs_incumbent"]]
+    if missing:
+        raise Refused(f"no vs-incumbent report configured for {missing}")
+    return cfg
+
+
+def read_run(key: str, directory: str, expected_rows: int) -> dict:
     path = RUNS_DIR / directory
     meta = json.loads((path / "run.json").read_text(encoding="utf-8"))
     rows = [json.loads(l) for l in (path / "run.jsonl").read_text(encoding="utf-8").splitlines()
             if l.strip()]
-    if len(rows) != 414:
-        raise Refused(f"{directory} has {len(rows)} rows, expected 414")
+    if len(rows) != expected_rows:
+        raise Refused(f"{directory} has {len(rows)} rows, expected {expected_rows}")
 
     ok = [r for r in rows if r["outcome"] == "ok"]
+
+    # REFUSAL: an arm that did not actually answer must never reach a report. `flatten.to_rows`
+    # emits a ground-truth-shaped skeleton for a payload it could not read, which keeps the
+    # denominators equal -- and has the consequence that an arm answering NOTHING still scores
+    # a perfect 1.000 on product, because the skeleton carries the ground truth's own product
+    # names. `20260815-223809Z-e20-chal-gemma` is the live example: 150/150 transport errors,
+    # zero correct clusters on every dimension, and w-F1 1.000 on product in its compare report.
+    # Without this gate, re-adding a dead arm to a config publishes a table in which a model
+    # that never responded outscores every model that did.
+    failed = len(rows) - len(ok)
+    if failed:
+        counts: dict[str, int] = {}
+        for r in rows:
+            counts[r["outcome"]] = counts.get(r["outcome"], 0) + 1
+        raise Refused(
+            f"{directory} has {failed} of {len(rows)} rows that are not 'ok' ({counts}). An arm "
+            "that did not answer still scores 1.000 on product, because to_rows emits a "
+            "ground-truth-shaped skeleton for an unreadable payload. Fix the run, or leave the "
+            "arm out of the config.")
+
     missing_in = sum(1 for r in ok if r.get("prompt_tokens") is None)
     missing_out = sum(1 for r in ok if r.get("completion_tokens") is None)
     if missing_in or missing_out:
@@ -164,8 +202,12 @@ def parse_compare(path: Path) -> dict:
     return {"f1": f1, "paired": paired, "n_flip": nflip, "instability": instab}
 
 
-def collect() -> dict:
-    models = {k: read_run(k, d) for k, _, _, d, _ in MODELS}
+def collect(cfg: dict) -> dict:
+    spec = {m["key"]: m for m in cfg["models"]}
+    order = [m["key"] for m in cfg["models"]]
+    arm_of = {m["key"]: m["arm"] for m in cfg["models"]}
+    inc = cfg["incumbent"]
+    models = {k: read_run(k, spec[k]["run"], cfg["expected_rows"]) for k in order}
 
     # Refusal 1: the comparability claim, enforced.
     for field in SHARED_FIELDS:
@@ -173,7 +215,7 @@ def collect() -> dict:
         if len(set(map(str, seen.values()))) != 1:
             raise Refused(f"runs disagree on {field}: {seen}")
 
-    compares = {k: parse_compare(REPORTS / f) for k, f in VS_GEMINI.items()}
+    compares = {k: parse_compare(REPORTS / f) for k, f in cfg["vs_incumbent"].items()}
     missing = [k for k, c in compares.items() if not c["f1"]]
     if missing:
         raise Refused(f"could not parse an F1 table from the reports for {missing}")
@@ -187,56 +229,102 @@ def collect() -> dict:
         if not comp["n_flip"] or not comp["instability"]:
             raise Refused(f"no N_flip or instability parsed for {key}")
 
-    # Refusal 2: Gemini is the same recorded outputs scored three times. If the three
-    # disagree, the scoring path is not deterministic.
-    gem_arm = ARM_OF["gemini"]
+    # Refusal 2: the incumbent is the same recorded outputs scored once per comparison. If
+    # those disagree, the scoring path is not deterministic.
+    gem_arm = arm_of[inc]
     gem_f1 = {k: {d: c["f1"][gem_arm][d]["f1"] for d in DIMS} for k, c in compares.items()}
     if len({json.dumps(v, sort_keys=True) for v in gem_f1.values()}) != 1:
-        raise Refused(f"Gemini's F1 differs between comparison reports: {gem_f1}")
+        raise Refused(f"the incumbent's F1 differs between comparison reports: {gem_f1}")
 
     for key, comp in compares.items():
-        arm = ARM_OF[key]
+        arm = arm_of[key]
         models[key]["f1"] = {d: comp["f1"][arm][d]["f1"] for d in DIMS}
         models[key]["scoring_detail"] = comp["f1"][arm]
         models[key]["paired_vs_gemini"] = comp["paired"]
         models[key]["n_flip"] = comp["n_flip"].get(arm)
         models[key]["instability"] = comp["instability"].get(arm)
-    any_comp = compares["qwen38"]
-    models["gemini"]["f1"] = {d: any_comp["f1"][gem_arm][d]["f1"] for d in DIMS}
-    models["gemini"]["scoring_detail"] = any_comp["f1"][gem_arm]
-    models["gemini"]["paired_vs_gemini"] = None
-    models["gemini"]["n_flip"] = any_comp["n_flip"].get(gem_arm)
-    models["gemini"]["instability"] = any_comp["instability"].get(gem_arm)
+    # Refusal 2 proved every comparison agrees on the incumbent, so any one of them carries
+    # its figures.
+    any_comp = compares[next(k for k in order if k != inc)]
+    models[inc]["f1"] = {d: any_comp["f1"][gem_arm][d]["f1"] for d in DIMS}
+    models[inc]["scoring_detail"] = any_comp["f1"][gem_arm]
+    models[inc]["paired_vs_gemini"] = None
+    models[inc]["n_flip"] = any_comp["n_flip"].get(gem_arm)
+    models[inc]["instability"] = any_comp["instability"].get(gem_arm)
 
-    head = parse_compare(REPORTS / "compare-qwen36-vs-qwen38.txt")
-    return {
+    out = {
         "generated_from": "raw run.jsonl + harness comparison reports; no hand-entered figures",
         "percentile_method": "nearest rank, index = ceil(q * n), 1-based",
-        "shared_contract": models["gemini"]["shared"],
-        "models": {k: models[k] for k, *_ in MODELS},
-        "qwen36_vs_qwen38": head["paired"],
-        "order": [k for k, *_ in MODELS],
-        "labels": {k: {"name": n, "short": s, "ours": o} for k, n, s, _, o in MODELS},
+        "shared_contract": models[inc]["shared"],
+        "models": {k: models[k] for k in order},
     }
+    h2h = cfg.get("head_to_head")
+    if h2h:
+        out[h2h["key"]] = parse_compare(REPORTS / h2h["report"])["paired"]
+    out["order"] = order
+    out["labels"] = {m["key"]: {"name": m["name"], "short": m["short"], "ours": m["ours"]}
+                     for m in cfg["models"]}
+    out["pack"] = cfg["pack"]
+    out["metrics_stem"] = cfg["output"]["stem"]
+    out["incumbent"] = inc
+
+    # The "what the evaluation set is" table used to be hardcoded HTML listing retention_v3's
+    # nine families. Rendered over another pack it stated another pack's composition as fact --
+    # caught on the challenge report, where it claimed 30 Thai-linguistic and 12 long-context
+    # items that pack does not contain. COUNTS are recomputed from the testset every time so
+    # they cannot drift; only the human-readable descriptions come from the config.
+    labels = cfg.get("family_labels", {})
+    counts: dict[str, int] = {}
+    if cfg.get("testset"):
+        for line in (REPO / cfg["testset"]).read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                fam = json.loads(line).get("family", "?")
+                counts[fam] = counts.get(fam, 0) + 1
+        total = sum(counts.values())
+        if total != out["shared_contract"]["items"]:
+            raise Refused(
+                f"{cfg['testset']} has {total} items but the runs recorded "
+                f"{out['shared_contract']['items']}; the report would describe a different pack "
+                "from the one that was scored")
+    out["dataset"] = {
+        "families": [
+            {"name": labels.get(f, [f, ""])[0], "count": n, "what": labels.get(f, [f, ""])[1]}
+            for f, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        ],
+    }
+    out["head_to_head_key"] = h2h["key"] if h2h else None
+    out["copy"] = {"title": cfg.get("title"), "doc_title": cfg.get("doc_title"),
+                   "kicker_subject": cfg.get("kicker_subject"), "note": cfg.get("note")}
+    return out
 
 
 def main() -> int:
-    data = collect()
-    DOCS.mkdir(exist_ok=True)
-    (DOCS / "model-comparison-metrics.json").write_text(
+    ap = argparse.ArgumentParser(prog="model_comparison_report")
+    ap.add_argument("--config", default=str(DEFAULT_CONFIG),
+                    help="comparison set under configs/comparison/ (default: retention-v3)")
+    args = ap.parse_args()
+
+    cfg = load_config(Path(args.config))
+    data = collect(cfg)
+
+    out_dir = REPO / cfg["output"]["dir"]
+    stem = cfg["output"]["stem"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{stem}-metrics.json").write_text(
         json.dumps(data, indent=2), encoding="utf-8")
 
     from model_comparison_html import render  # noqa: PLC0415 - split for readability
     fragment = render(data)
-    (DOCS / "model-comparison-fragment.html").write_text(fragment, encoding="utf-8")
+    (out_dir / f"{stem}-fragment.html").write_text(fragment, encoding="utf-8")
     cut = fragment.index("</style>") + len("</style>")
     standalone = ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
                   '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
                   + fragment[:cut] + "\n</head>\n<body>\n" + fragment[cut:]
                   + "\n</body>\n</html>\n")
-    (DOCS / "model-comparison.html").write_text(standalone, encoding="utf-8")
+    (out_dir / f"{stem}.html").write_text(standalone, encoding="utf-8")
 
-    print("all four refusals passed")
+    print(f"config: {Path(args.config).name}  pack: {cfg['pack']}")
+    print("all refusals passed")
     print(f"  shared contract: {data['shared_contract']['scoring_code_sha'][:16]} / "
           f"{data['shared_contract']['workload_sha'][:16]}")
     for key in data["order"]:
@@ -244,7 +332,8 @@ def main() -> int:
         print(f"  {data['labels'][key]['name']:18} F1 {m['f1']}  "
               f"in/call {m['input_tokens_per_call']:>7}  out/call {m['output_tokens_per_call']:>6}"
               f"  p50 {m['latency_s']['p50']:>7}s")
-    print(f"\nwrote docs/reports/model-comparison-metrics.json, .html, -fragment.html "
+    rel = out_dir.relative_to(REPO).as_posix()
+    print(f"\nwrote {rel}/{stem}-metrics.json, .html, -fragment.html "
           f"(ascii-only: {standalone.isascii()})")
     return 0
 

@@ -11,10 +11,21 @@ one-vs-rest classes, and no single case explains it. This is the drill-down, and
 to walk a room through.
 
 ```
-PYTHONPATH=src python scripts/case_explorer.py     ->  out/case-explorer.html  (~2 MB)
+PYTHONPATH=src python scripts/case_explorer.py
+    ->  out/case-explorer.html            retention_v3, 138 cases, 4 models  (~2 MB)
+
+PYTHONPATH=src python scripts/case_explorer.py --config configs/comparison/retention-challenge-v1.json
+    ->  out/case-explorer-challenge.html  retention_challenge_v1, 50 cases, 3 models
 ```
 
 Opens straight off disk. No server, no network calls, no external references.
+
+**Which pack, which models and which runs are a config**, not a code change:
+`configs/comparison/<pack>.json` is the same file `model_comparison_report.py` reads, so the
+report and the dashboard are two views of one declared comparison and cannot drift apart.
+A pack without a tune/holdout split simply gets no Split filter — `retention_challenge_v1`
+was authored as a single block, so there is nothing to keep apart and, unlike v3's holdout,
+no contamination caveat to carry.
 
 ## Why it is not committed
 

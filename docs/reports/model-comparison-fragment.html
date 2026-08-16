@@ -103,7 +103,7 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
   <p class="kicker">True &middot; Retention call labelling &middot; 138 transcripts
   &middot; 414 calls per model</p>
   <h1>Four models, one evaluation</h1>
-  <p class="standfirst">Production Gemini&nbsp;2.5&nbsp;Flash against three models running on
+  <p class="standfirst">Production Gemini 2.5 Flash against three models running on
   True&rsquo;s own GPU, measured on accuracy, tokens and speed. Every figure on this page is
   computed from the recorded per-call logs.</p>
   <div class="safe">Synthetic test set &middot; no customer data</div>
@@ -112,8 +112,9 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 <section id="accuracy">
   <h2>1. Accuracy</h2>
   <p class="lede">Weighted F1, 0 to 1, higher is better. All four models saw the same
-  138 transcripts, the same prompt and the same settings, and were scored by
-  identical code. One chart per label type, because the three are scored differently and must
+  138 transcripts, the same prompt and the same ground truth, and were scored
+  by identical code. (Concurrency and reasoning-effort differ between the hosted and self-hosted
+  arms &mdash; see section 3; neither affects a score.) One chart per label type, because the three are scored differently and must
   not be averaged together.</p>
   <figure>
     <figcaption>Weighted F1 by label type &middot; each scale starts at zero</figcaption>
@@ -136,20 +137,9 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
   chance cannot explain it?</strong></p>
 
   <div class="callout">
-    <h3>Worked example &mdash; Qwen3.8 on call outcome</h3>
-    <p>Of 138 calls, both models got <span class="big">128</span> right and
-    both got <span class="big">7</span> wrong. Those 135 are ties and are set aside. That leaves
-    <span class="big">3</span> calls where they differed: Qwen3.8 won 2, Gemini won 1.</p>
-    <p><strong>2&ndash;1 proves nothing.</strong> With only 3 disagreements, even a clean
-    3&ndash;0 sweep would happen by luck once in 8 times, and the bar for calling a result is
-    once in 64. So at 3 disagreements <em>no</em> outcome can clear the bar &mdash; which is why
-    the row reads &ldquo;too few disagreements to judge&rdquo; rather than naming a winner.
-    <strong>Six differences is the minimum</strong> that makes any verdict possible, because a
-    6&ndash;0 sweep is exactly a 1-in-64 event.</p>
-    <p>The required margin grows with the number of disagreements: at 28 differences you need a
-    14-point gap, and Qwen3.8&rsquo;s reason score fell 8 short of it &mdash; hence &ldquo;no
-    real difference&rdquo;. Gemma&rsquo;s call-outcome gap of 10 out of 12 differences landed
-    exactly on its threshold, so that one <em>does</em> count.</p>
+    <h3>Worked example &mdash; Qwen3.8 on reason</h3>
+    <p>Of 138 calls, both models got <span class="big">64</span> right and both got <span class="big">46</span> wrong. Those 110 are ties and are set aside. That leaves <span class="big">28</span> calls where they differed: Qwen3.8 won 10, Gemini won 18.</p>
+    <p>The margin required depends on how many disagreements there are. At 28 differences the gap has to reach 14 for chance to be ruled out; this one is 8, so the row reads &ldquo;no real difference&rdquo;.</p>
   </div>
 
   <p class="lede" style="margin-top:26px">Every comparison below is
@@ -195,7 +185,7 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
   models agree on almost every call, so there is barely anything left to measure &mdash; that is
   not a pass and not a fail, it means this test set cannot separate them.
   <strong>Second, why Reason scores lower for everyone:</strong> on that dimension
-  46&ndash;48
+  42&ndash;48
   of the 138 calls were failed by <em>both</em> models. It is hard for
   everything we tested, not a weakness of one model.</div>
 </section>
@@ -215,20 +205,13 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
     <th>Output total</th><th>Output per call</th></tr></thead>
     <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash</th><td>1,237,746</td><td>2,990</td><td>86,449</td><td class=best>209</td></tr><tr><th scope=row>Qwen3.8 27B</th><td>1,131,948</td><td class=best>2,734</td><td>95,036</td><td>230</td></tr><tr><th scope=row>Qwen3.6 27B</th><td>1,131,948</td><td class=best>2,734</td><td>95,337</td><td>230</td></tr><tr><th scope=row>Gemma 4 12B</th><td>1,245,198</td><td>3,008</td><td>104,839</td><td>253</td></tr></tbody></table>
   </div>
-  <div class="note"><strong>Both Qwen versions use exactly the same input tokens
-  (1,131,948) &mdash; identical on all
-  414 calls.</strong> That is expected rather than suspicious: they share a
-  tokenizer and were fed byte-identical prompts, and it is a positive integrity signal. Against
-  Gemini they need <strong>8.5% fewer input tokens</strong> for the same Thai text,
-  which matters on a metered API and not at all on hardware we own. Gemma&rsquo;s tokenizer is
-  the least efficient of the four on both input and output.</div>
+  <div class="note"><strong>Qwen3.8 and Qwen3.6 use exactly the same input tokens (1,131,948) &mdash; identical on all 414 calls.</strong> That is expected rather than suspicious: they share a tokenizer and were fed byte-identical prompts, and it is a positive integrity signal. Against Gemini, Qwen3.8 needs <strong>8.5% fewer input tokens</strong> for the same Thai text, which matters on a metered API and not at all on hardware we own. Gemma 4&rsquo;s tokenizer is the least efficient of the three on input.</div>
 </section>
 
 <section id="latency">
   <h2>3. Speed on our own GPU</h2>
   <p class="lede">End-to-end response time &mdash; request sent to complete response received.
-  All three ran at concurrency 4 against the same vLLM host, so these
-  rows are directly comparable with each other.</p>
+  All three ran at concurrency 4 against the same vLLM host.</p>
   <div class="note" style="margin-top:12px"><strong>Why Gemini is not in this table.</strong>
   For reference it answered in <strong>2.047 s</strong> at the
   median and cost <strong>$0.5616</strong> for the same
@@ -253,25 +236,18 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
   The evaluation harness does not stream responses, so the only interval ever measured is the
   complete round trip. A partial-response time cannot be recovered from these logs, so the
   column simply does not exist rather than being filled with end-to-end latency wearing a
-  different label. All three needed 414 API attempts for
-  414 calls &mdash; no retries.</div>
+  different label. All three needed 414 API attempts for 414 calls &mdash; no retries.</div>
 </section>
 
 <section id="stability">
   <h2>4. Consistency</h2>
   <p class="lede">Each transcript was sent three times, byte-identically. A stable model returns
-  the same labels every time. This is where the four separate most sharply.</p>
+  the same labels every time.</p>
   <figure>
     <figcaption>Scored label changes across three identical repeats &middot; lower is better</figcaption>
     <div class="chartbox scroller"><div id="c-stab"></div></div>
   </figure>
-  <div class="note"><strong>Qwen3.8 27B changed a scored label 6 times
-  across 414 calls; production Gemini changed one
-  29 times.</strong> All four rewrite their prose
-  between repeats &mdash; what differs is whether the change reaches a label anyone acts on.
-  <em>Caveat:</em> Gemini was bit-stable when measured on 10 August and had become variable by
-  14 August with no change on our side. That is under investigation; it does not affect the
-  accuracy figures above.</div>
+  <div class="note"><strong>Qwen3.8 27B changed a scored label 6 times across 414 calls; production Gemini changed one 29 times.</strong> All four rewrite their prose between repeats &mdash; what differs is whether the change reaches a label anyone acts on. Gemini rewrote its text on 111 of 138 calls here; it was bit-stable when measured on 10 August, with no change on our side.</div>
 </section>
 
 <section id="dims">
@@ -305,14 +281,14 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
     <table><caption>How the transcripts are made up</caption>
     <thead><tr><th>Category</th><th>Count</th><th style="text-align:left">What it tests</th></tr>
     </thead><tbody>
-      <tr><th scope=row>Clear</th><td>30</td><td style="text-align:left">Unambiguous calls &mdash; the baseline</td></tr>
+      <tr><th scope=row>Clear</th><td>30</td><td style="text-align:left">Unambiguous calls -- the baseline</td></tr>
       <tr><th scope=row>Thai linguistic</th><td>30</td><td style="text-align:left">Politeness particles, negation, honorifics that flip meaning</td></tr>
       <tr><th scope=row>Tie-break</th><td>17</td><td style="text-align:left">Two plausible reasons; only one correct by the rules</td></tr>
       <tr><th scope=row>Escape</th><td>13</td><td style="text-align:left">Quotes and characters that break JSON output</td></tr>
-      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">12,000&ndash;18,000 character transcripts</td></tr>
-      <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call</td></tr>
+      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">12,000-18,000 character transcripts</td></tr>
       <tr><th scope=row>ASR noise</th><td>10</td><td style="text-align:left">Speech-to-text errors left in deliberately</td></tr>
       <tr><th scope=row>Code-switch</th><td>10</td><td style="text-align:left">Thai and English mixed mid-sentence</td></tr>
+      <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call</td></tr>
       <tr><th scope=row>Regression</th><td>6</td><td style="text-align:left">Specific past failures, kept as guards</td></tr>
     </tbody></table>
   </div>
@@ -323,12 +299,9 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 
 <section id="bottom">
   <h2>Bottom line</h2>
-  <p><strong>Qwen3.8 27B on our own GPU is the strongest internal candidate.</strong> It is not
-  measurably behind production Gemini on any of the three label types, it is the most consistent
-  of the four, and it uses the fewest input tokens.</p>
-  <p><strong>The upgrade from Qwen3.6 was worth making</strong> &mdash; higher on all three
-  label types and materially more consistent, at no cost in speed.</p>
+  <p><strong>Qwen3.8 27B on our own GPU is the strongest internal candidate.</strong> It is not measurably behind production Gemini on any of the three label types. On call outcome and product the two models disagreed on too few calls to call a winner either way.</p>
   <p><strong>Gemma 4 12B is out.</strong> Measurably worse than Gemini on all three.</p>
+
   <p><strong>What still blocks a migration decision:</strong> the speed gap (real, though
   confounded by concurrency and network path &mdash; see section 3), and the fact that this is a
   synthetic test set. Before any production call we would need the same comparison against real

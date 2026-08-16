@@ -2,6 +2,42 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-16, Experiment 20): the challenge pack ran for the first time, and it cannot
+separate the models.** `retention_challenge_v1` (50 items, never previously evaluated) against
+Gemini 2.5 Flash and Qwen3.8 27B. Raw F1 reads Gemini 0.951 / 0.831 / 0.976 and Qwen3.8
+0.930 / 0.833 / 0.970 — but the two models **disagreed on exactly one call out of 50** on call
+outcome and on **none at all** on product, so both come back UNDERPOWERED. Only `reason` is
+judgeable (12 discordant, net +2, band ±10) and it is INDISTINGUISHABLE. **Reading the raw F1
+as a ranking is the error the paired test exists to prevent.** Both models fail 19 of 50 on
+reason. Nothing here contradicts the v3 result; a second independent pack simply agrees, less
+sharply. At 50 items it probes difficulty and cannot discriminate — 200+ would be needed.
+
+**Gemini did not vary at all on this run**: `raw-unstable 0/50`, `N_flip 0`, under the pin that
+gave 111/138 on 08-14. Evidence the collapse was an episode, but *not* a clean replication —
+different pack, shorter transcripts. **Experiment 19 is still the instrument.**
+
+**Gemma 4 12B never ran**: 150/150 HTTP 500, gateway could not reach its vLLM backend at
+`10.94.154.104:8000`. Three defects fixed as a result — the smoke had already failed and the
+runner gated on the process exit code (`stability` exits 0 when every call fails); `/v1/models`
+listed the model throughout the outage; and a dead arm scores **1.000 on product** because
+`to_rows` emits a ground-truth skeleton, so `read_run` now refuses any non-`ok` row.
+
+**A verification workflow caught a fabrication I had shipped.** The report's worked-example
+callout was frozen v3 literals — on the 50-item page it read "both models got 128 right and
+both got 7 wrong" (128+7+3 = 138) and credited a result to Gemma. A second pass found the
+footer citing the wrong JSON and a self-contradiction about prose churn. Every figure in the
+F1, token, latency and verdict tables was independently re-derived and agreed; **every defect
+was in ungated prose sitting beside correct tables.** The lesson is narrow and reusable: the
+generated tables carried assertions, the prose beside them did not.
+
+Reporting is now config-driven — `configs/comparison/<pack>.json`, one file read by both the
+report and the case explorer. `docs/experiment20-results.md`,
+`docs/reports/model-comparison-challenge.html`, `out/case-explorer-challenge.html`.
+Suite: 887 passed / 12 skipped. Still `RECONCILED: NO`.
+
+**Next action: rerun the Gemma arm** once `10.94.154.104:8000` is back (~8 min, no cost, add
+the arm to the config and regenerate), then **Experiment 19** for the determinism question.
+
 **Latest (2026-08-14, Experiment 17): the internal GPUs ran E7's pack, and the finding is
 about the incumbent.** Gemini 2.5 Flash **stopped being deterministic between 2026-08-10 and
 2026-08-14** under a byte-identical workload — same model id, same `Google` pin, same 1,237,746

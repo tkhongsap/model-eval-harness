@@ -9,11 +9,18 @@ whose numbers came from somewhere else. It does not belong here if it carries mo
 output verbatim — that is the rule `.gitignore` enforces at `out/`, and this folder is
 inside the repository, so nothing with a transcript or a completion in it can live here.
 
+Which comparison a report covers is a **config**, not a code change:
+`configs/comparison/<pack>.json` names the runs, the arms, the expected shape and the output
+paths. `--config` selects one. Adding a pack or a model is a new config file, not an edit to
+the generator.
+
 | Report | What it answers | Regenerate |
 |---|---|---|
 | [model-comparison.html](./model-comparison.html) | **The current headline.** Four models on `retention_v3` — accuracy, tokens, consistency, speed on our GPU, and the head-to-head verdicts against production Gemini. This is the one to send. | `PYTHONPATH=src python scripts/model_comparison_report.py` |
 | [model-comparison-fragment.html](./model-comparison-fragment.html) | The same page without the document shell, for publishing as an Artifact. | same command — both come from one computation |
 | [model-comparison-metrics.json](./model-comparison-metrics.json) | Every figure on that page, machine-readable. Read this rather than scraping the HTML. `scripts/case_explorer.py` consumes it. | same command |
+| [model-comparison-challenge.html](./model-comparison-challenge.html) | **The harder pack.** Gemini vs Qwen3.8 vs Gemma 4 on `retention_challenge_v1` — 50 calls built to stress interaction *structure* (prior-contact history, mid-call reversal, competing issues, interruption and topic return), with 11 of 50 calls carrying more than one product. Same layout as the page above. | `PYTHONPATH=src python scripts/model_comparison_report.py --config configs/comparison/retention-challenge-v1.json` |
+| `model-comparison-challenge-fragment.html`, `-metrics.json` | As above, for that pack. | same command |
 | [soak-test-report.html](./soak-test-report.html) | The 5-hour GPU soak: concurrency ramp, latency by phase, error rate, and the recommended operating concurrency. | `python scripts/soak_report_html.py out/soak/<run> --standalone --out docs/reports/soak-test-report.html` |
 | [experiment17-report.html](./experiment17-report.html) | Experiment 17 — the internal-GPU arms against Gemini, and the run where Gemini's determinism collapsed. | **Hand-written.** No script regenerates it; edit the file. |
 
@@ -25,7 +32,9 @@ It embeds raw completions and full transcripts, which is exactly what `out/` exi
 keep out of git. Regenerate it in about a minute:
 
 ```
-PYTHONPATH=src python scripts/case_explorer.py
+PYTHONPATH=src python scripts/case_explorer.py                 # retention_v3  -> out/case-explorer.html
+PYTHONPATH=src python scripts/case_explorer.py \
+    --config configs/comparison/retention-challenge-v1.json    # challenge pack -> out/case-explorer-challenge.html
 ```
 
 See [docs/case-explorer.md](../case-explorer.md) for what it shows and how it checks

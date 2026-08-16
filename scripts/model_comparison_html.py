@@ -139,7 +139,34 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 def render(d: dict) -> str:
     order, lab, M = d["order"], d["labels"], d["models"]
     shared = d["shared_contract"]
-    gem = M["gemini"]
+    inc_key = d.get("incumbent", "gemini")
+    gem = M[inc_key]
+
+    # Derived roles, so the prose does not name model keys. The page used to say M["qwen38"]
+    # in eight places, which pinned it to one comparison set: a report on a different pack, or
+    # with a model retired, raised KeyError rather than rendering.
+    ours = [k for k in order if lab[k]["ours"]]
+    cands = [k for k in order if k != inc_key]
+    # A representative GPU arm for facts that are identical across all of them (concurrency,
+    # attempt totals). Asserted below rather than assumed.
+    ref = ours[0] if ours else order[0]
+    # The strongest of our models by mean F1 across the three dimensions -- used for the
+    # worked example and the token-saving line, both of which want the leading candidate.
+    best = max(cands, key=lambda k: sum(M[k]["f1"].values()) / 3) if cands else order[0]
+    COUNT = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six"}
+    n_all = COUNT.get(len(order), str(len(order)))
+    n_ours = COUNT.get(len(ours), str(len(ours)))
+    n_all_l, n_ours_l = n_all.lower(), n_ours.lower()
+    ours_noun = "model" if len(ours) == 1 else "models"
+    ours_verb = "ran" if len(ours) == 1 else "ran"
+    all_subj = "Both" if len(order) == 2 else f"All {n_all_l}"
+    ours_subj = ("It" if len(ours) == 1 else
+                 ("Both" if len(ours) == 2 else f"All {n_ours_l}"))
+
+    # Claims the prose makes that must be true of THIS data, not of the run it was written for.
+    same_conc = len({M[k]["concurrency"] for k in ours}) == 1
+    retried = sum(M[k]["rows_retried"] for k in ours)
+    same_attempts = len({M[k]["attempts_total"] for k in ours}) == 1
 
     def row_f1(key):
         m, l = M[key], lab[key]
@@ -230,7 +257,7 @@ def render(d: dict) -> str:
                 f'{p["candidate_only"]}</td>'
                 f'<td style="text-align:left"><span class="tag {klass}">{word}</span>'
                 f'<span class=sub>{esc(why)}</span></td></tr>')
-        example = M["qwen38"]["paired_vs_gemini"][dim]
+        example = M[best]["paired_vs_gemini"][dim]
         sums = (f'{example["both_right"]} + {example["both_wrong"]} + '
                 f'{example["incumbent_only"]} + {example["candidate_only"]} = {shared["items"]}')
         return f"""
@@ -256,14 +283,217 @@ def render(d: dict) -> str:
     import json as _json
     payload_js = _json.dumps(payload)
 
-    best_stab = min((M[k]["instability"] or {}).get("scored_unstable", 10 ** 9) for k in order)
-    best_stab_name = next(lab[k]["name"] for k in order
-                          if (M[k]["instability"] or {}).get("scored_unstable") == best_stab)
-    qwen_in = M["qwen38"]["input_tokens_per_call"]
+    # This sentence used to name the most stable model of ALL arms and then contrast it with
+    # "production Gemini". When the incumbent IS the most stable -- which it was on the
+    # challenge pack -- that rendered as "Gemini changed a scored label 0 times; production
+    # Gemini changed one 0 times", comparing a model with itself. Split the two roles.
+    def _stab(k):
+        return (M[k]["instability"] or {}).get("scored_unstable")
+
+    inc_stab = _stab(inc_key)
+    ours_stab = [(k, _stab(k)) for k in ours if _stab(k) is not None]
+    if ours_stab:
+        best_k, best_stab = min(ours_stab, key=lambda kv: kv[1])
+        best_stab_name = lab[best_k]["name"]
+        if inc_stab is not None and inc_stab <= best_stab:
+            stability_lead = (
+                f"Production {esc(lab[inc_key]['short'])} was the steadier of the "
+                f"{n_all_l} here &mdash; it changed a scored label {inc_stab} times across "
+                f"{esc(shared['rows'])} calls, against {esc(best_stab_name)}&rsquo;s "
+                f"{best_stab}.")
+        else:
+            stability_lead = (
+                f"{esc(best_stab_name)} changed a scored label {best_stab} times across "
+                f"{esc(shared['rows'])} calls; production {esc(lab[inc_key]['short'])} changed "
+                f"one {inc_stab} times.")
+    else:
+        best_stab, best_stab_name = inc_stab, lab[inc_key]["name"]
+        stability_lead = (f"Production {esc(lab[inc_key]['short'])} changed a scored label "
+                          f"{inc_stab} times across {esc(shared['rows'])} calls.")
+    qwen_in = M[best]["input_tokens_per_call"]
     gem_in = gem["input_tokens_per_call"]
     saving = (gem_in - qwen_in) / gem_in * 100
 
-    return f"""<title>Four-Model GPU Benchmark</title>
+    # Two notes that used to assert facts true of the run they were written for. Both are now
+    # derived, because a sentence like "no retries" is a measurement, and a report that prints
+    # it unconditionally is wrong the first time a gateway hiccups.
+    shared_tok = {}
+    for k in ours:
+        shared_tok.setdefault(M[k]["input_tokens_total"], []).append(k)
+    twins = next((ks for ks in shared_tok.values() if len(ks) > 1), None)
+    lead = (f'<strong>{esc(lab[twins[0]]["short"])} and {esc(lab[twins[1]]["short"])} use exactly '
+            f'the same input tokens ({M[twins[0]]["input_tokens_total"]:,}) &mdash; identical on '
+            f'all {esc(shared["rows"])} calls.</strong> That is expected rather than suspicious: '
+            f'they share a tokenizer and were fed byte-identical prompts, and it is a positive '
+            f'integrity signal. ') if twins else ''
+    worst_in = max(ours, key=lambda k: M[k]["input_tokens_per_call"]) if ours else None
+    tokenizer_note = (
+        lead
+        + f'Against {esc(lab[inc_key]["short"])}, {esc(lab[best]["short"])} needs '
+          f'<strong>{saving:.1f}% fewer input tokens</strong> for the same Thai text, which '
+          f'matters on a metered API and not at all on hardware we own.'
+        + (f' {esc(lab[worst_in]["short"])}&rsquo;s tokenizer is the least efficient of the '
+           f'{n_ours_l} on input.' if worst_in and len(ours) > 1 else ''))
+
+    # ---- the bottom line, derived from the verdicts rather than asserted -----------------
+    # This section used to name Qwen3.8 as the strongest candidate and declare Gemma out. Those
+    # were true of retention_v3 and are claims, not layout: rendered unchanged over a different
+    # pack they would be fabrication. Everything below is read off `paired_vs_gemini`.
+    DIMS3 = ("call_result", "reason", "product")
+
+    def verdicts(k):
+        p = M[k].get("paired_vs_gemini") or {}
+        return {dd: p[dd]["verdict"] for dd in DIMS3 if dd in p}
+
+    bw = [M[k]["paired_vs_gemini"]["reason"]["both_wrong"]
+          for k in cands if M[k].get("paired_vs_gemini")]
+    bw_range = (f"{min(bw)}&ndash;{max(bw)}" if bw and min(bw) != max(bw)
+                else (str(bw[0]) if bw else "many"))
+
+    def _phrase(n):
+        return "any of the three label types" if n == 3 else f"{COUNT.get(n, n).lower()} of them"
+
+    def _and(names):
+        names = list(names)
+        return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+    lines = []
+    clean = [k for k in cands if "BEHIND" not in verdicts(k).values()]
+    behind_all = [k for k in cands
+                  if verdicts(k) and set(verdicts(k).values()) == {"BEHIND"}]
+    if clean:
+        lead = max(clean, key=lambda k: sum(M[k]["f1"].values()) / 3)
+        v = verdicts(lead)
+        ahead = [dd for dd, x in v.items() if x == "AHEAD"]
+        unpow = [dd for dd, x in v.items() if x == "UNDERPOWERED"]
+        bits = [f"It is not measurably behind production {esc(lab[inc_key]['short'])} on "
+                f"{_phrase(len(v))}"]
+        if ahead:
+            bits.append("and is ahead on "
+                        + _and(esc(DIM_LABEL_PY[dd]).lower() for dd in ahead))
+        # "strongest internal candidate" implies a field to be strongest of. With one GPU
+        # arm -- which happens when a backend is down -- it would be an empty superlative.
+        claim = ("is the strongest internal candidate" if len(ours) > 1
+                 else "holds up against production on this pack")
+        s = (f"  <p><strong>{esc(lab[lead]['name'])} on our own GPU {claim}.</strong> "
+             + ", ".join(bits) + ".")
+        if unpow:
+            s += (f" On {_and(esc(DIM_LABEL_PY[dd]).lower() for dd in unpow)} the two models "
+                  f"disagreed on too few calls to call a winner either way.")
+        lines.append(s + "</p>")
+    else:
+        lines.append(f"  <p><strong>No model on our GPU matched production "
+                     f"{esc(lab[inc_key]['short'])} on this pack.</strong> Every candidate is "
+                     f"measurably behind on at least one label type.</p>")
+    for k in behind_all:
+        lines.append(f"  <p><strong>{esc(lab[k]['name'])} is out.</strong> Measurably worse "
+                     f"than {esc(lab[inc_key]['short'])} on all three.</p>")
+    bottom_line = "\n".join(lines)
+
+    # The incumbent's own consistency on THIS run, stated rather than recalled. v3's page
+    # carried a fixed note about Gemini's 2026-08-14 determinism collapse; whether that is
+    # still true is a property of the run in front of us.
+    inc_raw = (M[inc_key]["instability"] or {}).get("raw_unstable")
+    inc_obs = (M[inc_key]["instability"] or {}).get("observable")
+    if inc_raw == 0:
+        incumbent_stability_note = (
+            f" On this run {esc(lab[inc_key]['short'])} returned byte-identical text on all "
+            f"{inc_obs} calls. It did not on 14 August, when the same model under the same pin "
+            f"varied on 111 of 138 &mdash; so that appears to have been an episode rather than "
+            f"a permanent change.")
+    else:
+        incumbent_stability_note = (
+            f" {esc(lab[inc_key]['short'])} rewrote its text on {inc_raw} of {inc_obs} calls "
+            f"here; it was bit-stable when measured on 10 August, with no change on our side.")
+
+    # The worked example was a block of frozen literals -- 128 right, 7 wrong, 3 differences,
+    # a 28/14/8 reason threshold and a Gemma result -- with only the pack size interpolated.
+    # Rendered over the challenge pack it read "Of 50 calls, both models got 128 right and both
+    # got 7 wrong", which is 138 items' data under a 50-item heading, contradicted the table
+    # twelve lines below it, and credited a result to an arm the same page says never ran.
+    # It is now derived from the row it claims to explain, and it walks whichever dimension
+    # actually has the most disagreements, so it always has something to explain.
+    def _band_floor(dd):
+        p = M[best].get("paired_vs_gemini") or {}
+        raw = (p.get(dd) or {}).get("band") or ""
+        return raw
+
+    ex_dim = None
+    if cands and (M[best].get("paired_vs_gemini")):
+        ex_dim = max(DIMS3, key=lambda dd: M[best]["paired_vs_gemini"][dd]["discordant"])
+    if ex_dim:
+        e = M[best]["paired_vs_gemini"][ex_dim]
+        ties = e["both_right"] + e["both_wrong"]
+        # NB: not `d` -- that is render()'s data dict, and shadowing it here silently broke
+        # the dataset table further down with "'int' object has no attribute 'get'".
+        nd, io, co = e["discordant"], e["incumbent_only"], e["candidate_only"]
+        who = (f"{esc(lab[best]['short'])} won {co}, {esc(lab[inc_key]['short'])} won {io}"
+               if nd else "neither won any")
+        second = (
+            f"<p><strong>{co}&ndash;{io} is not enough to call it.</strong> With only {nd} "
+            f"disagreement{'s' if nd != 1 else ''}, even a clean sweep would happen by luck more "
+            f"often than once in 64, which is the bar. <strong>Six differences is the "
+            f"minimum</strong> that makes any verdict possible, because a 6&ndash;0 sweep is "
+            f"exactly a 1-in-64 event &mdash; which is why this row reads &ldquo;too few to "
+            f"call&rdquo; rather than naming a winner.</p>"
+            if nd < 6 else
+            f"<p>The margin required depends on how many disagreements there are. At {nd} "
+            f"difference{'s' if nd != 1 else ''} "
+            f"the gap has to reach {esc(_band_floor(ex_dim)).lstrip('+/-') or 'the band'} for "
+            f"chance to be ruled out; this one is {abs(e['net'])}, so the row reads "
+            f"&ldquo;{esc(VERDICT_WORDS[e['verdict']][0].lower())}&rdquo;.</p>")
+        worked_example = (
+            f'<div class="callout">\n'
+            f'    <h3>Worked example &mdash; {esc(lab[best]["short"])} on '
+            f'{esc(DIM_LABEL_PY[ex_dim]).lower()}</h3>\n'
+            f'    <p>Of {esc(shared["items"])} calls, both models got '
+            f'<span class="big">{e["both_right"]}</span> right and both got '
+            f'<span class="big">{e["both_wrong"]}</span> wrong. Those {ties} are ties and are '
+            f'set aside. That leaves <span class="big">{nd}</span> '
+            f'call{"s" if nd != 1 else ""} where they differed: {who}.</p>\n'
+            f'    {second}\n  </div>')
+    else:
+        worked_example = ""
+
+    family_rows = "\n".join(
+        f'      <tr><th scope=row>{esc(f["name"])}</th><td>{f["count"]}</td>'
+        f'<td style="text-align:left">{esc(f["what"])}</td></tr>'
+        for f in (d.get("dataset") or {}).get("families", []))
+
+    # Cite THIS report's data file, not a hardcoded one.
+    metrics_path = f'docs/reports/{d.get("metrics_stem") or "model-comparison"}-metrics.json'
+
+    # Only claim churn for the models that actually churned.
+    churned = [k for k in order if ((M[k]["instability"] or {}).get("raw_unstable") or 0) > 0]
+    if len(churned) == len(order):
+        churn_clause = (f"{all_subj} rewrite their prose between repeats &mdash; what differs is "
+                        f"whether the change reaches a label anyone acts on.")
+    elif churned:
+        churn_clause = (f"{_and([esc(lab[k]['short']) for k in churned])} "
+                        f"{'rewrites' if len(churned) == 1 else 'rewrite'} prose between repeats "
+                        f"&mdash; what matters is whether the change reaches a label anyone acts "
+                        f"on.")
+    else:
+        churn_clause = "No arm changed its text between repeats."
+
+    _note = (d.get("copy") or {}).get("note")
+    config_note = (f'  <p><strong>Not in this comparison.</strong> {esc(_note)}</p>'
+                   if _note else "")
+
+    if not same_attempts:
+        attempts_note = (
+            f'API attempts differed between our models: '
+            + ', '.join(f'{esc(lab[k]["short"])} {M[k]["attempts_total"]}' for k in ours)
+            + f' for {esc(shared["rows"])} calls.')
+    elif retried == 0:
+        attempts_note = (f'All {n_ours_l} needed {M[ref]["attempts_total"]} API attempts for '
+                         f'{esc(shared["rows"])} calls &mdash; no retries.')
+    else:
+        attempts_note = (f'All {n_ours_l} needed {M[ref]["attempts_total"]} API attempts for '
+                         f'{esc(shared["rows"])} calls; {retried} call'
+                         f'{"s" if retried != 1 else ""} had to be retried.')
+
+    return f"""<title>{esc(d.get("copy", {}).get("doc_title") or "Model GPU Benchmark")}</title>
 <style>{STYLE}</style>
 <div id="tip" role="status" aria-live="off"></div>
 <div class="wrap">
@@ -271,8 +501,8 @@ def render(d: dict) -> str:
 <header>
   <p class="kicker">True &middot; Retention call labelling &middot; {esc(shared['items'])} transcripts
   &middot; {esc(shared['rows'])} calls per model</p>
-  <h1>Four models, one evaluation</h1>
-  <p class="standfirst">Production Gemini&nbsp;2.5&nbsp;Flash against three models running on
+  <h1>{esc(d.get("copy", {}).get("title") or f"{n_all} models, one evaluation")}</h1>
+  <p class="standfirst">Production {esc(lab[inc_key]["name"])} against {n_ours_l} {ours_noun} running on
   True&rsquo;s own GPU, measured on accuracy, tokens and speed. Every figure on this page is
   computed from the recorded per-call logs.</p>
   <div class="safe">Synthetic test set &middot; no customer data</div>
@@ -280,14 +510,15 @@ def render(d: dict) -> str:
 
 <section id="accuracy">
   <h2>1. Accuracy</h2>
-  <p class="lede">Weighted F1, 0 to 1, higher is better. All four models saw the same
-  {esc(shared['items'])} transcripts, the same prompt and the same settings, and were scored by
-  identical code. One chart per label type, because the three are scored differently and must
+  <p class="lede">Weighted F1, 0 to 1, higher is better. All {n_all_l} models saw the same
+  {esc(shared['items'])} transcripts, the same prompt and the same ground truth, and were scored
+  by identical code. (Concurrency and reasoning-effort differ between the hosted and self-hosted
+  arms &mdash; see section 3; neither affects a score.) One chart per label type, because the three are scored differently and must
   not be averaged together.</p>
   <figure>
     <figcaption>Weighted F1 by label type &middot; each scale starts at zero</figcaption>
     <div class="legend">
-      <span><i class="sw" style="background:var(--s-prod)"></i>Gemini 2.5 Flash &mdash; production</span>
+      <span><i class="sw" style="background:var(--s-prod)"></i>{esc(lab[inc_key]["name"])} &mdash; production</span>
       <span><i class="sw" style="background:var(--s-ours)"></i>Running on our own GPU</span>
     </div>
     <div class="chartbox scroller"><div id="c-f1"></div></div>
@@ -304,22 +535,7 @@ def render(d: dict) -> str:
   information. The question is then simply: <strong>is that scoreboard lopsided enough that
   chance cannot explain it?</strong></p>
 
-  <div class="callout">
-    <h3>Worked example &mdash; Qwen3.8 on call outcome</h3>
-    <p>Of {esc(shared['items'])} calls, both models got <span class="big">128</span> right and
-    both got <span class="big">7</span> wrong. Those 135 are ties and are set aside. That leaves
-    <span class="big">3</span> calls where they differed: Qwen3.8 won 2, Gemini won 1.</p>
-    <p><strong>2&ndash;1 proves nothing.</strong> With only 3 disagreements, even a clean
-    3&ndash;0 sweep would happen by luck once in 8 times, and the bar for calling a result is
-    once in 64. So at 3 disagreements <em>no</em> outcome can clear the bar &mdash; which is why
-    the row reads &ldquo;too few disagreements to judge&rdquo; rather than naming a winner.
-    <strong>Six differences is the minimum</strong> that makes any verdict possible, because a
-    6&ndash;0 sweep is exactly a 1-in-64 event.</p>
-    <p>The required margin grows with the number of disagreements: at 28 differences you need a
-    14-point gap, and Qwen3.8&rsquo;s reason score fell 8 short of it &mdash; hence &ldquo;no
-    real difference&rdquo;. Gemma&rsquo;s call-outcome gap of 10 out of 12 differences landed
-    exactly on its threshold, so that one <em>does</em> count.</p>
-  </div>
+  {worked_example}
 
   <p class="lede" style="margin-top:26px">Every comparison below is
   <strong>Gemini against one challenger</strong>, on the same
@@ -334,7 +550,7 @@ def render(d: dict) -> str:
   models agree on almost every call, so there is barely anything left to measure &mdash; that is
   not a pass and not a fail, it means this test set cannot separate them.
   <strong>Second, why Reason scores lower for everyone:</strong> on that dimension
-  {M['qwen38']['paired_vs_gemini']['reason']['both_wrong']}&ndash;{M['gemma']['paired_vs_gemini']['reason']['both_wrong']}
+  {bw_range}
   of the {esc(shared['items'])} calls were failed by <em>both</em> models. It is hard for
   everything we tested, not a weakness of one model.</div>
 </section>
@@ -354,25 +570,18 @@ def render(d: dict) -> str:
     <th>Output total</th><th>Output per call</th></tr></thead>
     <tbody>{''.join(row_tokens(k) for k in order)}</tbody></table>
   </div>
-  <div class="note"><strong>Both Qwen versions use exactly the same input tokens
-  ({M['qwen36']['input_tokens_total']:,}) &mdash; identical on all
-  {esc(shared['rows'])} calls.</strong> That is expected rather than suspicious: they share a
-  tokenizer and were fed byte-identical prompts, and it is a positive integrity signal. Against
-  Gemini they need <strong>{saving:.1f}% fewer input tokens</strong> for the same Thai text,
-  which matters on a metered API and not at all on hardware we own. Gemma&rsquo;s tokenizer is
-  the least efficient of the four on both input and output.</div>
+  <div class="note">{tokenizer_note}</div>
 </section>
 
 <section id="latency">
   <h2>3. Speed on our own GPU</h2>
   <p class="lede">End-to-end response time &mdash; request sent to complete response received.
-  All three ran at concurrency {M['qwen38']['concurrency']} against the same vLLM host, so these
-  rows are directly comparable with each other.</p>
+  {ours_subj} ran at concurrency {M[ref]['concurrency']} against the same vLLM host.</p>
   <div class="note" style="margin-top:12px"><strong>Why Gemini is not in this table.</strong>
   For reference it answered in <strong>{num(gem['latency_s']['p50'], 3)} s</strong> at the
   median and cost <strong>${gem['cost_usd']:.4f}</strong> for the same
   {esc(shared['rows'])} calls &mdash; but it ran at concurrency {gem['concurrency']} over the
-  public internet rather than concurrency {M['qwen38']['concurrency']} on our own network. Two
+  public internet rather than concurrency {M[ref]['concurrency']} on our own network. Two
   things differ besides the model, so putting it in the same table would invite a speed
   comparison the measurement cannot support. Cost is left out of the table for the same reason:
   the self-hosted endpoint reports no cost field at all, so those cells would be placeholders
@@ -382,8 +591,8 @@ def render(d: dict) -> str:
     <div class="chartbox scroller"><div id="c-lat"></div></div>
   </figure>
   <div class="scroller" style="margin-top:22px">
-    <table><caption>Our three GPU models over {esc(shared['rows'])} calls each, concurrency
-    {M['qwen38']['concurrency']}</caption>
+    <table><caption>Our {n_ours_l} GPU {ours_noun} over {esc(shared['rows'])} calls{'' if len(ours)==1 else ' each'}, concurrency
+    {M[ref]['concurrency']}</caption>
     <thead><tr><th>Model</th><th>p50</th><th>p95</th><th>p99</th><th>Max</th>
     <th>Calls/s</th><th>API attempts</th></tr></thead>
     <tbody>{''.join(row_lat(k) for k in order if lab[k]['ours'])}</tbody></table>
@@ -392,25 +601,18 @@ def render(d: dict) -> str:
   The evaluation harness does not stream responses, so the only interval ever measured is the
   complete round trip. A partial-response time cannot be recovered from these logs, so the
   column simply does not exist rather than being filled with end-to-end latency wearing a
-  different label. All three needed {M['qwen38']['attempts_total']} API attempts for
-  {esc(shared['rows'])} calls &mdash; no retries.</div>
+  different label. {attempts_note}</div>
 </section>
 
 <section id="stability">
   <h2>4. Consistency</h2>
   <p class="lede">Each transcript was sent three times, byte-identically. A stable model returns
-  the same labels every time. This is where the four separate most sharply.</p>
+  the same labels every time.</p>
   <figure>
     <figcaption>Scored label changes across three identical repeats &middot; lower is better</figcaption>
     <div class="chartbox scroller"><div id="c-stab"></div></div>
   </figure>
-  <div class="note"><strong>{esc(best_stab_name)} changed a scored label {best_stab} times
-  across {esc(shared['rows'])} calls; production Gemini changed one
-  {M['gemini']['instability']['scored_unstable']} times.</strong> All four rewrite their prose
-  between repeats &mdash; what differs is whether the change reaches a label anyone acts on.
-  <em>Caveat:</em> Gemini was bit-stable when measured on 10 August and had become variable by
-  14 August with no change on our side. That is under investigation; it does not affect the
-  accuracy figures above.</div>
+  <div class="note"><strong>{stability_lead}</strong> {churn_clause}{incumbent_stability_note}</div>
 </section>
 
 <section id="dims">
@@ -444,15 +646,7 @@ def render(d: dict) -> str:
     <table><caption>How the transcripts are made up</caption>
     <thead><tr><th>Category</th><th>Count</th><th style="text-align:left">What it tests</th></tr>
     </thead><tbody>
-      <tr><th scope=row>Clear</th><td>30</td><td style="text-align:left">Unambiguous calls &mdash; the baseline</td></tr>
-      <tr><th scope=row>Thai linguistic</th><td>30</td><td style="text-align:left">Politeness particles, negation, honorifics that flip meaning</td></tr>
-      <tr><th scope=row>Tie-break</th><td>17</td><td style="text-align:left">Two plausible reasons; only one correct by the rules</td></tr>
-      <tr><th scope=row>Escape</th><td>13</td><td style="text-align:left">Quotes and characters that break JSON output</td></tr>
-      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">12,000&ndash;18,000 character transcripts</td></tr>
-      <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call</td></tr>
-      <tr><th scope=row>ASR noise</th><td>10</td><td style="text-align:left">Speech-to-text errors left in deliberately</td></tr>
-      <tr><th scope=row>Code-switch</th><td>10</td><td style="text-align:left">Thai and English mixed mid-sentence</td></tr>
-      <tr><th scope=row>Regression</th><td>6</td><td style="text-align:left">Specific past failures, kept as guards</td></tr>
+{family_rows}
     </tbody></table>
   </div>
   <div class="note">Because the set is synthetic, every accuracy figure here &mdash;
@@ -462,12 +656,8 @@ def render(d: dict) -> str:
 
 <section id="bottom">
   <h2>Bottom line</h2>
-  <p><strong>Qwen3.8 27B on our own GPU is the strongest internal candidate.</strong> It is not
-  measurably behind production Gemini on any of the three label types, it is the most consistent
-  of the four, and it uses the fewest input tokens.</p>
-  <p><strong>The upgrade from Qwen3.6 was worth making</strong> &mdash; higher on all three
-  label types and materially more consistent, at no cost in speed.</p>
-  <p><strong>Gemma 4 12B is out.</strong> Measurably worse than Gemini on all three.</p>
+{bottom_line}
+{config_note}
   <p><strong>What still blocks a migration decision:</strong> the speed gap (real, though
   confounded by concurrency and network path &mdash; see section 3), and the fact that this is a
   synthetic test set. Before any production call we would need the same comparison against real
@@ -477,14 +667,14 @@ def render(d: dict) -> str:
 <footer>
   {esc(shared['items'])} synthetic transcripts &middot; {esc(shared['rows'])} calls per model
   &middot; {esc(shared['repeats'])} repeats &middot; identical prompt, testset, ground truth and
-  scorer across all four arms<br>
+  scorer across {'both' if len(order)==2 else 'all ' + n_all_l} arms<br>
   scorer {esc(shared['scoring_code_sha'][:16])} &middot; workload
   {esc(shared['workload_sha'][:16])} &middot; testset {esc(shared['testset_sha'][:16])}<br>
   Percentiles by {esc(d['percentile_method'])}. Latency values sit on a 1&nbsp;ms clock grid, so
   they are reported to 3 decimal places and no finer.<br>
   Generated by <code>scripts/model_comparison_report.py</code> from
   <code>{esc(d['generated_from'])}</code>. Figures also in
-  <code>docs/reports/model-comparison-metrics.json</code>.
+  <code>{metrics_path}</code>.
 </footer>
 </div>
 <script>

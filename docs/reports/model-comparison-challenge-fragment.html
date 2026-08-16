@@ -1,9 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Four-Model GPU Benchmark</title>
+<title>Challenge Pack Benchmark</title>
 <style>
 :root{--ground:#F4F6F8;--raised:#FFF;--sunken:#EDF0F3;--ink:#151B23;--ink-muted:#57626F;
 --ink-faint:#838E9C;--hairline:#DDE2E8;--hairline-firm:#C3CBD4;--s-prod:#2E74B5;
@@ -101,17 +96,14 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .hit{cursor:crosshair}
 </style>
-</head>
-<body>
-
 <div id="tip" role="status" aria-live="off"></div>
 <div class="wrap">
 
 <header>
-  <p class="kicker">True &middot; Retention call labelling &middot; 138 transcripts
-  &middot; 414 calls per model</p>
-  <h1>Four models, one evaluation</h1>
-  <p class="standfirst">Production Gemini 2.5 Flash against three models running on
+  <p class="kicker">True &middot; Retention call labelling &middot; 50 transcripts
+  &middot; 150 calls per model</p>
+  <h1>A harder test set, and what it can and cannot separate</h1>
+  <p class="standfirst">Production Gemini 2.5 Flash against one model running on
   True&rsquo;s own GPU, measured on accuracy, tokens and speed. Every figure on this page is
   computed from the recorded per-call logs.</p>
   <div class="safe">Synthetic test set &middot; no customer data</div>
@@ -119,8 +111,8 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 
 <section id="accuracy">
   <h2>1. Accuracy</h2>
-  <p class="lede">Weighted F1, 0 to 1, higher is better. All four models saw the same
-  138 transcripts, the same prompt and the same ground truth, and were scored
+  <p class="lede">Weighted F1, 0 to 1, higher is better. All two models saw the same
+  50 transcripts, the same prompt and the same ground truth, and were scored
   by identical code. (Concurrency and reasoning-effort differ between the hosted and self-hosted
   arms &mdash; see section 3; neither affects a score.) One chart per label type, because the three are scored differently and must
   not be averaged together.</p>
@@ -136,7 +128,7 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
     <table><caption>Weighted F1, and the verdict against production Gemini</caption>
     <thead><tr><th>Model</th><th>Call outcome</th><th>Reason</th><th>Product</th>
     <th>Verdict vs Gemini</th></tr></thead>
-    <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash<span class=sub>production</span></th><td>0.955</td><td class=best>0.838</td><td class=best>0.960</td><td><span class="tag t-unk">REFERENCE</span></td></tr><tr><th scope=row>Qwen3.8 27B<span class=sub>our GPU</span></th><td class=best>0.966</td><td>0.834</td><td>0.950</td><td><span class="tag t-good">NO DIMENSION WORSE</span></td></tr><tr><th scope=row>Qwen3.6 27B<span class=sub>our GPU</span></th><td>0.962</td><td>0.821</td><td>0.932</td><td><span class="tag t-good">NO DIMENSION WORSE</span></td></tr><tr><th scope=row>Gemma 4 12B<span class=sub>our GPU</span></th><td>0.929</td><td>0.792</td><td>0.933</td><td><span class="tag t-bad">WORSE ON ALL THREE</span></td></tr></tbody></table>
+    <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash<span class=sub>production</span></th><td class=best>0.951</td><td>0.831</td><td class=best>0.976</td><td><span class="tag t-unk">REFERENCE</span></td></tr><tr><th scope=row>Qwen3.8 27B<span class=sub>our GPU</span></th><td>0.930</td><td class=best>0.833</td><td>0.970</td><td><span class="tag t-good">NO DIMENSION WORSE</span></td></tr></tbody></table>
   </div>
   <h3 style="font-size:16px;font-weight:650;margin:34px 0 6px">How the verdict is decided</h3>
   <p class="lede">On most calls both models give the same answer, and those tell you nothing
@@ -146,55 +138,55 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 
   <div class="callout">
     <h3>Worked example &mdash; Qwen3.8 on reason</h3>
-    <p>Of 138 calls, both models got <span class="big">64</span> right and both got <span class="big">46</span> wrong. Those 110 are ties and are set aside. That leaves <span class="big">28</span> calls where they differed: Qwen3.8 won 10, Gemini won 18.</p>
-    <p>The margin required depends on how many disagreements there are. At 28 differences the gap has to reach 14 for chance to be ruled out; this one is 8, so the row reads &ldquo;no real difference&rdquo;.</p>
+    <p>Of 50 calls, both models got <span class="big">19</span> right and both got <span class="big">19</span> wrong. Those 38 are ties and are set aside. That leaves <span class="big">12</span> calls where they differed: Qwen3.8 won 7, Gemini won 5.</p>
+    <p>The margin required depends on how many disagreements there are. At 12 differences the gap has to reach 10 for chance to be ruled out; this one is 2, so the row reads &ldquo;no real difference&rdquo;.</p>
   </div>
 
   <p class="lede" style="margin-top:26px">Every comparison below is
   <strong>Gemini against one challenger</strong>, on the same
-  138 calls. The four counts on each row are what happened on those calls,
-  and they always add up to 138. Only the last two columns decide the
+  50 calls. The four counts on each row are what happened on those calls,
+  and they always add up to 50. Only the last two columns decide the
   verdict &mdash; the first two are ties.</p>
 
   <div class="scroller" style="margin-top:26px">
-    <table><caption>Call outcome &mdash; 138 calls each</caption>
+    <table><caption>Call outcome &mdash; 50 calls each</caption>
     <thead><tr><th>Head to head</th>
       <th>Both<br>right</th><th>Both<br>wrong</th>
       <th>Only Gemini<br>right</th><th>Only other<br>right</th>
       <th style="text-align:left">Verdict</th></tr></thead>
-    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>128</td><td>7</td><td class="">1</td><td class="best">2</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>3 disagreements, need 6</span></td></tr><tr><th scope=row>Gemini vs Qwen3.6</th><td>125</td><td>6</td><td class="best">4</td><td class="">3</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 1, need 7</span></td></tr><tr><th scope=row>Gemini vs Gemma 4</th><td>118</td><td>8</td><td class="best">11</td><td class="">1</td><td style="text-align:left"><span class="tag t-bad">GEMINI BETTER</span><span class=sub>gap 10, need 10</span></td></tr></tbody></table>
+    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>45</td><td>4</td><td class="best">1</td><td class="">0</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>1 disagreement, need 6</span></td></tr></tbody></table>
   </div>
   <p style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:6px 0 0">
-    every row adds up &mdash; e.g. 128 + 7 + 1 + 2 = 138</p>
+    every row adds up &mdash; e.g. 45 + 4 + 1 + 0 = 50</p>
 
   <div class="scroller" style="margin-top:26px">
-    <table><caption>Reason &mdash; 138 calls each</caption>
+    <table><caption>Reason &mdash; 50 calls each</caption>
     <thead><tr><th>Head to head</th>
       <th>Both<br>right</th><th>Both<br>wrong</th>
       <th>Only Gemini<br>right</th><th>Only other<br>right</th>
       <th style="text-align:left">Verdict</th></tr></thead>
-    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>64</td><td>46</td><td class="best">18</td><td class="">10</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 8, need 14</span></td></tr><tr><th scope=row>Gemini vs Qwen3.6</th><td>67</td><td>42</td><td class="best">15</td><td class="">14</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 1, need 13</span></td></tr><tr><th scope=row>Gemini vs Gemma 4</th><td>61</td><td>48</td><td class="best">21</td><td class="">8</td><td style="text-align:left"><span class="tag t-bad">GEMINI BETTER</span><span class=sub>gap 13, need 13</span></td></tr></tbody></table>
+    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>19</td><td>19</td><td class="">5</td><td class="best">7</td><td style="text-align:left"><span class="tag t-good">NO REAL DIFFERENCE</span><span class=sub>gap 2, need 10</span></td></tr></tbody></table>
   </div>
   <p style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:6px 0 0">
-    every row adds up &mdash; e.g. 64 + 46 + 18 + 10 = 138</p>
+    every row adds up &mdash; e.g. 19 + 19 + 5 + 7 = 50</p>
 
   <div class="scroller" style="margin-top:26px">
-    <table><caption>Product &mdash; 138 calls each</caption>
+    <table><caption>Product &mdash; 50 calls each</caption>
     <thead><tr><th>Head to head</th>
       <th>Both<br>right</th><th>Both<br>wrong</th>
       <th>Only Gemini<br>right</th><th>Only other<br>right</th>
       <th style="text-align:left">Verdict</th></tr></thead>
-    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>132</td><td>5</td><td class="best">1</td><td class="">0</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>1 disagreement, need 6</span></td></tr><tr><th scope=row>Gemini vs Qwen3.6</th><td>129</td><td>5</td><td class="best">4</td><td class="">0</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>4 disagreements, need 6</span></td></tr><tr><th scope=row>Gemini vs Gemma 4</th><td>124</td><td>5</td><td class="best">9</td><td class="">0</td><td style="text-align:left"><span class="tag t-bad">GEMINI BETTER</span><span class=sub>gap 9, need 9</span></td></tr></tbody></table>
+    <tbody><tr><th scope=row>Gemini vs Qwen3.8</th><td>48</td><td>2</td><td class="">0</td><td class="">0</td><td style="text-align:left"><span class="tag t-unk">TOO FEW TO CALL</span><span class=sub>0 disagreements, need 6</span></td></tr></tbody></table>
   </div>
   <p style="font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin:6px 0 0">
-    every row adds up &mdash; e.g. 132 + 5 + 1 + 0 = 138</p>
+    every row adds up &mdash; e.g. 48 + 2 + 0 + 0 = 50</p>
   <div class="note">Two things this makes visible that an average cannot.
   <strong>First, why so many verdicts are &ldquo;too few to call&rdquo;:</strong> on product the
   models agree on almost every call, so there is barely anything left to measure &mdash; that is
   not a pass and not a fail, it means this test set cannot separate them.
   <strong>Second, why Reason scores lower for everyone:</strong> on that dimension
-  42&ndash;48
-  of the 138 calls were failed by <em>both</em> models. It is hard for
+  19
+  of the 50 calls were failed by <em>both</em> models. It is hard for
   everything we tested, not a weakness of one model.</div>
 </section>
 
@@ -208,22 +200,22 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
     <div class="chartbox scroller"><div id="c-tok"></div></div>
   </figure>
   <div class="scroller" style="margin-top:22px">
-    <table><caption>Token usage over 414 calls per model</caption>
+    <table><caption>Token usage over 150 calls per model</caption>
     <thead><tr><th>Model</th><th>Input total</th><th>Input per call</th>
     <th>Output total</th><th>Output per call</th></tr></thead>
-    <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash</th><td>1,237,746</td><td>2,990</td><td>86,449</td><td class=best>209</td></tr><tr><th scope=row>Qwen3.8 27B</th><td>1,131,948</td><td class=best>2,734</td><td>95,036</td><td>230</td></tr><tr><th scope=row>Qwen3.6 27B</th><td>1,131,948</td><td class=best>2,734</td><td>95,337</td><td>230</td></tr><tr><th scope=row>Gemma 4 12B</th><td>1,245,198</td><td>3,008</td><td>104,839</td><td>253</td></tr></tbody></table>
+    <tbody><tr class="prod-row"><th scope=row>Gemini 2.5 Flash</th><td>423,489</td><td>2,823</td><td>33,456</td><td class=best>223</td></tr><tr><th scope=row>Qwen3.8 27B</th><td>385,191</td><td class=best>2,568</td><td>36,213</td><td>241</td></tr></tbody></table>
   </div>
-  <div class="note"><strong>Qwen3.8 and Qwen3.6 use exactly the same input tokens (1,131,948) &mdash; identical on all 414 calls.</strong> That is expected rather than suspicious: they share a tokenizer and were fed byte-identical prompts, and it is a positive integrity signal. Against Gemini, Qwen3.8 needs <strong>8.5% fewer input tokens</strong> for the same Thai text, which matters on a metered API and not at all on hardware we own. Gemma 4&rsquo;s tokenizer is the least efficient of the three on input.</div>
+  <div class="note">Against Gemini, Qwen3.8 needs <strong>9.0% fewer input tokens</strong> for the same Thai text, which matters on a metered API and not at all on hardware we own.</div>
 </section>
 
 <section id="latency">
   <h2>3. Speed on our own GPU</h2>
   <p class="lede">End-to-end response time &mdash; request sent to complete response received.
-  All three ran at concurrency 4 against the same vLLM host.</p>
+  It ran at concurrency 4 against the same vLLM host.</p>
   <div class="note" style="margin-top:12px"><strong>Why Gemini is not in this table.</strong>
-  For reference it answered in <strong>2.047 s</strong> at the
-  median and cost <strong>$0.5616</strong> for the same
-  414 calls &mdash; but it ran at concurrency 8 over the
+  For reference it answered in <strong>2.109 s</strong> at the
+  median and cost <strong>$0.1730</strong> for the same
+  150 calls &mdash; but it ran at concurrency 8 over the
   public internet rather than concurrency 4 on our own network. Two
   things differ besides the model, so putting it in the same table would invite a speed
   comparison the measurement cannot support. Cost is left out of the table for the same reason:
@@ -234,17 +226,17 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
     <div class="chartbox scroller"><div id="c-lat"></div></div>
   </figure>
   <div class="scroller" style="margin-top:22px">
-    <table><caption>Our three GPU models over 414 calls each, concurrency
+    <table><caption>Our one GPU model over 150 calls, concurrency
     4</caption>
     <thead><tr><th>Model</th><th>p50</th><th>p95</th><th>p99</th><th>Max</th>
     <th>Calls/s</th><th>API attempts</th></tr></thead>
-    <tbody><tr><th scope=row>Qwen3.8 27B</th><td class="">11.625</td><td>17.563</td><td>23.109</td><td>24.735</td><td>0.325</td><td>414</td></tr><tr><th scope=row>Qwen3.6 27B</th><td class="best">11.375</td><td>17.609</td><td>21.734</td><td>23.546</td><td>0.337</td><td>414</td></tr><tr><th scope=row>Gemma 4 12B</th><td class="">12.000</td><td>16.625</td><td>20.422</td><td>22.594</td><td>0.324</td><td>414</td></tr></tbody></table>
+    <tbody><tr><th scope=row>Qwen3.8 27B</th><td class="best">11.407</td><td>19.985</td><td>22.188</td><td>22.859</td><td>0.310</td><td>150</td></tr></tbody></table>
   </div>
   <div class="note"><strong>There is no time-to-first-token here, and none was invented.</strong>
   The evaluation harness does not stream responses, so the only interval ever measured is the
   complete round trip. A partial-response time cannot be recovered from these logs, so the
   column simply does not exist rather than being filled with end-to-end latency wearing a
-  different label. All three needed 414 API attempts for 414 calls &mdash; no retries.</div>
+  different label. All one needed 150 API attempts for 150 calls &mdash; no retries.</div>
 </section>
 
 <section id="stability">
@@ -255,7 +247,7 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
     <figcaption>Scored label changes across three identical repeats &middot; lower is better</figcaption>
     <div class="chartbox scroller"><div id="c-stab"></div></div>
   </figure>
-  <div class="note"><strong>Qwen3.8 27B changed a scored label 6 times across 414 calls; production Gemini changed one 29 times.</strong> All four rewrite their prose between repeats &mdash; what differs is whether the change reaches a label anyone acts on. Gemini rewrote its text on 111 of 138 calls here; it was bit-stable when measured on 10 August, with no change on our side.</div>
+  <div class="note"><strong>Production Gemini was the steadier of the two here &mdash; it changed a scored label 0 times across 150 calls, against Qwen3.8 27B&rsquo;s 2.</strong> Qwen3.8 rewrites prose between repeats &mdash; what matters is whether the change reaches a label anyone acts on. On this run Gemini returned byte-identical text on all 50 calls. It did not on 14 August, when the same model under the same pin varied on 111 of 138 &mdash; so that appears to have been an episode rather than a permanent change.</div>
 </section>
 
 <section id="dims">
@@ -281,23 +273,19 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 
 <section id="dataset">
   <h2>What the evaluation set is</h2>
-  <p class="lede">138 Thai call-centre transcripts written in-house for
+  <p class="lede">50 Thai call-centre transcripts written in-house for
   testing, with hand-checked correct answers. <strong>No customer data, no production
-  transcripts, nothing confidential.</strong> Each model made 414 calls
-  (138 transcripts &times; 3 repeats).</p>
+  transcripts, nothing confidential.</strong> Each model made 150 calls
+  (50 transcripts &times; 3 repeats).</p>
   <div class="scroller" style="margin-top:18px">
     <table><caption>How the transcripts are made up</caption>
     <thead><tr><th>Category</th><th>Count</th><th style="text-align:left">What it tests</th></tr>
     </thead><tbody>
-      <tr><th scope=row>Clear</th><td>30</td><td style="text-align:left">Unambiguous calls -- the baseline</td></tr>
-      <tr><th scope=row>Thai linguistic</th><td>30</td><td style="text-align:left">Politeness particles, negation, honorifics that flip meaning</td></tr>
-      <tr><th scope=row>Tie-break</th><td>17</td><td style="text-align:left">Two plausible reasons; only one correct by the rules</td></tr>
-      <tr><th scope=row>Escape</th><td>13</td><td style="text-align:left">Quotes and characters that break JSON output</td></tr>
-      <tr><th scope=row>Long context</th><td>12</td><td style="text-align:left">12,000-18,000 character transcripts</td></tr>
-      <tr><th scope=row>ASR noise</th><td>10</td><td style="text-align:left">Speech-to-text errors left in deliberately</td></tr>
-      <tr><th scope=row>Code-switch</th><td>10</td><td style="text-align:left">Thai and English mixed mid-sentence</td></tr>
-      <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call</td></tr>
-      <tr><th scope=row>Regression</th><td>6</td><td style="text-align:left">Specific past failures, kept as guards</td></tr>
+      <tr><th scope=row>Boundary outcome</th><td>10</td><td style="text-align:left">The end state is negotiated explicitly and sits near a label boundary</td></tr>
+      <tr><th scope=row>Compound history</th><td>10</td><td style="text-align:left">The customer has called before; the earlier contact changes the answer</td></tr>
+      <tr><th scope=row>Interaction noise</th><td>10</td><td style="text-align:left">Holds, transfers, interruptions and returning to an earlier topic</td></tr>
+      <tr><th scope=row>Multi-product</th><td>10</td><td style="text-align:left">Several products in one call, reaching different outcomes</td></tr>
+      <tr><th scope=row>Negotiation reversal</th><td>10</td><td style="text-align:left">The outcome flips mid-call after an offer is made or refused</td></tr>
     </tbody></table>
   </div>
   <div class="note">Because the set is synthetic, every accuracy figure here &mdash;
@@ -307,9 +295,8 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 
 <section id="bottom">
   <h2>Bottom line</h2>
-  <p><strong>Qwen3.8 27B on our own GPU is the strongest internal candidate.</strong> It is not measurably behind production Gemini on any of the three label types. On call outcome and product the two models disagreed on too few calls to call a winner either way.</p>
-  <p><strong>Gemma 4 12B is out.</strong> Measurably worse than Gemini on all three.</p>
-
+  <p><strong>Qwen3.8 27B on our own GPU holds up against production on this pack.</strong> It is not measurably behind production Gemini on any of the three label types. On call outcome and product the two models disagreed on too few calls to call a winner either way.</p>
+  <p><strong>Not in this comparison.</strong> Gemma 4 12B was attempted and is NOT in this comparison: its vLLM backend at 10.94.154.104:8000 went down between the smoke test and the arm, and all 150 calls returned HTTP 500 from the gateway. The model stayed listed in /v1/models throughout. Run 20260815-223809Z-e20-chal-gemma is kept as the record of that failure. Add the arm back to this config and regenerate once the backend returns.</p>
   <p><strong>What still blocks a migration decision:</strong> the speed gap (real, though
   confounded by concurrency and network path &mdash; see section 3), and the fact that this is a
   synthetic test set. Before any production call we would need the same comparison against real
@@ -317,22 +304,22 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 </section>
 
 <footer>
-  138 synthetic transcripts &middot; 414 calls per model
+  50 synthetic transcripts &middot; 150 calls per model
   &middot; 3 repeats &middot; identical prompt, testset, ground truth and
-  scorer across all four arms<br>
+  scorer across both arms<br>
   scorer 9b4afc95c3d69876 &middot; workload
-  6b1ab3edf23a7c21 &middot; testset ff7f728ca597795e<br>
+  141510a259b4de9e &middot; testset a3029a7081a1eb85<br>
   Percentiles by nearest rank, index = ceil(q * n), 1-based. Latency values sit on a 1&nbsp;ms clock grid, so
   they are reported to 3 decimal places and no finer.<br>
   Generated by <code>scripts/model_comparison_report.py</code> from
   <code>raw run.jsonl + harness comparison reports; no hand-entered figures</code>. Figures also in
-  <code>docs/reports/model-comparison-metrics.json</code>.
+  <code>docs/reports/model-comparison-challenge-metrics.json</code>.
 </footer>
 </div>
 <script>
 (function(){
 "use strict";
-var D={"order": ["gemini", "qwen38", "qwen36", "gemma"], "labels": {"gemini": {"name": "Gemini 2.5 Flash", "short": "Gemini", "ours": false}, "qwen38": {"name": "Qwen3.8 27B", "short": "Qwen3.8", "ours": true}, "qwen36": {"name": "Qwen3.6 27B", "short": "Qwen3.6", "ours": true}, "gemma": {"name": "Gemma 4 12B", "short": "Gemma 4", "ours": true}}, "f1": {"gemini": {"call_result": 0.955, "reason": 0.838, "product": 0.96}, "qwen38": {"call_result": 0.966, "reason": 0.834, "product": 0.95}, "qwen36": {"call_result": 0.962, "reason": 0.821, "product": 0.932}, "gemma": {"call_result": 0.929, "reason": 0.792, "product": 0.933}}, "tokens": {"gemini": {"inp": 2989.7, "out": 208.8}, "qwen38": {"inp": 2734.2, "out": 229.6}, "qwen36": {"inp": 2734.2, "out": 230.3}, "gemma": {"inp": 3007.7, "out": 253.2}}, "lat": {"gemini": {"p50": 2.047, "p90": 2.563, "p95": 2.797, "p99": 3.922, "min": 1.328, "max": 11.359, "mean": 2.169}, "qwen38": {"p50": 11.625, "p90": 14.36, "p95": 17.563, "p99": 23.109, "min": 7.125, "max": 24.735, "mean": 12.263}, "qwen36": {"p50": 11.375, "p90": 13.594, "p95": 17.609, "p99": 21.734, "min": 6.844, "max": 23.546, "mean": 11.823}, "gemma": {"p50": 12.0, "p90": 14.0, "p95": 16.625, "p99": 20.422, "min": 5.891, "max": 22.594, "mean": 12.306}}, "stab": {"gemini": 29, "qwen38": 6, "qwen36": 8, "gemma": 15}};
+var D={"order": ["gemini", "qwen38"], "labels": {"gemini": {"name": "Gemini 2.5 Flash", "short": "Gemini", "ours": false}, "qwen38": {"name": "Qwen3.8 27B", "short": "Qwen3.8", "ours": true}}, "f1": {"gemini": {"call_result": 0.951, "reason": 0.831, "product": 0.976}, "qwen38": {"call_result": 0.93, "reason": 0.833, "product": 0.97}}, "tokens": {"gemini": {"inp": 2823.3, "out": 223.0}, "qwen38": {"inp": 2567.9, "out": 241.4}}, "lat": {"gemini": {"p50": 2.109, "p90": 3.719, "p95": 3.953, "p99": 4.531, "min": 1.484, "max": 4.546, "mean": 2.377}, "qwen38": {"p50": 11.407, "p90": 17.265, "p95": 19.985, "p99": 22.188, "min": 9.406, "max": 22.859, "mean": 12.647}}, "stab": {"gemini": 0, "qwen38": 2}};
 var NS="http://www.w3.org/2000/svg";
 function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null)
 e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
@@ -499,5 +486,3 @@ function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
 })();
 })();
 </script>
-</body>
-</html>

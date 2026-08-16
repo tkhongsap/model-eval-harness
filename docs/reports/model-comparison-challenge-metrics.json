@@ -1,0 +1,257 @@
+{
+  "generated_from": "raw run.jsonl + harness comparison reports; no hand-entered figures",
+  "percentile_method": "nearest rank, index = ceil(q * n), 1-based",
+  "shared_contract": {
+    "testset_sha": "a3029a7081a1eb859938671d0d3f880ef97dabbb4bf55b2cf773ec184aa1f801",
+    "workload_sha": "141510a259b4de9e239b3464cd51479b8e1783c8984a2bf8351d21630125c9f1",
+    "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+    "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+    "repeats": 3,
+    "items": 50,
+    "rows": 150
+  },
+  "models": {
+    "gemini": {
+      "run_id": "20260815-222917Z-e20-chal-gemini",
+      "model_requested": "google/gemini-2.5-flash",
+      "observed_models": {
+        "google/gemini-2.5-flash": 150
+      },
+      "backend": "openrouter",
+      "concurrency": 8,
+      "rows": 150,
+      "ok": 150,
+      "input_tokens_total": 423489,
+      "input_tokens_per_call": 2823.3,
+      "output_tokens_total": 33456,
+      "output_tokens_per_call": 223.0,
+      "latency_s": {
+        "p50": 2.109,
+        "p90": 3.719,
+        "p95": 3.953,
+        "p99": 4.531,
+        "min": 1.484,
+        "max": 4.546,
+        "mean": 2.377
+      },
+      "attempts_total": 150,
+      "rows_retried": 0,
+      "truncated": 0,
+      "wall_time_s": 45.7,
+      "throughput_calls_per_s": 3.282,
+      "cost_usd": 0.17298822,
+      "reasoning_effort": "none",
+      "shared": {
+        "testset_sha": "a3029a7081a1eb859938671d0d3f880ef97dabbb4bf55b2cf773ec184aa1f801",
+        "workload_sha": "141510a259b4de9e239b3464cd51479b8e1783c8984a2bf8351d21630125c9f1",
+        "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+        "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+        "repeats": 3,
+        "items": 50,
+        "rows": 150
+      },
+      "f1": {
+        "call_result": 0.951,
+        "reason": 0.831,
+        "product": 0.976
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 64,
+          "joined": 62,
+          "parse_failures": 0,
+          "precision": 0.97,
+          "recall": 0.938,
+          "f1": 0.951
+        },
+        "reason": {
+          "denominator": 65,
+          "joined": 62,
+          "parse_failures": 0,
+          "precision": 0.775,
+          "recall": 0.938,
+          "f1": 0.831
+        },
+        "product": {
+          "denominator": 50,
+          "joined": 50,
+          "parse_failures": 0,
+          "precision": 0.985,
+          "recall": 0.969,
+          "f1": 0.976
+        }
+      },
+      "paired_vs_gemini": null,
+      "n_flip": 0,
+      "instability": {
+        "observable": 50,
+        "raw_unstable": 0,
+        "scored_unstable": 0
+      }
+    },
+    "qwen38": {
+      "run_id": "20260815-223004Z-e20-chal-qwen38",
+      "model_requested": "qwen3.8-27b-fp8",
+      "observed_models": {
+        "qwen3.8-27b-fp8": 150
+      },
+      "backend": "openai-compatible",
+      "concurrency": 4,
+      "rows": 150,
+      "ok": 150,
+      "input_tokens_total": 385191,
+      "input_tokens_per_call": 2567.9,
+      "output_tokens_total": 36213,
+      "output_tokens_per_call": 241.4,
+      "latency_s": {
+        "p50": 11.407,
+        "p90": 17.265,
+        "p95": 19.985,
+        "p99": 22.188,
+        "min": 9.406,
+        "max": 22.859,
+        "mean": 12.647
+      },
+      "attempts_total": 150,
+      "rows_retried": 0,
+      "truncated": 0,
+      "wall_time_s": 483.3,
+      "throughput_calls_per_s": 0.31,
+      "cost_usd": null,
+      "reasoning_effort": "provider-default",
+      "shared": {
+        "testset_sha": "a3029a7081a1eb859938671d0d3f880ef97dabbb4bf55b2cf773ec184aa1f801",
+        "workload_sha": "141510a259b4de9e239b3464cd51479b8e1783c8984a2bf8351d21630125c9f1",
+        "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+        "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+        "repeats": 3,
+        "items": 50,
+        "rows": 150
+      },
+      "f1": {
+        "call_result": 0.93,
+        "reason": 0.833,
+        "product": 0.97
+      },
+      "scoring_detail": {
+        "call_result": {
+          "denominator": 64,
+          "joined": 62,
+          "parse_failures": 0,
+          "precision": 0.956,
+          "recall": 0.922,
+          "f1": 0.93
+        },
+        "reason": {
+          "denominator": 66,
+          "joined": 62,
+          "parse_failures": 0,
+          "precision": 0.829,
+          "recall": 0.901,
+          "f1": 0.833
+        },
+        "product": {
+          "denominator": 50,
+          "joined": 50,
+          "parse_failures": 0,
+          "precision": 0.974,
+          "recall": 0.969,
+          "f1": 0.97
+        }
+      },
+      "paired_vs_gemini": {
+        "call_result": {
+          "both_right": 45,
+          "both_wrong": 4,
+          "incumbent_only": 1,
+          "candidate_only": 0,
+          "discordant": 1,
+          "net": -1,
+          "band": "--",
+          "verdict": "UNDERPOWERED"
+        },
+        "reason": {
+          "both_right": 19,
+          "both_wrong": 19,
+          "incumbent_only": 5,
+          "candidate_only": 7,
+          "discordant": 12,
+          "net": 2,
+          "band": "+/-10",
+          "verdict": "INDISTINGUISHABLE"
+        },
+        "product": {
+          "both_right": 48,
+          "both_wrong": 2,
+          "incumbent_only": 0,
+          "candidate_only": 0,
+          "discordant": 0,
+          "net": 0,
+          "band": "--",
+          "verdict": "UNDERPOWERED"
+        }
+      },
+      "n_flip": 2,
+      "instability": {
+        "observable": 50,
+        "raw_unstable": 46,
+        "scored_unstable": 2
+      }
+    }
+  },
+  "order": [
+    "gemini",
+    "qwen38"
+  ],
+  "labels": {
+    "gemini": {
+      "name": "Gemini 2.5 Flash",
+      "short": "Gemini",
+      "ours": false
+    },
+    "qwen38": {
+      "name": "Qwen3.8 27B",
+      "short": "Qwen3.8",
+      "ours": true
+    }
+  },
+  "pack": "retention_challenge_v1",
+  "metrics_stem": "model-comparison-challenge",
+  "incumbent": "gemini",
+  "dataset": {
+    "families": [
+      {
+        "name": "Boundary outcome",
+        "count": 10,
+        "what": "The end state is negotiated explicitly and sits near a label boundary"
+      },
+      {
+        "name": "Compound history",
+        "count": 10,
+        "what": "The customer has called before; the earlier contact changes the answer"
+      },
+      {
+        "name": "Interaction noise",
+        "count": 10,
+        "what": "Holds, transfers, interruptions and returning to an earlier topic"
+      },
+      {
+        "name": "Multi-product",
+        "count": 10,
+        "what": "Several products in one call, reaching different outcomes"
+      },
+      {
+        "name": "Negotiation reversal",
+        "count": 10,
+        "what": "The outcome flips mid-call after an offer is made or refused"
+      }
+    ]
+  },
+  "head_to_head_key": null,
+  "copy": {
+    "title": "A harder test set, and what it can and cannot separate",
+    "doc_title": "Challenge Pack Benchmark",
+    "kicker_subject": "Retention call labelling, challenge pack",
+    "note": "Gemma 4 12B was attempted and is NOT in this comparison: its vLLM backend at 10.94.154.104:8000 went down between the smoke test and the arm, and all 150 calls returned HTTP 500 from the gateway. The model stayed listed in /v1/models throughout. Run 20260815-223809Z-e20-chal-gemma is kept as the record of that failure. Add the arm back to this config and regenerate once the backend returns."
+  }
+}

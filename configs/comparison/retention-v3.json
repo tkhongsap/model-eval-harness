@@ -1,0 +1,97 @@
+{
+  "pack": "retention_v3",
+  "title": "Four models, one evaluation",
+  "doc_title": "Four-Model GPU Benchmark",
+  "kicker_subject": "Retention call labelling",
+  "expected_rows": 414,
+  "incumbent": "gemini",
+  "models": [
+    {
+      "key": "gemini",
+      "name": "Gemini 2.5 Flash",
+      "short": "Gemini",
+      "arm": "e17-gemini",
+      "run": "20260814-132425Z-e17-gemini",
+      "ours": false
+    },
+    {
+      "key": "qwen38",
+      "name": "Qwen3.8 27B",
+      "short": "Qwen3.8",
+      "arm": "e18-tf-qwen38",
+      "run": "20260815-124600Z-e18-tf-qwen38",
+      "ours": true
+    },
+    {
+      "key": "qwen36",
+      "name": "Qwen3.6 27B",
+      "short": "Qwen3.6",
+      "arm": "e17-tf-qwen",
+      "run": "20260814-134803Z-e17-tf-qwen",
+      "ours": true
+    },
+    {
+      "key": "gemma",
+      "name": "Gemma 4 12B",
+      "short": "Gemma 4",
+      "arm": "e17-tf-gemma",
+      "run": "20260814-132642Z-e17-tf-gemma",
+      "ours": true
+    }
+  ],
+  "vs_incumbent": {
+    "qwen38": "compare-e18-qwen38-vs-gemini.txt",
+    "qwen36": "compare-e17-qwen.txt",
+    "gemma": "compare-e17-gemma.txt"
+  },
+  "head_to_head": {
+    "key": "qwen36_vs_qwen38",
+    "report": "compare-qwen36-vs-qwen38.txt"
+  },
+  "output": {
+    "dir": "docs/reports",
+    "stem": "model-comparison"
+  },
+  "explorer_output": "out/case-explorer.html",
+  "split": "tests/fixtures/testsets/retention_v3.split.json",
+  "expected_gt_rows": 150,
+  "testset": "tests/fixtures/testsets/retention_v3.jsonl",
+  "family_labels": {
+    "clear": [
+      "Clear",
+      "Unambiguous calls -- the baseline"
+    ],
+    "thai_linguistic": [
+      "Thai linguistic",
+      "Politeness particles, negation, honorifics that flip meaning"
+    ],
+    "tiebreak": [
+      "Tie-break",
+      "Two plausible reasons; only one correct by the rules"
+    ],
+    "escape": [
+      "Escape",
+      "Quotes and characters that break JSON output"
+    ],
+    "long_context": [
+      "Long context",
+      "12,000-18,000 character transcripts"
+    ],
+    "multislot": [
+      "Multi-product",
+      "Several products in one call"
+    ],
+    "asr_noise": [
+      "ASR noise",
+      "Speech-to-text errors left in deliberately"
+    ],
+    "code_switch": [
+      "Code-switch",
+      "Thai and English mixed mid-sentence"
+    ],
+    "regression": [
+      "Regression",
+      "Specific past failures, kept as guards"
+    ]
+  }
+}

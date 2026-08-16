@@ -67,7 +67,8 @@ Rendered deliverables live in **[docs/reports/](./docs/reports/)**, indexed by
 | Experiment 5 decision, operations and safe report set | [docs/experiment5-results.md](./docs/experiment5-results.md) |
 | Requirement-by-requirement Experiment 5 completion evidence | [docs/experiment5-completion-audit.md](./docs/experiment5-completion-audit.md) |
 | What the overnight audit found, and how the independent-judge experiment works | [docs/overnight-audit-and-experiment-6-report.md](./docs/overnight-audit-and-experiment-6-report.md) |
-| **Latest result — the internal-GPU arms, and Gemini's determinism collapsing** | [docs/experiment17-results.md](./docs/experiment17-results.md) and its [plan](./docs/experiment17-plan.md) |
+| **Latest result — the challenge pack, and what 50 items cannot settle** | [docs/experiment20-results.md](./docs/experiment20-results.md) |
+| The internal-GPU arms, and Gemini's determinism collapsing | [docs/experiment17-results.md](./docs/experiment17-results.md) and its [plan](./docs/experiment17-plan.md) |
 | Decision-grade three-model result, judge audit and team handoff | [docs/experiment7-results.md](./docs/experiment7-results.md) |
 | Reproducible Experiment 7 draft and safe aggregate evidence | [experiments/retention-e7.plan.json](./experiments/retention-e7.plan.json) and [summary.json](./experiments/evidence/retention-e7/summary.json) |
 | How to contribute without breaking the guarantees | [CONTRIBUTING.md](./CONTRIBUTING.md) |
