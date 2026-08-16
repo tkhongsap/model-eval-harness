@@ -44,7 +44,8 @@ Rendered deliverables live in **[docs/reports/](./docs/reports/)**, indexed by
 
 | Report | What it answers |
 |---|---|
-| **[Four-model comparison](./docs/reports/model-comparison.html)** — the current headline | Gemini vs Qwen3.8 / Qwen3.6 / Gemma 4 on `retention_v3`: accuracy, tokens, consistency, speed on our GPU, head-to-head verdicts. Every figure also in [metrics.json](./docs/reports/model-comparison-metrics.json). |
+| **[Both evaluation sets, one document](./docs/reports/model-comparison-combined.html)** — the one to send | Production Gemini against the models we host, on two independently authored Retention test sets. What is tested, what is scored, what each set contains, and the results per set. |
+| [Four-model comparison](./docs/reports/model-comparison.html) — one set in detail | Gemini vs Qwen3.8 / Qwen3.6 / Gemma 4 on `retention_v3`: accuracy, tokens, consistency, speed on our GPU, head-to-head verdicts. Every figure also in [metrics.json](./docs/reports/model-comparison-metrics.json). |
 | [Case explorer](./docs/case-explorer.md) — all 138 cases, one at a time | Transcript, ground truth with its evidence, and all four models' answers marked right or wrong, with F1 that recomputes as you filter. **Generated to `out/`, not committed** — it carries transcripts and completions. |
 | [GPU soak test](./docs/reports/soak-test-report.html) | Five hours of load: concurrency ramp, latency by phase, error rate, recommended operating concurrency. |
 | [Experiment 17 report](./docs/reports/experiment17-report.html) | The internal-GPU arms, and the run where Gemini's determinism collapsed. |

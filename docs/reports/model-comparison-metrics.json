@@ -505,7 +505,7 @@
       {
         "name": "Long context",
         "count": 12,
-        "what": "12,000-18,000 character transcripts"
+        "what": "Transcripts up to 15,600 characters, the pack's longest"
       },
       {
         "name": "ASR noise",

@@ -136,6 +136,203 @@ z-index:50;white-space:nowrap;font-variant-numeric:tabular-nums}
 """
 
 
+
+# --------------------------------------------------------------------------------------
+# The four charts, as a reusable component
+# --------------------------------------------------------------------------------------
+# Extracted from this module's own page so the combined report can draw the SAME charts per
+# evaluation set rather than growing a second implementation that drifts. `suffix` scopes the
+# container ids, which is all that stops two chart sets colliding on one page.
+
+CHART_SCRIPT = """<script>
+(function(){
+"use strict";
+var D=__PAYLOAD__;
+var SUF="__SUFFIX__";
+var NS="http://www.w3.org/2000/svg";
+function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!==null)
+e.setAttribute(k,a[k]);}if(t!==undefined)e.textContent=t;return e;}
+function v(n){return "var("+n+")";}
+var tip=document.getElementById("tip");
+function bind(node,text){node.classList.add("hit");
+node.addEventListener("mousemove",function(e){tip.textContent=text;tip.style.opacity="1";
+var x=e.clientX+14,y=e.clientY-34;
+if(x+tip.offsetWidth>window.innerWidth-8)x=e.clientX-tip.offsetWidth-14;
+tip.style.left=x+"px";tip.style.top=y+"px";});
+node.addEventListener("mouseleave",function(){tip.style.opacity="0";});
+node.appendChild(el("title",{},text));}
+function col(k){return D.labels[k].ours?v("--s-ours"):v("--s-prod");}
+
+// ---- 1. accuracy, faceted -------------------------------------------------------
+(function(){
+  var DIMS=[["call_result","Call outcome"],["reason","Reason"],["product","Product"]];
+  var NROW=D.order.length;
+  var W=860,padL=112,padR=64,rowH=30,facetH=NROW*rowH+44,gapY=18;
+  var H=DIMS.length*(facetH+gapY),barW=W-padL-padR;
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"Weighted F1 by label type"});
+  DIMS.forEach(function(dd,fi){
+    var top=fi*(facetH+gapY);
+    svg.appendChild(el("text",{x:0,y:top+13,"font-size":13,fill:v("--ink"),
+      "font-weight":700},dd[1]));
+    var best=Math.max.apply(null,D.order.map(function(k){return D.f1[k][dd[0]];}));
+    [0,0.25,0.5,0.75,1.0].forEach(function(t){
+      var x=padL+t*barW;
+      svg.appendChild(el("line",{x1:x,y1:top+24,x2:x,y2:top+24+NROW*rowH,
+        stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+      svg.appendChild(el("text",{x:x,y:top+24+NROW*rowH+16,"font-size":10,
+        "text-anchor":"middle"},t.toFixed(2)));
+    });
+    D.order.forEach(function(k,mi){
+      var val=D.f1[k][dd[0]],y=top+28+mi*rowH,w=val*barW;
+      svg.appendChild(el("text",{x:padL-10,y:y+14,"font-size":11.5,"text-anchor":"end",
+        fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+      var r=el("rect",{x:padL,y:y,width:Math.max(w,1),height:19,rx:2,fill:col(k)});
+      bind(r,D.labels[k].name+"  |  "+dd[1]+"  |  weighted F1 "+val.toFixed(3)+
+        (val===best?"  (highest)":""));
+      svg.appendChild(r);
+      svg.appendChild(el("text",{x:padL+w+9,y:y+14,"font-size":11.5,fill:v("--ink"),
+        "font-weight":val===best?700:600},val.toFixed(3)));
+    });
+  });
+  document.getElementById("c-f1"+SUF).appendChild(svg);
+})();
+
+// ---- 2. tokens, two panels, two scales ------------------------------------------
+(function(){
+  var W=860,half=W/2,padT=32,rowH=32,padB=30;
+  var H=padT+D.order.length*rowH+padB;
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"Input and output tokens per call"});
+  function panel(x0,w,title,field,fmt){
+    var padL=78,barW=w-padL-72;
+    var vals=D.order.map(function(k){return D.tokens[k][field];});
+    var maxV=Math.max.apply(null,vals)*1.05, lo=Math.min.apply(null,vals);
+    svg.appendChild(el("text",{x:x0+padL,y:14,"font-size":10,"letter-spacing":"1.1",
+      fill:v("--ink-faint")},title));
+    [0,maxV/2,maxV].forEach(function(t){
+      var x=x0+padL+(t/maxV)*barW;
+      svg.appendChild(el("line",{x1:x,y1:padT-8,x2:x,y2:padT+D.order.length*rowH-10,
+        stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+      svg.appendChild(el("text",{x:x,y:H-12,"font-size":10,"text-anchor":"middle"},fmt(t)));
+    });
+    D.order.forEach(function(k,i){
+      var val=D.tokens[k][field],y=padT+i*rowH,bw=(val/maxV)*barW;
+      svg.appendChild(el("text",{x:x0+padL-10,y:y+14,"font-size":11,"text-anchor":"end",
+        fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+      var r=el("rect",{x:x0+padL,y:y,width:Math.max(bw,1),height:19,rx:2,
+        fill:val===lo?v("--s-best"):col(k)});
+      bind(r,D.labels[k].name+"  |  "+Math.round(val).toLocaleString()+" "+
+        (field==="inp"?"input":"output")+" tokens per call"+(val===lo?"  (fewest)":""));
+      svg.appendChild(r);
+      svg.appendChild(el("text",{x:x0+padL+bw+8,y:y+14,"font-size":11,fill:v("--ink"),
+        "font-weight":val===lo?700:600},Math.round(val).toLocaleString()));
+    });
+  }
+  panel(0,half,"INPUT TOKENS / CALL","inp",function(t){
+    return t===0?"0":Math.round(t/1000)+"k";});
+  svg.appendChild(el("line",{x1:half-8,y1:6,x2:half-8,y2:H-24,stroke:v("--hairline"),
+    "stroke-width":1}));
+  panel(half,half,"OUTPUT TOKENS / CALL","out",function(t){return String(Math.round(t));});
+  document.getElementById("c-tok"+SUF).appendChild(svg);
+})();
+
+// ---- 3. latency: p50 bar, whisker to p95, marker at max -------------------------
+// Our three models only. Gemini ran at a different concurrency over a different network, so
+// charting it beside these would draw exactly the comparison the section says it cannot make.
+(function(){
+  var OURS=D.order.filter(function(k){return D.labels[k].ours;});
+  var W=860,padL=112,padR=92,padT=30,rowH=40,padB=36;
+  var H=padT+OURS.length*rowH+padB,trackW=W-padL-padR;
+  var maxV=Math.max.apply(null,OURS.map(function(k){return D.lat[k].max;}))*1.06;
+  function X(s){return padL+(s/maxV)*trackW;}
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"End-to-end latency by model"});
+  svg.appendChild(el("text",{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
+    fill:v("--ink-faint")},
+    "SECONDS PER CALL \\u2014 BAR = MEDIAN, LINE TO P95, MARKER = SLOWEST"));
+  [0,5,10,15,20,25].forEach(function(t){
+    if(t>maxV)return;
+    svg.appendChild(el("line",{x1:X(t),y1:padT-6,x2:X(t),y2:padT+OURS.length*rowH-12,
+      stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+    svg.appendChild(el("text",{x:X(t),y:H-14,"font-size":10,"text-anchor":"middle"},t+"s"));
+  });
+  var fastest=Math.min.apply(null,OURS.map(function(k){return D.lat[k].p50;}));
+  OURS.forEach(function(k,i){
+    var s=D.lat[k],y=padT+i*rowH;
+    svg.appendChild(el("text",{x:padL-10,y:y+16,"font-size":11.5,"text-anchor":"end",
+      fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+    var r=el("rect",{x:padL,y:y+3,width:Math.max(X(s.p50)-padL,1),height:20,rx:2,fill:col(k)});
+    bind(r,D.labels[k].name+"  |  median "+s.p50.toFixed(3)+"s, p95 "+s.p95.toFixed(3)+
+      "s, p99 "+s.p99.toFixed(3)+"s, slowest "+s.max.toFixed(3)+"s"+
+      (s.p50===fastest?"  (fastest median)":""));
+    svg.appendChild(r);
+    svg.appendChild(el("line",{x1:X(s.p50),y1:y+13,x2:X(s.p95),y2:y+13,stroke:col(k),
+      "stroke-width":2,opacity:.55}));
+    svg.appendChild(el("line",{x1:X(s.p95),y1:y+6,x2:X(s.p95),y2:y+20,stroke:col(k),
+      "stroke-width":2}));
+    svg.appendChild(el("circle",{cx:X(s.max),cy:y+13,r:4,fill:v("--raised"),stroke:col(k),
+      "stroke-width":2}));
+    // Each label sits beside the thing it describes. Putting the median value next to the
+    // max marker -- as this did -- reads as if the median were 25 seconds.
+    svg.appendChild(el("text",{x:X(s.p50)-8,y:y+17,"font-size":11,"text-anchor":"end",
+      fill:v("--raised"),"font-weight":700},s.p50.toFixed(1)+"s"));
+    svg.appendChild(el("text",{x:X(s.max)+10,y:y+17,"font-size":10.5,
+      fill:v("--ink-faint")},"max "+s.max.toFixed(1)+"s"));
+  });
+  document.getElementById("c-lat"+SUF).appendChild(svg);
+})();
+
+// ---- 4. stability ---------------------------------------------------------------
+(function(){
+  var W=860,padL=112,padR=100,padT=26,rowH=34,padB=34;
+  var H=padT+D.order.length*rowH+padB,barW=W-padL-padR;
+  var vals=D.order.map(function(k){return D.stab[k]||0;});
+  var ceiling=(D.stab_max!==undefined&&D.stab_max!==null)?D.stab_max
+    :Math.max.apply(null,vals);
+  var maxV=ceiling*1.15,best=Math.min.apply(null,vals);
+  var svg=el("svg",{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
+    "aria-label":"Scored label changes across three repeats"});
+  svg.appendChild(el("text",{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
+    fill:v("--ink-faint")},"SCORED LABEL CHANGES ACROSS 3 IDENTICAL REPEATS (LOWER IS BETTER)"));
+  var TICKS=maxV>=10?[0,10,20,30]:[0,1,2,3,4,5,6,7,8,9].filter(function(n){
+    return n<=maxV;});
+  TICKS.forEach(function(t){
+    if(t>maxV)return;
+    var x=padL+(t/maxV)*barW;
+    svg.appendChild(el("line",{x1:x,y1:padT-6,x2:x,y2:padT+D.order.length*rowH-8,
+      stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}));
+    svg.appendChild(el("text",{x:x,y:H-14,"font-size":10,"text-anchor":"middle"},String(t)));
+  });
+  D.order.forEach(function(k,i){
+    var val=D.stab[k]||0,y=padT+i*rowH,w=(val/maxV)*barW;
+    svg.appendChild(el("text",{x:padL-10,y:y+15,"font-size":11.5,"text-anchor":"end",
+      fill:v("--ink"),"font-weight":D.labels[k].ours?500:700},D.labels[k].short));
+    var r=el("rect",{x:padL,y:y,width:Math.max(w,1),height:21,rx:2,
+      fill:val===best?v("--s-best"):col(k)});
+    bind(r,D.labels[k].name+" changed a scored label "+val+" times"+
+      (val===best?"  (most consistent)":""));
+    svg.appendChild(r);
+    svg.appendChild(el("text",{x:padL+w+9,y:y+15,"font-size":12,fill:v("--ink"),
+      "font-weight":val===best?700:600},String(val)+(val===best?"  most consistent":"")));
+  });
+  document.getElementById("c-stab"+SUF).appendChild(svg);
+})();
+})();
+</script>"""
+
+
+def charts_js(payload: dict, suffix: str = "") -> str:
+    """Return the chart <script> for one payload, writing into `c-f1{suffix}` and friends.
+
+    payload needs: order, labels{name,short,ours}, f1[k][dim], tokens[k]{inp,out},
+    lat[k]{p50,p95,p99,max}, stab[k].
+    """
+    import json as _j
+    return (CHART_SCRIPT
+            .replace("__PAYLOAD__", _j.dumps(payload))
+            .replace("__SUFFIX__", suffix))
+
 def render(d: dict) -> str:
     order, lab, M = d["order"], d["labels"], d["models"]
     shared = d["shared_contract"]
@@ -455,6 +652,8 @@ def render(d: dict) -> str:
     else:
         worked_example = ""
 
+    chart_script = charts_js(payload)
+
     family_rows = "\n".join(
         f'      <tr><th scope=row>{esc(f["name"])}</th><td>{f["count"]}</td>'
         f'<td style="text-align:left">{esc(f["what"])}</td></tr>'
@@ -677,176 +876,7 @@ def render(d: dict) -> str:
   <code>{metrics_path}</code>.
 </footer>
 </div>
-<script>
-(function(){{
-"use strict";
-var D={payload_js};
-var NS="http://www.w3.org/2000/svg";
-function el(n,a,t){{var e=document.createElementNS(NS,n);for(var k in a){{if(a[k]!==null)
-e.setAttribute(k,a[k]);}}if(t!==undefined)e.textContent=t;return e;}}
-function v(n){{return "var("+n+")";}}
-var tip=document.getElementById("tip");
-function bind(node,text){{node.classList.add("hit");
-node.addEventListener("mousemove",function(e){{tip.textContent=text;tip.style.opacity="1";
-var x=e.clientX+14,y=e.clientY-34;
-if(x+tip.offsetWidth>window.innerWidth-8)x=e.clientX-tip.offsetWidth-14;
-tip.style.left=x+"px";tip.style.top=y+"px";}});
-node.addEventListener("mouseleave",function(){{tip.style.opacity="0";}});
-node.appendChild(el("title",{{}},text));}}
-function col(k){{return D.labels[k].ours?v("--s-ours"):v("--s-prod");}}
-
-// ---- 1. accuracy, faceted -------------------------------------------------------
-(function(){{
-  var DIMS=[["call_result","Call outcome"],["reason","Reason"],["product","Product"]];
-  var W=860,padL=112,padR=64,rowH=30,facetH=4*rowH+44,gapY=18;
-  var H=DIMS.length*(facetH+gapY),barW=W-padL-padR;
-  var svg=el("svg",{{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
-    "aria-label":"Weighted F1 by label type"}});
-  DIMS.forEach(function(dd,fi){{
-    var top=fi*(facetH+gapY);
-    svg.appendChild(el("text",{{x:0,y:top+13,"font-size":13,fill:v("--ink"),
-      "font-weight":700}},dd[1]));
-    var best=Math.max.apply(null,D.order.map(function(k){{return D.f1[k][dd[0]];}}));
-    [0,0.25,0.5,0.75,1.0].forEach(function(t){{
-      var x=padL+t*barW;
-      svg.appendChild(el("line",{{x1:x,y1:top+24,x2:x,y2:top+24+4*rowH,
-        stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}}));
-      svg.appendChild(el("text",{{x:x,y:top+24+4*rowH+16,"font-size":10,
-        "text-anchor":"middle"}},t.toFixed(2)));
-    }});
-    D.order.forEach(function(k,mi){{
-      var val=D.f1[k][dd[0]],y=top+28+mi*rowH,w=val*barW;
-      svg.appendChild(el("text",{{x:padL-10,y:y+14,"font-size":11.5,"text-anchor":"end",
-        fill:v("--ink"),"font-weight":D.labels[k].ours?500:700}},D.labels[k].short));
-      var r=el("rect",{{x:padL,y:y,width:Math.max(w,1),height:19,rx:2,fill:col(k)}});
-      bind(r,D.labels[k].name+"  |  "+dd[1]+"  |  weighted F1 "+val.toFixed(3)+
-        (val===best?"  (highest)":""));
-      svg.appendChild(r);
-      svg.appendChild(el("text",{{x:padL+w+9,y:y+14,"font-size":11.5,fill:v("--ink"),
-        "font-weight":val===best?700:600}},val.toFixed(3)));
-    }});
-  }});
-  document.getElementById("c-f1").appendChild(svg);
-}})();
-
-// ---- 2. tokens, two panels, two scales ------------------------------------------
-(function(){{
-  var W=860,half=W/2,padT=32,rowH=32,padB=30;
-  var H=padT+D.order.length*rowH+padB;
-  var svg=el("svg",{{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
-    "aria-label":"Input and output tokens per call"}});
-  function panel(x0,w,title,field,fmt){{
-    var padL=78,barW=w-padL-72;
-    var vals=D.order.map(function(k){{return D.tokens[k][field];}});
-    var maxV=Math.max.apply(null,vals)*1.05, lo=Math.min.apply(null,vals);
-    svg.appendChild(el("text",{{x:x0+padL,y:14,"font-size":10,"letter-spacing":"1.1",
-      fill:v("--ink-faint")}},title));
-    [0,maxV/2,maxV].forEach(function(t){{
-      var x=x0+padL+(t/maxV)*barW;
-      svg.appendChild(el("line",{{x1:x,y1:padT-8,x2:x,y2:padT+D.order.length*rowH-10,
-        stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}}));
-      svg.appendChild(el("text",{{x:x,y:H-12,"font-size":10,"text-anchor":"middle"}},fmt(t)));
-    }});
-    D.order.forEach(function(k,i){{
-      var val=D.tokens[k][field],y=padT+i*rowH,bw=(val/maxV)*barW;
-      svg.appendChild(el("text",{{x:x0+padL-10,y:y+14,"font-size":11,"text-anchor":"end",
-        fill:v("--ink"),"font-weight":D.labels[k].ours?500:700}},D.labels[k].short));
-      var r=el("rect",{{x:x0+padL,y:y,width:Math.max(bw,1),height:19,rx:2,
-        fill:val===lo?v("--s-best"):col(k)}});
-      bind(r,D.labels[k].name+"  |  "+Math.round(val).toLocaleString()+" "+
-        (field==="inp"?"input":"output")+" tokens per call"+(val===lo?"  (fewest)":""));
-      svg.appendChild(r);
-      svg.appendChild(el("text",{{x:x0+padL+bw+8,y:y+14,"font-size":11,fill:v("--ink"),
-        "font-weight":val===lo?700:600}},Math.round(val).toLocaleString()));
-    }});
-  }}
-  panel(0,half,"INPUT TOKENS / CALL","inp",function(t){{
-    return t===0?"0":Math.round(t/1000)+"k";}});
-  svg.appendChild(el("line",{{x1:half-8,y1:6,x2:half-8,y2:H-24,stroke:v("--hairline"),
-    "stroke-width":1}}));
-  panel(half,half,"OUTPUT TOKENS / CALL","out",function(t){{return String(Math.round(t));}});
-  document.getElementById("c-tok").appendChild(svg);
-}})();
-
-// ---- 3. latency: p50 bar, whisker to p95, marker at max -------------------------
-// Our three models only. Gemini ran at a different concurrency over a different network, so
-// charting it beside these would draw exactly the comparison the section says it cannot make.
-(function(){{
-  var OURS=D.order.filter(function(k){{return D.labels[k].ours;}});
-  var W=860,padL=112,padR=92,padT=30,rowH=40,padB=36;
-  var H=padT+OURS.length*rowH+padB,trackW=W-padL-padR;
-  var maxV=Math.max.apply(null,OURS.map(function(k){{return D.lat[k].max;}}))*1.06;
-  function X(s){{return padL+(s/maxV)*trackW;}}
-  var svg=el("svg",{{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
-    "aria-label":"End-to-end latency by model"}});
-  svg.appendChild(el("text",{{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
-    fill:v("--ink-faint")}},
-    "SECONDS PER CALL \\u2014 BAR = MEDIAN, LINE TO P95, MARKER = SLOWEST"));
-  [0,5,10,15,20,25].forEach(function(t){{
-    if(t>maxV)return;
-    svg.appendChild(el("line",{{x1:X(t),y1:padT-6,x2:X(t),y2:padT+OURS.length*rowH-12,
-      stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}}));
-    svg.appendChild(el("text",{{x:X(t),y:H-14,"font-size":10,"text-anchor":"middle"}},t+"s"));
-  }});
-  var fastest=Math.min.apply(null,OURS.map(function(k){{return D.lat[k].p50;}}));
-  OURS.forEach(function(k,i){{
-    var s=D.lat[k],y=padT+i*rowH;
-    svg.appendChild(el("text",{{x:padL-10,y:y+16,"font-size":11.5,"text-anchor":"end",
-      fill:v("--ink"),"font-weight":D.labels[k].ours?500:700}},D.labels[k].short));
-    var r=el("rect",{{x:padL,y:y+3,width:Math.max(X(s.p50)-padL,1),height:20,rx:2,fill:col(k)}});
-    bind(r,D.labels[k].name+"  |  median "+s.p50.toFixed(3)+"s, p95 "+s.p95.toFixed(3)+
-      "s, p99 "+s.p99.toFixed(3)+"s, slowest "+s.max.toFixed(3)+"s"+
-      (s.p50===fastest?"  (fastest median)":""));
-    svg.appendChild(r);
-    svg.appendChild(el("line",{{x1:X(s.p50),y1:y+13,x2:X(s.p95),y2:y+13,stroke:col(k),
-      "stroke-width":2,opacity:.55}}));
-    svg.appendChild(el("line",{{x1:X(s.p95),y1:y+6,x2:X(s.p95),y2:y+20,stroke:col(k),
-      "stroke-width":2}}));
-    svg.appendChild(el("circle",{{cx:X(s.max),cy:y+13,r:4,fill:v("--raised"),stroke:col(k),
-      "stroke-width":2}}));
-    // Each label sits beside the thing it describes. Putting the median value next to the
-    // max marker -- as this did -- reads as if the median were 25 seconds.
-    svg.appendChild(el("text",{{x:X(s.p50)-8,y:y+17,"font-size":11,"text-anchor":"end",
-      fill:v("--raised"),"font-weight":700}},s.p50.toFixed(1)+"s"));
-    svg.appendChild(el("text",{{x:X(s.max)+10,y:y+17,"font-size":10.5,
-      fill:v("--ink-faint")}},"max "+s.max.toFixed(1)+"s"));
-  }});
-  document.getElementById("c-lat").appendChild(svg);
-}})();
-
-// ---- 4. stability ---------------------------------------------------------------
-(function(){{
-  var W=860,padL=112,padR=100,padT=26,rowH=34,padB=34;
-  var H=padT+D.order.length*rowH+padB,barW=W-padL-padR;
-  var vals=D.order.map(function(k){{return D.stab[k]||0;}});
-  var maxV=Math.max.apply(null,vals)*1.15,best=Math.min.apply(null,vals);
-  var svg=el("svg",{{viewBox:"0 0 "+W+" "+H,width:W,height:H,role:"img",
-    "aria-label":"Scored label changes across three repeats"}});
-  svg.appendChild(el("text",{{x:padL,y:13,"font-size":9.5,"letter-spacing":"1.2",
-    fill:v("--ink-faint")}},"SCORED LABEL CHANGES ACROSS 3 IDENTICAL REPEATS (LOWER IS BETTER)"));
-  [0,10,20,30].forEach(function(t){{
-    if(t>maxV)return;
-    var x=padL+(t/maxV)*barW;
-    svg.appendChild(el("line",{{x1:x,y1:padT-6,x2:x,y2:padT+D.order.length*rowH-8,
-      stroke:t===0?v("--hairline-firm"):v("--hairline"),"stroke-width":1}}));
-    svg.appendChild(el("text",{{x:x,y:H-14,"font-size":10,"text-anchor":"middle"}},String(t)));
-  }});
-  D.order.forEach(function(k,i){{
-    var val=D.stab[k]||0,y=padT+i*rowH,w=(val/maxV)*barW;
-    svg.appendChild(el("text",{{x:padL-10,y:y+15,"font-size":11.5,"text-anchor":"end",
-      fill:v("--ink"),"font-weight":D.labels[k].ours?500:700}},D.labels[k].short));
-    var r=el("rect",{{x:padL,y:y,width:Math.max(w,1),height:21,rx:2,
-      fill:val===best?v("--s-best"):col(k)}});
-    bind(r,D.labels[k].name+" changed a scored label "+val+" times"+
-      (val===best?"  (most consistent)":""));
-    svg.appendChild(r);
-    svg.appendChild(el("text",{{x:padL+w+9,y:y+15,"font-size":12,fill:v("--ink"),
-      "font-weight":val===best?700:600}},String(val)+(val===best?"  most consistent":"")));
-  }});
-  document.getElementById("c-stab").appendChild(svg);
-}})();
-}})();
-</script>"""
+{chart_script}"""
 
 
 DIM_LABEL_PY = {"call_result": "Call outcome", "reason": "Reason", "product": "Product"}

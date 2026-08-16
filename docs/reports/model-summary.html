@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retention Labelling Evaluation &mdash; Summary</title>
+<style>
+:root{color-scheme:light dark;
+--bg:#FAF9F7;--card:#FFF;--ink:#12100E;--ink2:#5A554E;--ink3:#8B857C;
+--line:#E7E3DD;--line2:#CFC9C0;--hi:#F9E4DC;--hi-line:#E4795A;--grp:#F3F1ED;
+--serif:"Charter","Iowan Old Style",Cambria,Georgia,serif;
+--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+--mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+--bg:#131211;--card:#1B1A18;--ink:#EFEDE9;--ink2:#A9A39A;--ink3:#7C766D;
+--line:#2C2A27;--line2:#403D38;--hi:#3A211A;--hi-line:#C4664A;--grp:#211F1C}}
+:root[data-theme="dark"]{--bg:#131211;--card:#1B1A18;--ink:#EFEDE9;--ink2:#A9A39A;
+--ink3:#7C766D;--line:#2C2A27;--line2:#403D38;--hi:#3A211A;--hi-line:#C4664A;--grp:#211F1C}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);margin:0;
+padding:0 20px 60px;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto}
+header{padding:52px 0 8px}
+h1{font-family:var(--serif);font-size:clamp(30px,4.4vw,44px);line-height:1.06;
+letter-spacing:-.02em;font-weight:700;margin:0 0 18px;text-wrap:balance}
+.intro{font-family:var(--serif);font-size:clamp(16.5px,2vw,19px);line-height:1.55;
+color:var(--ink2);max-width:64ch;margin:0 0 14px}
+.intro a{color:inherit}
+.scope{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--hi-line);
+padding:16px 18px;margin:24px 0 8px;max-width:72ch;font-size:14px;color:var(--ink2)}
+.scope b{color:var(--ink)}
+.scroller{overflow-x:auto;margin-top:30px}
+table{border-collapse:collapse;width:100%;min-width:720px;background:var(--card);
+border:1px solid var(--line);font-variant-numeric:tabular-nums}
+th,td{padding:13px 14px;text-align:center;border-bottom:1px solid var(--line)}
+thead th{font-family:var(--serif);font-size:15px;font-weight:600;padding-top:18px;
+padding-bottom:16px;border-bottom:1px solid var(--line2)}
+thead th .m{display:block}
+thead th .s{display:block;font-family:var(--sans);font-size:10.5px;font-weight:400;
+letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-top:3px}
+tbody th[scope=row]{text-align:left;font-weight:600;font-size:13.5px;width:31%}
+.rl{display:block}
+.rs{display:block;font-size:11px;font-weight:400;color:var(--ink3);margin-top:2px;
+font-family:var(--mono)}
+td{font-family:var(--mono);font-size:14px;color:var(--ink2)}
+td.b{font-weight:700;color:var(--ink)}
+td.na{font-family:var(--sans);font-size:12px;font-style:italic;color:var(--ink3)}
+.hi{background:var(--hi)}
+thead th.hi{border-radius:3px 3px 0 0}
+tr.grp th{background:var(--grp);text-align:left;padding:14px;border-bottom:1px solid var(--line2);
+border-top:1px solid var(--line2)}
+.gn{display:block;font-family:var(--serif);font-size:15.5px;font-weight:700}
+.gc{display:block;font-size:11.5px;color:var(--ink3);font-weight:400;margin-top:2px}
+.dag{color:var(--hi-line);font-weight:700}
+tr.setb th[scope=row]{border-left:3px solid var(--line2)}
+tr.grp.setb th{border-left:3px solid var(--line2)}
+.notes{margin-top:22px;font-size:13.5px;color:var(--ink2);max-width:76ch}
+.notes p{margin:0 0 10px}
+.notes b{color:var(--ink)}
+footer{margin-top:38px;padding-top:16px;border-top:1px solid var(--line);
+font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}
+@media(max-width:620px){tbody th[scope=row]{width:auto}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <h1>Model evaluation &mdash; our test cases on our own GPUs</h1>
+  <p class="intro">An evaluation of four models on the Retention labelling task: the model we
+  use in production today against three running on True&rsquo;s own hardware. Every figure below
+  comes from <b>evaluation test cases we wrote</b> &mdash; no production traffic was involved.
+  It covers accuracy, how many tokens each model uses, how fast it answers and how consistent
+  it is.</p>
+  <div class="scope"><b>What this is, and what it is not.</b> An initial benchmark I built to
+  size up these models for our own use cases. <b>Every accuracy figure here is an upper
+  bound</b> &mdash; the test cases are written, and real calls are messier. It ranks these
+  models against each other; it does not predict production accuracy, and it is
+  <b>not a migration verdict</b> until we evaluate against real labelled calls.<br><br>
+  <b>Every item scored here is an evaluation test case</b> &mdash; a transcript we wrote
+  in-house for this purpose, with the right answer filled in by hand. Not production cases, no
+  customer data, no real transcripts, no IP.</div>
+</header>
+
+<div class="scroller">
+  <table>
+    <thead><tr><th></th><th class=""><span class="m">Gemini 2.5 Flash</span><span class="s">production today</span></th><th class="hi"><span class="m">Qwen3.8 27B</span><span class="s">our GPU &middot; candidate</span></th><th class=""><span class="m">Qwen3.6 27B</span><span class="s">our GPU, retired</span></th><th class=""><span class="m">Gemma 4 12B</span><span class="s">our GPU</span></th></tr></thead>
+    <tbody><tr class="grp"><th colspan=5><span class="gn">The coverage set</span><span class="gc">138 test cases &middot; One of everything that can go wrong &mdash; a baseline of straightforward calls plus eight isolated faults</span></th></tr><tr class=""><th scope=row><span class="rl">Call outcome</span><span class="rs">save / churn / unknown</span></th><td class="">0.955</td><td class="hi">0.966</td><td class="">0.962</td><td class="">0.929</td></tr><tr class=""><th scope=row><span class="rl">Reason</span><span class="rs">11 values, up to 3 per test case</span></th><td class="">0.838</td><td class="hi">0.834</td><td class="">0.821</td><td class="">0.792</td></tr><tr class=""><th scope=row><span class="rl">Product</span><span class="rs">exact set per test case</span></th><td class="">0.960</td><td class="hi">0.950</td><td class="">0.932</td><td class="">0.933</td></tr><tr class=""><th scope=row><span class="rl">Input tokens</span><span class="rs">per test case</span></th><td class="">2,990</td><td class="hi b">2,734</td><td class=" b">2,734</td><td class="">3,008</td></tr><tr class=""><th scope=row><span class="rl">Output tokens</span><span class="rs">per test case</span></th><td class=" b">209</td><td class="hi">230</td><td class="">230</td><td class="">253</td></tr><tr class=""><th scope=row><span class="rl">Median response time <span class="dag">&dagger;</span></span><span class="rs">not like-for-like &mdash; see below</span></th><td class="">2.05s</td><td class="hi">11.62s</td><td class="">11.38s</td><td class="">12.00s</td></tr><tr class=""><th scope=row><span class="rl">Answers that changed</span><span class="rs">across 3 identical repeats</span></th><td class="">29</td><td class="hi b">6</td><td class="">8</td><td class="">15</td></tr><tr class="grp setb"><th colspan=5><span class="gn">The messy-conversation set</span><span class="gc">50 test cases &middot; The sentences are easy; the conversation is the problem &mdash; reversals, hold and transfer, prior contact</span></th></tr><tr class="setb"><th scope=row><span class="rl">Call outcome</span><span class="rs">save / churn / unknown</span></th><td class="">0.951</td><td class="hi">0.930</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Reason</span><span class="rs">11 values, up to 3 per test case</span></th><td class="">0.831</td><td class="hi">0.833</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Product</span><span class="rs">exact set per test case</span></th><td class="">0.976</td><td class="hi">0.970</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Input tokens</span><span class="rs">per test case</span></th><td class="">2,823</td><td class="hi b">2,568</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Output tokens</span><span class="rs">per test case</span></th><td class=" b">223</td><td class="hi">241</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Median response time <span class="dag">&dagger;</span></span><span class="rs">not like-for-like &mdash; see below</span></th><td class="">2.11s</td><td class="hi">11.41s</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Answers that changed</span><span class="rs">across 3 identical repeats</span></th><td class=" b">0</td><td class="hi">2</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr></tbody>
+  </table>
+</div>
+
+<div class="notes">
+  <p><b>Do not read a higher accuracy figure as a win.</b> On almost every accuracy row the
+  models gave the same answer on nearly every test case, and where they differed there were too
+  few disagreements to call a winner at all &mdash; a 0.002 gap can rest on a single test
+  case. That is
+  why <b>the accuracy rows are not bolded</b>. The one difference that is statistically real:
+  <b>Gemma 4 12B is measurably behind</b> the production model on all three accuracy rows of
+  the coverage set. Everything else is indistinguishable or too close to judge. The full report
+  shows the working.</p>
+  <p><b>Higher is better</b> for the three accuracy rows; <b>lower is better</b> for tokens,
+  response time and answer changes. Bold marks the best figure only on the rows where the gap
+  is large enough to mean something &mdash; tokens and answer changes.</p>
+  <p><span class="dag">&dagger;</span> <b>Response time is not a like-for-like comparison</b>
+  and is not bolded for that reason. The production model was called over the public internet
+  at concurrency&nbsp;8; ours ran at concurrency&nbsp;4 against a single shared box. Those rows
+  measure deployments, not models.</p>
+  <p><b>Two models have no result on the second set, for different reasons.</b> Gemma was
+  attempted, and the GPU serving it was already down when the run started, so every request came back a server error. Its accuracy on that set is therefore
+  <b>unmeasured, not zero</b> &mdash; the outage is a fact about our box, not about Gemma.
+  Qwen3.6 was replaced on the host before this set existed, so it was never in that comparison.</p>
+</div>
+
+<footer>
+  Coverage set retention_v3 &middot; 138 test cases &middot; 414 API
+  calls per model. Messy-conversation set retention_challenge_v1 &middot; 50 test cases
+  &middot; 150 API calls per model.<br>
+  Both sets: same prompt (968a2974f0ce&hellip;), same scoring code
+  (9b4afc95c3d6&hellip;), 3 repeats. Accuracy is scored on
+  the first repeat; the answer-changes row is what the other two measure. Accuracy is weighted
+  F1. Figures copied without recomputation from the two published metrics files, each
+  independently re-derived from the raw per-call logs.
+</footer>
+</div>
+
+</body>
+</html>
