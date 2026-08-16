@@ -84,6 +84,13 @@ htmlcov/
 coverage.xml
 pip-log.txt
 
+# Generated Token Factory error logs. `scripts/token_factory_error_log.sh` writes a new
+# timestamped file on every run, and they accumulate fast while an outage is being chased.
+# A specific outage worth keeping is committed under a stable name instead -- see
+# docs/token-factory-outage-2026-08-16.txt, which cannot be regenerated once the backend
+# recovers.
+docs/token-factory-error-log-*.txt
+
 # Virtual environments
 .venv/
 .venv-asr/
