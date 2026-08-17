@@ -118,3 +118,104 @@ the finding and it gets written down next to this table — the verdicts are not
 match. If a genuinely new artifact class appears that is deterministic and lossless, it
 gets its own row here **first**, argued on the same principle, and only then is
 `ASR_SUBSTITUTIONS` considered.
+
+---
+
+## Findings recorded against this table
+
+Per the rule directly above: where a measured run disagrees with a verdict here, the
+disagreement is written down rather than used to revise the verdict.
+
+### 2026-08-17 — class 2 (word spaces): investigated, and NOT a finding
+
+**Retracted before it went anywhere. Recorded because the reasoning is worth not repeating.**
+
+Two arms were scored on the 20-call `asr-eval` audio set: Gemini 2.5 Flash, and Qwen3-ASR
+1.7B on True's GPU. Qwen3-ASR writes continuous Thai; the reference uses spaces as phrase
+separators. Measured: the reference carries 6,356 spaces (6.0% of its characters), Gemini
+emits 7,310, Qwen3-ASR 2,490 — an apparent deficit of ~3,866.
+
+The obvious inference is that class 2 charges that deficit as deletions and inflates one
+arm's error rate. **It does not.** `score_asr.chars()` is
+`[c for c in text if not c.isspace()]`, so every character-level figure this project has
+published was computed on whitespace-stripped text. Class 2 never fired on this set. The
+space counts above are real; the inference was an artifact of an analysis script that
+compared raw strings where the scorer compares stripped ones.
+
+Confirmed empirically after the fact: a whitespace-blind CER computed as a separate
+diagnostic returns a value **identical to `cer_norm` for both arms**, which is what
+"already stripped" looks like.
+
+Word error rate is a different matter, and there class 2 does bite: `tokenise()` runs on the
+spaced string, so a spaced reference and an unspaced hypothesis are cut into different tokens
+before comparison. Removing whitespace from both sides first moves Gemini's pooled WER from
+0.1031 to 0.0547. That is reported as the `wer_nospace` diagnostic, beside the contract
+figure and never instead of it, because the class 2 verdict stands and the hazard it names —
+stripping spaces in normalisation would corrupt the amount-beside-unit span that entity
+scoring depends on — is unaffected by any of this.
+
+### 2026-08-17 — number rendering: a real confound, no class exists for it
+
+The same investigation found the effect that is actually large, and this one is a genuine
+finding rather than a retraction.
+
+The reference spells numbers as they are spoken (`สิบแปด สิงหาคม`). Gemini matches it,
+because the transcription prompt written for it in this project asks it to. Qwen3-ASR writes
+digits (`18 สิงหาคม`). The number was heard correctly in both cases; only the rendering
+differs. Measured with the scorer's own semantics on the 19 non-degenerate calls:
+
+| arm | contract CER | with digit runs read as spoken | share of error |
+|---|---:|---:|---:|
+| Gemini 2.5 Flash | 0.0457 | 0.0382 | 16% |
+| Qwen3-ASR 1.7B | 0.1200 | 0.0570 | **52%** |
+
+So more than half of the internal arm's character error is a rendering convention, and the
+apparent gap between the arms is roughly 1.5x rather than the 2.6x the contract figures
+suggest.
+
+**No table row is proposed for this, and the scorer is not changed.** Reading `18` aloud is
+context-dependent — digit-by-digit for a phone number, a cardinal for an amount, a date form
+for a day — so unlike Thai numerals (class 3) the mapping is *not* total and unambiguous, and
+this document's governing principle refuses exactly that: forgive where the mapping is
+unambiguous, not where the reader has to choose. Entity recovery already measures whether the
+number itself survived, by either surface or value, and is the right metric for that question.
+
+**Consequence for anyone reading a published ASR figure.** Contract CER is comparable across
+arms and is the one every report leads with. For an arm whose number-rendering convention
+differs from the corpus, it is not on its own a statement about how well the model heard.
+
+### 2026-08-17 — entity surface matching was whitespace-sensitive: fixed
+
+Distinct from the two entries above, and the only one of the three that changes code.
+
+`score_entities` credits an entity when either the spoken surface form or the canonical value
+survives. The surface test was `normalise_thai(spoken) in normalise_thai(hypothesis)` — an
+exact substring match, spaces included. Since the reference writes entities with phrase
+spacing (`วันที่ สิบแปด สิงหาคม`) and an arm may write the identical words spaced differently,
+the test failed on entities that were plainly present.
+
+Measured on the committed runs before the fix:
+
+| arm | missed entities | recovered by ignoring spacing alone |
+|---|---:|---:|
+| Gemini 2.5 Flash | 151 | 136 — **90%** |
+| Qwen3-ASR 1.7B | 33 | 18 — 55% |
+
+So the published entity figures were substantially a spacing measurement, running opposite to
+the number-rendering confound recorded above and inflating the apparent gap between the arms
+from both ends at once.
+
+**Forgiven, under this document's own principle.** Thai has no inter-word spaces; whether the
+words are written with or against a space carries no content and required no guess by either
+arm. Removing whitespace from both sides of a substring test is total, symmetric, and cannot
+alter a non-space character — the same class as RET-122, already forgiven.
+
+**Class 2 is unaffected and stays `hard_miss`.** `normalise_thai` is not changed, so every
+character metric keeps its meaning. The hazard class 2's reasoning names — that stripping
+spaces would destroy RET-115's load-bearing span between an amount and its unit word — lives
+in `_numeral_beside_unit`, which is deliberately left running on spaced text. Only the surface
+substring test changes.
+
+Both existing arms were re-scored immediately, before any further arm was built, so that the
+scorer cannot be seen to have changed after a new arm's number was read.
+

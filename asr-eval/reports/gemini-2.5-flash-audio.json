@@ -1,22 +1,29 @@
 {
   "arm": "gemini-2.5-flash-audio",
-  "generated_at": "2026-08-17T08:55:52Z",
+  "generated_at": "2026-08-17T12:02:30Z",
   "hyp_dir": "..\\hypotheses\\gemini-2.5-flash-audio",
   "items_scored": 20,
   "ground_truth_files": 20,
   "ground_truth_sha256": "9ab5bcbb4e13a03407efc9d82d8f82a20614f07aff73b3dd883d1e5fdeb94424",
-  "scoring_code_sha256": "fad5932463bdbaecb890a526730428d44ac049e30be87d5f94d366a80ad8d14f",
+  "scoring_code_sha256": "bed27990c125861715a8c61f35b9feb98f7c3a1a3a6d6f1dbf183d8bd44d57fc",
   "normalisation": "asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, Thai digits, whitespace",
+  "contract_metric": "cer_norm",
+  "diagnostic_metrics": {
+    "cer_nospace": "whitespace removed from both sides. NOT the contract metric: ASR-EXPECTATION.md class 2 rules word spaces hard_miss, and stripping them in normalisation would corrupt the amount-beside-unit span entity scoring depends on. Reported because Thai has no inter-word spaces, so the gap between cer_norm and cer_nospace is authoring convention.",
+    "wer_nospace": "both sides unspaced before tokenising, so the tokeniser does the same job on each"
+  },
   "overall": {
     "cer_raw": 0.044320020908515195,
     "cer_norm": 0.044320020908515195,
     "wer_raw": 0.10306596733614772,
-    "wer_norm": 0.10306596733614772
+    "wer_norm": 0.10306596733614772,
+    "cer_nospace": 0.044320020908515195,
+    "wer_nospace": 0.05468883936224927
   },
   "entity_overall": {
-    "hit": 314,
+    "hit": 450,
     "total": 465,
-    "accuracy": 0.6752688172043011
+    "accuracy": 0.967741935483871
   },
   "insertions_per_nonspeech_min": {
     "measurable_items": 20,
@@ -27,105 +34,115 @@
     "clean_baseline": {
       "items": 2,
       "cer_norm": 0.0062626946513202435,
-      "entity_hit": 20,
+      "cer_nospace": 0.0062626946513202435,
+      "entity_hit": 32,
       "entity_total": 33
     },
     "code_switch": {
       "items": 2,
       "cer_norm": 0.01684552033940604,
-      "entity_hit": 22,
+      "cer_nospace": 0.01684552033940604,
+      "entity_hit": 31,
       "entity_total": 34
     },
     "disfluency": {
       "items": 2,
       "cer_norm": 0.12106038291605302,
-      "entity_hit": 29,
+      "cer_nospace": 0.12106038291605302,
+      "entity_hit": 47,
       "entity_total": 47
     },
     "far_field_low_gain": {
       "items": 2,
       "cer_norm": 0.11331069328253127,
-      "entity_hit": 26,
+      "cer_nospace": 0.11331069328253127,
+      "entity_hit": 51,
       "entity_total": 52
     },
     "hold_ivr": {
       "items": 2,
       "cer_norm": 0.035659055762758116,
-      "entity_hit": 31,
+      "cer_nospace": 0.035659055762758116,
+      "entity_hit": 49,
       "entity_total": 49
     },
     "long_context": {
       "items": 2,
       "cer_norm": 0.05287416869691183,
-      "entity_hit": 54,
+      "cer_nospace": 0.05287416869691183,
+      "entity_hit": 69,
       "entity_total": 69
     },
     "numeric_dense": {
       "items": 2,
       "cer_norm": 0.01015228426395939,
-      "entity_hit": 29,
+      "cer_nospace": 0.01015228426395939,
+      "entity_hit": 41,
       "entity_total": 46
     },
     "overlap_crosstalk": {
       "items": 2,
       "cer_norm": 0.015421408543625267,
-      "entity_hit": 41,
+      "cer_nospace": 0.015421408543625267,
+      "entity_hit": 53,
       "entity_total": 53
     },
     "proper_nouns": {
       "items": 2,
       "cer_norm": 0.012340683795266033,
-      "entity_hit": 27,
+      "cer_nospace": 0.012340683795266033,
+      "entity_hit": 41,
       "entity_total": 46
     },
     "telephony_noise": {
       "items": 2,
       "cer_norm": 0.00692979813196746,
-      "entity_hit": 35,
+      "cer_nospace": 0.00692979813196746,
+      "entity_hit": 36,
       "entity_total": 36
     }
   },
   "entity_by_type": {
     "amount": {
       "total": 118,
-      "hit": 101,
-      "surface": 88,
+      "hit": 118,
+      "surface": 105,
       "value": 13
     },
     "date": {
       "total": 88,
-      "hit": 22,
-      "surface": 15,
+      "hit": 80,
+      "surface": 73,
       "value": 7
     },
     "id": {
       "total": 64,
       "hit": 64,
-      "surface": 19,
+      "surface": 59,
       "value": 64
     },
     "months": {
       "total": 83,
-      "hit": 30,
-      "surface": 18,
+      "hit": 82,
+      "surface": 76,
       "value": 12
     },
     "package": {
       "total": 15,
-      "hit": 6,
-      "surface": 6,
+      "hit": 10,
+      "surface": 10,
       "value": 6
     },
     "phone": {
       "total": 88,
       "hit": 87,
-      "surface": 35,
+      "surface": 84,
       "value": 87
     },
     "speed": {
       "total": 9,
-      "hit": 4,
-      "surface": 4,
+      "hit": 9,
+      "surface": 9,
       "value": 0
     }
   },
@@ -163,6 +180,12 @@
         0
       ],
       "ref_words_norm": 692,
+      "cer_nospace_errors": 10,
+      "ref_chars_nospace": 2982,
+      "cer_nospace": 0.00335345405767941,
+      "wer_nospace_errors": 4,
+      "ref_words_nospace": 689,
+      "wer_nospace": 0.005805515239477504,
       "entity": {
         "per_type": {
           "package": {
@@ -174,7 +197,7 @@
           "phone": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "amount": {
@@ -185,63 +208,27 @@
           },
           "date": {
             "total": 4,
-            "hit": 0,
-            "surface": 0,
+            "hit": 4,
+            "surface": 4,
             "value": 0
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "id": {
             "total": 1,
             "hit": 1,
-            "surface": 0,
+            "surface": 1,
             "value": 1
           }
         },
         "total": 17,
-        "hit": 10,
-        "accuracy": 0.5882352941176471,
-        "missed": [
-          {
-            "type": "date",
-            "value": "2026-08-18",
-            "spoken": "วันที่ สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-18",
-            "spoken": "วันที่ สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-18",
-            "spoken": "วันที่ สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-18",
-            "spoken": "วันที่ สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          }
-        ]
+        "hit": 17,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 29.92,
       "insertions_per_nonspeech_min": 0.0
@@ -279,6 +266,12 @@
         49
       ],
       "ref_words_norm": 779,
+      "cer_nospace_errors": 24,
+      "ref_chars_nospace": 3233,
+      "cer_nospace": 0.007423445716053201,
+      "wer_nospace_errors": 10,
+      "ref_words_nospace": 774,
+      "wer_nospace": 0.012919896640826873,
       "entity": {
         "per_type": {
           "amount": {
@@ -290,7 +283,7 @@
           "phone": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "date": {
@@ -301,27 +294,21 @@
           },
           "months": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           }
         },
         "total": 15,
-        "hit": 14,
-        "accuracy": 0.9333333333333333,
-        "missed": [
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          }
-        ]
+        "hit": 15,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 35.43,
       "insertions_per_nonspeech_min": 82.99
@@ -359,6 +346,12 @@
         62
       ],
       "ref_words_norm": 896,
+      "cer_nospace_errors": 21,
+      "ref_chars_nospace": 3870,
+      "cer_nospace": 0.005426356589147287,
+      "wer_nospace_errors": 12,
+      "ref_words_nospace": 895,
+      "wer_nospace": 0.013407821229050279,
       "entity": {
         "per_type": {
           "speed": {
@@ -370,7 +363,7 @@
           "phone": {
             "total": 3,
             "hit": 3,
-            "surface": 2,
+            "surface": 3,
             "value": 3
           },
           "amount": {
@@ -381,53 +374,27 @@
           },
           "date": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "months": {
             "total": 2,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           }
         },
         "total": 12,
-        "hit": 7,
-        "accuracy": 0.5833333333333334,
-        "missed": [
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          }
-        ]
+        "hit": 12,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 36.73,
       "insertions_per_nonspeech_min": 101.27
@@ -465,12 +432,18 @@
         24
       ],
       "ref_words_norm": 968,
+      "cer_nospace_errors": 45,
+      "ref_chars_nospace": 4148,
+      "cer_nospace": 0.010848601735776278,
+      "wer_nospace_errors": 17,
+      "ref_words_nospace": 964,
+      "wer_nospace": 0.017634854771784232,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 4,
+            "surface": 5,
             "value": 5
           },
           "amount": {
@@ -481,58 +454,27 @@
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "date": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 20,
-        "hit": 14,
-        "accuracy": 0.7,
-        "missed": [
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-21",
-            "spoken": "วันที่ ยี่สิบเอ็ด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-21",
-            "spoken": "วันที่ ยี่สิบเอ็ด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-21",
-            "spoken": "วันที่ ยี่สิบเอ็ด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          }
-        ]
+        "hit": 20,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 48.41,
       "insertions_per_nonspeech_min": 29.74
@@ -570,6 +512,12 @@
         85
       ],
       "ref_words_norm": 1161,
+      "cer_nospace_errors": 56,
+      "ref_chars_nospace": 4847,
+      "cer_nospace": 0.011553538271095523,
+      "wer_nospace_errors": 31,
+      "ref_words_nospace": 1150,
+      "wer_nospace": 0.026956521739130435,
       "entity": {
         "per_type": {
           "phone": {
@@ -580,20 +528,20 @@
           },
           "package": {
             "total": 4,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "amount": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "date": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "months": {
@@ -610,8 +558,8 @@
           }
         },
         "total": 20,
-        "hit": 12,
-        "accuracy": 0.6,
+        "hit": 17,
+        "accuracy": 0.85,
         "missed": [
           {
             "type": "package",
@@ -619,39 +567,14 @@
             "spoken": "ทรูวิชั่นส์ โกลด์"
           },
           {
-            "type": "amount",
-            "value": "899",
-            "spoken": "แปดร้อยเก้าสิบเก้าบาท"
-          },
-          {
             "type": "package",
             "value": "ทรูวิชั่นส์ โกลด์",
             "spoken": "ทรูวิชั่นส์ โกลด์"
           },
           {
-            "type": "date",
-            "value": "2026-08-26",
-            "spoken": "วันที่ ยี่สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "package",
-            "value": "โปรเติมเงิน ทรูมูฟ เอช",
-            "spoken": "โปรเติมเงิน ทรูมูฟ เอช"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-26",
-            "spoken": "วันที่ ยี่สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
             "type": "package",
             "value": "ทรูวิชั่นส์ โกลด์",
             "spoken": "ทรูวิชั่นส์ โกลด์"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-26",
-            "spoken": "วันที่ ยี่สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
           }
         ]
       },
@@ -691,6 +614,12 @@
         4
       ],
       "ref_words_norm": 1213,
+      "cer_nospace_errors": 1142,
+      "ref_chars_nospace": 5032,
+      "cer_nospace": 0.2269475357710652,
+      "wer_nospace_errors": 287,
+      "ref_words_nospace": 1210,
+      "wer_nospace": 0.2371900826446281,
       "entity": {
         "per_type": {
           "amount": {
@@ -702,95 +631,44 @@
           "phone": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "speed": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "package": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "months": {
             "total": 4,
-            "hit": 0,
-            "surface": 0,
+            "hit": 4,
+            "surface": 4,
             "value": 0
           },
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "date": {
             "total": 2,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           }
         },
         "total": 30,
-        "hit": 20,
-        "accuracy": 0.6666666666666666,
-        "missed": [
-          {
-            "type": "speed",
-            "value": "200",
-            "spoken": "สองร้อย เมกะบิต"
-          },
-          {
-            "type": "package",
-            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
-            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "package",
-            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
-            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "package",
-            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
-            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          }
-        ]
+        "hit": 30,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 50.02,
       "insertions_per_nonspeech_min": 4.8
@@ -828,18 +706,24 @@
         2
       ],
       "ref_words_norm": 1389,
+      "cer_nospace_errors": 71,
+      "ref_chars_nospace": 5878,
+      "cer_nospace": 0.012078938414426676,
+      "wer_nospace_errors": 26,
+      "ref_words_nospace": 1377,
+      "wer_nospace": 0.01888162672476398,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "amount": {
             "total": 6,
-            "hit": 0,
-            "surface": 0,
+            "hit": 6,
+            "surface": 6,
             "value": 0
           },
           "package": {
@@ -857,7 +741,7 @@
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "date": {
@@ -868,40 +752,9 @@
           }
         },
         "total": 26,
-        "hit": 20,
-        "accuracy": 0.7692307692307693,
-        "missed": [
-          {
-            "type": "amount",
-            "value": "349",
-            "spoken": "สามร้อยสี่สิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "349",
-            "spoken": "สามร้อยสี่สิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "349",
-            "spoken": "สามร้อยสี่สิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "349",
-            "spoken": "สามร้อยสี่สิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "349",
-            "spoken": "สามร้อยสี่สิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "80",
-            "spoken": "แปดสิบบาท"
-          }
-        ]
+        "hit": 26,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 47.17,
       "insertions_per_nonspeech_min": 2.54
@@ -939,6 +792,12 @@
         42
       ],
       "ref_words_norm": 1762,
+      "cer_nospace_errors": 17,
+      "ref_chars_nospace": 7511,
+      "cer_nospace": 0.002263347090933298,
+      "wer_nospace_errors": 10,
+      "ref_words_nospace": 1757,
+      "wer_nospace": 0.005691519635742743,
       "entity": {
         "per_type": {
           "phone": {
@@ -955,14 +814,14 @@
           },
           "months": {
             "total": 11,
-            "hit": 0,
-            "surface": 0,
+            "hit": 11,
+            "surface": 11,
             "value": 0
           },
           "date": {
             "total": 4,
-            "hit": 0,
-            "surface": 0,
+            "hit": 4,
+            "surface": 4,
             "value": 0
           },
           "id": {
@@ -973,85 +832,9 @@
           }
         },
         "total": 35,
-        "hit": 20,
-        "accuracy": 0.5714285714285714,
-        "missed": [
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-16",
-            "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-16",
-            "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-16",
-            "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-16",
-            "spoken": "วันที่ สิบหก สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          }
-        ]
+        "hit": 35,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 81.69,
       "insertions_per_nonspeech_min": 30.85
@@ -1089,24 +872,30 @@
         6
       ],
       "ref_words_norm": 1485,
+      "cer_nospace_errors": 69,
+      "ref_chars_nospace": 6322,
+      "cer_nospace": 0.01091426763682379,
+      "wer_nospace_errors": 31,
+      "ref_words_nospace": 1477,
+      "wer_nospace": 0.02098849018280298,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "months": {
             "total": 6,
-            "hit": 0,
-            "surface": 0,
+            "hit": 6,
+            "surface": 6,
             "value": 0
           },
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "amount": {
@@ -1117,81 +906,15 @@
           },
           "date": {
             "total": 7,
-            "hit": 0,
-            "surface": 0,
+            "hit": 7,
+            "surface": 7,
             "value": 0
           }
         },
         "total": 25,
-        "hit": 12,
-        "accuracy": 0.48,
-        "missed": [
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          },
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          },
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          }
-        ]
+        "hit": 25,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 68.03,
       "insertions_per_nonspeech_min": 5.29
@@ -1229,6 +952,12 @@
         97
       ],
       "ref_words_norm": 1357,
+      "cer_nospace_errors": 224,
+      "ref_chars_nospace": 5861,
+      "cer_nospace": 0.0382187340044361,
+      "wer_nospace_errors": 54,
+      "ref_words_nospace": 1349,
+      "wer_nospace": 0.04002965159377316,
       "entity": {
         "per_type": {
           "phone": {
@@ -1245,88 +974,27 @@
           },
           "amount": {
             "total": 7,
-            "hit": 3,
-            "surface": 3,
+            "hit": 7,
+            "surface": 7,
             "value": 0
           },
           "date": {
             "total": 5,
-            "hit": 0,
-            "surface": 0,
+            "hit": 5,
+            "surface": 5,
             "value": 0
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           }
         },
         "total": 23,
-        "hit": 11,
-        "accuracy": 0.4782608695652174,
-        "missed": [
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-15",
-            "spoken": "วันที่ สิบห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-15",
-            "spoken": "วันที่ สิบห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-15",
-            "spoken": "วันที่ สิบห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-15",
-            "spoken": "วันที่ สิบห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-15",
-            "spoken": "วันที่ สิบห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          }
-        ]
+        "hit": 23,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 123.65,
       "insertions_per_nonspeech_min": 47.07
@@ -1364,6 +1032,12 @@
         34
       ],
       "ref_words_norm": 676,
+      "cer_nospace_errors": 27,
+      "ref_chars_nospace": 2926,
+      "cer_nospace": 0.009227614490772385,
+      "wer_nospace_errors": 10,
+      "ref_words_nospace": 674,
+      "wer_nospace": 0.01483679525222552,
       "entity": {
         "per_type": {
           "phone": {
@@ -1380,8 +1054,8 @@
           },
           "speed": {
             "total": 2,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           },
           "months": {
@@ -1393,49 +1067,24 @@
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           },
           "date": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           }
         },
         "total": 16,
-        "hit": 10,
-        "accuracy": 0.625,
+        "hit": 15,
+        "accuracy": 0.9375,
         "missed": [
-          {
-            "type": "speed",
-            "value": "200",
-            "spoken": "สองร้อย เมกะบิต"
-          },
           {
             "type": "months",
             "value": "3",
             "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "speed",
-            "value": "200",
-            "spoken": "สองร้อย เมกะบิต"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
           }
         ]
       },
@@ -1475,6 +1124,12 @@
         0
       ],
       "ref_words_norm": 807,
+      "cer_nospace_errors": 22,
+      "ref_chars_nospace": 3405,
+      "cer_nospace": 0.0064610866372980915,
+      "wer_nospace_errors": 16,
+      "ref_words_nospace": 804,
+      "wer_nospace": 0.01990049751243781,
       "entity": {
         "per_type": {
           "speed": {
@@ -1486,7 +1141,7 @@
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "months": {
@@ -1498,7 +1153,7 @@
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "date": {
@@ -1555,12 +1210,18 @@
         1
       ],
       "ref_words_norm": 982,
+      "cer_nospace_errors": 114,
+      "ref_chars_nospace": 4144,
+      "cer_nospace": 0.02750965250965251,
+      "wer_nospace_errors": 38,
+      "ref_words_nospace": 977,
+      "wer_nospace": 0.038894575230296824,
       "entity": {
         "per_type": {
           "phone": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "amount": {
@@ -1571,14 +1232,14 @@
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "speed": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "package": {
@@ -1596,38 +1257,18 @@
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 22,
-        "hit": 15,
-        "accuracy": 0.6818181818181818,
+        "hit": 19,
+        "accuracy": 0.8636363636363636,
         "missed": [
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "speed",
-            "value": "200",
-            "spoken": "สองร้อย เมกะบิต"
-          },
           {
             "type": "date",
             "value": "2026-08-15",
             "spoken": "วันที่ สิบห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
           },
           {
             "type": "date",
@@ -1677,6 +1318,12 @@
         2
       ],
       "ref_words_norm": 1033,
+      "cer_nospace_errors": 41,
+      "ref_chars_nospace": 4323,
+      "cer_nospace": 0.009484154522322461,
+      "wer_nospace_errors": 33,
+      "ref_words_nospace": 1031,
+      "wer_nospace": 0.03200775945683802,
       "entity": {
         "per_type": {
           "amount": {
@@ -1688,13 +1335,13 @@
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "months": {
             "total": 6,
-            "hit": 0,
-            "surface": 0,
+            "hit": 6,
+            "surface": 6,
             "value": 0
           },
           "date": {
@@ -1706,18 +1353,23 @@
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 26,
-        "hit": 15,
-        "accuracy": 0.5769230769230769,
+        "hit": 21,
+        "accuracy": 0.8076923076923077,
         "missed": [
           {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
+            "type": "date",
+            "value": "2026-08-08",
+            "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-08",
+            "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
           },
           {
             "type": "date",
@@ -1730,44 +1382,9 @@
             "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
           },
           {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
             "type": "date",
             "value": "2026-08-08",
             "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-08",
-            "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-08",
-            "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
           }
         ]
       },
@@ -1807,6 +1424,12 @@
         28
       ],
       "ref_words_norm": 1207,
+      "cer_nospace_errors": 66,
+      "ref_chars_nospace": 5039,
+      "cer_nospace": 0.013097836872395317,
+      "wer_nospace_errors": 26,
+      "ref_words_nospace": 1196,
+      "wer_nospace": 0.021739130434782608,
       "entity": {
         "per_type": {
           "package": {
@@ -1818,7 +1441,7 @@
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 3,
+            "surface": 5,
             "value": 5
           },
           "amount": {
@@ -1829,20 +1452,20 @@
           },
           "speed": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "date": {
             "total": 6,
-            "hit": 0,
-            "surface": 0,
+            "hit": 6,
+            "surface": 6,
             "value": 0
           },
           "months": {
             "total": 2,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           },
           "id": {
@@ -1853,8 +1476,8 @@
           }
         },
         "total": 26,
-        "hit": 15,
-        "accuracy": 0.5769230769230769,
+        "hit": 24,
+        "accuracy": 0.9230769230769231,
         "missed": [
           {
             "type": "package",
@@ -1865,51 +1488,6 @@
             "type": "package",
             "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
             "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
-          },
-          {
-            "type": "speed",
-            "value": "300",
-            "spoken": "สามร้อย เมกะบิต"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-19",
-            "spoken": "วันที่ สิบเก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-19",
-            "spoken": "วันที่ สิบเก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-19",
-            "spoken": "วันที่ สิบเก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-19",
-            "spoken": "วันที่ สิบเก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-19",
-            "spoken": "วันที่ สิบเก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-19",
-            "spoken": "วันที่ สิบเก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "12",
-            "spoken": "สิบสอง เดือน"
           }
         ]
       },
@@ -1949,12 +1527,18 @@
         32
       ],
       "ref_words_norm": 1236,
+      "cer_nospace_errors": 91,
+      "ref_chars_nospace": 5153,
+      "cer_nospace": 0.017659615757810984,
+      "wer_nospace_errors": 44,
+      "ref_words_nospace": 1227,
+      "wer_nospace": 0.035859820700896494,
       "entity": {
         "per_type": {
           "phone": {
             "total": 4,
             "hit": 4,
-            "surface": 3,
+            "surface": 4,
             "value": 4
           },
           "amount": {
@@ -1965,68 +1549,27 @@
           },
           "date": {
             "total": 5,
-            "hit": 0,
-            "surface": 0,
+            "hit": 5,
+            "surface": 5,
             "value": 0
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           }
         },
         "total": 17,
-        "hit": 9,
-        "accuracy": 0.5294117647058824,
-        "missed": [
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "months",
-            "value": "24",
-            "spoken": "ยี่สิบสี่ เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-28",
-            "spoken": "วันที่ ยี่สิบแปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          }
-        ]
+        "hit": 17,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 58.69,
       "insertions_per_nonspeech_min": 32.72
@@ -2064,12 +1607,18 @@
         4
       ],
       "ref_words_norm": 1459,
+      "cer_nospace_errors": 116,
+      "ref_chars_nospace": 6248,
+      "cer_nospace": 0.01856594110115237,
+      "wer_nospace_errors": 40,
+      "ref_words_nospace": 1453,
+      "wer_nospace": 0.02752924982794219,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "amount": {
@@ -2081,57 +1630,26 @@
           "months": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 6,
             "value": 6
           },
           "date": {
             "total": 6,
-            "hit": 0,
-            "surface": 0,
+            "hit": 6,
+            "surface": 6,
             "value": 0
           },
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 27,
-        "hit": 21,
-        "accuracy": 0.7777777777777778,
-        "missed": [
-          {
-            "type": "date",
-            "value": "2026-08-05",
-            "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-05",
-            "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-05",
-            "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-05",
-            "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-05",
-            "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-05",
-            "spoken": "วันที่ ห้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          }
-        ]
+        "hit": 27,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 42.1,
       "insertions_per_nonspeech_min": 5.7
@@ -2169,6 +1687,12 @@
         50
       ],
       "ref_words_norm": 1803,
+      "cer_nospace_errors": 786,
+      "ref_chars_nospace": 7676,
+      "cer_nospace": 0.10239708181344451,
+      "wer_nospace_errors": 230,
+      "ref_words_nospace": 1797,
+      "wer_nospace": 0.12799109627156371,
       "entity": {
         "per_type": {
           "date": {
@@ -2243,18 +1767,24 @@
         2
       ],
       "ref_words_norm": 1334,
+      "cer_nospace_errors": 1299,
+      "ref_chars_nospace": 5751,
+      "cer_nospace": 0.22587376108502868,
+      "wer_nospace_errors": 309,
+      "ref_words_nospace": 1326,
+      "wer_nospace": 0.2330316742081448,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "date": {
             "total": 7,
-            "hit": 0,
-            "surface": 0,
+            "hit": 7,
+            "surface": 7,
             "value": 0
           },
           "amount": {
@@ -2265,81 +1795,21 @@
           },
           "months": {
             "total": 5,
-            "hit": 0,
-            "surface": 0,
+            "hit": 5,
+            "surface": 5,
             "value": 0
           },
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           }
         },
         "total": 27,
-        "hit": 14,
-        "accuracy": 0.5185185185185185,
+        "hit": 26,
+        "accuracy": 0.9629629629629629,
         "missed": [
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-10",
-            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
           {
             "type": "phone",
             "value": "0810000339",
@@ -2383,6 +1853,12 @@
         119
       ],
       "ref_words_norm": 1212,
+      "cer_nospace_errors": 168,
+      "ref_chars_nospace": 5132,
+      "cer_nospace": 0.03273577552611068,
+      "wer_nospace_errors": 48,
+      "ref_words_nospace": 1205,
+      "wer_nospace": 0.03983402489626556,
       "entity": {
         "per_type": {
           "date": {
@@ -2405,8 +1881,8 @@
           },
           "amount": {
             "total": 8,
-            "hit": 2,
-            "surface": 2,
+            "hit": 8,
+            "surface": 8,
             "value": 0
           },
           "id": {
@@ -2417,43 +1893,14 @@
           }
         },
         "total": 26,
-        "hit": 20,
-        "accuracy": 0.7692307692307693,
-        "missed": [
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "amount",
-            "value": "699",
-            "spoken": "หกร้อยเก้าสิบเก้าบาท"
-          }
-        ]
+        "hit": 26,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 125.64,
       "insertions_per_nonspeech_min": 56.83
     }
-  ]
+  ],
+  "entity_rescored_at": "2026-08-17T12:25:07Z",
+  "entity_rescore_note": "Entity fields recomputed after the surface match was made whitespace-insensitive; character and word metrics are unchanged because score_item derives them independently of score_entities. Verified: a full re-score of one item agrees with this record on every field."
 }

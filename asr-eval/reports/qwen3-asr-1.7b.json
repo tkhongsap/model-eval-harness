@@ -1,22 +1,29 @@
 {
   "arm": "qwen3-asr-1.7b",
-  "generated_at": "2026-08-17T09:11:17Z",
+  "generated_at": "2026-08-17T11:55:05Z",
   "hyp_dir": "..\\hypotheses\\qwen3-asr-1.7b",
   "items_scored": 20,
   "ground_truth_files": 20,
   "ground_truth_sha256": "9ab5bcbb4e13a03407efc9d82d8f82a20614f07aff73b3dd883d1e5fdeb94424",
-  "scoring_code_sha256": "fad5932463bdbaecb890a526730428d44ac049e30be87d5f94d366a80ad8d14f",
+  "scoring_code_sha256": "bed27990c125861715a8c61f35b9feb98f7c3a1a3a6d6f1dbf183d8bd44d57fc",
   "normalisation": "asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, Thai digits, whitespace",
+  "contract_metric": "cer_norm",
+  "diagnostic_metrics": {
+    "cer_nospace": "whitespace removed from both sides. NOT the contract metric: ASR-EXPECTATION.md class 2 rules word spaces hard_miss, and stripping them in normalisation would corrupt the amount-beside-unit span entity scoring depends on. Reported because Thai has no inter-word spaces, so the gap between cer_norm and cer_nospace is authoring convention.",
+    "wer_nospace": "both sides unspaced before tokenising, so the tokeniser does the same job on each"
+  },
   "overall": {
     "cer_raw": 0.6731436153637378,
     "cer_norm": 0.6729827806314773,
     "wer_raw": 0.7886657285403608,
-    "wer_norm": 0.7884951601211035
+    "wer_norm": 0.7884951601211035,
+    "cer_nospace": 0.6729827806314773,
+    "wer_nospace": 0.7830447454140237
   },
   "entity_overall": {
-    "hit": 432,
+    "hit": 450,
     "total": 465,
-    "accuracy": 0.9290322580645162
+    "accuracy": 0.967741935483871
   },
   "insertions_per_nonspeech_min": {
     "measurable_items": 20,
@@ -27,61 +34,71 @@
     "clean_baseline": {
       "items": 2,
       "cer_norm": 0.12000677048070413,
-      "entity_hit": 29,
+      "cer_nospace": 0.12000677048070413,
+      "entity_hit": 32,
       "entity_total": 33
     },
     "code_switch": {
       "items": 2,
       "cer_norm": 0.15959570751185426,
+      "cer_nospace": 0.15959570751185426,
       "entity_hit": 32,
       "entity_total": 34
     },
     "disfluency": {
       "items": 2,
       "cer_norm": 0.08816887579774178,
-      "entity_hit": 42,
+      "cer_nospace": 0.08816887579774178,
+      "entity_hit": 47,
       "entity_total": 47
     },
     "far_field_low_gain": {
       "items": 2,
       "cer_norm": 0.13219580882961982,
+      "cer_nospace": 0.13219580882961982,
       "entity_hit": 52,
       "entity_total": 52
     },
     "hold_ivr": {
       "items": 2,
       "cer_norm": 0.12880924224506504,
+      "cer_nospace": 0.12880924224506504,
       "entity_hit": 49,
       "entity_total": 49
     },
     "long_context": {
       "items": 2,
       "cer_norm": 0.09093303483242246,
+      "cer_nospace": 0.09093303483242246,
       "entity_hit": 69,
       "entity_total": 69
     },
     "numeric_dense": {
       "items": 2,
       "cer_norm": 0.1319796954314721,
-      "entity_hit": 42,
+      "cer_nospace": 0.1319796954314721,
+      "entity_hit": 45,
       "entity_total": 46
     },
     "overlap_crosstalk": {
       "items": 2,
       "cer_norm": 0.12007257133432295,
+      "cer_nospace": 0.12007257133432295,
       "entity_hit": 50,
       "entity_total": 53
     },
     "proper_nouns": {
       "items": 2,
       "cer_norm": 0.12876795468339064,
-      "entity_hit": 34,
+      "cer_nospace": 0.12876795468339064,
+      "entity_hit": 40,
       "entity_total": 46
     },
     "telephony_noise": {
       "items": 2,
       "cer_norm": 8.409611328713467,
-      "entity_hit": 33,
+      "cer_nospace": 8.409611328713467,
+      "entity_hit": 34,
       "entity_total": 36
     }
   },
@@ -94,38 +111,38 @@
     },
     "date": {
       "total": 88,
-      "hit": 86,
-      "surface": 3,
+      "hit": 88,
+      "surface": 63,
       "value": 86
     },
     "id": {
       "total": 64,
       "hit": 64,
-      "surface": 0,
+      "surface": 49,
       "value": 64
     },
     "months": {
       "total": 83,
-      "hit": 75,
-      "surface": 0,
+      "hit": 83,
+      "surface": 72,
       "value": 75
     },
     "package": {
       "total": 15,
-      "hit": 0,
-      "surface": 0,
+      "hit": 5,
+      "surface": 5,
       "value": 0
     },
     "phone": {
       "total": 88,
       "hit": 85,
-      "surface": 0,
+      "surface": 38,
       "value": 85
     },
     "speed": {
       "total": 9,
-      "hit": 6,
-      "surface": 0,
+      "hit": 9,
+      "surface": 6,
       "value": 6
     }
   },
@@ -163,6 +180,12 @@
         6
       ],
       "ref_words_norm": 692,
+      "cer_nospace_errors": 457,
+      "ref_chars_nospace": 2982,
+      "cer_nospace": 0.15325285043594902,
+      "wer_nospace_errors": 137,
+      "ref_words_nospace": 689,
+      "wer_nospace": 0.1988388969521045,
       "entity": {
         "per_type": {
           "package": {
@@ -192,7 +215,7 @@
           "months": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "id": {
@@ -249,6 +272,12 @@
         9
       ],
       "ref_words_norm": 779,
+      "cer_nospace_errors": 401,
+      "ref_chars_nospace": 3233,
+      "cer_nospace": 0.12403340550572224,
+      "wer_nospace_errors": 142,
+      "ref_words_nospace": 774,
+      "wer_nospace": 0.1834625322997416,
       "entity": {
         "per_type": {
           "amount": {
@@ -271,20 +300,20 @@
           },
           "months": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           }
         },
         "total": 15,
-        "hit": 12,
-        "accuracy": 0.8,
+        "hit": 13,
+        "accuracy": 0.8666666666666667,
         "missed": [
           {
             "type": "phone",
@@ -295,11 +324,6 @@
             "type": "phone",
             "value": "0810000302",
             "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สอง"
-          },
-          {
-            "type": "months",
-            "value": "6",
-            "spoken": "หก เดือน"
           }
         ]
       },
@@ -339,6 +363,12 @@
         17
       ],
       "ref_words_norm": 896,
+      "cer_nospace_errors": 299,
+      "ref_chars_nospace": 3870,
+      "cer_nospace": 0.0772609819121447,
+      "wer_nospace_errors": 125,
+      "ref_words_nospace": 895,
+      "wer_nospace": 0.13966480446927373,
       "entity": {
         "per_type": {
           "speed": {
@@ -350,7 +380,7 @@
           "phone": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 1,
             "value": 3
           },
           "amount": {
@@ -362,19 +392,19 @@
           "date": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "months": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           }
         },
@@ -419,12 +449,18 @@
         16
       ],
       "ref_words_norm": 968,
+      "cer_nospace_errors": 557,
+      "ref_chars_nospace": 4148,
+      "cer_nospace": 0.13428158148505304,
+      "wer_nospace_errors": 166,
+      "ref_words_nospace": 964,
+      "wer_nospace": 0.17219917012448133,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 4,
             "value": 5
           },
           "amount": {
@@ -435,8 +471,8 @@
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "date": {
@@ -448,30 +484,14 @@
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 20,
-        "hit": 17,
-        "accuracy": 0.85,
-        "missed": [
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          }
-        ]
+        "hit": 20,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 48.41,
       "insertions_per_nonspeech_min": 19.83
@@ -509,12 +529,18 @@
         13
       ],
       "ref_words_norm": 1161,
+      "cer_nospace_errors": 629,
+      "ref_chars_nospace": 4847,
+      "cer_nospace": 0.1297709923664122,
+      "wer_nospace_errors": 199,
+      "ref_words_nospace": 1150,
+      "wer_nospace": 0.17304347826086958,
       "entity": {
         "per_type": {
           "phone": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 1,
             "value": 6
           },
           "package": {
@@ -537,20 +563,20 @@
           },
           "months": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 20,
-        "hit": 13,
-        "accuracy": 0.65,
+        "hit": 16,
+        "accuracy": 0.8,
         "missed": [
           {
             "type": "package",
@@ -568,24 +594,9 @@
             "spoken": "โปรเติมเงิน ทรูมูฟ เอช"
           },
           {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
             "type": "package",
             "value": "ทรูวิชั่นส์ โกลด์",
             "spoken": "ทรูวิชั่นส์ โกลด์"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
           }
         ]
       },
@@ -625,6 +636,12 @@
         19
       ],
       "ref_words_norm": 1213,
+      "cer_nospace_errors": 362,
+      "ref_chars_nospace": 5032,
+      "cer_nospace": 0.071939586645469,
+      "wer_nospace_errors": 168,
+      "ref_words_nospace": 1210,
+      "wer_nospace": 0.13884297520661157,
       "entity": {
         "per_type": {
           "amount": {
@@ -636,7 +653,7 @@
           "phone": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "speed": {
@@ -647,59 +664,33 @@
           },
           "package": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 3,
+            "surface": 3,
             "value": 0
           },
           "months": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "date": {
             "total": 2,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           }
         },
         "total": 30,
-        "hit": 25,
-        "accuracy": 0.8333333333333334,
-        "missed": [
-          {
-            "type": "package",
-            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
-            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
-          },
-          {
-            "type": "package",
-            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
-            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "date",
-            "value": "2026-08-09",
-            "spoken": "วันที่ เก้า สิงหาคม สองพันห้าร้อยหกสิบเก้า"
-          },
-          {
-            "type": "package",
-            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
-            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
-          }
-        ]
+        "hit": 30,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 50.02,
       "insertions_per_nonspeech_min": 22.79
@@ -737,12 +728,18 @@
         20
       ],
       "ref_words_norm": 1389,
+      "cer_nospace_errors": 581,
+      "ref_chars_nospace": 5878,
+      "cer_nospace": 0.09884314392650562,
+      "wer_nospace_errors": 195,
+      "ref_words_nospace": 1377,
+      "wer_nospace": 0.14161220043572983,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "amount": {
@@ -760,19 +757,19 @@
           "months": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "date": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           }
         },
@@ -833,12 +830,18 @@
         41
       ],
       "ref_words_norm": 1762,
+      "cer_nospace_errors": 768,
+      "ref_chars_nospace": 7511,
+      "cer_nospace": 0.10225003328451604,
+      "wer_nospace_errors": 234,
+      "ref_words_nospace": 1757,
+      "wer_nospace": 0.1331815594763802,
       "entity": {
         "per_type": {
           "phone": {
             "total": 8,
             "hit": 8,
-            "surface": 0,
+            "surface": 5,
             "value": 8
           },
           "amount": {
@@ -850,19 +853,19 @@
           "months": {
             "total": 11,
             "hit": 11,
-            "surface": 0,
+            "surface": 11,
             "value": 11
           },
           "date": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
@@ -907,12 +910,18 @@
         22
       ],
       "ref_words_norm": 1485,
+      "cer_nospace_errors": 763,
+      "ref_chars_nospace": 6322,
+      "cer_nospace": 0.1206896551724138,
+      "wer_nospace_errors": 257,
+      "ref_words_nospace": 1477,
+      "wer_nospace": 0.17400135409614081,
       "entity": {
         "per_type": {
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 1,
             "value": 5
           },
           "months": {
@@ -924,7 +933,7 @@
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           },
           "amount": {
@@ -981,6 +990,12 @@
         39
       ],
       "ref_words_norm": 1357,
+      "cer_nospace_errors": 778,
+      "ref_chars_nospace": 5861,
+      "cer_nospace": 0.1327418529261218,
+      "wer_nospace_errors": 231,
+      "ref_words_nospace": 1349,
+      "wer_nospace": 0.17123795404002964,
       "entity": {
         "per_type": {
           "phone": {
@@ -992,7 +1007,7 @@
           "id": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "amount": {
@@ -1004,13 +1019,13 @@
           "date": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "months": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
@@ -1055,12 +1070,18 @@
         2
       ],
       "ref_words_norm": 676,
+      "cer_nospace_errors": 252,
+      "ref_chars_nospace": 2926,
+      "cer_nospace": 0.0861244019138756,
+      "wer_nospace_errors": 86,
+      "ref_words_nospace": 674,
+      "wer_nospace": 0.12759643916913946,
       "entity": {
         "per_type": {
           "phone": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "amount": {
@@ -1071,49 +1092,33 @@
           },
           "speed": {
             "total": 2,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           },
           "months": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           },
           "date": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
         "total": 16,
-        "hit": 13,
-        "accuracy": 0.8125,
-        "missed": [
-          {
-            "type": "speed",
-            "value": "200",
-            "spoken": "สองร้อย เมกะบิต"
-          },
-          {
-            "type": "months",
-            "value": "3",
-            "spoken": "สาม เดือน"
-          },
-          {
-            "type": "speed",
-            "value": "200",
-            "spoken": "สองร้อย เมกะบิต"
-          }
-        ]
+        "hit": 16,
+        "accuracy": 1.0,
+        "missed": []
       },
       "nonspeech_s": 36.12,
       "insertions_per_nonspeech_min": 3.32
@@ -1151,18 +1156,24 @@
         14347
       ],
       "ref_words_norm": 807,
+      "cer_nospace_errors": 55422,
+      "ref_chars_nospace": 3405,
+      "cer_nospace": 16.276651982378855,
+      "wer_nospace_errors": 14465,
+      "ref_words_nospace": 804,
+      "wer_nospace": 17.991293532338307,
       "entity": {
         "per_type": {
           "speed": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "months": {
@@ -1180,7 +1191,7 @@
           "date": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "amount": {
@@ -1231,6 +1242,12 @@
         88
       ],
       "ref_words_norm": 982,
+      "cer_nospace_errors": 980,
+      "ref_chars_nospace": 4144,
+      "cer_nospace": 0.23648648648648649,
+      "wer_nospace_errors": 316,
+      "ref_words_nospace": 977,
+      "wer_nospace": 0.323439099283521,
       "entity": {
         "per_type": {
           "phone": {
@@ -1248,7 +1265,7 @@
           "months": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "speed": {
@@ -1328,6 +1345,12 @@
         9
       ],
       "ref_words_norm": 1033,
+      "cer_nospace_errors": 561,
+      "ref_chars_nospace": 4323,
+      "cer_nospace": 0.1297709923664122,
+      "wer_nospace_errors": 181,
+      "ref_words_nospace": 1031,
+      "wer_nospace": 0.1755577109602328,
       "entity": {
         "per_type": {
           "amount": {
@@ -1339,25 +1362,25 @@
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 4,
             "value": 5
           },
           "months": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 6,
             "value": 6
           },
           "date": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           }
         },
@@ -1408,18 +1431,24 @@
         28
       ],
       "ref_words_norm": 1207,
+      "cer_nospace_errors": 644,
+      "ref_chars_nospace": 5039,
+      "cer_nospace": 0.12780313554276643,
+      "wer_nospace_errors": 225,
+      "ref_words_nospace": 1196,
+      "wer_nospace": 0.18812709030100336,
       "entity": {
         "per_type": {
           "package": {
             "total": 3,
-            "hit": 0,
-            "surface": 0,
+            "hit": 2,
+            "surface": 2,
             "value": 0
           },
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 2,
             "value": 5
           },
           "amount": {
@@ -1430,52 +1459,37 @@
           },
           "speed": {
             "total": 1,
-            "hit": 0,
-            "surface": 0,
+            "hit": 1,
+            "surface": 1,
             "value": 0
           },
           "date": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 6,
             "value": 6
           },
           "months": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           },
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           }
         },
         "total": 26,
-        "hit": 21,
-        "accuracy": 0.8076923076923077,
+        "hit": 24,
+        "accuracy": 0.9230769230769231,
         "missed": [
-          {
-            "type": "package",
-            "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
-            "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
-          },
-          {
-            "type": "package",
-            "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
-            "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
-          },
           {
             "type": "amount",
             "value": "499",
             "spoken": "สี่ร้อยเก้าสิบเก้าบาท"
-          },
-          {
-            "type": "speed",
-            "value": "300",
-            "spoken": "สามร้อย เมกะบิต"
           },
           {
             "type": "package",
@@ -1520,12 +1534,18 @@
         19
       ],
       "ref_words_norm": 1236,
+      "cer_nospace_errors": 536,
+      "ref_chars_nospace": 5153,
+      "cer_nospace": 0.10401707743062294,
+      "wer_nospace_errors": 195,
+      "ref_words_nospace": 1227,
+      "wer_nospace": 0.15892420537897312,
       "entity": {
         "per_type": {
           "phone": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 3,
             "value": 4
           },
           "amount": {
@@ -1537,19 +1557,19 @@
           "date": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "months": {
             "total": 3,
             "hit": 3,
-            "surface": 0,
+            "surface": 3,
             "value": 3
           },
           "id": {
             "total": 2,
             "hit": 2,
-            "surface": 0,
+            "surface": 2,
             "value": 2
           }
         },
@@ -1594,6 +1614,12 @@
         10
       ],
       "ref_words_norm": 1459,
+      "cer_nospace_errors": 875,
+      "ref_chars_nospace": 6248,
+      "cer_nospace": 0.140044814340589,
+      "wer_nospace_errors": 260,
+      "ref_words_nospace": 1453,
+      "wer_nospace": 0.17894012388162422,
       "entity": {
         "per_type": {
           "phone": {
@@ -1611,7 +1637,7 @@
           "months": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 6,
             "value": 6
           },
           "date": {
@@ -1668,12 +1694,18 @@
         23
       ],
       "ref_words_norm": 1803,
+      "cer_nospace_errors": 613,
+      "ref_chars_nospace": 7676,
+      "cer_nospace": 0.07985930171964564,
+      "wer_nospace_errors": 230,
+      "ref_words_nospace": 1797,
+      "wer_nospace": 0.12799109627156371,
       "entity": {
         "per_type": {
           "date": {
             "total": 7,
             "hit": 7,
-            "surface": 0,
+            "surface": 7,
             "value": 7
           },
           "phone": {
@@ -1691,13 +1723,13 @@
           "months": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 6,
             "value": 6
           },
           "id": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           }
         },
@@ -1742,6 +1774,12 @@
         16
       ],
       "ref_words_norm": 1334,
+      "cer_nospace_errors": 833,
+      "ref_chars_nospace": 5751,
+      "cer_nospace": 0.14484437489132324,
+      "wer_nospace_errors": 261,
+      "ref_words_nospace": 1326,
+      "wer_nospace": 0.19683257918552036,
       "entity": {
         "per_type": {
           "phone": {
@@ -1753,7 +1791,7 @@
           "date": {
             "total": 7,
             "hit": 7,
-            "surface": 0,
+            "surface": 7,
             "value": 7
           },
           "amount": {
@@ -1765,7 +1803,7 @@
           "months": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "id": {
@@ -1816,12 +1854,18 @@
         40
       ],
       "ref_words_norm": 1212,
+      "cer_nospace_errors": 638,
+      "ref_chars_nospace": 5132,
+      "cer_nospace": 0.12431800467653936,
+      "wer_nospace_errors": 197,
+      "ref_words_nospace": 1205,
+      "wer_nospace": 0.16348547717842324,
       "entity": {
         "per_type": {
           "date": {
             "total": 6,
             "hit": 6,
-            "surface": 0,
+            "surface": 6,
             "value": 6
           },
           "phone": {
@@ -1833,7 +1877,7 @@
           "months": {
             "total": 5,
             "hit": 5,
-            "surface": 0,
+            "surface": 5,
             "value": 5
           },
           "amount": {
@@ -1845,7 +1889,7 @@
           "id": {
             "total": 4,
             "hit": 4,
-            "surface": 0,
+            "surface": 4,
             "value": 4
           }
         },
@@ -1857,5 +1901,7 @@
       "nonspeech_s": 125.64,
       "insertions_per_nonspeech_min": 19.1
     }
-  ]
+  ],
+  "entity_rescored_at": "2026-08-17T12:25:11Z",
+  "entity_rescore_note": "Entity fields recomputed after the surface match was made whitespace-insensitive; character and word metrics are unchanged because score_item derives them independently of score_entities. Verified: a full re-score of one item agrees with this record on every field."
 }
