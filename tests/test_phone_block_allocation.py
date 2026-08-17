@@ -36,17 +36,27 @@ if str(ROOT / "src") not in sys.path:
 from evalgen.testsets import PHONE_PATTERN  # noqa: E402
 
 TESTSETS = ROOT / "tests" / "fixtures" / "testsets"
+ASR_DIALOGUES = ROOT / "asr-eval" / "dialogues"
 
 # The block is `^0810000[0-9]{3}$` -- 1000 numbers.
 BLOCK_CAPACITY = 1000
 
-# Measured 2026-08-12. Update these ONLY together with the documents below, and only
+# Measured 2026-08-17. Update these ONLY together with the documents below, and only
 # because a pack was deliberately added -- never to make this test pass.
-EXPECTED_IN_USE = 188
+#
+# Raised from 188 on 2026-08-17. Not because a pack was added that day, but because the
+# census could not see one that had been: `asr-eval/` arrived in PR #28 drawing 36 numbers
+# from the same block, and this file globbed only `tests/fixtures/testsets/*.jsonl`. That is
+# the 2026-08-12 defect in the docstring above, recurring one directory over -- the count
+# stopped following the allocation. The scope is now both trees.
+EXPECTED_IN_USE = 224
 EXPECTED_RANGES = (
     (0, 99),     # retention_v1, retention_v2, the four block_* fixtures
     (101, 138),  # retention_v3 phase two (RET-101..138)
     (201, 250),  # retention_challenge_v1 (RTC-*)
+    # asr-eval: one number per call at 301-320, plus the callback numbers its dialogues
+    # speak, which run to 339. 321, 331 and 338 are unused, hence four runs rather than one.
+    (301, 320), (322, 330), (332, 337), (339, 339),
 )
 
 # Files that state the live figure. Each must contain it as a number.
@@ -58,7 +68,17 @@ DOCS_STATING_THE_COUNT = (
 
 
 def _allocated() -> list[str]:
-    """Every phone number any committed pack uses, across all packs, not one glob."""
+    """Every phone number any committed pack uses, across BOTH pack trees.
+
+    The retention packs are JSONL with a top-level `phone_number`; `asr-eval` is one JSON
+    object per call with the number under `meta`, and its dialogues also speak a second
+    callback number that appears in the ground-truth entity files. All of them are
+    allocations out of the same 1000, so all of them are counted.
+
+    Illustrative values in prose -- `0810000999` in `tests/fixtures/testsets/README.md` --
+    are deliberately NOT counted. Nothing is generated from them and no pack would collide
+    with one; counting them would make the census depend on how documentation is worded.
+    """
     numbers: set[str] = set()
     for pack in sorted(TESTSETS.glob("*.jsonl")):
         for line in pack.read_text(encoding="utf-8").splitlines():
@@ -67,6 +87,16 @@ def _allocated() -> list[str]:
             phone = json.loads(line).get("phone_number")
             if phone is not None:
                 numbers.add(phone)
+    for call in sorted(ASR_DIALOGUES.glob("ASR-*.json")):
+        obj = json.loads(call.read_text(encoding="utf-8"))
+        phone = (obj.get("meta") or {}).get("phone_number")
+        if phone is not None:
+            numbers.add(phone)
+    for ent in sorted((ROOT / "asr-eval" / "ground-truth").glob("*.entities.json")):
+        for e in json.loads(ent.read_text(encoding="utf-8")):
+            value = str(e.get("value", ""))
+            if e.get("type") == "phone" and value.startswith("0810000"):
+                numbers.add(value)
     return sorted(numbers)
 
 
@@ -93,7 +123,7 @@ def test_every_allocated_number_is_inside_the_sanctioned_block():
 
 
 def test_the_allocation_census_matches_what_the_documents_claim():
-    """188 in use / 812 free, in three contiguous ranges, and the docs say so."""
+    """224 in use / 776 free, in seven contiguous ranges, and the docs say so."""
     allocated = _allocated()
     assert len(allocated) == EXPECTED_IN_USE, (
         f"{len(allocated)} numbers are allocated, but this test and the project "
@@ -108,7 +138,7 @@ def test_the_allocation_census_matches_what_the_documents_claim():
     )
 
     free = BLOCK_CAPACITY - len(allocated)
-    assert free == 812, f"expected 812 free, measured {free}"
+    assert free == 776, f"expected 776 free, measured {free}"
 
 
 def test_the_documents_state_the_measured_count():

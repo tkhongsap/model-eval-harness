@@ -47,6 +47,8 @@ Run:
 from __future__ import annotations
 
 import argparse
+import datetime
+import hashlib
 import json
 import re
 import sys
@@ -574,39 +576,84 @@ def main() -> int:
             den = sum(r.get(f"ref_words_{label}", 0) for r in rows)
         return num / den if den else None
 
+    overall = {k: pooled(k) for k in ("cer_raw", "cer_norm", "wer_raw", "wer_norm")}
     print(f"\n{'POOLED':9s} {'':19s} "
-          f"{pooled('cer_raw'):7.4f} {pooled('cer_norm'):7.4f} "
-          f"{pooled('wer_raw'):7.4f} {pooled('wer_norm'):7.4f}")
+          f"{overall['cer_raw']:7.4f} {overall['cer_norm']:7.4f} "
+          f"{overall['wer_raw']:7.4f} {overall['wer_norm']:7.4f}")
 
-    print("\nBY FAMILY (pooled CER after normalisation)")
     fams: dict[str, list[dict]] = {}
     for r in rows:
         fams.setdefault(r["family"], []).append(r)
+    by_family: dict[str, dict] = {}
     for fam in sorted(fams):
         rs = fams[fam]
-        num = sum(sum(r["cer_norm_sdi"]) for r in rs)
         den = sum(r.get("ref_chars_norm", r["ref_chars"]) for r in rs)
-        eh = sum(r["entity"]["hit"] for r in rs)
         et = sum(r["entity"]["total"] for r in rs)
-        print(f"  {fam:20s} CER {num / den:.4f}   entity {eh}/{et}"
+        by_family[fam] = {
+            "items": len(rs),
+            "cer_norm": (sum(sum(r["cer_norm_sdi"]) for r in rs) / den) if den else None,
+            "entity_hit": sum(r["entity"]["hit"] for r in rs),
+            "entity_total": et,
+        }
+
+    print("\nBY FAMILY (pooled CER after normalisation)")
+    for fam, f in by_family.items():
+        eh, et = f["entity_hit"], f["entity_total"]
+        print(f"  {fam:20s} CER {f['cer_norm']:.4f}   entity {eh}/{et}"
               f"{'  ' + f'({eh / et:.1%})' if et else ''}")
 
-    print("\nENTITY ACCURACY BY TYPE")
-    agg: dict[str, dict] = {}
+    by_type: dict[str, dict] = {}
     for r in rows:
-        for t, v in r["entity"]["per_type"].items():
-            a = agg.setdefault(t, {"total": 0, "hit": 0, "surface": 0, "value": 0})
+        for etype, v in r["entity"]["per_type"].items():
+            a = by_type.setdefault(etype, {"total": 0, "hit": 0, "surface": 0, "value": 0})
             for k in ("total", "hit", "surface", "value"):
                 a[k] += v[k]
-    for t in sorted(agg):
-        a = agg[t]
-        print(f"  {t:10s} {a['hit']:4d}/{a['total']:<4d} ({a['hit'] / a['total']:6.1%})"
+    by_type = {k: by_type[k] for k in sorted(by_type)}
+
+    print("\nENTITY ACCURACY BY TYPE")
+    for etype, a in by_type.items():
+        print(f"  {etype:10s} {a['hit']:4d}/{a['total']:<4d} ({a['hit'] / a['total']:6.1%})"
               f"   surface={a['surface']} value={a['value']}")
 
+    ins = [r["insertions_per_nonspeech_min"] for r in rows
+           if r["insertions_per_nonspeech_min"] is not None]
+    ent_hit = sum(r["entity"]["hit"] for r in rows)
+    ent_total = sum(r["entity"]["total"] for r in rows)
+
     if args.json:
+        # Provenance, so a published figure traces back to the bytes that produced it.
+        # `arm` alone defaults to "" and would leave the file anonymous.
+        gt = sorted(C.GROUND_TRUTH_DIR.glob("ASR-*.txt"))
+        gt_digest = (hashlib.sha256(b"".join(g.read_bytes() for g in gt)).hexdigest()
+                     if gt else None)
+        out = {
+            "arm": args.arm,
+            "generated_at": datetime.datetime.now(datetime.timezone.utc)
+                                    .strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "hyp_dir": str(args.hyp_dir),
+            "items_scored": len(rows),
+            "ground_truth_files": len(gt),
+            "ground_truth_sha256": gt_digest,
+            "scoring_code_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "normalisation": ("asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, "
+                              "Thai digits, whitespace"),
+            # Pooled over the corpus, never averaged over per-file rates. See pooled().
+            "overall": overall,
+            "entity_overall": {
+                "hit": ent_hit, "total": ent_total,
+                "accuracy": (ent_hit / ent_total) if ent_total else None,
+            },
+            "insertions_per_nonspeech_min": {
+                "measurable_items": len(ins),
+                "mean": (sum(ins) / len(ins)) if ins else None,
+                "max": max(ins) if ins else None,
+            },
+            "by_family": by_family,
+            "entity_by_type": by_type,
+            "items": rows,
+        }
         args.json.parent.mkdir(parents=True, exist_ok=True)
-        args.json.write_text(json.dumps({"arm": args.arm, "items": rows},
-                                        ensure_ascii=False, indent=2), encoding="utf-8")
+        args.json.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\nwrote {args.json}")
     return 0
 

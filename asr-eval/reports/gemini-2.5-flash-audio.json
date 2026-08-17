@@ -1,5 +1,134 @@
 {
   "arm": "gemini-2.5-flash-audio",
+  "generated_at": "2026-08-17T08:55:52Z",
+  "hyp_dir": "..\\hypotheses\\gemini-2.5-flash-audio",
+  "items_scored": 20,
+  "ground_truth_files": 20,
+  "ground_truth_sha256": "9ab5bcbb4e13a03407efc9d82d8f82a20614f07aff73b3dd883d1e5fdeb94424",
+  "scoring_code_sha256": "fad5932463bdbaecb890a526730428d44ac049e30be87d5f94d366a80ad8d14f",
+  "normalisation": "asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, Thai digits, whitespace",
+  "overall": {
+    "cer_raw": 0.044320020908515195,
+    "cer_norm": 0.044320020908515195,
+    "wer_raw": 0.10306596733614772,
+    "wer_norm": 0.10306596733614772
+  },
+  "entity_overall": {
+    "hit": 314,
+    "total": 465,
+    "accuracy": 0.6752688172043011
+  },
+  "insertions_per_nonspeech_min": {
+    "measurable_items": 20,
+    "mean": 33.0575,
+    "max": 120.98
+  },
+  "by_family": {
+    "clean_baseline": {
+      "items": 2,
+      "cer_norm": 0.0062626946513202435,
+      "entity_hit": 20,
+      "entity_total": 33
+    },
+    "code_switch": {
+      "items": 2,
+      "cer_norm": 0.01684552033940604,
+      "entity_hit": 22,
+      "entity_total": 34
+    },
+    "disfluency": {
+      "items": 2,
+      "cer_norm": 0.12106038291605302,
+      "entity_hit": 29,
+      "entity_total": 47
+    },
+    "far_field_low_gain": {
+      "items": 2,
+      "cer_norm": 0.11331069328253127,
+      "entity_hit": 26,
+      "entity_total": 52
+    },
+    "hold_ivr": {
+      "items": 2,
+      "cer_norm": 0.035659055762758116,
+      "entity_hit": 31,
+      "entity_total": 49
+    },
+    "long_context": {
+      "items": 2,
+      "cer_norm": 0.05287416869691183,
+      "entity_hit": 54,
+      "entity_total": 69
+    },
+    "numeric_dense": {
+      "items": 2,
+      "cer_norm": 0.01015228426395939,
+      "entity_hit": 29,
+      "entity_total": 46
+    },
+    "overlap_crosstalk": {
+      "items": 2,
+      "cer_norm": 0.015421408543625267,
+      "entity_hit": 41,
+      "entity_total": 53
+    },
+    "proper_nouns": {
+      "items": 2,
+      "cer_norm": 0.012340683795266033,
+      "entity_hit": 27,
+      "entity_total": 46
+    },
+    "telephony_noise": {
+      "items": 2,
+      "cer_norm": 0.00692979813196746,
+      "entity_hit": 35,
+      "entity_total": 36
+    }
+  },
+  "entity_by_type": {
+    "amount": {
+      "total": 118,
+      "hit": 101,
+      "surface": 88,
+      "value": 13
+    },
+    "date": {
+      "total": 88,
+      "hit": 22,
+      "surface": 15,
+      "value": 7
+    },
+    "id": {
+      "total": 64,
+      "hit": 64,
+      "surface": 19,
+      "value": 64
+    },
+    "months": {
+      "total": 83,
+      "hit": 30,
+      "surface": 18,
+      "value": 12
+    },
+    "package": {
+      "total": 15,
+      "hit": 6,
+      "surface": 6,
+      "value": 6
+    },
+    "phone": {
+      "total": 88,
+      "hit": 87,
+      "surface": 35,
+      "value": 87
+    },
+    "speed": {
+      "total": 9,
+      "hit": 4,
+      "surface": 4,
+      "value": 0
+    }
+  },
   "items": [
     {
       "item_id": "ASR-001",
@@ -1519,33 +1648,33 @@
       "item_id": "ASR-014",
       "family": "numeric_dense",
       "ref_chars": 4323,
-      "hyp_chars": 4287,
-      "cer_raw": 0.01272264631043257,
+      "hyp_chars": 4303,
+      "cer_raw": 0.009484154522322461,
       "cer_raw_sdi": [
         15,
-        38,
-        2
+        23,
+        3
       ],
       "ref_chars_raw": 4323,
-      "wer_raw": 0.3639883833494676,
+      "wer_raw": 0.03291384317521781,
       "wer_raw_sdi": [
-        186,
-        8,
-        182
-      ],
-      "ref_words_raw": 1033,
-      "cer_norm": 0.01272264631043257,
-      "cer_norm_sdi": [
+        17,
         15,
-        38,
         2
       ],
+      "ref_words_raw": 1033,
+      "cer_norm": 0.009484154522322461,
+      "cer_norm_sdi": [
+        15,
+        23,
+        3
+      ],
       "ref_chars_norm": 4323,
-      "wer_norm": 0.3639883833494676,
+      "wer_norm": 0.03291384317521781,
       "wer_norm_sdi": [
-        186,
-        8,
-        182
+        17,
+        15,
+        2
       ],
       "ref_words_norm": 1033,
       "entity": {
@@ -1553,19 +1682,19 @@
           "amount": {
             "total": 7,
             "hit": 7,
-            "surface": 0,
-            "value": 7
+            "surface": 7,
+            "value": 0
           },
           "phone": {
             "total": 5,
             "hit": 5,
-            "surface": 5,
+            "surface": 0,
             "value": 5
           },
           "months": {
             "total": 6,
-            "hit": 6,
-            "surface": 6,
+            "hit": 0,
+            "surface": 0,
             "value": 0
           },
           "date": {
@@ -1577,18 +1706,18 @@
           "id": {
             "total": 3,
             "hit": 3,
-            "surface": 3,
+            "surface": 0,
             "value": 3
           }
         },
         "total": 26,
-        "hit": 21,
-        "accuracy": 0.8076923076923077,
+        "hit": 15,
+        "accuracy": 0.5769230769230769,
         "missed": [
           {
-            "type": "date",
-            "value": "2026-08-08",
-            "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
           },
           {
             "type": "date",
@@ -1601,6 +1730,31 @@
             "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
           },
           {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-08",
+            "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
             "type": "date",
             "value": "2026-08-08",
             "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
@@ -1609,11 +1763,16 @@
             "type": "date",
             "value": "2026-08-08",
             "spoken": "วันที่ แปด สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
           }
         ]
       },
       "nonspeech_s": 46.28,
-      "insertions_per_nonspeech_min": 235.96
+      "insertions_per_nonspeech_min": 2.59
     },
     {
       "item_id": "ASR-015",

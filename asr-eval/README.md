@@ -150,10 +150,17 @@ transmitted.** Scoring, validation and plotting make no network calls at all —
 
 ### Phone numbers
 
-`CLAUDE.md` fixes the synthetic block as `^0810000[0-9]{3}$` and records the three spent
-sub-ranges. This set reserves **`0810000301`–`0810000320`**, one per call — inside the
-block, clear of all three spent ranges. `asr_common.phone_for_index` raises rather than
-walking past 320, and `test_contract.py` asserts the reservation does not collide.
+`CLAUDE.md` fixes the synthetic block as `^0810000[0-9]{3}$` and records the spent
+sub-ranges. This set takes **`0810000301`–`0810000339`** — 36 values, with 321, 331 and 338
+unused — inside the block and clear of every other spent range.
+`asr_common.phone_for_index` raises rather than walking past the per-call allocation, and
+`test_contract.py` asserts the reservation does not collide.
+
+*(Corrected 2026-08-17. This said the set reserves `301`–`320`, one per call. That is true
+of the 20 filenames and false of the set: several dialogues speak a second, different
+callback number, and those run to `339`. Nothing moved and nothing leaked — every value was
+always inside the sanctioned block — but a reservation note that undercounts by 16 is the
+kind of thing the block exists to make checkable, so the range is stated as measured.)*
 
 ---
 

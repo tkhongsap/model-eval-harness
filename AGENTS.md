@@ -244,7 +244,7 @@ re-checked if either changes:
 - It contains **no customer data**, and the controls in `keys.py`, `paths.py` and
   `.gitignore` exist to keep it that way. Fixture phone numbers come from the synthetic
   block `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`), `0810000000`–`0810000999`,
-  outside anything True's systems issue. **188 of the 1000 are used, 812 free** (measured
+  outside anything True's systems issue. **224 of the 1000 are used, 776 free** (measured
   2026-08-12): `0810000000`–`0810000099` for `retention_v1`/`v2` and the `block_*`
   fixtures, `0810000101`–`0810000138` for `retention_v3`'s phase two, and
   `0810000201`–`0810000250` for `retention_challenge_v1`. The block was widened from the

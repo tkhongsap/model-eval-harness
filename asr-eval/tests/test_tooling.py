@@ -238,3 +238,108 @@ def test_every_entity_type_in_the_set_can_value_match() -> None:
     assert seen, "no entities found"
     missing = [t for t, ok in seen.items() if not ok]
     assert not missing, f"types with no working recovery path: {missing}"
+
+
+# --- the serving-layer control token ----------------------------------------------------
+# Qwen3-ASR through LiteLLM emits `language <X><asr_text>` inside its transcripts. It is not
+# speech, so it is removed in the runner before the transcript is written. These pin the
+# behaviour shut in both directions: it must be removed everywhere it appears, and it must
+# not touch a transcript that merely resembles it.
+
+
+def test_control_token_is_removed() -> None:
+    counter: dict[str, int] = {}
+    assert T.strip_control_tokens("language Thai<asr_text>สวัสดีครับ", counter) == "สวัสดีครับ"
+    assert counter == {"responses": 1, "responses_with_tokens": 1, "tokens": 1}
+
+
+def test_control_token_is_removed_from_the_middle_not_just_the_start() -> None:
+    """The regression that made this correct.
+
+    Measured on ASR-001: the token appears EIGHT times in one 2,948-character transcript, at
+    roughly 400-character intervals -- it is a segment delimiter, not a prefix. An anchored
+    `^` strip removed one and left seven, about 5% of the transcript, every character of it
+    an insertion against the reference. The 30-second probe used to characterise the token
+    was too short to contain a second one, so the anchored version looked right.
+    """
+    raw = ("language Thai<asr_text>หนึ่งlanguage Thai<asr_text>สองlanguage Thai<asr_text>สาม")
+    counter: dict[str, int] = {}
+    assert T.strip_control_tokens(raw, counter) == "หนึ่งสองสาม"
+    assert counter["tokens"] == 3
+
+
+def test_removal_rejoins_a_word_the_token_split() -> None:
+    """The token lands inside words, so removal must not introduce a space.
+
+    Real example from ASR-001: "...แจ้งไปหลาย" + token + "รอบก็ไม่มี...". Inserting a space
+    would create a word boundary the speaker did not utter, which the tokeniser then counts
+    as two words instead of one and charges to WER.
+    """
+    counter: dict[str, int] = {}
+    assert T.strip_control_tokens("แจ้งไปหลายlanguage Thai<asr_text>รอบ", counter) == "แจ้งไปหลายรอบ"
+
+
+def test_control_token_language_slot_varies() -> None:
+    """`language None<asr_text>` is what the model returns when given no speech.
+
+    A literal removal of the Thai form would leave this one in, and only on the items where
+    it appeared -- the half-normalised corpus the runner refuses to produce.
+    """
+    counter: dict[str, int] = {}
+    assert T.strip_control_tokens("language None<asr_text>ทดสอบ", counter) == "ทดสอบ"
+    assert T.strip_control_tokens("language th <asr_text>hi", counter) == "hi"
+    assert counter["tokens"] == 2
+
+
+def test_control_tokens_are_removed_from_every_chunk_not_just_the_first(monkeypatch) -> None:
+    """The strip lives at the return boundary of post_audio, which is what makes it work.
+
+    With --chunk-seconds one call becomes N POSTs and each response carries its own tokens.
+    A strip applied where the transcript is written would clean the first response and leave
+    the rest embedded mid-transcript, where they score as substitutions against the model.
+    """
+    import json as _json
+    bodies = [
+        _json.dumps({"text": f"language Thai<asr_text>ส่วนที่{i}"}).encode("utf-8")
+        for i in range(1, 4)
+    ]
+    calls = {"n": 0}
+
+    def fake_send(*_a, **_kw):
+        calls["n"] += 1
+        return bodies[calls["n"] - 1]
+
+    monkeypatch.setattr(T, "_send", fake_send)
+    counter: dict[str, int] = {}
+    out = [
+        T.post_audio("https://x/v1", "m", "k", "f.wav", b"", "th", 10, 1,
+                     prefix_counter=counter)
+        for _ in range(3)
+    ]
+    assert out == ["ส่วนที่1", "ส่วนที่2", "ส่วนที่3"]
+    assert counter == {"responses": 3, "responses_with_tokens": 3, "tokens": 3}
+    assert "<asr_text>" not in " ".join(out)
+
+
+def test_a_response_that_is_only_control_tokens_raises() -> None:
+    """It must not become an empty transcript.
+
+    An empty file scores as a total deletion and reads as a catastrophic model rather than
+    as a response carrying no speech -- the confusion that cost the Gemma arm a whole run in
+    Experiment 20, reached here by a new route.
+    """
+    counter: dict[str, int] = {}
+    with pytest.raises(RuntimeError, match="only control tokens"):
+        T.strip_control_tokens("language None<asr_text>   ", counter)
+
+
+@pytest.mark.parametrize("text", [
+    "language is a hard problem for ASR",     # legitimately starts with the word
+    "a < b and c > d",                        # contains angle brackets
+    "<asr_text> without the language part",   # the tag alone is not the token
+    "สวัสดีครับ ยินดีให้บริการ",                    # ordinary Thai
+])
+def test_text_that_merely_resembles_the_token_is_untouched(text) -> None:
+    counter: dict[str, int] = {}
+    assert T.strip_control_tokens(text, counter) == text
+    assert counter.get("tokens", 0) == 0

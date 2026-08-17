@@ -91,14 +91,16 @@ Full detail, including how to make the differential test actually run, is in
   is approved for Git.
 - Keep customer identifiers out of examples, commit messages and test fixtures. The
   synthetic phone block is `^0810000[0-9]{3}$` (`src/evalgen/testsets.py:135`) —
-  `0810000000`–`0810000999`, 1000 numbers, of which **188 are in use and 812 are free**
-  (measured 2026-08-12 across every pack under `tests/fixtures/testsets/`):
+  `0810000000`–`0810000999`, 1000 numbers, of which **224 are in use and 776 are free**
+  (measured 2026-08-17 across every pack under `tests/fixtures/testsets/` **and** under
+  `asr-eval/`, which the earlier count did not cover):
 
   | range | count | packs |
   |---|---:|---|
   | `0810000000`–`0810000099` | 100 | `retention_v1`, `retention_v2`, the four `block_*` fixtures |
   | `0810000101`–`0810000138` | 38 | `retention_v3`'s phase-two items RET-101…138 |
   | `0810000201`–`0810000250` | 50 | `retention_challenge_v1` (RTC-*) |
+  | `0810000301`–`0810000339` | 36 | `asr-eval` (321, 331 and 338 unused) |
 
   The block was widened on 2026-08-06 because `retention_v2` used all 100 of the original
   `08100000xx` hundred, and the new pattern is a strict superset, so no fixture number
@@ -107,6 +109,14 @@ Full detail, including how to make the differential test actually run, is in
   outside it — all still inside the sanctioned block, so this is a bookkeeping correction
   and not a leak, but the count is how anyone knows the block has not drifted.)* Widening
   it again is a reviewed change to a data-safety control, never a convenience.
+
+  *(Corrected again 2026-08-17: the count only ever scanned `tests/fixtures/testsets/`, so
+  `asr-eval/` was invisible to it and 36 values went unrecorded. Two things follow. The
+  count is now taken over both trees, because a range table that cannot see a whole pack is
+  not a control. And `asr-eval/README.md` states it reserves `301`–`320`, one per call —
+  true of the filenames, but the dialogues also speak callback numbers up to `339`, so the
+  set actually consumes 36. Every value is inside the sanctioned block, so this is
+  bookkeeping and not a leak; the reservation note is what was wrong, not the data.)*
 
 ## Build and Verification Contract
 

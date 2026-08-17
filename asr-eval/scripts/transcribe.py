@@ -32,12 +32,16 @@ Run:
 from __future__ import annotations
 
 import argparse
+import http.client
 import io
 import json
 import os
+import re
+import ssl
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
@@ -49,8 +53,98 @@ import asr_common as C
 
 
 # --------------------------------------------------------------------------------------
+# The one output normalisation this runner applies
+# --------------------------------------------------------------------------------------
+# Qwen3-ASR served through LiteLLM emits a serving-layer control token in its transcripts:
+# `language Thai<asr_text>`. It is not speech. The audio contains no such words and no
+# reference has them, so every character of it scores as an insertion against the reference.
+#
+# The language slot varies -- `language None<asr_text>` is recorded at
+# `scripts/token_factory_bench.py:124` and `docs/gpu-shakedown-plan.md:85` -- so a literal
+# string removal would under-fire and leave the token in on some items but not others.
+#
+# WHY THIS IS NOT AN AMENDMENT TO THE CLOSED LIST.
+# `tests/fixtures/testsets/ASR-EXPECTATION.md` enumerates ten Thai ASR artifact classes and
+# says at :114 that a run may change nothing in it. That rule governs METRIC normalisation:
+# `asr_common.normalise_thai`, applied symmetrically to reference and hypothesis at
+# `score_asr.py:308`, where forgiving an inference would hide a fabrication. This strip is
+# ARM OUTPUT normalisation -- one arm's raw bytes, removing something that was never spoken
+# and that no reference contains. It forgives no mishearing and changes no verdict, so
+# ASR-EXPECTATION.md is not amended. The nearest row there, class 8 RET-120 "speaker label
+# leaked into text", is REFUSED -- correctly, because a leaked speaker label is real text
+# the model emitted about the audio. A serving control token is not about the audio at all.
+#
+# IT IS NOT A PREFIX. Measured on the first full-length transcription (ASR-001, 2,948 chars):
+# the token appears EIGHT times -- once at the start and seven more at roughly 400-character
+# intervals, i.e. it is a segment delimiter. The 30-second probe used to characterise it was
+# too short to contain a second one. An anchored strip left ~161 characters of scaffolding in
+# place, about 5% of the transcript, every character an insertion against the reference.
+#
+# The token also lands INSIDE words -- "...แจ้งไปหลาย" + token + "รอบก็ไม่มี..." -- so it is
+# removed without consuming the whitespace around it, rejoining the halves with nothing
+# between them. That is also consistent with this model emitting no word spaces anywhere
+# else. Spacing is otherwise left exactly as the model produced it; `normalise_thai` applies
+# whitespace policy symmetrically to both sides at scoring time, which is where it belongs.
+#
+# Applied at the return boundary of `post_audio`, NOT where the transcript is written. With
+# --chunk-seconds one call becomes N POSTs, each carrying its own tokens; a strip at the
+# write site would clean the first response and leave the rest embedded mid-transcript.
+CONTROL_TOKEN = re.compile(r"language\s+\S+?\s*<asr_text>")
+
+
+def strip_control_tokens(text: str, counter: dict[str, int]) -> str:
+    """Remove every serving-layer control token, and record how many there were.
+
+    `counter` accumulates {"responses": n, "responses_with_tokens": n, "tokens": n} across a
+    whole run, so the caller can refuse a run where the token appeared on some responses and
+    not others -- which would mean the serving layer changed shape part way through and half
+    the corpus was normalised differently from the other half.
+    """
+    counter["responses"] = counter.get("responses", 0) + 1
+    cleaned, n = CONTROL_TOKEN.subn("", text)
+    if n:
+        counter["responses_with_tokens"] = counter.get("responses_with_tokens", 0) + 1
+        counter["tokens"] = counter.get("tokens", 0) + n
+    cleaned = cleaned.strip()
+    if not cleaned:
+        # The model returns bare control tokens and nothing else when it finds no speech.
+        # Writing that as an empty transcript would score as a total deletion and read as a
+        # catastrophic model, which is the confusion the failure discipline below exists to
+        # prevent. Fail the item instead.
+        raise RuntimeError(
+            "response contained no transcript, only control tokens "
+            f"({text[:60]!r}) -- recorded as a failure, not as an empty transcript"
+        )
+    return cleaned
+
+
+# --------------------------------------------------------------------------------------
 # HTTP
 # --------------------------------------------------------------------------------------
+
+
+class _PinnedConnection(http.client.HTTPSConnection):
+    """HTTPS to a fixed address, with SNI and cert verification against the real hostname.
+
+    Needed because `token-fac-api.truecorp.co.th` resolves publicly to an address that does
+    not serve this API -- measured 2026-08-17: DNS returns 111.84.54.29, which times out,
+    while 10.94.154.102 answers in ~70 ms. The endpoint's certificate is self-signed and its
+    SAN covers both the hostname and that address, so pinning it and connecting by address
+    works with verification fully ON, and is STRONGER than the public-CA default: exactly one
+    certificate is trusted, so a substituted host fails even holding a CA-signed cert. Same
+    argument as `scripts/token_factory_probe.py:29-36`.
+
+    Stdlib only, deliberately -- see the module docstring on why this track adds no packages.
+    """
+
+    def __init__(self, host, *, sni_host, **kw):
+        super().__init__(host, **kw)
+        self._sni_host = sni_host
+
+    def connect(self):
+        import socket
+        sock = socket.create_connection((self.host, self.port), self.timeout)
+        self.sock = self._context.wrap_socket(sock, server_hostname=self._sni_host)
 
 
 def build_multipart(fields: dict[str, str], filename: str, blob: bytes) -> tuple[bytes, str]:
@@ -70,30 +164,65 @@ def build_multipart(fields: dict[str, str], filename: str, blob: bytes) -> tuple
     return buf.getvalue(), f"multipart/form-data; boundary={boundary}"
 
 
+def _send(url: str, body: bytes, headers: dict[str, str], timeout: int,
+          cacert: str | None, connect_host: str | None) -> bytes:
+    """POST and return the raw response body.
+
+    Plain urllib unless the caller pinned a certificate or fixed the address, because the
+    common case needs neither and the simplest path that works should stay the default.
+    """
+    if not cacert and not connect_host:
+        req = urllib.request.Request(url, data=body, method="POST")
+        for k, v in headers.items():
+            req.add_header(k, v)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read()
+
+    parts = urllib.parse.urlsplit(url)
+    ctx = ssl.create_default_context(cafile=cacert) if cacert else ssl.create_default_context()
+    conn = _PinnedConnection(connect_host or parts.hostname, port=parts.port or 443,
+                             sni_host=parts.hostname, timeout=timeout, context=ctx)
+    try:
+        path = parts.path + (("?" + parts.query) if parts.query else "")
+        conn.request("POST", path, body=body, headers={**headers, "Host": parts.hostname})
+        resp = conn.getresponse()
+        payload = resp.read()
+        if resp.status != 200:
+            raise RuntimeError(f"HTTP {resp.status}: {payload.decode('utf-8', 'replace')[:300]}")
+        return payload
+    finally:
+        conn.close()
+
+
 def post_audio(base_url: str, model: str, api_key: str, filename: str, blob: bytes,
-               language: str, timeout: int, retries: int) -> str:
+               language: str, timeout: int, retries: int,
+               prefix_counter: dict[str, int] | None = None,
+               cacert: str | None = None, connect_host: str | None = None) -> str:
     url = base_url.rstrip("/") + "/audio/transcriptions"
     fields = {"model": model, "response_format": "json"}
     if language:
         fields["language"] = language
     body, content_type = build_multipart(fields, filename, blob)
+    counter = prefix_counter if prefix_counter is not None else {}
+
+    headers = {"Content-Type": content_type}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
 
     last: Exception | None = None
     for attempt in range(retries):
-        req = urllib.request.Request(url, data=body, method="POST")
-        req.add_header("Content-Type", content_type)
-        if api_key:
-            req.add_header("Authorization", f"Bearer {api_key}")
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
-            # Accept the two shapes servers actually return.
+            payload = json.loads(
+                _send(url, body, headers, timeout, cacert, connect_host).decode("utf-8"))
+            # Accept the two shapes servers actually return. Every path goes through
+            # strip_control_tokens, which is what makes the strip chunk-count-invariant.
             if isinstance(payload, dict):
                 for key in ("text", "transcription"):
                     if key in payload:
-                        return str(payload[key])
+                        return strip_control_tokens(str(payload[key]), counter)
                 if "results" in payload:
-                    return " ".join(r.get("text", "") for r in payload["results"])
+                    joined = " ".join(r.get("text", "") for r in payload["results"])
+                    return strip_control_tokens(joined, counter)
             raise RuntimeError(f"unrecognised response shape: {list(payload)[:6]}")
         except Exception as exc:                                  # noqa: BLE001
             last = exc
@@ -179,9 +308,22 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--retries", type=int, default=3)
     ap.add_argument("--items", nargs="*", default=[])
+    ap.add_argument("--cacert", default=None,
+                    help="verify TLS against this certificate ONLY, instead of the public "
+                         "trust store. For an endpoint serving a self-signed certificate.")
+    ap.add_argument("--connect-host", default=None,
+                    help="connect to this address instead of resolving --base-url's "
+                         "hostname, which is still used for SNI and the Host header. For an "
+                         "endpoint whose public DNS does not point at the serving host.")
     args = ap.parse_args()
 
     api_key = os.environ.get(args.api_key_env, "")
+    if args.cacert and not Path(args.cacert).is_file():
+        print(f"--cacert {args.cacert} does not exist")
+        return 2
+    # Counts every response and every strip across the whole run, so the two can be compared
+    # at the end. A per-item count could not detect the case this is here to catch.
+    prefix_counter: dict[str, int] = {}
     out_dir = C.ROOT / "hypotheses" / args.arm
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -213,7 +355,9 @@ def main() -> int:
         try:
             texts = [
                 post_audio(args.base_url, args.model, api_key, wav.name,
-                           to_wav_bytes(p, sr), args.language, args.timeout, args.retries)
+                           to_wav_bytes(p, sr), args.language, args.timeout, args.retries,
+                           prefix_counter=prefix_counter, cacert=args.cacert,
+                           connect_host=args.connect_host)
                 for p in parts
             ]
         except Exception as exc:                                  # noqa: BLE001
@@ -237,17 +381,34 @@ def main() -> int:
         print(f"{item:9s} ok  chunks={len(parts):2d}  {len(text):6d} chars  "
               f"{elapsed:6.1f}s  RTF={runlog[-1]['rtf']:.3f}")
 
+    seen = prefix_counter.get("responses", 0)
+    stripped = prefix_counter.get("responses_with_tokens", 0)
+    tokens = prefix_counter.get("tokens", 0)
     meta = {
         "arm": args.arm, "model": args.model, "base_url": args.base_url,
         "language": args.language, "chunk_seconds": args.chunk_seconds,
+        "connect_host": args.connect_host, "cacert": args.cacert,
+        "control_tokens": {"responses": seen, "responses_with_tokens": stripped,
+                           "tokens_removed": tokens},
         "items": runlog,
         "ok": sum(1 for r in runlog if r["status"] == "ok"), "failed": failures,
     }
     (out_dir / "_run.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2),
                                        encoding="utf-8")
     print(f"\n{meta['ok']} ok, {failures} failed -> {out_dir}")
+    if stripped:
+        print(f"control tokens removed: {tokens} across {stripped}/{seen} responses")
     if failures:
         print("Do NOT score a partial run against a full one without saying so.")
+
+    # All-or-nothing. A prefix on some responses and not others means the serving layer
+    # changed shape mid-run, and the corpus is then half-normalised -- which scores as a
+    # model difference and is not one. Loud, and non-zero exit, rather than a footnote.
+    if stripped and stripped != seen:
+        print(f"\nREFUSING to call this run clean: control tokens were present on "
+              f"{stripped} of {seen} responses.\nA partially-normalised corpus scores as a "
+              f"model difference that does not exist. Investigate before scoring.")
+        return 1
     return 1 if failures else 0
 
 

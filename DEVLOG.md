@@ -428,7 +428,7 @@ kept in place and corrected, because the wrong inference is the useful part:
       whole: all 100 numbers `08100000xx` could spell. The block was widened to
       `0810000xxx` on 2026-08-06 (`src/evalgen/testsets.py:135`) so the next item has a
       number to take, and no existing number moved. ~~100 in use, 900 free.~~ **As of
-      2026-08-12: 188 in use, 812 free** -- `0810000000`-`0810000099` (v1/v2 and the
+      2026-08-17: 224 in use, 776 free** -- `0810000000`-`0810000099` (v1/v2 and the
       `block_*` fixtures), `0810000101`-`0810000138` (v3 phase two),
       `0810000201`-`0810000250` (`retention_challenge_v1`). The widening has been used
       twice since; the "100 in use" figure was left behind by both.
