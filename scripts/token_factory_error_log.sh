@@ -49,7 +49,10 @@ stamp_th() { date -u -d "+7 hours" +"%H:%M:%S +07"; }
 # 0 while printing "2 of 3 failed" -- exactly the "an exit code is not a result" trap this
 # repo already paid for once.
 FAILFILE="$(mktemp)"; echo 0 > "$FAILFILE"
-trap 'rm -f "$FAILFILE"' EXIT
+# The control model's own status decides which diagnosis the summary prints, so it is
+# recorded separately rather than folded into the failure count.
+CTLFILE="$(mktemp)"; echo "" > "$CTLFILE"
+trap 'rm -f "$FAILFILE" "$CTLFILE"' EXIT
 
 {
   echo "TOKEN FACTORY ERROR LOG"
@@ -86,6 +89,7 @@ trap 'rm -f "$FAILFILE"' EXIT
     echo "status HTTP ${code:-?}   client latency ${secs:-?}"
     echo "response body (full, untruncated):"
     printf '%s\n' "$clean"
+    [ "$model" = "qwen3.8-27b-fp8" ] && echo "${code:-000}" > "$CTLFILE"
     [ "${code:-0}" = "200" ] || echo $(( $(cat "$FAILFILE") + 1 )) > "$FAILFILE"
     echo
   done
@@ -127,18 +131,38 @@ PYEOF
   echo "SUMMARY"
   echo "=============================================================================="
   failures=$(cat "$FAILFILE")
+  control=$(cat "$CTLFILE")
   if [ "$failures" -eq 0 ]; then
-    echo "All models answered. If this follows an outage, the backends are back --"
+    echo "All 3 models answered. If this follows an outage, the backends are back --"
     echo "re-run the evaluation arm."
-  else
-    echo "${failures} of 3 models did not answer."
+  elif [ "$control" = "000" ] || [ -z "$control" ]; then
+    echo "${failures} of 3 models did not answer, and the CONTROL model did not answer"
+    echo "either -- it failed before reaching the server (HTTP 000 = no connection)."
     echo
-    echo "If the control (qwen3.8-27b-fp8) returned 200 above, then the gateway, the API"
-    echo "key, TLS, the pinned certificate and the VPN are all working, and the failure is"
-    echo "specific to the backends the other models route to."
+    echo "  >>> THIS LOG DOES NOT DIAGNOSE THE GPU BACKENDS. DO NOT SEND IT AS ONE. <<<"
+    echo
+    echo "Every request failed at TCP connect, which means this workstation could not reach"
+    echo "the gateway at all. The overwhelmingly likely cause is the VPN being disconnected"
+    echo "on our side. Reconnect, confirm 10.94.154.102:443 is reachable, and re-run."
+    echo "Until the control model returns 200, nothing here says anything about whether the"
+    echo "vLLM backends are healthy."
+  elif [ "$control" = "200" ]; then
+    echo "${failures} of 3 models did not answer, but the control (qwen3.8-27b-fp8)"
+    echo "returned 200 in the same session."
+    echo
+    echo "That rules out the gateway, the API key, TLS, the pinned certificate and the VPN,"
+    echo "and places the failure specifically on the backends the other models route to."
     echo
     echo "The 'Cannot connect to host ...' text is the GATEWAY reporting that it could not"
     echo "reach its own backend. It is not our client, our request shape or our network."
+    echo "This log IS suitable to send to the GPU team."
+  else
+    echo "${failures} of 3 models did not answer, and the control returned HTTP ${control}"
+    echo "rather than 200 or a connection failure."
+    echo
+    echo "That is neither the clean 'their backend' case nor the clean 'our network' case."
+    echo "Read the bodies above before attributing this to anyone -- an auth, quota or"
+    echo "gateway-level fault would look like this."
   fi
 } 2>&1 | tee "$OUT"
 

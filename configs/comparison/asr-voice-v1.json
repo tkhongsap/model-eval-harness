@@ -1,0 +1,40 @@
+{
+  "pack": "asr-eval-v1",
+  "doc_title": "Voice: Gemini vs our GPU",
+  "title": "Transcribing Thai calls: production Gemini against our own GPU",
+  "kicker_subject": "True &middot; Speech-to-text evaluation &middot; 20 synthetic Thai calls",
+  "arms": [
+    {
+      "key": "gemini",
+      "name": "Gemini 2.5 Flash",
+      "short": "Gemini",
+      "role": "production today",
+      "ours": false,
+      "metrics": "asr-eval/reports/gemini-2.5-flash-audio.json",
+      "how": "audio sent to OpenRouter with a transcription-only prompt"
+    },
+    {
+      "key": "qwen3asr",
+      "name": "Qwen3-ASR 1.7B",
+      "short": "Qwen3-ASR",
+      "role": "our GPU &middot; candidate",
+      "ours": true,
+      "metrics": "asr-eval/reports/qwen3-asr-1.7b.json",
+      "how": "audio sent to Token Factory /v1/audio/transcriptions, whole files, no chunking"
+    }
+  ],
+  "expected_items": 20,
+  "output": { "dir": "docs/reports", "stem": "asr-comparison" },
+  "family_labels": {
+    "clean_baseline": ["Clean baseline", "control: clear speech on a good line"],
+    "telephony_noise": ["Telephony noise", "13 dB SNR, mains hum, crackle, dropouts"],
+    "code_switch": ["Code-switching", "dense Thai/English telecom vocabulary"],
+    "numeric_dense": ["Numbers", "phone numbers, amounts and dates read aloud"],
+    "proper_nouns": ["Brand names", "TrueMove H, dtac, TrueVisions, TrueID"],
+    "disfluency": ["Disfluency", "stutters, fillers, false starts, self-repair"],
+    "overlap_crosstalk": ["Crosstalk", "both parties speaking at once"],
+    "long_context": ["Long calls", "the two longest, both 9.5 minutes"],
+    "far_field_low_gain": ["Speakerphone", "-34 dBFS, real reverb, 11 dB SNR"],
+    "hold_ivr": ["Hold and IVR", "hold music, IVR prompts, dead air"]
+  }
+}
