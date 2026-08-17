@@ -109,6 +109,29 @@ def levenshtein(a: list, b: list) -> tuple[int, int, int, int]:
     return d[n][m], sub, dele, ins
 
 
+try:                                                    # optional accelerator
+    from rapidfuzz.distance import Levenshtein as _RF
+except ImportError:                                     # pragma: no cover
+    _RF = None
+
+
+def fast_distance(a: str, b: str) -> int:
+    """Edit distance only, for the diagnostic. Falls back to the DP above when unavailable.
+
+    Verified equal to `levenshtein()[0]` on 400 random pairs and on the real transcripts.
+    Only the DISTANCE is used -- see the note in score_item on why the split is not.
+    """
+    if _RF is not None:
+        return _RF.distance(a, b)
+    return levenshtein(list(a), list(b))[0]
+
+
+def fast_distance_seq(a: list, b: list) -> int:
+    if _RF is not None:
+        return _RF.distance(a, b)
+    return levenshtein(a, b)[0]
+
+
 def tokenise(text: str) -> list[str]:
     """Thai word tokens. Falls back to characters if pythainlp is unavailable.
 
@@ -223,6 +246,7 @@ def score_entities(entities: list[dict], hyp: str) -> dict:
     arm look slightly better, it makes the metric report recoveries that never happened.
     """
     nh = C.normalise_thai(hyp)
+    nh_nospace = nh.replace(" ", "")        # for the surface test only -- see below
     nh_nums = strip_thousands(hyp)          # same text, thousands separators removed
     runs = numeric_runs(hyp) | set(spoken_digit_runs(hyp))
 
@@ -230,7 +254,12 @@ def score_entities(entities: list[dict], hyp: str) -> dict:
     details = []
     for e in entities:
         etype, value, spoken = e["type"], e["value"], e["spoken"]
-        surface = C.normalise_thai(spoken) in nh
+        # Whitespace-insensitive on BOTH sides. Thai has no inter-word spaces, so an arm that
+        # writes the same words with different phrase spacing has not lost the entity -- and
+        # before this, 90% of one arm's "missed" entities were present and spaced differently.
+        # Surface path only: `_numeral_beside_unit` below still runs on spaced text, so
+        # RET-115's load-bearing space between an amount and its unit is untouched.
+        surface = C.normalise_thai(spoken).replace(" ", "") in nh_nospace
         value_hit = False
         if etype in ("phone", "id"):
             # A phone or case id is long and distinctive, so a whole-run match is enough.
@@ -306,8 +335,9 @@ def score_item(item: str, ref: str, hyp: str, entities: list[dict],
     out: dict = {"item_id": item, "family": family,
                  "ref_chars": len(chars(ref_flat)), "hyp_chars": len(chars(hyp_flat))}
 
+    _norm_ref, _norm_hyp = C.normalise_thai(ref_flat), C.normalise_thai(hyp_flat)
     for label, r, h in (("raw", ref_flat, hyp_flat),
-                        ("norm", C.normalise_thai(ref_flat), C.normalise_thai(hyp_flat))):
+                        ("norm", _norm_ref, _norm_hyp)):
         rc, hc = chars(r), chars(h)
         dist, sub, dele, ins = levenshtein(rc, hc)
         out[f"cer_{label}"] = dist / len(rc) if rc else None
@@ -326,6 +356,23 @@ def score_item(item: str, ref: str, hyp: str, entities: list[dict],
         except RuntimeError as exc:
             out[f"wer_{label}"] = None
             out["wer_error"] = str(exc)
+
+    # The whitespace-blind DIAGNOSTIC. Not the contract metric, and deliberately reports no
+    # S/D/I split: it is computed by a different implementation whose split can differ from
+    # the DP above on an equally-optimal alignment. Rate and denominator only, so nothing
+    # published depends on how this one apportions its errors.
+    rns, hns = _norm_ref.replace(" ", ""), _norm_hyp.replace(" ", "")
+    out["cer_nospace_errors"] = fast_distance(rns, hns)
+    out["ref_chars_nospace"] = len(chars(rns))
+    out["cer_nospace"] = (out["cer_nospace_errors"] / out["ref_chars_nospace"]
+                          if out["ref_chars_nospace"] else None)
+    try:
+        rt, ht = tokenise(rns), tokenise(hns)
+        out["wer_nospace_errors"] = fast_distance_seq(rt, ht)
+        out["ref_words_nospace"] = len(rt)
+        out["wer_nospace"] = (out["wer_nospace_errors"] / len(rt)) if rt else None
+    except RuntimeError:
+        out["wer_nospace"] = None
 
     out["entity"] = score_entities(entities, hyp_flat)
 
@@ -546,15 +593,18 @@ def main() -> int:
         return 1
 
     print(f"\narm: {args.arm or args.hyp_dir.name}   scored {len(rows)}/20 calls\n")
-    print(f"{'item':9s} {'family':19s} {'CER':>7s} {'CERn':>7s} {'WER':>7s} {'WERn':>7s} "
-          f"{'ENT':>7s} {'ins/min':>8s}")
+    print(f"{'item':9s} {'family':19s} {'CER':>7s} {'CERn':>7s} {'CER-ns':>7s} "
+          f"{'WER':>7s} {'WERn':>7s} {'WER-ns':>7s} {'ENT':>7s} {'ins/min':>8s}")
     for r in rows:
         ent = r["entity"]["accuracy"]
+        nan = float('nan')
         print(f"{r['item_id']:9s} {r['family']:19s} "
               f"{r['cer_raw']:7.4f} {r['cer_norm']:7.4f} "
-              f"{(r['wer_raw'] if r['wer_raw'] is not None else float('nan')):7.4f} "
-              f"{(r['wer_norm'] if r['wer_norm'] is not None else float('nan')):7.4f} "
-              f"{(ent if ent is not None else float('nan')):7.3f} "
+              f"{(r.get('cer_nospace') if r.get('cer_nospace') is not None else nan):7.4f} "
+              f"{(r['wer_raw'] if r['wer_raw'] is not None else nan):7.4f} "
+              f"{(r['wer_norm'] if r['wer_norm'] is not None else nan):7.4f} "
+              f"{(r.get('wer_nospace') if r.get('wer_nospace') is not None else nan):7.4f} "
+              f"{(ent if ent is not None else nan):7.3f} "
               f"{(r['insertions_per_nonspeech_min'] or 0):8.1f}")
 
     # Aggregate the way an ASR result should be aggregated: pooled over the corpus, not as
@@ -577,9 +627,21 @@ def main() -> int:
         return num / den if den else None
 
     overall = {k: pooled(k) for k in ("cer_raw", "cer_norm", "wer_raw", "wer_norm")}
+
+    def pooled_diag(err_key: str, den_key: str) -> float | None:
+        den = sum(r.get(den_key) or 0 for r in rows)
+        return (sum(r.get(err_key) or 0 for r in rows) / den) if den else None
+
+    overall["cer_nospace"] = pooled_diag("cer_nospace_errors", "ref_chars_nospace")
+    overall["wer_nospace"] = pooled_diag("wer_nospace_errors", "ref_words_nospace")
     print(f"\n{'POOLED':9s} {'':19s} "
           f"{overall['cer_raw']:7.4f} {overall['cer_norm']:7.4f} "
-          f"{overall['wer_raw']:7.4f} {overall['wer_norm']:7.4f}")
+          f"{overall['cer_nospace']:7.4f} "
+          f"{overall['wer_raw']:7.4f} {overall['wer_norm']:7.4f} "
+          f"{overall['wer_nospace']:7.4f}")
+    print("  CER-ns / WER-ns ignore whitespace on BOTH sides. Diagnostic only: the contract "
+          "metric is CERn.\n  Thai has no inter-word spaces, so the gap between CERn and "
+          "CER-ns is convention, not mishearing.")
 
     fams: dict[str, list[dict]] = {}
     for r in rows:
@@ -589,9 +651,12 @@ def main() -> int:
         rs = fams[fam]
         den = sum(r.get("ref_chars_norm", r["ref_chars"]) for r in rs)
         et = sum(r["entity"]["total"] for r in rs)
+        den_ns = sum(r.get("ref_chars_nospace") or 0 for r in rs)
         by_family[fam] = {
             "items": len(rs),
             "cer_norm": (sum(sum(r["cer_norm_sdi"]) for r in rs) / den) if den else None,
+            "cer_nospace": (sum(r.get("cer_nospace_errors") or 0 for r in rs) / den_ns)
+                           if den_ns else None,
             "entity_hit": sum(r["entity"]["hit"] for r in rs),
             "entity_total": et,
         }
@@ -637,6 +702,17 @@ def main() -> int:
             "scoring_code_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             "normalisation": ("asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, "
                               "Thai digits, whitespace"),
+            "contract_metric": "cer_norm",
+            "diagnostic_metrics": {
+                "cer_nospace": ("whitespace removed from both sides. NOT the contract metric: "
+                                "ASR-EXPECTATION.md class 2 rules word spaces hard_miss, and "
+                                "stripping them in normalisation would corrupt the "
+                                "amount-beside-unit span entity scoring depends on. Reported "
+                                "because Thai has no inter-word spaces, so the gap between "
+                                "cer_norm and cer_nospace is authoring convention."),
+                "wer_nospace": ("both sides unspaced before tokenising, so the tokeniser does "
+                                "the same job on each"),
+            },
             # Pooled over the corpus, never averaged over per-file rates. See pooled().
             "overall": overall,
             "entity_overall": {

@@ -36,11 +36,16 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 
+from asr_comparison_report import pooled_cer  # noqa: E402  one subset-pooling rule
 from model_comparison_html import esc  # noqa: E402
 
 DOCS = REPO / "docs" / "reports"
 PACK_A = DOCS / "model-comparison-metrics.json"
 PACK_B = DOCS / "model-comparison-challenge-metrics.json"
+VOICE = [("gemini", "Gemini 2.5 Flash", "production today",
+          REPO / "asr-eval" / "reports" / "gemini-2.5-flash-audio.json"),
+         ("qwen3asr", "Qwen3-ASR 1.7B", "our GPU &middot; candidate",
+          REPO / "asr-eval" / "reports" / "qwen3-asr-1.7b.json")]
 OUT_STEM = "model-summary"
 
 # Column order: the production reference first, then ours, best-known first.
@@ -87,6 +92,84 @@ ROWS = [
 F1_DIM = {"Call outcome": "call_result", "Reason": "reason", "Product": "product"}
 
 
+# (label, sub-label, how to read it, better direction, bold the best?)
+# Nothing on the three accuracy rows is bolded. See the module docstring: number rendering
+# differs between the arms and moves CER one way and entity recovery the other, so all three
+# measure formatting as much as hearing.
+VOICE_ROWS = [
+    ("Character error rate", "all 20 calls", "cer", "low", False),
+    ("Character error rate", "same 19 calls, the runaway excluded", "cer_ex", "low", False),
+    ("Entities recovered", "phone, amount, date, package", "ent", "high", False),
+    ("Word error rate", "tokeniser-dependent &mdash; read CER first", "wer", "low", False),
+    ("Calls with content dropped", "passages missing, no warning", "drop", "low", True),
+    ("Calls with runaway repetition", "output far longer than the audio", "loop", "low", True),
+]
+
+
+def runaway_items(docs: list[tuple]) -> set:
+    """Calls where ANY arm produced far more text than the audio contains.
+
+    Excluded from every arm, not just the one that broke. Dropping each arm's own worst call
+    would compare two different subsets of 19 and quietly flatter whichever arm had the
+    milder worst case -- the numbers have to be over the same calls to sit in one row.
+    """
+    out = set()
+    for _k, _n, _r, d in docs:
+        out |= {r["item_id"] for r in d["items"] if r["hyp_chars"] > 3 * r["ref_chars"]}
+    return out
+
+
+def voice_value(doc: dict, field: str, excluded: set = frozenset()):
+    items = doc["items"]
+    if field == "cer":
+        return doc["overall"]["cer_norm"]
+    if field == "wer":
+        return doc["overall"]["wer_norm"]
+    if field == "ent":
+        return doc["entity_overall"]["accuracy"]
+    if field == "cer_ex":
+        return pooled_cer(items, excluded)
+    if field == "drop":
+        # deletion-dominated with almost no insertions: content lost, not misheard
+        return sum(1 for r in items
+                   if r["cer_norm_sdi"][1] > 0.15 * r["ref_chars"]
+                   and r["cer_norm_sdi"][2] < 0.02 * r["ref_chars"])
+    if field == "loop":
+        return sum(1 for r in items if r["hyp_chars"] > 3 * r["ref_chars"])
+    raise Refused(f"unknown voice field {field}")
+
+
+def voice_fmt(field: str, v) -> str:
+    if field in ("cer", "cer_ex", "wer", "ent"):
+        return f"{v * 100:.1f}%"
+    return str(v)
+
+
+def voice_table(docs: list[tuple]) -> tuple[str, str]:
+    excluded = runaway_items(docs)
+    head = "".join(
+        f'<th class="{"hi" if key == "qwen3asr" else ""}">'
+        f'<span class="m">{esc(name)}</span><span class="s">{role}</span></th>'
+        for key, name, role, _doc in docs)
+    body = (f'<tr class="grp setb"><th colspan={len(docs) + 1}>'
+            f'<span class="gn">The voice set</span>'
+            f'<span class="gc">20 calls &middot; 123.6 minutes of synthetic Thai call audio '
+            f'&mdash; can a model on our GPU transcribe what production sends to Gemini?'
+            f'</span></th></tr>')
+    for label, sub, field, direction, do_bold in VOICE_ROWS:
+        vals = [voice_value(d, field, excluded) for _k, _n, _r, d in docs]
+        present = [v for v in vals if v is not None]
+        best = (max(present) if direction == "high" else min(present)) if present else None
+        cells = ""
+        for (key, _n, _r, _d), v in zip(docs, vals):
+            klass = "hi" if key == "qwen3asr" else ""
+            mark = " b" if (do_bold and best is not None and v == best) else ""
+            cells += f'<td class="{klass}{mark}">{voice_fmt(field, v)}</td>'
+        body += (f'<tr class="setb"><th scope=row><span class="rl">{esc(label)}</span>'
+                 f'<span class="rs">{sub}</span></th>{cells}</tr>')
+    return head, body
+
+
 class Refused(SystemExit):
     def __init__(self, why: str) -> None:
         super().__init__(f"REFUSING to write the summary: {why}")
@@ -121,8 +204,9 @@ def fmt(field: str, v) -> str:
     return str(v)
 
 
-def render(a: dict, b: dict) -> str:
+def render(a: dict, b: dict, voice: list[tuple]) -> str:
     docs = {"A": a, "B": b}
+    vhead, vbody = voice_table(voice)
     sa, sb = a["shared_contract"], b["shared_contract"]
 
     # REFUSAL. Same prompt and same scorer is what lets one table hold both sets.
@@ -218,6 +302,8 @@ tr.grp.setb th{{border-left:3px solid var(--line2)}}
 .notes{{margin-top:22px;font-size:13.5px;color:var(--ink2);max-width:76ch}}
 .notes p{{margin:0 0 10px}}
 .notes b{{color:var(--ink)}}
+h2.tt{{font-family:var(--serif);font-size:17px;font-weight:600;margin:30px 0 2px}}
+p.tl{{font-size:13px;color:var(--ink2);margin:0 0 12px;max-width:70ch;line-height:1.6}}
 footer{{margin-top:38px;padding-top:16px;border-top:1px solid var(--line);
 font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}}
 @media(max-width:620px){{tbody th[scope=row]{{width:auto}}}}
@@ -225,8 +311,9 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}}
 <div class="wrap">
 <header>
   <h1>Model evaluation &mdash; our test cases on our own GPUs</h1>
-  <p class="intro">An evaluation of four models on the Retention labelling task: the model we
-  use in production today against three running on True&rsquo;s own hardware. Every figure below
+  <p class="intro">An evaluation of the models we could run on True&rsquo;s own hardware
+  against the one we use in production today, across <b>two tracks</b>: labelling a call from
+  its transcript, and producing that transcript from audio in the first place. Every figure below
   comes from <b>evaluation test cases we wrote</b> &mdash; no production traffic was involved.
   It covers accuracy, how many tokens each model uses, how fast it answers and how consistent
   it is.</p>
@@ -240,10 +327,24 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}}
   customer data, no real transcripts, no IP.</div>
 </header>
 
+<h2 class="tt">Track 1 &mdash; labelling a call from its transcript</h2>
+<p class="tl">What production does today, on written test cases. Four models, two sets.</p>
 <div class="scroller">
   <table>
     <thead><tr><th></th>{head}</tr></thead>
     <tbody>{body}</tbody>
+  </table>
+</div>
+
+<h2 class="tt">Track 2 &mdash; turning the audio into that transcript</h2>
+<p class="tl">The step that does not exist in our stack yet. Production hands Gemini the audio
+and gets labels back in one call; a text-only model needs this step first, and everything
+above inherits its errors. Different models and different metrics from Track&nbsp;1, so it is
+a separate table &mdash; only the production reference appears in both.</p>
+<div class="scroller">
+  <table>
+    <thead><tr><th></th>{vhead}</tr></thead>
+    <tbody>{vbody}</tbody>
   </table>
 </div>
 
@@ -263,6 +364,21 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}}
   and is not bolded for that reason. The production model was called over the public internet
   at concurrency&nbsp;8; ours ran at concurrency&nbsp;4 against a single shared box. Those rows
   measure deployments, not models.</p>
+  <p><b>On the voice table, none of the three accuracy rows is bolded, and the reason is
+  not caution.</b> The two arms write numbers differently: the reference spells them out
+  (&ldquo;eighteen August&rdquo;), the production model matches it <i>because the prompt we
+  wrote asks it to</i>, and the model on our GPU writes digits. That one difference pushes
+  character error rate against our model and entity recovery in its favour, so all three
+  figures measure formatting as much as hearing. Reading the digits back as spoken Thai
+  closes about two fifths of the character-error gap. The full voice report shows the
+  working.</p>
+  <p><b>The two figures that are clean are the last two, and they are the ones to look at.</b>
+  Both models produce a broken transcript on some calls, in opposite ways, and neither says so
+  &mdash; every call returned a normal response. The production model silently drops whole
+  passages on two calls; ours runs away into repetition on one, emitting seventeen times more
+  text than the audio contains. That one call is 83% of its total character error, which is
+  why the row above it excludes it. Re-running it reproduced byte-for-byte, so it is a
+  property of the model on that audio, not luck.</p>
   <p><b>Two models have no result on the second set, for different reasons.</b> Gemma was
   attempted, and {esc(ABSENT['gemma'][1])}. Its accuracy on that set is therefore
   <b>unmeasured, not zero</b> &mdash; the outage is a fact about our box, not about Gemma.
@@ -286,7 +402,9 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}}
 def main() -> int:
     a = json.loads(PACK_A.read_text(encoding="utf-8"))
     b = json.loads(PACK_B.read_text(encoding="utf-8"))
-    frag = render(a, b)
+    voice = [(k, n, r, json.loads(path.read_text(encoding="utf-8")))
+             for k, n, r, path in VOICE]
+    frag = render(a, b, voice)
     cut = frag.index("</style>") + len("</style>")
     page = ('<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
@@ -296,7 +414,8 @@ def main() -> int:
     print(f"wrote docs/reports/{OUT_STEM}.html, -fragment.html "
           f"(ascii-only: {page.isascii()})")
     print(f"  columns: {', '.join(DISPLAY[k][0] for k in COLUMNS)}")
-    print(f"  rows:    {len(ROWS)} metrics x 2 sets")
+    print(f"  rows:    {len(ROWS)} metrics x 2 sets, "
+          f"plus {len(VOICE_ROWS)} voice metrics x {len(VOICE)} arms")
     return 0
 
 

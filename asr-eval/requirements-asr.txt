@@ -35,3 +35,9 @@ pythainlp==5.3.7
 
 # Test runner for asr-eval/tests/.
 pytest==9.1.1
+
+# Optional accelerator for the whitespace-blind DIAGNOSTIC only. The contract
+# metrics keep the pure-Python DP in score_asr.py, because rapidfuzz can apportion an
+# equally-optimal alignment differently and the S/D/I split is load-bearing. Absent
+# this package everything still runs, just slower.
+rapidfuzz==3.14.5
