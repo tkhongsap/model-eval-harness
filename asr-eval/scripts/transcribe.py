@@ -9,11 +9,26 @@ Deliberately stdlib-only for HTTP (urllib; no requests, no openai package). Two 
      ASR runner dependency-free means it can never become the reason someone relaxes that
      boundary.
 
-Endpoint shape assumed: POST {base}/audio/transcriptions, multipart/form-data with `file`
-and `model`, returning {"text": ...}. That is what vLLM and the Token Factory gateway
-serve, and what .env.example anticipates for a self-hosted Qwen3-ASR (".env.example:44-51":
-the Thai ASR track cannot be tested through OpenRouter, so self-host it on the internal GPU
-"which is the plan anyway").
+TWO ENDPOINT SHAPES, both POST {base}/audio/transcriptions returning {"text": ...}:
+
+  --body-mode multipart  (default)  multipart/form-data with `file` and `model`. What vLLM
+                                    and the Token Factory gateway serve.
+  --body-mode json                  application/json with `model` and
+                                    `input_audio: {data: <base64>, format: "wav"}`.
+                                    What OpenRouter serves.
+
+The second mode exists because the note this file used to cite -- ".env.example:44-51", the
+Thai ASR track "cannot be tested through OpenRouter" -- is FALSE, and was false when it was
+written. It was reached by searching GET /api/v1/models for asr/whisper/speech, which
+returns two irrelevant hits. OpenRouter excludes speech-to-text models from that listing
+entirely; they are only visible under `?output_modalities=transcription`, which returns 19
+of them, 8 open-weight. Measured 2026-08-17. See that file for the corrected note.
+
+Why this matters beyond convenience: OpenRouter serves qwen3-asr-1.7b -- the same weights
+the internal GPU serves -- so the two can be run against byte-identical audio with the
+serving layer as the only variable. That is the only clean way to attribute this arm's
+telephony_noise blow-up (CER 8.41, vs 0.09-0.16 on every other family) to the model or to
+the way we host it.
 
 CHUNKING. Most ASR endpoints cap request length well below this set's 3-10 minutes.
 --chunk-seconds splits at the QUIETEST point near each boundary rather than at a fixed
@@ -32,6 +47,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+import base64
 import http.client
 import io
 import json
@@ -164,6 +180,27 @@ def build_multipart(fields: dict[str, str], filename: str, blob: bytes) -> tuple
     return buf.getvalue(), f"multipart/form-data; boundary={boundary}"
 
 
+def build_json_body(model: str, blob: bytes, language: str) -> tuple[bytes, str]:
+    """OpenRouter's shape: JSON, audio base64 in `input_audio.data`.
+
+    Two details the docs are explicit about and that fail quietly if got wrong:
+      * `data` is base64 of the RAW BYTES, not a `data:` URI. A data URI is accepted as a
+        string and decodes to garbage, which returns a plausible-looking wrong transcript
+        rather than an error.
+      * `format` is the container name without a dot -- "wav", not ".wav" or "audio/wav".
+
+    `language` is ISO-639-1. Sent when set, because leaving Thai to autodetect on 8 kHz
+    telephony audio is a second variable this eval has no reason to introduce.
+    """
+    payload: dict[str, object] = {
+        "model": model,
+        "input_audio": {"data": base64.b64encode(blob).decode("ascii"), "format": "wav"},
+    }
+    if language:
+        payload["language"] = language
+    return json.dumps(payload).encode("utf-8"), "application/json"
+
+
 def _send(url: str, body: bytes, headers: dict[str, str], timeout: int,
           cacert: str | None, connect_host: str | None) -> bytes:
     """POST and return the raw response body.
@@ -197,12 +234,16 @@ def _send(url: str, body: bytes, headers: dict[str, str], timeout: int,
 def post_audio(base_url: str, model: str, api_key: str, filename: str, blob: bytes,
                language: str, timeout: int, retries: int,
                prefix_counter: dict[str, int] | None = None,
-               cacert: str | None = None, connect_host: str | None = None) -> str:
+               cacert: str | None = None, connect_host: str | None = None,
+               body_mode: str = "multipart") -> str:
     url = base_url.rstrip("/") + "/audio/transcriptions"
-    fields = {"model": model, "response_format": "json"}
-    if language:
-        fields["language"] = language
-    body, content_type = build_multipart(fields, filename, blob)
+    if body_mode == "json":
+        body, content_type = build_json_body(model, blob, language)
+    else:
+        fields = {"model": model, "response_format": "json"}
+        if language:
+            fields["language"] = language
+        body, content_type = build_multipart(fields, filename, blob)
     counter = prefix_counter if prefix_counter is not None else {}
 
     headers = {"Content-Type": content_type}
@@ -224,6 +265,21 @@ def post_audio(base_url: str, model: str, api_key: str, filename: str, blob: byt
                     joined = " ".join(r.get("text", "") for r in payload["results"])
                     return strip_control_tokens(joined, counter)
             raise RuntimeError(f"unrecognised response shape: {list(payload)[:6]}")
+        except urllib.error.HTTPError as exc:
+            # urllib raises before the caller ever sees the body, and the body is where the
+            # provider says WHY. Without this an OpenRouter 400 ("audio too long", "model
+            # does not support language") reads as a bare "HTTP Error 400" on all 20 items.
+            try:
+                detail = exc.read().decode("utf-8", "replace")[:400]
+            except Exception:                                     # noqa: BLE001
+                detail = "<body unreadable>"
+            last = RuntimeError(f"HTTP {exc.code}: {detail}")
+            # 4xx other than 429 is a request we built wrong; it will be just as wrong in
+            # two seconds. Retrying it three times across 20 items is 60 pointless calls.
+            if 400 <= exc.code < 500 and exc.code != 429:
+                raise last from exc
+            if attempt < retries - 1:
+                time.sleep(2.0 * (attempt + 1))
         except Exception as exc:                                  # noqa: BLE001
             last = exc
             if attempt < retries - 1:
@@ -302,6 +358,9 @@ def main() -> int:
     ap.add_argument("--model", required=True)
     ap.add_argument("--arm", required=True, help="output dir name under hypotheses/")
     ap.add_argument("--api-key-env", default="ASR_API_KEY")
+    ap.add_argument("--body-mode", choices=["multipart", "json"], default="multipart",
+                    help="multipart = vLLM / Token Factory; json = OpenRouter "
+                         "(base64 in input_audio.data)")
     ap.add_argument("--language", default="th")
     ap.add_argument("--chunk-seconds", type=float, default=0.0,
                     help="0 = send each call whole")
@@ -357,7 +416,7 @@ def main() -> int:
                 post_audio(args.base_url, args.model, api_key, wav.name,
                            to_wav_bytes(p, sr), args.language, args.timeout, args.retries,
                            prefix_counter=prefix_counter, cacert=args.cacert,
-                           connect_host=args.connect_host)
+                           connect_host=args.connect_host, body_mode=args.body_mode)
                 for p in parts
             ]
         except Exception as exc:                                  # noqa: BLE001
@@ -386,6 +445,7 @@ def main() -> int:
     tokens = prefix_counter.get("tokens", 0)
     meta = {
         "arm": args.arm, "model": args.model, "base_url": args.base_url,
+        "body_mode": args.body_mode,
         "language": args.language, "chunk_seconds": args.chunk_seconds,
         "connect_host": args.connect_host, "cacert": args.cacert,
         "control_tokens": {"responses": seen, "responses_with_tokens": stripped,

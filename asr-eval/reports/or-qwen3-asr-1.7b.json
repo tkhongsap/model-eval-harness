@@ -1,0 +1,1934 @@
+{
+  "arm": "or-qwen3-asr-1.7b",
+  "generated_at": "2026-08-17T14:08:49Z",
+  "hyp_dir": "..\\hypotheses\\or-qwen3-asr-1.7b",
+  "items_scored": 20,
+  "ground_truth_files": 20,
+  "ground_truth_sha256": "9ab5bcbb4e13a03407efc9d82d8f82a20614f07aff73b3dd883d1e5fdeb94424",
+  "scoring_code_sha256": "5cc95c260baba4739425506d072f0cf19a2fcc1393deba1516c22bb7ed43d3c3",
+  "normalisation": "asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, Thai digits, whitespace",
+  "overall": {
+    "cer_raw": 0.1126948864607312,
+    "cer_norm": 0.11265467777766609,
+    "wer_raw": 0.1713786192486461,
+    "wer_norm": 0.1713359771438318
+  },
+  "entity_overall": {
+    "hit": 418,
+    "total": 465,
+    "accuracy": 0.8989247311827957
+  },
+  "insertions_per_nonspeech_min": {
+    "measurable_items": 20,
+    "mean": 20.906,
+    "max": 32.67
+  },
+  "by_family": {
+    "clean_baseline": {
+      "items": 2,
+      "cer_norm": 0.10511171293161814,
+      "entity_hit": 28,
+      "entity_total": 33
+    },
+    "code_switch": {
+      "items": 2,
+      "cer_norm": 0.13127027701522337,
+      "entity_hit": 32,
+      "entity_total": 34
+    },
+    "disfluency": {
+      "items": 2,
+      "cer_norm": 0.09621993127147767,
+      "entity_hit": 43,
+      "entity_total": 47
+    },
+    "far_field_low_gain": {
+      "items": 2,
+      "cer_norm": 0.1153814296363787,
+      "entity_hit": 47,
+      "entity_total": 52
+    },
+    "hold_ivr": {
+      "items": 2,
+      "cer_norm": 0.09915400709542437,
+      "entity_hit": 45,
+      "entity_total": 49
+    },
+    "long_context": {
+      "items": 2,
+      "cer_norm": 0.07433989596365312,
+      "entity_hit": 69,
+      "entity_total": 69
+    },
+    "numeric_dense": {
+      "items": 2,
+      "cer_norm": 0.12784795183567466,
+      "entity_hit": 39,
+      "entity_total": 46
+    },
+    "overlap_crosstalk": {
+      "items": 2,
+      "cer_norm": 0.11372257958106548,
+      "entity_hit": 45,
+      "entity_total": 53
+    },
+    "proper_nouns": {
+      "items": 2,
+      "cer_norm": 0.13847865668622295,
+      "entity_hit": 35,
+      "entity_total": 46
+    },
+    "telephony_noise": {
+      "items": 2,
+      "cer_norm": 0.16736968966556193,
+      "entity_hit": 35,
+      "entity_total": 36
+    }
+  },
+  "entity_by_type": {
+    "amount": {
+      "total": 118,
+      "hit": 118,
+      "surface": 102,
+      "value": 78
+    },
+    "date": {
+      "total": 88,
+      "hit": 88,
+      "surface": 6,
+      "value": 88
+    },
+    "id": {
+      "total": 64,
+      "hit": 61,
+      "surface": 0,
+      "value": 61
+    },
+    "months": {
+      "total": 83,
+      "hit": 59,
+      "surface": 0,
+      "value": 59
+    },
+    "package": {
+      "total": 15,
+      "hit": 0,
+      "surface": 0,
+      "value": 0
+    },
+    "phone": {
+      "total": 88,
+      "hit": 86,
+      "surface": 0,
+      "value": 86
+    },
+    "speed": {
+      "total": 9,
+      "hit": 6,
+      "surface": 0,
+      "value": 6
+    }
+  },
+  "items": [
+    {
+      "item_id": "ASR-001",
+      "family": "clean_baseline",
+      "ref_chars": 2982,
+      "hyp_chars": 2814,
+      "cer_raw": 0.10160965794768612,
+      "cer_raw_sdi": [
+        105,
+        183,
+        15
+      ],
+      "ref_chars_raw": 2982,
+      "wer_raw": 0.1546242774566474,
+      "wer_raw_sdi": [
+        56,
+        39,
+        12
+      ],
+      "ref_words_raw": 692,
+      "cer_norm": 0.10160965794768612,
+      "cer_norm_sdi": [
+        105,
+        183,
+        15
+      ],
+      "ref_chars_norm": 2982,
+      "wer_norm": 0.1546242774566474,
+      "wer_norm_sdi": [
+        56,
+        39,
+        12
+      ],
+      "ref_words_norm": 692,
+      "entity": {
+        "per_type": {
+          "package": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "phone": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 5,
+            "hit": 5,
+            "surface": 4,
+            "value": 1
+          },
+          "date": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "months": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          }
+        },
+        "total": 17,
+        "hit": 13,
+        "accuracy": 0.7647058823529411,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "months",
+            "value": "12",
+            "spoken": "สิบสอง เดือน"
+          },
+          {
+            "type": "months",
+            "value": "12",
+            "spoken": "สิบสอง เดือน"
+          },
+          {
+            "type": "months",
+            "value": "12",
+            "spoken": "สิบสอง เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 29.92,
+      "insertions_per_nonspeech_min": 24.06
+    },
+    {
+      "item_id": "ASR-002",
+      "family": "telephony_noise",
+      "ref_chars": 3233,
+      "hyp_chars": 2921,
+      "cer_raw": 0.16393442622950818,
+      "cer_raw_sdi": [
+        158,
+        342,
+        30
+      ],
+      "ref_chars_raw": 3233,
+      "wer_raw": 0.2336328626444159,
+      "wer_raw_sdi": [
+        79,
+        95,
+        8
+      ],
+      "ref_words_raw": 779,
+      "cer_norm": 0.16393442622950818,
+      "cer_norm_sdi": [
+        158,
+        342,
+        30
+      ],
+      "ref_chars_norm": 3233,
+      "wer_norm": 0.2336328626444159,
+      "wer_norm_sdi": [
+        79,
+        95,
+        8
+      ],
+      "ref_words_norm": 779,
+      "entity": {
+        "per_type": {
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "phone": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "date": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "months": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 15,
+        "hit": 14,
+        "accuracy": 0.9333333333333333,
+        "missed": [
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 35.43,
+      "insertions_per_nonspeech_min": 13.55
+    },
+    {
+      "item_id": "ASR-003",
+      "family": "code_switch",
+      "ref_chars": 3870,
+      "hyp_chars": 3668,
+      "cer_raw": 0.10051679586563307,
+      "cer_raw_sdi": [
+        159,
+        216,
+        14
+      ],
+      "ref_chars_raw": 3870,
+      "wer_raw": 0.17410714285714285,
+      "wer_raw_sdi": [
+        84,
+        52,
+        20
+      ],
+      "ref_words_raw": 896,
+      "cer_norm": 0.10051679586563307,
+      "cer_norm_sdi": [
+        159,
+        216,
+        14
+      ],
+      "ref_chars_norm": 3870,
+      "wer_norm": 0.17410714285714285,
+      "wer_norm_sdi": [
+        84,
+        52,
+        20
+      ],
+      "ref_words_norm": 896,
+      "entity": {
+        "per_type": {
+          "speed": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "phone": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 1,
+            "hit": 1,
+            "surface": 1,
+            "value": 0
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "months": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 12,
+        "hit": 11,
+        "accuracy": 0.9166666666666666,
+        "missed": [
+          {
+            "type": "speed",
+            "value": "300",
+            "spoken": "สามร้อย เมกะบิต"
+          }
+        ]
+      },
+      "nonspeech_s": 36.73,
+      "insertions_per_nonspeech_min": 32.67
+    },
+    {
+      "item_id": "ASR-004",
+      "family": "numeric_dense",
+      "ref_chars": 4148,
+      "hyp_chars": 3838,
+      "cer_raw": 0.12295081967213115,
+      "cer_raw_sdi": [
+        152,
+        334,
+        24
+      ],
+      "ref_chars_raw": 4148,
+      "wer_raw": 0.17355371900826447,
+      "wer_raw_sdi": [
+        79,
+        71,
+        18
+      ],
+      "ref_words_raw": 968,
+      "cer_norm": 0.12295081967213115,
+      "cer_norm_sdi": [
+        152,
+        334,
+        24
+      ],
+      "ref_chars_norm": 4148,
+      "wer_norm": 0.17355371900826447,
+      "wer_norm_sdi": [
+        79,
+        71,
+        18
+      ],
+      "ref_words_norm": 968,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 6,
+            "value": 3
+          },
+          "months": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 20,
+        "hit": 17,
+        "accuracy": 0.85,
+        "missed": [
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 48.41,
+      "insertions_per_nonspeech_min": 22.31
+    },
+    {
+      "item_id": "ASR-005",
+      "family": "proper_nouns",
+      "ref_chars": 4847,
+      "hyp_chars": 4476,
+      "cer_raw": 0.1563853930266144,
+      "cer_raw_sdi": [
+        323,
+        403,
+        32
+      ],
+      "ref_chars_raw": 4847,
+      "wer_raw": 0.21619293712316967,
+      "wer_raw_sdi": [
+        133,
+        104,
+        14
+      ],
+      "ref_words_raw": 1161,
+      "cer_norm": 0.1563853930266144,
+      "cer_norm_sdi": [
+        323,
+        403,
+        32
+      ],
+      "ref_chars_norm": 4847,
+      "wer_norm": 0.21619293712316967,
+      "wer_norm_sdi": [
+        133,
+        104,
+        14
+      ],
+      "ref_words_norm": 1161,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "package": {
+            "total": 4,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "months": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 20,
+        "hit": 13,
+        "accuracy": 0.65,
+        "missed": [
+          {
+            "type": "package",
+            "value": "ทรูวิชั่นส์ โกลด์",
+            "spoken": "ทรูวิชั่นส์ โกลด์"
+          },
+          {
+            "type": "package",
+            "value": "ทรูวิชั่นส์ โกลด์",
+            "spoken": "ทรูวิชั่นส์ โกลด์"
+          },
+          {
+            "type": "package",
+            "value": "โปรเติมเงิน ทรูมูฟ เอช",
+            "spoken": "โปรเติมเงิน ทรูมูฟ เอช"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "package",
+            "value": "ทรูวิชั่นส์ โกลด์",
+            "spoken": "ทรูวิชั่นส์ โกลด์"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 42.16,
+      "insertions_per_nonspeech_min": 19.93
+    },
+    {
+      "item_id": "ASR-006",
+      "family": "disfluency",
+      "ref_chars": 5032,
+      "hyp_chars": 4777,
+      "cer_raw": 0.08962639109697933,
+      "cer_raw_sdi": [
+        144,
+        281,
+        26
+      ],
+      "ref_chars_raw": 5032,
+      "wer_raw": 0.1574608408903545,
+      "wer_raw_sdi": [
+        115,
+        61,
+        15
+      ],
+      "ref_words_raw": 1213,
+      "cer_norm": 0.08962639109697933,
+      "cer_norm_sdi": [
+        144,
+        281,
+        26
+      ],
+      "ref_chars_norm": 5032,
+      "wer_norm": 0.1574608408903545,
+      "wer_norm_sdi": [
+        115,
+        61,
+        15
+      ],
+      "ref_words_norm": 1213,
+      "entity": {
+        "per_type": {
+          "amount": {
+            "total": 12,
+            "hit": 12,
+            "surface": 12,
+            "value": 9
+          },
+          "phone": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "speed": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "package": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "date": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 30,
+        "hit": 26,
+        "accuracy": 0.8666666666666667,
+        "missed": [
+          {
+            "type": "speed",
+            "value": "200",
+            "spoken": "สองร้อย เมกะบิต"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
+            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
+            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
+            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
+          }
+        ]
+      },
+      "nonspeech_s": 50.02,
+      "insertions_per_nonspeech_min": 17.99
+    },
+    {
+      "item_id": "ASR-007",
+      "family": "overlap_crosstalk",
+      "ref_chars": 5878,
+      "hyp_chars": 5570,
+      "cer_raw": 0.09544062606328683,
+      "cer_raw_sdi": [
+        185,
+        342,
+        34
+      ],
+      "ref_chars_raw": 5878,
+      "wer_raw": 0.15478761699064075,
+      "wer_raw_sdi": [
+        110,
+        83,
+        22
+      ],
+      "ref_words_raw": 1389,
+      "cer_norm": 0.09544062606328683,
+      "cer_norm_sdi": [
+        185,
+        342,
+        34
+      ],
+      "ref_chars_norm": 5878,
+      "wer_norm": 0.15478761699064075,
+      "wer_norm_sdi": [
+        110,
+        83,
+        22
+      ],
+      "ref_words_norm": 1389,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 5,
+            "value": 1
+          },
+          "package": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "date": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 26,
+        "hit": 18,
+        "accuracy": 0.6923076923076923,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          },
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          },
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          },
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 47.17,
+      "insertions_per_nonspeech_min": 27.98
+    },
+    {
+      "item_id": "ASR-008",
+      "family": "long_context",
+      "ref_chars": 7511,
+      "hyp_chars": 7185,
+      "cer_raw": 0.07469045400079882,
+      "cer_raw_sdi": [
+        173,
+        357,
+        31
+      ],
+      "ref_chars_raw": 7511,
+      "wer_raw": 0.11748013620885357,
+      "wer_raw_sdi": [
+        106,
+        82,
+        19
+      ],
+      "ref_words_raw": 1762,
+      "cer_norm": 0.07469045400079882,
+      "cer_norm_sdi": [
+        173,
+        357,
+        31
+      ],
+      "ref_chars_norm": 7511,
+      "wer_norm": 0.11748013620885357,
+      "wer_norm_sdi": [
+        106,
+        82,
+        19
+      ],
+      "ref_words_norm": 1762,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 8,
+            "hit": 8,
+            "surface": 0,
+            "value": 8
+          },
+          "amount": {
+            "total": 9,
+            "hit": 9,
+            "surface": 8,
+            "value": 9
+          },
+          "months": {
+            "total": 11,
+            "hit": 11,
+            "surface": 0,
+            "value": 11
+          },
+          "date": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 35,
+        "hit": 35,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 81.69,
+      "insertions_per_nonspeech_min": 13.96
+    },
+    {
+      "item_id": "ASR-009",
+      "family": "far_field_low_gain",
+      "ref_chars": 6322,
+      "hyp_chars": 5932,
+      "cer_raw": 0.12116418854792788,
+      "cer_raw_sdi": [
+        290,
+        433,
+        43
+      ],
+      "ref_chars_raw": 6322,
+      "wer_raw": 0.18451178451178452,
+      "wer_raw_sdi": [
+        145,
+        108,
+        21
+      ],
+      "ref_words_raw": 1485,
+      "cer_norm": 0.12116418854792788,
+      "cer_norm_sdi": [
+        290,
+        433,
+        43
+      ],
+      "ref_chars_norm": 6322,
+      "wer_norm": 0.18451178451178452,
+      "wer_norm_sdi": [
+        145,
+        108,
+        21
+      ],
+      "ref_words_norm": 1485,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "amount": {
+            "total": 3,
+            "hit": 3,
+            "surface": 3,
+            "value": 0
+          },
+          "date": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          }
+        },
+        "total": 25,
+        "hit": 25,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 68.03,
+      "insertions_per_nonspeech_min": 18.52
+    },
+    {
+      "item_id": "ASR-010",
+      "family": "hold_ivr",
+      "ref_chars": 5861,
+      "hyp_chars": 5775,
+      "cer_raw": 0.11363248592390376,
+      "cer_raw_sdi": [
+        176,
+        288,
+        202
+      ],
+      "ref_chars_raw": 5861,
+      "wer_raw": 0.15770081061164334,
+      "wer_raw_sdi": [
+        102,
+        67,
+        45
+      ],
+      "ref_words_raw": 1357,
+      "cer_norm": 0.11363248592390376,
+      "cer_norm_sdi": [
+        176,
+        288,
+        202
+      ],
+      "ref_chars_norm": 5861,
+      "wer_norm": 0.15770081061164334,
+      "wer_norm_sdi": [
+        102,
+        67,
+        45
+      ],
+      "ref_words_norm": 1357,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 3,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "id": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 7,
+            "value": 0
+          },
+          "date": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "months": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          }
+        },
+        "total": 23,
+        "hit": 19,
+        "accuracy": 0.8260869565217391,
+        "missed": [
+          {
+            "type": "months",
+            "value": "12",
+            "spoken": "สิบสอง เดือน"
+          },
+          {
+            "type": "months",
+            "value": "12",
+            "spoken": "สิบสอง เดือน"
+          },
+          {
+            "type": "months",
+            "value": "12",
+            "spoken": "สิบสอง เดือน"
+          },
+          {
+            "type": "phone",
+            "value": "0810000330",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม ศูนย์"
+          }
+        ]
+      },
+      "nonspeech_s": 123.65,
+      "insertions_per_nonspeech_min": 21.84
+    },
+    {
+      "item_id": "ASR-011",
+      "family": "clean_baseline",
+      "ref_chars": 2926,
+      "hyp_chars": 2796,
+      "cer_raw": 0.10868079289131921,
+      "cer_raw_sdi": [
+        112,
+        168,
+        38
+      ],
+      "ref_chars_raw": 2926,
+      "wer_raw": 0.17751479289940827,
+      "wer_raw_sdi": [
+        67,
+        39,
+        14
+      ],
+      "ref_words_raw": 676,
+      "cer_norm": 0.10868079289131921,
+      "cer_norm_sdi": [
+        112,
+        168,
+        38
+      ],
+      "ref_chars_norm": 2926,
+      "wer_norm": 0.17751479289940827,
+      "wer_norm_sdi": [
+        67,
+        39,
+        14
+      ],
+      "ref_words_norm": 676,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 5,
+            "hit": 5,
+            "surface": 5,
+            "value": 2
+          },
+          "speed": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "months": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 16,
+        "hit": 15,
+        "accuracy": 0.9375,
+        "missed": [
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 36.12,
+      "insertions_per_nonspeech_min": 23.26
+    },
+    {
+      "item_id": "ASR-012",
+      "family": "telephony_noise",
+      "ref_chars": 3405,
+      "hyp_chars": 3041,
+      "cer_raw": 0.17063142437591777,
+      "cer_raw_sdi": [
+        187,
+        379,
+        15
+      ],
+      "ref_chars_raw": 3405,
+      "wer_raw": 0.20074349442379183,
+      "wer_raw_sdi": [
+        74,
+        84,
+        4
+      ],
+      "ref_words_raw": 807,
+      "cer_norm": 0.17063142437591777,
+      "cer_norm_sdi": [
+        187,
+        379,
+        15
+      ],
+      "ref_chars_norm": 3405,
+      "wer_norm": 0.20074349442379183,
+      "wer_norm_sdi": [
+        74,
+        84,
+        4
+      ],
+      "ref_words_norm": 807,
+      "entity": {
+        "per_type": {
+          "speed": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "months": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          }
+        },
+        "total": 21,
+        "hit": 21,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 41.05,
+      "insertions_per_nonspeech_min": 5.85
+    },
+    {
+      "item_id": "ASR-013",
+      "family": "code_switch",
+      "ref_chars": 4144,
+      "hyp_chars": 3772,
+      "cer_raw": 0.1599903474903475,
+      "cer_raw_sdi": [
+        245,
+        395,
+        23
+      ],
+      "ref_chars_raw": 4144,
+      "wer_raw": 0.2484725050916497,
+      "wer_raw_sdi": [
+        133,
+        93,
+        18
+      ],
+      "ref_words_raw": 982,
+      "cer_norm": 0.1599903474903475,
+      "cer_norm_sdi": [
+        245,
+        395,
+        23
+      ],
+      "ref_chars_norm": 4144,
+      "wer_norm": 0.2484725050916497,
+      "wer_norm_sdi": [
+        133,
+        93,
+        18
+      ],
+      "ref_words_norm": 982,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 3,
+            "value": 7
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "speed": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "package": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 22,
+        "hit": 21,
+        "accuracy": 0.9545454545454546,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู ยูนิตี้",
+            "spoken": "แพ็กเกจ ทรู ยูนิตี้"
+          }
+        ]
+      },
+      "nonspeech_s": 35.64,
+      "insertions_per_nonspeech_min": 30.3
+    },
+    {
+      "item_id": "ASR-014",
+      "family": "numeric_dense",
+      "ref_chars": 4323,
+      "hyp_chars": 3950,
+      "cer_raw": 0.1325468424705066,
+      "cer_raw_sdi": [
+        172,
+        387,
+        14
+      ],
+      "ref_chars_raw": 4323,
+      "wer_raw": 0.1713455953533398,
+      "wer_raw_sdi": [
+        85,
+        84,
+        8
+      ],
+      "ref_words_raw": 1033,
+      "cer_norm": 0.1325468424705066,
+      "cer_norm_sdi": [
+        172,
+        387,
+        14
+      ],
+      "ref_chars_norm": 4323,
+      "wer_norm": 0.1713455953533398,
+      "wer_norm_sdi": [
+        85,
+        84,
+        8
+      ],
+      "ref_words_norm": 1033,
+      "entity": {
+        "per_type": {
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 7,
+            "value": 6
+          },
+          "phone": {
+            "total": 5,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "date": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "id": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          }
+        },
+        "total": 26,
+        "hit": 22,
+        "accuracy": 0.8461538461538461,
+        "missed": [
+          {
+            "type": "id",
+            "value": "368366",
+            "spoken": "สาม หก แปด สาม หก หก"
+          },
+          {
+            "type": "phone",
+            "value": "0810000334",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม สี่"
+          },
+          {
+            "type": "id",
+            "value": "368366",
+            "spoken": "สาม หก แปด สาม หก หก"
+          },
+          {
+            "type": "id",
+            "value": "368366",
+            "spoken": "สาม หก แปด สาม หก หก"
+          }
+        ]
+      },
+      "nonspeech_s": 46.28,
+      "insertions_per_nonspeech_min": 10.37
+    },
+    {
+      "item_id": "ASR-015",
+      "family": "proper_nouns",
+      "ref_chars": 5039,
+      "hyp_chars": 4732,
+      "cer_raw": 0.12125421710656877,
+      "cer_raw_sdi": [
+        238,
+        340,
+        33
+      ],
+      "ref_chars_raw": 5039,
+      "wer_raw": 0.1988400994200497,
+      "wer_raw_sdi": [
+        150,
+        72,
+        18
+      ],
+      "ref_words_raw": 1207,
+      "cer_norm": 0.12125421710656877,
+      "cer_norm_sdi": [
+        238,
+        340,
+        33
+      ],
+      "ref_chars_norm": 5039,
+      "wer_norm": 0.1988400994200497,
+      "wer_norm_sdi": [
+        150,
+        72,
+        18
+      ],
+      "ref_words_norm": 1207,
+      "entity": {
+        "per_type": {
+          "package": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 5,
+            "hit": 5,
+            "surface": 5,
+            "value": 4
+          },
+          "speed": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "date": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "months": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 26,
+        "hit": 22,
+        "accuracy": 0.8461538461538461,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
+            "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
+            "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
+          },
+          {
+            "type": "speed",
+            "value": "300",
+            "spoken": "สามร้อย เมกะบิต"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู ยูนิตี้",
+            "spoken": "แพ็กเกจ ทรู ยูนิตี้"
+          }
+        ]
+      },
+      "nonspeech_s": 40.45,
+      "insertions_per_nonspeech_min": 26.7
+    },
+    {
+      "item_id": "ASR-016",
+      "family": "disfluency",
+      "ref_chars": 5153,
+      "hyp_chars": 4965,
+      "cer_raw": 0.10265864544925286,
+      "cer_raw_sdi": [
+        165,
+        276,
+        88
+      ],
+      "ref_chars_raw": 5153,
+      "wer_raw": 0.1715210355987055,
+      "wer_raw_sdi": [
+        122,
+        60,
+        30
+      ],
+      "ref_words_raw": 1236,
+      "cer_norm": 0.10265864544925286,
+      "cer_norm_sdi": [
+        165,
+        276,
+        88
+      ],
+      "ref_chars_norm": 5153,
+      "wer_norm": 0.1715210355987055,
+      "wer_norm_sdi": [
+        122,
+        60,
+        30
+      ],
+      "ref_words_norm": 1236,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "amount": {
+            "total": 3,
+            "hit": 3,
+            "surface": 3,
+            "value": 3
+          },
+          "date": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 17,
+        "hit": 17,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 58.69,
+      "insertions_per_nonspeech_min": 30.67
+    },
+    {
+      "item_id": "ASR-017",
+      "family": "overlap_crosstalk",
+      "ref_chars": 6248,
+      "hyp_chars": 5750,
+      "cer_raw": 0.13156209987195902,
+      "cer_raw_sdi": [
+        246,
+        537,
+        39
+      ],
+      "ref_chars_raw": 6248,
+      "wer_raw": 0.18300205620287868,
+      "wer_raw_sdi": [
+        125,
+        130,
+        12
+      ],
+      "ref_words_raw": 1459,
+      "cer_norm": 0.13092189500640206,
+      "cer_norm_sdi": [
+        242,
+        537,
+        39
+      ],
+      "ref_chars_norm": 6248,
+      "wer_norm": 0.18231665524331733,
+      "wer_norm_sdi": [
+        124,
+        130,
+        12
+      ],
+      "ref_words_norm": 1459,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 7,
+            "value": 5
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "date": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 27,
+        "hit": 27,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 42.1,
+      "insertions_per_nonspeech_min": 17.1
+    },
+    {
+      "item_id": "ASR-018",
+      "family": "long_context",
+      "ref_chars": 7676,
+      "hyp_chars": 7413,
+      "cer_raw": 0.07399687337154769,
+      "cer_raw_sdi": [
+        215,
+        308,
+        45
+      ],
+      "ref_chars_raw": 7676,
+      "wer_raw": 0.13089295618413754,
+      "wer_raw_sdi": [
+        136,
+        77,
+        23
+      ],
+      "ref_words_raw": 1803,
+      "cer_norm": 0.07399687337154769,
+      "cer_norm_sdi": [
+        215,
+        308,
+        45
+      ],
+      "ref_chars_norm": 7676,
+      "wer_norm": 0.13089295618413754,
+      "wer_norm_sdi": [
+        136,
+        77,
+        23
+      ],
+      "ref_words_norm": 1803,
+      "entity": {
+        "per_type": {
+          "date": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          },
+          "phone": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 13,
+            "hit": 13,
+            "surface": 13,
+            "value": 13
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "id": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          }
+        },
+        "total": 34,
+        "hit": 34,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 82.5,
+      "insertions_per_nonspeech_min": 16.73
+    },
+    {
+      "item_id": "ASR-019",
+      "family": "far_field_low_gain",
+      "ref_chars": 5751,
+      "hyp_chars": 5444,
+      "cer_raw": 0.1090245174752217,
+      "cer_raw_sdi": [
+        246,
+        344,
+        37
+      ],
+      "ref_chars_raw": 5751,
+      "wer_raw": 0.1889055472263868,
+      "wer_raw_sdi": [
+        138,
+        87,
+        27
+      ],
+      "ref_words_raw": 1334,
+      "cer_norm": 0.1090245174752217,
+      "cer_norm_sdi": [
+        246,
+        344,
+        37
+      ],
+      "ref_chars_norm": 5751,
+      "wer_norm": 0.1889055472263868,
+      "wer_norm_sdi": [
+        138,
+        87,
+        27
+      ],
+      "ref_words_norm": 1334,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "date": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          },
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 5,
+            "value": 1
+          },
+          "months": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 27,
+        "hit": 22,
+        "accuracy": 0.8148148148148148,
+        "missed": [
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          }
+        ]
+      },
+      "nonspeech_s": 69.46,
+      "insertions_per_nonspeech_min": 23.32
+    },
+    {
+      "item_id": "ASR-020",
+      "family": "hold_ivr",
+      "ref_chars": 5132,
+      "hyp_chars": 5108,
+      "cer_raw": 0.08261886204208885,
+      "cer_raw_sdi": [
+        106,
+        171,
+        147
+      ],
+      "ref_chars_raw": 5132,
+      "wer_raw": 0.1188118811881188,
+      "wer_raw_sdi": [
+        64,
+        36,
+        44
+      ],
+      "ref_words_raw": 1212,
+      "cer_norm": 0.08261886204208885,
+      "cer_norm_sdi": [
+        106,
+        171,
+        147
+      ],
+      "ref_chars_norm": 5132,
+      "wer_norm": 0.1188118811881188,
+      "wer_norm_sdi": [
+        64,
+        36,
+        44
+      ],
+      "ref_words_norm": 1212,
+      "entity": {
+        "per_type": {
+          "date": {
+            "total": 6,
+            "hit": 6,
+            "surface": 6,
+            "value": 6
+          },
+          "phone": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "months": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 8,
+            "hit": 8,
+            "surface": 8,
+            "value": 6
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 26,
+        "hit": 26,
+        "accuracy": 1.0,
+        "missed": []
+      },
+      "nonspeech_s": 125.64,
+      "insertions_per_nonspeech_min": 21.01
+    }
+  ]
+}

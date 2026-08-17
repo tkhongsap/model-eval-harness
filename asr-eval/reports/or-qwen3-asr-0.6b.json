@@ -1,0 +1,2181 @@
+{
+  "arm": "or-qwen3-asr-0.6b",
+  "generated_at": "2026-08-17T14:08:44Z",
+  "hyp_dir": "..\\hypotheses\\or-qwen3-asr-0.6b",
+  "items_scored": 20,
+  "ground_truth_files": 20,
+  "ground_truth_sha256": "9ab5bcbb4e13a03407efc9d82d8f82a20614f07aff73b3dd883d1e5fdeb94424",
+  "scoring_code_sha256": "5cc95c260baba4739425506d072f0cf19a2fcc1393deba1516c22bb7ed43d3c3",
+  "normalisation": "asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, Thai digits, whitespace",
+  "overall": {
+    "cer_raw": 0.1521094480353032,
+    "cer_norm": 0.152029030669173,
+    "wer_raw": 0.23133341861754297,
+    "wer_norm": 0.23124813440791436
+  },
+  "entity_overall": {
+    "hit": 370,
+    "total": 465,
+    "accuracy": 0.7956989247311828
+  },
+  "insertions_per_nonspeech_min": {
+    "measurable_items": 20,
+    "mean": 30.547000000000004,
+    "max": 48.33
+  },
+  "by_family": {
+    "clean_baseline": {
+      "items": 2,
+      "cer_norm": 0.12406905890318212,
+      "entity_hit": 29,
+      "entity_total": 33
+    },
+    "code_switch": {
+      "items": 2,
+      "cer_norm": 0.16882954829049163,
+      "entity_hit": 29,
+      "entity_total": 34
+    },
+    "disfluency": {
+      "items": 2,
+      "cer_norm": 0.13892979872361316,
+      "entity_hit": 36,
+      "entity_total": 47
+    },
+    "far_field_low_gain": {
+      "items": 2,
+      "cer_norm": 0.10560755404621884,
+      "entity_hit": 30,
+      "entity_total": 52
+    },
+    "hold_ivr": {
+      "items": 2,
+      "cer_norm": 0.16374056217593014,
+      "entity_hit": 43,
+      "entity_total": 49
+    },
+    "long_context": {
+      "items": 2,
+      "cer_norm": 0.133271877263449,
+      "entity_hit": 58,
+      "entity_total": 69
+    },
+    "numeric_dense": {
+      "items": 2,
+      "cer_norm": 0.17672057608310707,
+      "entity_hit": 40,
+      "entity_total": 46
+    },
+    "overlap_crosstalk": {
+      "items": 2,
+      "cer_norm": 0.15050305129473857,
+      "entity_hit": 40,
+      "entity_total": 53
+    },
+    "proper_nouns": {
+      "items": 2,
+      "cer_norm": 0.1937082743273316,
+      "entity_hit": 37,
+      "entity_total": 46
+    },
+    "telephony_noise": {
+      "items": 2,
+      "cer_norm": 0.19388369990961132,
+      "entity_hit": 28,
+      "entity_total": 36
+    }
+  },
+  "entity_by_type": {
+    "amount": {
+      "total": 118,
+      "hit": 118,
+      "surface": 44,
+      "value": 110
+    },
+    "date": {
+      "total": 88,
+      "hit": 81,
+      "surface": 0,
+      "value": 81
+    },
+    "id": {
+      "total": 64,
+      "hit": 64,
+      "surface": 0,
+      "value": 64
+    },
+    "months": {
+      "total": 83,
+      "hit": 77,
+      "surface": 0,
+      "value": 77
+    },
+    "package": {
+      "total": 15,
+      "hit": 0,
+      "surface": 0,
+      "value": 0
+    },
+    "phone": {
+      "total": 88,
+      "hit": 23,
+      "surface": 0,
+      "value": 23
+    },
+    "speed": {
+      "total": 9,
+      "hit": 7,
+      "surface": 0,
+      "value": 7
+    }
+  },
+  "items": [
+    {
+      "item_id": "ASR-001",
+      "family": "clean_baseline",
+      "ref_chars": 2982,
+      "hyp_chars": 2785,
+      "cer_raw": 0.12642521797451375,
+      "cer_raw_sdi": [
+        134,
+        220,
+        23
+      ],
+      "ref_chars_raw": 2982,
+      "wer_raw": 0.1907514450867052,
+      "wer_raw_sdi": [
+        70,
+        43,
+        19
+      ],
+      "ref_words_raw": 692,
+      "cer_norm": 0.12642521797451375,
+      "cer_norm_sdi": [
+        134,
+        220,
+        23
+      ],
+      "ref_chars_norm": 2982,
+      "wer_norm": 0.1907514450867052,
+      "wer_norm_sdi": [
+        70,
+        43,
+        19
+      ],
+      "ref_words_norm": 692,
+      "entity": {
+        "per_type": {
+          "package": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "phone": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 5,
+            "hit": 5,
+            "surface": 4,
+            "value": 4
+          },
+          "date": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          }
+        },
+        "total": 17,
+        "hit": 16,
+        "accuracy": 0.9411764705882353,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          }
+        ]
+      },
+      "nonspeech_s": 29.92,
+      "insertions_per_nonspeech_min": 38.1
+    },
+    {
+      "item_id": "ASR-002",
+      "family": "telephony_noise",
+      "ref_chars": 3233,
+      "hyp_chars": 2917,
+      "cer_raw": 0.18001855861429014,
+      "cer_raw_sdi": [
+        206,
+        346,
+        30
+      ],
+      "ref_chars_raw": 3233,
+      "wer_raw": 0.2798459563543004,
+      "wer_raw_sdi": [
+        120,
+        85,
+        13
+      ],
+      "ref_words_raw": 779,
+      "cer_norm": 0.18001855861429014,
+      "cer_norm_sdi": [
+        206,
+        346,
+        30
+      ],
+      "ref_chars_norm": 3233,
+      "wer_norm": 0.2798459563543004,
+      "wer_norm_sdi": [
+        120,
+        85,
+        13
+      ],
+      "ref_words_norm": 779,
+      "entity": {
+        "per_type": {
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "phone": {
+            "total": 4,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "date": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "months": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 15,
+        "hit": 12,
+        "accuracy": 0.8,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000322",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง สอง"
+          },
+          {
+            "type": "months",
+            "value": "6",
+            "spoken": "หก เดือน"
+          },
+          {
+            "type": "phone",
+            "value": "0810000322",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง สอง"
+          }
+        ]
+      },
+      "nonspeech_s": 35.43,
+      "insertions_per_nonspeech_min": 22.02
+    },
+    {
+      "item_id": "ASR-003",
+      "family": "code_switch",
+      "ref_chars": 3870,
+      "hyp_chars": 3634,
+      "cer_raw": 0.1276485788113695,
+      "cer_raw_sdi": [
+        208,
+        261,
+        25
+      ],
+      "ref_chars_raw": 3870,
+      "wer_raw": 0.203125,
+      "wer_raw_sdi": [
+        99,
+        59,
+        24
+      ],
+      "ref_words_raw": 896,
+      "cer_norm": 0.1276485788113695,
+      "cer_norm_sdi": [
+        208,
+        261,
+        25
+      ],
+      "ref_chars_norm": 3870,
+      "wer_norm": 0.203125,
+      "wer_norm_sdi": [
+        99,
+        59,
+        24
+      ],
+      "ref_words_norm": 896,
+      "entity": {
+        "per_type": {
+          "speed": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "phone": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "months": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 12,
+        "hit": 8,
+        "accuracy": 0.6666666666666666,
+        "missed": [
+          {
+            "type": "speed",
+            "value": "300",
+            "spoken": "สามร้อย เมกะบิต"
+          },
+          {
+            "type": "phone",
+            "value": "0810000303",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สาม"
+          },
+          {
+            "type": "phone",
+            "value": "0810000303",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สาม"
+          },
+          {
+            "type": "phone",
+            "value": "0810000323",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง สาม"
+          }
+        ]
+      },
+      "nonspeech_s": 36.73,
+      "insertions_per_nonspeech_min": 39.2
+    },
+    {
+      "item_id": "ASR-004",
+      "family": "numeric_dense",
+      "ref_chars": 4148,
+      "hyp_chars": 3715,
+      "cer_raw": 0.17984570877531342,
+      "cer_raw_sdi": [
+        259,
+        460,
+        27
+      ],
+      "ref_chars_raw": 4148,
+      "wer_raw": 0.24380165289256198,
+      "wer_raw_sdi": [
+        117,
+        100,
+        19
+      ],
+      "ref_words_raw": 968,
+      "cer_norm": 0.17888138862102218,
+      "cer_norm_sdi": [
+        255,
+        460,
+        27
+      ],
+      "ref_chars_norm": 4148,
+      "wer_norm": 0.2427685950413223,
+      "wer_norm_sdi": [
+        116,
+        100,
+        19
+      ],
+      "ref_words_norm": 968,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 20,
+        "hit": 15,
+        "accuracy": 0.75,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000304",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สี่"
+          },
+          {
+            "type": "phone",
+            "value": "0810000304",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สี่"
+          },
+          {
+            "type": "phone",
+            "value": "0810000304",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สี่"
+          },
+          {
+            "type": "phone",
+            "value": "0810000324",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง สี่"
+          },
+          {
+            "type": "phone",
+            "value": "0810000304",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ สี่"
+          }
+        ]
+      },
+      "nonspeech_s": 48.41,
+      "insertions_per_nonspeech_min": 23.55
+    },
+    {
+      "item_id": "ASR-005",
+      "family": "proper_nouns",
+      "ref_chars": 4847,
+      "hyp_chars": 4450,
+      "cer_raw": 0.19414070559108726,
+      "cer_raw_sdi": [
+        452,
+        443,
+        46
+      ],
+      "ref_chars_raw": 4847,
+      "wer_raw": 0.2721791559000861,
+      "wer_raw_sdi": [
+        190,
+        106,
+        20
+      ],
+      "ref_words_raw": 1161,
+      "cer_norm": 0.19414070559108726,
+      "cer_norm_sdi": [
+        452,
+        443,
+        46
+      ],
+      "ref_chars_norm": 4847,
+      "wer_norm": 0.2721791559000861,
+      "wer_norm_sdi": [
+        190,
+        106,
+        20
+      ],
+      "ref_words_norm": 1161,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 6,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "package": {
+            "total": 4,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 20,
+        "hit": 15,
+        "accuracy": 0.75,
+        "missed": [
+          {
+            "type": "package",
+            "value": "ทรูวิชั่นส์ โกลด์",
+            "spoken": "ทรูวิชั่นส์ โกลด์"
+          },
+          {
+            "type": "package",
+            "value": "ทรูวิชั่นส์ โกลด์",
+            "spoken": "ทรูวิชั่นส์ โกลด์"
+          },
+          {
+            "type": "package",
+            "value": "โปรเติมเงิน ทรูมูฟ เอช",
+            "spoken": "โปรเติมเงิน ทรูมูฟ เอช"
+          },
+          {
+            "type": "package",
+            "value": "ทรูวิชั่นส์ โกลด์",
+            "spoken": "ทรูวิชั่นส์ โกลด์"
+          },
+          {
+            "type": "phone",
+            "value": "0810000325",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง ห้า"
+          }
+        ]
+      },
+      "nonspeech_s": 42.16,
+      "insertions_per_nonspeech_min": 28.47
+    },
+    {
+      "item_id": "ASR-006",
+      "family": "disfluency",
+      "ref_chars": 5032,
+      "hyp_chars": 4672,
+      "cer_raw": 0.14427662957074722,
+      "cer_raw_sdi": [
+        286,
+        400,
+        40
+      ],
+      "ref_chars_raw": 5032,
+      "wer_raw": 0.24402308326463315,
+      "wer_raw_sdi": [
+        173,
+        90,
+        33
+      ],
+      "ref_words_raw": 1213,
+      "cer_norm": 0.14427662957074722,
+      "cer_norm_sdi": [
+        286,
+        400,
+        40
+      ],
+      "ref_chars_norm": 5032,
+      "wer_norm": 0.24402308326463315,
+      "wer_norm_sdi": [
+        173,
+        90,
+        33
+      ],
+      "ref_words_norm": 1213,
+      "entity": {
+        "per_type": {
+          "amount": {
+            "total": 12,
+            "hit": 12,
+            "surface": 3,
+            "value": 12
+          },
+          "phone": {
+            "total": 4,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "speed": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "package": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "date": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 30,
+        "hit": 23,
+        "accuracy": 0.7666666666666667,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000306",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ หก"
+          },
+          {
+            "type": "phone",
+            "value": "0810000306",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ หก"
+          },
+          {
+            "type": "phone",
+            "value": "0810000306",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ หก"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
+            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
+          },
+          {
+            "type": "phone",
+            "value": "0810000326",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง หก"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
+            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ซูเปอร์ เซฟเวอร์",
+            "spoken": "แพ็กเกจ ซูเปอร์ เซฟเวอร์"
+          }
+        ]
+      },
+      "nonspeech_s": 50.02,
+      "insertions_per_nonspeech_min": 39.58
+    },
+    {
+      "item_id": "ASR-007",
+      "family": "overlap_crosstalk",
+      "ref_chars": 5878,
+      "hyp_chars": 5475,
+      "cer_raw": 0.14596801633208575,
+      "cer_raw_sdi": [
+        339,
+        461,
+        58
+      ],
+      "ref_chars_raw": 5878,
+      "wer_raw": 0.23542116630669546,
+      "wer_raw_sdi": [
+        177,
+        112,
+        38
+      ],
+      "ref_words_raw": 1389,
+      "cer_norm": 0.14596801633208575,
+      "cer_norm_sdi": [
+        339,
+        461,
+        58
+      ],
+      "ref_chars_norm": 5878,
+      "wer_norm": 0.23542116630669546,
+      "wer_norm_sdi": [
+        177,
+        112,
+        38
+      ],
+      "ref_words_norm": 1389,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 5,
+            "value": 6
+          },
+          "package": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "date": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 26,
+        "hit": 18,
+        "accuracy": 0.6923076923076923,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000307",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000307",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เจ็ด"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู อันลิมิเต็ด",
+            "spoken": "แพ็กเกจ ทรู อันลิมิเต็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000307",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000327",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000307",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เจ็ด"
+          }
+        ]
+      },
+      "nonspeech_s": 47.17,
+      "insertions_per_nonspeech_min": 48.33
+    },
+    {
+      "item_id": "ASR-008",
+      "family": "long_context",
+      "ref_chars": 7511,
+      "hyp_chars": 6931,
+      "cer_raw": 0.131939821594994,
+      "cer_raw_sdi": [
+        323,
+        624,
+        44
+      ],
+      "ref_chars_raw": 7511,
+      "wer_raw": 0.18671963677639047,
+      "wer_raw_sdi": [
+        186,
+        121,
+        22
+      ],
+      "ref_words_raw": 1762,
+      "cer_norm": 0.131939821594994,
+      "cer_norm_sdi": [
+        323,
+        624,
+        44
+      ],
+      "ref_chars_norm": 7511,
+      "wer_norm": 0.18671963677639047,
+      "wer_norm_sdi": [
+        186,
+        121,
+        22
+      ],
+      "ref_words_norm": 1762,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 8,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 9,
+            "hit": 9,
+            "surface": 0,
+            "value": 9
+          },
+          "months": {
+            "total": 11,
+            "hit": 11,
+            "surface": 0,
+            "value": 11
+          },
+          "date": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 35,
+        "hit": 27,
+        "accuracy": 0.7714285714285715,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000308",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000308",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000308",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000328",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000328",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000308",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000328",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000308",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ แปด"
+          }
+        ]
+      },
+      "nonspeech_s": 81.69,
+      "insertions_per_nonspeech_min": 16.16
+    },
+    {
+      "item_id": "ASR-009",
+      "family": "far_field_low_gain",
+      "ref_chars": 6322,
+      "hyp_chars": 6135,
+      "cer_raw": 0.10566276494780133,
+      "cer_raw_sdi": [
+        341,
+        257,
+        70
+      ],
+      "ref_chars_raw": 6322,
+      "wer_raw": 0.20134680134680136,
+      "wer_raw_sdi": [
+        192,
+        59,
+        48
+      ],
+      "ref_words_raw": 1485,
+      "cer_norm": 0.10566276494780133,
+      "cer_norm_sdi": [
+        341,
+        257,
+        70
+      ],
+      "ref_chars_norm": 6322,
+      "wer_norm": 0.20134680134680136,
+      "wer_norm_sdi": [
+        192,
+        59,
+        48
+      ],
+      "ref_words_norm": 1485,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "amount": {
+            "total": 3,
+            "hit": 3,
+            "surface": 3,
+            "value": 3
+          },
+          "date": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          }
+        },
+        "total": 25,
+        "hit": 20,
+        "accuracy": 0.8,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000309",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000309",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000309",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000329",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง เก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000309",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม ศูนย์ เก้า"
+          }
+        ]
+      },
+      "nonspeech_s": 68.03,
+      "insertions_per_nonspeech_min": 42.34
+    },
+    {
+      "item_id": "ASR-010",
+      "family": "hold_ivr",
+      "ref_chars": 5861,
+      "hyp_chars": 5613,
+      "cer_raw": 0.1649889097423648,
+      "cer_raw_sdi": [
+        289,
+        463,
+        215
+      ],
+      "ref_chars_raw": 5861,
+      "wer_raw": 0.22918201915991157,
+      "wer_raw_sdi": [
+        162,
+        101,
+        48
+      ],
+      "ref_words_raw": 1357,
+      "cer_norm": 0.16430643234942843,
+      "cer_norm_sdi": [
+        285,
+        463,
+        215
+      ],
+      "ref_chars_norm": 5861,
+      "wer_norm": 0.22844509948415623,
+      "wer_norm_sdi": [
+        161,
+        101,
+        48
+      ],
+      "ref_words_norm": 1357,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 4,
+            "value": 7
+          },
+          "date": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 23,
+        "hit": 20,
+        "accuracy": 0.8695652173913043,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000310",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง ศูนย์"
+          },
+          {
+            "type": "phone",
+            "value": "0810000310",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง ศูนย์"
+          },
+          {
+            "type": "phone",
+            "value": "0810000330",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม ศูนย์"
+          }
+        ]
+      },
+      "nonspeech_s": 123.65,
+      "insertions_per_nonspeech_min": 23.29
+    },
+    {
+      "item_id": "ASR-011",
+      "family": "clean_baseline",
+      "ref_chars": 2926,
+      "hyp_chars": 2767,
+      "cer_raw": 0.12166780587833219,
+      "cer_raw_sdi": [
+        137,
+        189,
+        30
+      ],
+      "ref_chars_raw": 2926,
+      "wer_raw": 0.1834319526627219,
+      "wer_raw_sdi": [
+        75,
+        40,
+        9
+      ],
+      "ref_words_raw": 676,
+      "cer_norm": 0.12166780587833219,
+      "cer_norm_sdi": [
+        137,
+        189,
+        30
+      ],
+      "ref_chars_norm": 2926,
+      "wer_norm": 0.1834319526627219,
+      "wer_norm_sdi": [
+        75,
+        40,
+        9
+      ],
+      "ref_words_norm": 676,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 5,
+            "hit": 5,
+            "surface": 5,
+            "value": 5
+          },
+          "speed": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "months": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 16,
+        "hit": 13,
+        "accuracy": 0.8125,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000311",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง หนึ่ง"
+          },
+          {
+            "type": "phone",
+            "value": "0810000311",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง หนึ่ง"
+          },
+          {
+            "type": "phone",
+            "value": "0810000311",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง หนึ่ง"
+          }
+        ]
+      },
+      "nonspeech_s": 36.12,
+      "insertions_per_nonspeech_min": 14.95
+    },
+    {
+      "item_id": "ASR-012",
+      "family": "telephony_noise",
+      "ref_chars": 3405,
+      "hyp_chars": 3012,
+      "cer_raw": 0.20704845814977973,
+      "cer_raw_sdi": [
+        256,
+        421,
+        28
+      ],
+      "ref_chars_raw": 3405,
+      "wer_raw": 0.2701363073110285,
+      "wer_raw_sdi": [
+        113,
+        92,
+        13
+      ],
+      "ref_words_raw": 807,
+      "cer_norm": 0.20704845814977973,
+      "cer_norm_sdi": [
+        256,
+        421,
+        28
+      ],
+      "ref_chars_norm": 3405,
+      "wer_norm": 0.2701363073110285,
+      "wer_norm_sdi": [
+        113,
+        92,
+        13
+      ],
+      "ref_words_norm": 807,
+      "entity": {
+        "per_type": {
+          "speed": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "phone": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "amount": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          }
+        },
+        "total": 21,
+        "hit": 16,
+        "accuracy": 0.7619047619047619,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000312",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง สอง"
+          },
+          {
+            "type": "phone",
+            "value": "0810000312",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง สอง"
+          },
+          {
+            "type": "phone",
+            "value": "0810000312",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง สอง"
+          },
+          {
+            "type": "phone",
+            "value": "0810000332",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม สอง"
+          },
+          {
+            "type": "phone",
+            "value": "0810000312",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง สอง"
+          }
+        ]
+      },
+      "nonspeech_s": 41.05,
+      "insertions_per_nonspeech_min": 19.0
+    },
+    {
+      "item_id": "ASR-013",
+      "family": "code_switch",
+      "ref_chars": 4144,
+      "hyp_chars": 3709,
+      "cer_raw": 0.20728764478764478,
+      "cer_raw_sdi": [
+        330,
+        482,
+        47
+      ],
+      "ref_chars_raw": 4144,
+      "wer_raw": 0.3014256619144603,
+      "wer_raw_sdi": [
+        170,
+        102,
+        24
+      ],
+      "ref_words_raw": 982,
+      "cer_norm": 0.20728764478764478,
+      "cer_norm_sdi": [
+        330,
+        482,
+        47
+      ],
+      "ref_chars_norm": 4144,
+      "wer_norm": 0.3014256619144603,
+      "wer_norm_sdi": [
+        170,
+        102,
+        24
+      ],
+      "ref_words_norm": 982,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "speed": {
+            "total": 1,
+            "hit": 1,
+            "surface": 0,
+            "value": 1
+          },
+          "package": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "date": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 22,
+        "hit": 21,
+        "accuracy": 0.9545454545454546,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู ยูนิตี้",
+            "spoken": "แพ็กเกจ ทรู ยูนิตี้"
+          }
+        ]
+      },
+      "nonspeech_s": 35.64,
+      "insertions_per_nonspeech_min": 40.4
+    },
+    {
+      "item_id": "ASR-014",
+      "family": "numeric_dense",
+      "ref_chars": 4323,
+      "hyp_chars": 3897,
+      "cer_raw": 0.17464723571593802,
+      "cer_raw_sdi": [
+        267,
+        457,
+        31
+      ],
+      "ref_chars_raw": 4323,
+      "wer_raw": 0.2468538238141336,
+      "wer_raw_sdi": [
+        138,
+        102,
+        15
+      ],
+      "ref_words_raw": 1033,
+      "cer_norm": 0.17464723571593802,
+      "cer_norm_sdi": [
+        267,
+        457,
+        31
+      ],
+      "ref_chars_norm": 4323,
+      "wer_norm": 0.2468538238141336,
+      "wer_norm_sdi": [
+        138,
+        102,
+        15
+      ],
+      "ref_words_norm": 1033,
+      "entity": {
+        "per_type": {
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 7,
+            "value": 6
+          },
+          "phone": {
+            "total": 5,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "date": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 26,
+        "hit": 25,
+        "accuracy": 0.9615384615384616,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000334",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม สี่"
+          }
+        ]
+      },
+      "nonspeech_s": 46.28,
+      "insertions_per_nonspeech_min": 19.45
+    },
+    {
+      "item_id": "ASR-015",
+      "family": "proper_nouns",
+      "ref_chars": 5039,
+      "hyp_chars": 4621,
+      "cer_raw": 0.193292319904743,
+      "cer_raw_sdi": [
+        450,
+        471,
+        53
+      ],
+      "ref_chars_raw": 5039,
+      "wer_raw": 0.2891466445733223,
+      "wer_raw_sdi": [
+        207,
+        116,
+        26
+      ],
+      "ref_words_raw": 1207,
+      "cer_norm": 0.193292319904743,
+      "cer_norm_sdi": [
+        450,
+        471,
+        53
+      ],
+      "ref_chars_norm": 5039,
+      "wer_norm": 0.2891466445733223,
+      "wer_norm_sdi": [
+        207,
+        116,
+        26
+      ],
+      "ref_words_norm": 1207,
+      "entity": {
+        "per_type": {
+          "package": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "phone": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 5,
+            "hit": 5,
+            "surface": 5,
+            "value": 4
+          },
+          "speed": {
+            "total": 1,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "date": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "months": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 26,
+        "hit": 22,
+        "accuracy": 0.8461538461538461,
+        "missed": [
+          {
+            "type": "package",
+            "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
+            "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจครอบครัว แฟมิลี่ พลัส",
+            "spoken": "แพ็กเกจครอบครัว แฟมิลี่ พลัส"
+          },
+          {
+            "type": "speed",
+            "value": "300",
+            "spoken": "สามร้อย เมกะบิต"
+          },
+          {
+            "type": "package",
+            "value": "แพ็กเกจ ทรู ยูนิตี้",
+            "spoken": "แพ็กเกจ ทรู ยูนิตี้"
+          }
+        ]
+      },
+      "nonspeech_s": 40.45,
+      "insertions_per_nonspeech_min": 38.56
+    },
+    {
+      "item_id": "ASR-016",
+      "family": "disfluency",
+      "ref_chars": 5153,
+      "hyp_chars": 4829,
+      "cer_raw": 0.1337085193091403,
+      "cer_raw_sdi": [
+        251,
+        381,
+        57
+      ],
+      "ref_chars_raw": 5153,
+      "wer_raw": 0.22249190938511326,
+      "wer_raw_sdi": [
+        165,
+        83,
+        27
+      ],
+      "ref_words_raw": 1236,
+      "cer_norm": 0.1337085193091403,
+      "cer_norm_sdi": [
+        251,
+        381,
+        57
+      ],
+      "ref_chars_norm": 5153,
+      "wer_norm": 0.22249190938511326,
+      "wer_norm_sdi": [
+        165,
+        83,
+        27
+      ],
+      "ref_words_norm": 1236,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 4,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 3,
+            "hit": 3,
+            "surface": 3,
+            "value": 3
+          },
+          "date": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "months": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          },
+          "id": {
+            "total": 2,
+            "hit": 2,
+            "surface": 0,
+            "value": 2
+          }
+        },
+        "total": 17,
+        "hit": 13,
+        "accuracy": 0.7647058823529411,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000316",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง หก"
+          },
+          {
+            "type": "phone",
+            "value": "0810000316",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง หก"
+          },
+          {
+            "type": "phone",
+            "value": "0810000316",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง หก"
+          },
+          {
+            "type": "phone",
+            "value": "0810000336",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม หก"
+          }
+        ]
+      },
+      "nonspeech_s": 58.69,
+      "insertions_per_nonspeech_min": 27.6
+    },
+    {
+      "item_id": "ASR-017",
+      "family": "overlap_crosstalk",
+      "ref_chars": 6248,
+      "hyp_chars": 5716,
+      "cer_raw": 0.15476952624839949,
+      "cer_raw_sdi": [
+        341,
+        579,
+        47
+      ],
+      "ref_chars_raw": 6248,
+      "wer_raw": 0.22686771761480465,
+      "wer_raw_sdi": [
+        161,
+        142,
+        28
+      ],
+      "ref_words_raw": 1459,
+      "cer_norm": 0.15476952624839949,
+      "cer_norm_sdi": [
+        341,
+        579,
+        47
+      ],
+      "ref_chars_norm": 6248,
+      "wer_norm": 0.22686771761480465,
+      "wer_norm_sdi": [
+        161,
+        142,
+        28
+      ],
+      "ref_words_norm": 1459,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "date": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "id": {
+            "total": 3,
+            "hit": 3,
+            "surface": 0,
+            "value": 3
+          }
+        },
+        "total": 27,
+        "hit": 22,
+        "accuracy": 0.8148148148148148,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000317",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000317",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000337",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000317",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000317",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เจ็ด"
+          }
+        ]
+      },
+      "nonspeech_s": 42.1,
+      "insertions_per_nonspeech_min": 39.9
+    },
+    {
+      "item_id": "ASR-018",
+      "family": "long_context",
+      "ref_chars": 7676,
+      "hyp_chars": 7165,
+      "cer_raw": 0.1345752996352267,
+      "cer_raw_sdi": [
+        382,
+        581,
+        70
+      ],
+      "ref_chars_raw": 7676,
+      "wer_raw": 0.21741541874653356,
+      "wer_raw_sdi": [
+        220,
+        135,
+        37
+      ],
+      "ref_words_raw": 1803,
+      "cer_norm": 0.1345752996352267,
+      "cer_norm_sdi": [
+        382,
+        581,
+        70
+      ],
+      "ref_chars_norm": 7676,
+      "wer_norm": 0.21741541874653356,
+      "wer_norm_sdi": [
+        220,
+        135,
+        37
+      ],
+      "ref_words_norm": 1803,
+      "entity": {
+        "per_type": {
+          "date": {
+            "total": 7,
+            "hit": 7,
+            "surface": 0,
+            "value": 7
+          },
+          "phone": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 13,
+            "hit": 13,
+            "surface": 0,
+            "value": 13
+          },
+          "months": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "id": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          }
+        },
+        "total": 34,
+        "hit": 31,
+        "accuracy": 0.9117647058823529,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000318",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000318",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง แปด"
+          },
+          {
+            "type": "phone",
+            "value": "0810000318",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง แปด"
+          }
+        ]
+      },
+      "nonspeech_s": 82.5,
+      "insertions_per_nonspeech_min": 26.91
+    },
+    {
+      "item_id": "ASR-019",
+      "family": "far_field_low_gain",
+      "ref_chars": 5751,
+      "hyp_chars": 5604,
+      "cer_raw": 0.10554686141540602,
+      "cer_raw_sdi": [
+        300,
+        227,
+        80
+      ],
+      "ref_chars_raw": 5751,
+      "wer_raw": 0.19490254872563717,
+      "wer_raw_sdi": [
+        159,
+        55,
+        46
+      ],
+      "ref_words_raw": 1334,
+      "cer_norm": 0.10554686141540602,
+      "cer_norm_sdi": [
+        300,
+        227,
+        80
+      ],
+      "ref_chars_norm": 5751,
+      "wer_norm": 0.19490254872563717,
+      "wer_norm_sdi": [
+        159,
+        55,
+        46
+      ],
+      "ref_words_norm": 1334,
+      "entity": {
+        "per_type": {
+          "phone": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "date": {
+            "total": 7,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "amount": {
+            "total": 6,
+            "hit": 6,
+            "surface": 5,
+            "value": 1
+          },
+          "months": {
+            "total": 5,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 27,
+        "hit": 10,
+        "accuracy": 0.37037037037037035,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000319",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000319",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เก้า"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "months",
+            "value": "3",
+            "spoken": "สาม เดือน"
+          },
+          {
+            "type": "phone",
+            "value": "0810000319",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เก้า"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "date",
+            "value": "2026-08-10",
+            "spoken": "วันที่ สิบ สิงหาคม สองพันห้าร้อยหกสิบเก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000339",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สาม เก้า"
+          },
+          {
+            "type": "phone",
+            "value": "0810000319",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม หนึ่ง เก้า"
+          }
+        ]
+      },
+      "nonspeech_s": 69.46,
+      "insertions_per_nonspeech_min": 39.73
+    },
+    {
+      "item_id": "ASR-020",
+      "family": "hold_ivr",
+      "ref_chars": 5132,
+      "hyp_chars": 4884,
+      "cer_raw": 0.16309431021044427,
+      "cer_raw_sdi": [
+        241,
+        422,
+        174
+      ],
+      "ref_chars_raw": 5132,
+      "wer_raw": 0.2301980198019802,
+      "wer_raw_sdi": [
+        146,
+        84,
+        49
+      ],
+      "ref_words_raw": 1212,
+      "cer_norm": 0.16309431021044427,
+      "cer_norm_sdi": [
+        241,
+        422,
+        174
+      ],
+      "ref_chars_norm": 5132,
+      "wer_norm": 0.2301980198019802,
+      "wer_norm_sdi": [
+        146,
+        84,
+        49
+      ],
+      "ref_words_norm": 1212,
+      "entity": {
+        "per_type": {
+          "date": {
+            "total": 6,
+            "hit": 6,
+            "surface": 0,
+            "value": 6
+          },
+          "phone": {
+            "total": 3,
+            "hit": 0,
+            "surface": 0,
+            "value": 0
+          },
+          "months": {
+            "total": 5,
+            "hit": 5,
+            "surface": 0,
+            "value": 5
+          },
+          "amount": {
+            "total": 8,
+            "hit": 8,
+            "surface": 0,
+            "value": 8
+          },
+          "id": {
+            "total": 4,
+            "hit": 4,
+            "surface": 0,
+            "value": 4
+          }
+        },
+        "total": 26,
+        "hit": 23,
+        "accuracy": 0.8846153846153846,
+        "missed": [
+          {
+            "type": "phone",
+            "value": "0810000320",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง ศูนย์"
+          },
+          {
+            "type": "phone",
+            "value": "0810000320",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง ศูนย์"
+          },
+          {
+            "type": "phone",
+            "value": "0810000320",
+            "spoken": "ศูนย์ แปด หนึ่ง ศูนย์ ศูนย์ ศูนย์ ศูนย์ สาม สอง ศูนย์"
+          }
+        ]
+      },
+      "nonspeech_s": 125.64,
+      "insertions_per_nonspeech_min": 23.4
+    }
+  ]
+}
