@@ -1,0 +1,135 @@
+{
+  "n_calls": 30,
+  "arms": {
+    "gemini-audio": {
+      "call_result": {
+        "weighted_f1": 0.9170868347338935,
+        "denominator": 34,
+        "coverage": {
+          "items_scored": 34,
+          "parse_failures": 0
+        }
+      },
+      "reason": {
+        "weighted_f1": 0.8337107337107336,
+        "denominator": 35,
+        "coverage": {
+          "items_scored": 35,
+          "parse_failures": 0
+        }
+      },
+      "product": {
+        "weighted_f1": 0.9751481988144095,
+        "denominator": 30,
+        "coverage": {
+          "items_scored": 30,
+          "parse_failures": 0
+        }
+      }
+    },
+    "gemini-text": {
+      "call_result": {
+        "weighted_f1": 0.9537815126050421,
+        "denominator": 34,
+        "coverage": {
+          "items_scored": 34,
+          "parse_failures": 0
+        }
+      },
+      "reason": {
+        "weighted_f1": 0.8046585892739738,
+        "denominator": 35,
+        "coverage": {
+          "items_scored": 35,
+          "parse_failures": 0
+        }
+      },
+      "product": {
+        "weighted_f1": 0.9751481988144095,
+        "denominator": 30,
+        "coverage": {
+          "items_scored": 30,
+          "parse_failures": 0
+        }
+      }
+    },
+    "qwen-text": {
+      "call_result": {
+        "weighted_f1": 0.8180035650623886,
+        "denominator": 34,
+        "coverage": {
+          "items_scored": 34,
+          "parse_failures": 5
+        }
+      },
+      "reason": {
+        "weighted_f1": 0.7689227564793176,
+        "denominator": 35,
+        "coverage": {
+          "items_scored": 35,
+          "parse_failures": 5
+        }
+      },
+      "product": {
+        "weighted_f1": 0.9751481988144095,
+        "denominator": 30,
+        "coverage": {
+          "items_scored": 30,
+          "parse_failures": 5
+        }
+      }
+    },
+    "qwenasr-qwen": {
+      "call_result": {
+        "weighted_f1": 0.8759826511249661,
+        "denominator": 34,
+        "coverage": {
+          "items_scored": 34,
+          "parse_failures": 4
+        }
+      },
+      "reason": {
+        "weighted_f1": 0.765485796255027,
+        "denominator": 35,
+        "coverage": {
+          "items_scored": 35,
+          "parse_failures": 4
+        }
+      },
+      "product": {
+        "weighted_f1": 0.9751481988144095,
+        "denominator": 30,
+        "coverage": {
+          "items_scored": 30,
+          "parse_failures": 4
+        }
+      }
+    },
+    "whisper-qwen": {
+      "call_result": {
+        "weighted_f1": 0.8008148714031067,
+        "denominator": 34,
+        "coverage": {
+          "items_scored": 34,
+          "parse_failures": 6
+        }
+      },
+      "reason": {
+        "weighted_f1": 0.7242332830568124,
+        "denominator": 35,
+        "coverage": {
+          "items_scored": 35,
+          "parse_failures": 6
+        }
+      },
+      "product": {
+        "weighted_f1": 0.9583414761253339,
+        "denominator": 30,
+        "coverage": {
+          "items_scored": 30,
+          "parse_failures": 6
+        }
+      }
+    }
+  }
+}

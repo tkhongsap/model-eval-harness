@@ -1,0 +1,19 @@
+# Mirrors asr-eval/.gitignore, for the same reasons. The split is: the EVAL SET is
+# committed, MODEL OUTPUT never is.
+
+# TTS response cache, keyed by sha256(text|voice|rate|pitch). Regenerable, and large.
+cache/
+
+# The QA JSON each arm produced. Model output, the same class the repo-root .gitignore
+# keeps out for out/. Aggregates in reports/ are the shareable form.
+hypotheses/
+
+# Each ASR arm's transcripts. Model output over audio -- exactly what
+# asr-eval/.gitignore excludes as hypotheses/, under a different directory name because
+# here the ASR stage is an intermediate rather than the thing under test.
+asr/
+
+# audio/ IS committed, deliberately. Neural TTS is not bit-reproducible, so re-rendering
+# produces perceptually identical files with different sha256 values. Freezing the wavs is
+# the only thing that makes two arms comparable on identical bytes -- the same argument
+# asr-eval/.gitignore makes for its own audio/.

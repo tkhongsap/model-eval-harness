@@ -118,6 +118,15 @@ Full detail, including how to make the differential test actually run, is in
   set actually consumes 36. Every value is inside the sanctioned block, so this is
   bookkeeping and not a leak; the reservation note is what was wrong, not the data.)*
 
+  *(2026-08-18: `e2e-eval/` is a third tree carrying phone numbers, and the count above is
+  still correct — **it consumes no new values**. Its 30 calls are re-renders of
+  `retention_v3` items and reuse that pack's numbers exactly; measured, the intersection is
+  total and the set of new values is empty. Recorded anyway, because the thing that went
+  wrong in the note above was never the arithmetic, it was a scan that could not see a whole
+  tree. **Any re-count must now cover `tests/fixtures/testsets/`, `asr-eval/` and
+  `e2e-eval/`.** A derived pack that borrows its parent's numbers is the easy case; the next
+  one may not be.)*
+
 ## Build and Verification Contract
 
 For any substantial change:
