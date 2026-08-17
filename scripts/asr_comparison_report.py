@@ -373,12 +373,16 @@ def render(cfg: dict, arms: list[dict]) -> str:
     That figure is an estimate, not a published metric: forgiving a rendering difference is
     a change to the scoring contract, and that contract is a closed list amended by review
     rather than mid-run.</p>
-    <p><strong>The same difference runs the other way on entity recovery</strong>, which is
-    why the two metrics disagree. Digits value-match cleanly, so Qwen3-ASR recovers phone
-    numbers, amounts and dates far more often, while Gemini&rsquo;s spelled-out numbers have
-    to match the reference&rsquo;s exact wording to count. Entity recovery is the figure that
-    maps to money &mdash; production writes those values into fields &mdash; so this is not a
-    footnote to the CER result, it is a second result that points the other way.</p>
+    <p><strong>Entity recovery once appeared to point the other way. It was a measurement
+    fault, and it has been fixed.</strong> Until 2026-08-17 this page would have reported
+    92.9% against 67.5% in the internal model&rsquo;s favour. That gap was not real: the
+    surface test was an exact substring match that included spaces, so an arm writing the
+    same words with different phrase spacing scored the entity as lost. Of the production
+    model&rsquo;s 151 apparent misses, <b>136 &mdash; 90% &mdash; were present in its own
+    transcript and spaced differently</b>. With the test made whitespace-insensitive on both
+    sides, the two arms land on <b>exactly the same figure</b>. Entity recovery is what maps
+    to money, since production writes these values into fields, so it is worth being precise
+    that on this set it does not separate the arms at all.</p>
     <p><strong>The two arms are not given the same help.</strong> Gemini is a general model
     steered by a prompt, and its prompt asks for Thai-script brand names. Qwen3-ASR is a
     dedicated transcription endpoint: its <code>prompt</code> parameter is accepted and

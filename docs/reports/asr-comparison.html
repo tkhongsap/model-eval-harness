@@ -161,7 +161,7 @@ background:var(--st-good-bg);color:var(--st-good)}
   section&nbsp;7 shows what it is made of.</p>
   <p class="lede">Thai is written without word spaces, so a character distance is the only
   figure that does not depend on a tokeniser's opinion. Both arms are scored by the same code
-  (<code>fad5932463bd&hellip;</code>) against the same references
+  (<code>bed27990c125&hellip;</code>) against the same references
   (<code>9ab5bcbb4e13&hellip;</code>), pooled over the corpus rather than averaged over
   per-file rates.</p>
   <figure><div class="chartbox scroller"><div id="c-cer"></div></div>
@@ -185,7 +185,7 @@ background:var(--st-good-bg);color:var(--st-good)}
   <div class="scroller"><table>
     <caption>Entity recovery by type</caption>
     <thead><tr><th>Type</th><th>Gemini 2.5 Flash<span class="sub">production today</span></th><th>Qwen3-ASR 1.7B<span class="sub">our GPU &middot; candidate</span></th></tr></thead>
-    <tbody><tr><th scope=row>amount</th><td>101/118<span class="sub">86%</span></td><td>116/118<span class="sub">98%</span></td></tr><tr><th scope=row>date</th><td>22/88<span class="sub">25%</span></td><td>86/88<span class="sub">98%</span></td></tr><tr><th scope=row>id</th><td>64/64<span class="sub">100%</span></td><td>64/64<span class="sub">100%</span></td></tr><tr><th scope=row>months</th><td>30/83<span class="sub">36%</span></td><td>75/83<span class="sub">90%</span></td></tr><tr><th scope=row>package</th><td>6/15<span class="sub">40%</span></td><td>0/15<span class="sub">0%</span></td></tr><tr><th scope=row>phone</th><td>87/88<span class="sub">99%</span></td><td>85/88<span class="sub">97%</span></td></tr><tr><th scope=row>speed</th><td>4/9<span class="sub">44%</span></td><td>6/9<span class="sub">67%</span></td></tr></tbody>
+    <tbody><tr><th scope=row>amount</th><td>118/118<span class="sub">100%</span></td><td>116/118<span class="sub">98%</span></td></tr><tr><th scope=row>date</th><td>80/88<span class="sub">91%</span></td><td>88/88<span class="sub">100%</span></td></tr><tr><th scope=row>id</th><td>64/64<span class="sub">100%</span></td><td>64/64<span class="sub">100%</span></td></tr><tr><th scope=row>months</th><td>82/83<span class="sub">99%</span></td><td>83/83<span class="sub">100%</span></td></tr><tr><th scope=row>package</th><td>10/15<span class="sub">67%</span></td><td>5/15<span class="sub">33%</span></td></tr><tr><th scope=row>phone</th><td>87/88<span class="sub">99%</span></td><td>85/88<span class="sub">97%</span></td></tr><tr><th scope=row>speed</th><td>9/9<span class="sub">100%</span></td><td>9/9<span class="sub">100%</span></td></tr></tbody>
   </table></div>
 </section>
 
@@ -219,12 +219,16 @@ background:var(--st-good-bg);color:var(--st-good)}
     That figure is an estimate, not a published metric: forgiving a rendering difference is
     a change to the scoring contract, and that contract is a closed list amended by review
     rather than mid-run.</p>
-    <p><strong>The same difference runs the other way on entity recovery</strong>, which is
-    why the two metrics disagree. Digits value-match cleanly, so Qwen3-ASR recovers phone
-    numbers, amounts and dates far more often, while Gemini&rsquo;s spelled-out numbers have
-    to match the reference&rsquo;s exact wording to count. Entity recovery is the figure that
-    maps to money &mdash; production writes those values into fields &mdash; so this is not a
-    footnote to the CER result, it is a second result that points the other way.</p>
+    <p><strong>Entity recovery once appeared to point the other way. It was a measurement
+    fault, and it has been fixed.</strong> Until 2026-08-17 this page would have reported
+    92.9% against 67.5% in the internal model&rsquo;s favour. That gap was not real: the
+    surface test was an exact substring match that included spaces, so an arm writing the
+    same words with different phrase spacing scored the entity as lost. Of the production
+    model&rsquo;s 151 apparent misses, <b>136 &mdash; 90% &mdash; were present in its own
+    transcript and spaced differently</b>. With the test made whitespace-insensitive on both
+    sides, the two arms land on <b>exactly the same figure</b>. Entity recovery is what maps
+    to money, since production writes these values into fields, so it is worth being precise
+    that on this set it does not separate the arms at all.</p>
     <p><strong>The two arms are not given the same help.</strong> Gemini is a general model
     steered by a prompt, and its prompt asks for Thai-script brand names. Qwen3-ASR is a
     dedicated transcription endpoint: its <code>prompt</code> parameter is accepted and
@@ -255,7 +259,7 @@ background:var(--st-good-bg);color:var(--st-good)}
 </section>
 
 <footer>
-  20 calls &middot; scored by <code>score_asr.py fad5932463bd&hellip;</code> against
+  20 calls &middot; scored by <code>score_asr.py bed27990c125&hellip;</code> against
   ground truth <code>9ab5bcbb4e13&hellip;</code>. Normalisation:
   asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, Thai digits, whitespace. Figures copied without recomputation from the
   per-arm scored JSONs under <code>asr-eval/reports/</code>; transcripts are model output and
@@ -334,7 +338,7 @@ function rowbar(cfg){
   host.appendChild(svg);
 }
 var FMT={cer:function(x){return (x*100).toFixed(2)+'%';},pct:function(x){return (x*100).toFixed(1)+'%';},rate:function(x){return x.toFixed(1);},secs:function(x){return x.toFixed(1)+'s';}};
-var CHARTS=[{"id": "c-cer", "direction": "low", "bestWord": "best", "fmt": "cer", "caption": "CHARACTER ERROR RATE OVER THE WHOLE CORPUS (LOWER IS BETTER)", "ariaLabel": "Character error rate by model", "rows": [{"label": "Gemini", "value": 0.044320020908515195, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 0.6729827806314773, "colour": "var(--s-ours)", "note": null}]}, {"id": "c-ent", "direction": "high", "bestWord": "best", "fmt": "pct", "caption": "ENTITIES RECOVERED: PHONE, AMOUNT, DATE, PACKAGE (HIGHER IS BETTER)", "ariaLabel": "Entity recovery by model", "rows": [{"label": "Gemini", "value": 0.6752688172043011, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 0.9290322580645162, "colour": "var(--s-ours)", "note": null}]}, {"id": "c-wer", "direction": "low", "bestWord": "lowest", "fmt": "cer", "caption": "WORD ERROR RATE \\u2014 TOKENISER-DEPENDENT, READ CER FIRST", "ariaLabel": "Word error rate by model", "rows": [{"label": "Gemini", "value": 0.10306596733614772, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 0.7884951601211035, "colour": "var(--s-ours)", "note": null}]}, {"id": "c-ins", "direction": "low", "bestWord": "fewest", "fmt": "rate", "caption": "INSERTED WORDS PER MINUTE OF NON-SPEECH \\u2014 A PROXY, NOT A COUNT", "ariaLabel": "Insertion rate by model", "rows": [{"label": "Gemini", "value": 33.0575, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 1073.5040000000001, "colour": "var(--s-ours)", "note": null}]}];
+var CHARTS=[{"id": "c-cer", "direction": "low", "bestWord": "best", "fmt": "cer", "caption": "CHARACTER ERROR RATE OVER THE WHOLE CORPUS (LOWER IS BETTER)", "ariaLabel": "Character error rate by model", "rows": [{"label": "Gemini", "value": 0.044320020908515195, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 0.6729827806314773, "colour": "var(--s-ours)", "note": null}]}, {"id": "c-ent", "direction": "high", "bestWord": "best", "fmt": "pct", "caption": "ENTITIES RECOVERED: PHONE, AMOUNT, DATE, PACKAGE (HIGHER IS BETTER)", "ariaLabel": "Entity recovery by model", "rows": [{"label": "Gemini", "value": 0.967741935483871, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 0.967741935483871, "colour": "var(--s-ours)", "note": null}]}, {"id": "c-wer", "direction": "low", "bestWord": "lowest", "fmt": "cer", "caption": "WORD ERROR RATE \\u2014 TOKENISER-DEPENDENT, READ CER FIRST", "ariaLabel": "Word error rate by model", "rows": [{"label": "Gemini", "value": 0.10306596733614772, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 0.7884951601211035, "colour": "var(--s-ours)", "note": null}]}, {"id": "c-ins", "direction": "low", "bestWord": "fewest", "fmt": "rate", "caption": "INSERTED WORDS PER MINUTE OF NON-SPEECH \\u2014 A PROXY, NOT A COUNT", "ariaLabel": "Insertion rate by model", "rows": [{"label": "Gemini", "value": 33.0575, "colour": "var(--s-prod)", "note": null}, {"label": "Qwen3-ASR", "value": 1073.5040000000001, "colour": "var(--s-ours)", "note": null}]}];
 CHARTS.forEach(function(c){c.fmt=FMT[c.fmt];rowbar(c);});
 })();
 </script>

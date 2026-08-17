@@ -52,6 +52,8 @@ tr.grp.setb th{border-left:3px solid var(--line2)}
 .notes{margin-top:22px;font-size:13.5px;color:var(--ink2);max-width:76ch}
 .notes p{margin:0 0 10px}
 .notes b{color:var(--ink)}
+h2.tt{font-family:var(--serif);font-size:17px;font-weight:600;margin:30px 0 2px}
+p.tl{font-size:13px;color:var(--ink2);margin:0 0 12px;max-width:70ch;line-height:1.6}
 footer{margin-top:38px;padding-top:16px;border-top:1px solid var(--line);
 font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}
 @media(max-width:620px){tbody th[scope=row]{width:auto}}
@@ -59,8 +61,9 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}
 <div class="wrap">
 <header>
   <h1>Model evaluation &mdash; our test cases on our own GPUs</h1>
-  <p class="intro">An evaluation of four models on the Retention labelling task: the model we
-  use in production today against three running on True&rsquo;s own hardware. Every figure below
+  <p class="intro">An evaluation of the models we could run on True&rsquo;s own hardware
+  against the one we use in production today, across <b>two tracks</b>: labelling a call from
+  its transcript, and producing that transcript from audio in the first place. Every figure below
   comes from <b>evaluation test cases we wrote</b> &mdash; no production traffic was involved.
   It covers accuracy, how many tokens each model uses, how fast it answers and how consistent
   it is.</p>
@@ -74,10 +77,24 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}
   customer data, no real transcripts, no IP.</div>
 </header>
 
+<h2 class="tt">Track 1 &mdash; labelling a call from its transcript</h2>
+<p class="tl">What production does today, on written test cases. Four models, two sets.</p>
 <div class="scroller">
   <table>
     <thead><tr><th></th><th class=""><span class="m">Gemini 2.5 Flash</span><span class="s">production today</span></th><th class="hi"><span class="m">Qwen3.8 27B</span><span class="s">our GPU &middot; candidate</span></th><th class=""><span class="m">Qwen3.6 27B</span><span class="s">our GPU, retired</span></th><th class=""><span class="m">Gemma 4 12B</span><span class="s">our GPU</span></th></tr></thead>
     <tbody><tr class="grp"><th colspan=5><span class="gn">The coverage set</span><span class="gc">138 test cases &middot; One of everything that can go wrong &mdash; a baseline of straightforward calls plus eight isolated faults</span></th></tr><tr class=""><th scope=row><span class="rl">Call outcome</span><span class="rs">save / churn / unknown</span></th><td class="">0.955</td><td class="hi">0.966</td><td class="">0.962</td><td class="">0.929</td></tr><tr class=""><th scope=row><span class="rl">Reason</span><span class="rs">11 values, up to 3 per test case</span></th><td class="">0.838</td><td class="hi">0.834</td><td class="">0.821</td><td class="">0.792</td></tr><tr class=""><th scope=row><span class="rl">Product</span><span class="rs">exact set per test case</span></th><td class="">0.960</td><td class="hi">0.950</td><td class="">0.932</td><td class="">0.933</td></tr><tr class=""><th scope=row><span class="rl">Input tokens</span><span class="rs">per test case</span></th><td class="">2,990</td><td class="hi b">2,734</td><td class=" b">2,734</td><td class="">3,008</td></tr><tr class=""><th scope=row><span class="rl">Output tokens</span><span class="rs">per test case</span></th><td class=" b">209</td><td class="hi">230</td><td class="">230</td><td class="">253</td></tr><tr class=""><th scope=row><span class="rl">Median response time <span class="dag">&dagger;</span></span><span class="rs">not like-for-like &mdash; see below</span></th><td class="">2.05s</td><td class="hi">11.62s</td><td class="">11.38s</td><td class="">12.00s</td></tr><tr class=""><th scope=row><span class="rl">Answers that changed</span><span class="rs">across 3 identical repeats</span></th><td class="">29</td><td class="hi b">6</td><td class="">8</td><td class="">15</td></tr><tr class="grp setb"><th colspan=5><span class="gn">The messy-conversation set</span><span class="gc">50 test cases &middot; The sentences are easy; the conversation is the problem &mdash; reversals, hold and transfer, prior contact</span></th></tr><tr class="setb"><th scope=row><span class="rl">Call outcome</span><span class="rs">save / churn / unknown</span></th><td class="">0.951</td><td class="hi">0.930</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Reason</span><span class="rs">11 values, up to 3 per test case</span></th><td class="">0.831</td><td class="hi">0.833</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Product</span><span class="rs">exact set per test case</span></th><td class="">0.976</td><td class="hi">0.970</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Input tokens</span><span class="rs">per test case</span></th><td class="">2,823</td><td class="hi b">2,568</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Output tokens</span><span class="rs">per test case</span></th><td class=" b">223</td><td class="hi">241</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Median response time <span class="dag">&dagger;</span></span><span class="rs">not like-for-like &mdash; see below</span></th><td class="">2.11s</td><td class="hi">11.41s</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr><tr class="setb"><th scope=row><span class="rl">Answers that changed</span><span class="rs">across 3 identical repeats</span></th><td class=" b">0</td><td class="hi">2</td><td class=" na">retired first</td><td class=" na">GPU outage</td></tr></tbody>
+  </table>
+</div>
+
+<h2 class="tt">Track 2 &mdash; turning the audio into that transcript</h2>
+<p class="tl">The step that does not exist in our stack yet. Production hands Gemini the audio
+and gets labels back in one call; a text-only model needs this step first, and everything
+above inherits its errors. Different models and different metrics from Track&nbsp;1, so it is
+a separate table &mdash; only the production reference appears in both.</p>
+<div class="scroller">
+  <table>
+    <thead><tr><th></th><th class=""><span class="m">Gemini 2.5 Flash</span><span class="s">production today</span></th><th class="hi"><span class="m">Qwen3-ASR 1.7B</span><span class="s">our GPU &middot; candidate</span></th></tr></thead>
+    <tbody><tr class="grp setb"><th colspan=3><span class="gn">The voice set</span><span class="gc">20 calls &middot; 123.6 minutes of synthetic Thai call audio &mdash; can a model on our GPU transcribe what production sends to Gemini?</span></th></tr><tr class="setb"><th scope=row><span class="rl">Character error rate</span><span class="rs">all 20 calls</span></th><td class="">4.4%</td><td class="hi">67.3%</td></tr><tr class="setb"><th scope=row><span class="rl">Character error rate</span><span class="rs">same 19 calls, the runaway excluded</span></th><td class="">4.6%</td><td class="hi">12.0%</td></tr><tr class="setb"><th scope=row><span class="rl">Entities recovered</span><span class="rs">phone, amount, date, package</span></th><td class="">96.8%</td><td class="hi">96.8%</td></tr><tr class="setb"><th scope=row><span class="rl">Word error rate</span><span class="rs">tokeniser-dependent &mdash; read CER first</span></th><td class="">10.3%</td><td class="hi">78.8%</td></tr><tr class="setb"><th scope=row><span class="rl">Calls with content dropped</span><span class="rs">passages missing, no warning</span></th><td class="">2</td><td class="hi b">0</td></tr><tr class="setb"><th scope=row><span class="rl">Calls with runaway repetition</span><span class="rs">output far longer than the audio</span></th><td class=" b">0</td><td class="hi">1</td></tr></tbody>
   </table>
 </div>
 
@@ -97,6 +114,21 @@ font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.75}
   and is not bolded for that reason. The production model was called over the public internet
   at concurrency&nbsp;8; ours ran at concurrency&nbsp;4 against a single shared box. Those rows
   measure deployments, not models.</p>
+  <p><b>On the voice table, none of the three accuracy rows is bolded, and the reason is
+  not caution.</b> The two arms write numbers differently: the reference spells them out
+  (&ldquo;eighteen August&rdquo;), the production model matches it <i>because the prompt we
+  wrote asks it to</i>, and the model on our GPU writes digits. That one difference pushes
+  character error rate against our model and entity recovery in its favour, so all three
+  figures measure formatting as much as hearing. Reading the digits back as spoken Thai
+  closes about two fifths of the character-error gap. The full voice report shows the
+  working.</p>
+  <p><b>The two figures that are clean are the last two, and they are the ones to look at.</b>
+  Both models produce a broken transcript on some calls, in opposite ways, and neither says so
+  &mdash; every call returned a normal response. The production model silently drops whole
+  passages on two calls; ours runs away into repetition on one, emitting seventeen times more
+  text than the audio contains. That one call is 83% of its total character error, which is
+  why the row above it excludes it. Re-running it reproduced byte-for-byte, so it is a
+  property of the model on that audio, not luck.</p>
   <p><b>Two models have no result on the second set, for different reasons.</b> Gemma was
   attempted, and the GPU serving it was already down when the run started, so every request came back a server error. Its accuracy on that set is therefore
   <b>unmeasured, not zero</b> &mdash; the outage is a fact about our box, not about Gemma.
