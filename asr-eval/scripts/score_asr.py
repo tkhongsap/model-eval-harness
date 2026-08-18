@@ -41,16 +41,24 @@ INPUT FORMAT
 
 Run:
     python asr-eval/scripts/score_asr.py --hyp-dir hypotheses/qwen3-asr
+    python asr-eval/scripts/score_asr.py --hyp-dir hypotheses/qwen3-asr --jobs 1
     python asr-eval/scripts/score_asr.py --self-test
+
+Scoring runs across a process pool by default; `--jobs 1` forces the serial path, which is
+what to run when a pooled figure needs corroborating. The two must agree byte for byte --
+see "Running the pool" below and tests/test_provenance.py, which asserts exactly that.
 """
 
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import datetime
 import hashlib
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -327,10 +335,106 @@ def nonspeech_seconds(timeline: dict, duration_s: float) -> float:
 # --------------------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------------------
+# Runaway detection
+# --------------------------------------------------------------------------------------
+# A repetition loop is a decoder failure, not a transcription error, and pooling it as if
+# it were one produces a number that describes no call in the set. On 2026-08-17 exactly
+# this happened: ASR-012 returned 58,546 characters against a 3,405-character reference for
+# a CER of 16.28, that item was pooled with nineteen items scoring ~0.1, and the corpus CER
+# published for the arm was 0.673. Re-transcribed without the loop the same arm scores
+# 0.1147. Every voice-track figure derived from 0.673 was wrong by a factor of six.
+#
+# The insertion diagnostic ALREADY caught it -- 20,972 insertions per non-speech minute
+# against a set mean of 1,073, a 20x outlier on a metric built for exactly this -- and
+# nothing acted on it. That is the gap this closes: detection existed, refusal did not.
+#
+# The check runs BEFORE the edit distance for a second, practical reason. The DP is
+# O(len(ref) x len(hyp)); on a 39,689-character runaway that is ~320M cells in pure Python.
+# It was measured at over 30 minutes before being killed. Refusing costs microseconds.
+#
+# EXCLUDED IS NOT FORGIVEN. A runaway is the worst outcome an ASR arm can produce, so
+# dropping it from the CER pool must never let an arm look better. Excluded items are
+# counted, named, and reported as a failure rate beside every pooled figure.
+
+RUNAWAY_LENGTH_RATIO = 1.5      # hypothesis longer than this multiple of its reference
+RUNAWAY_REPEAT_COVERAGE = 0.20  # a single repeated unit covering this much of the output
+RUNAWAY_UNIT_RANGE = (20, 400)  # unit lengths scanned for a repeat
+
+
+def repeated_unit_coverage(text: str) -> tuple[float, int, int]:
+    """Largest fraction of `text` covered by one repeated fixed-length substring.
+
+    Returns (coverage, unit_length, repeat_count). Probes three offsets rather than every
+    position: a loop long enough to matter occupies most of the output, so it is present at
+    the quarter, half and three-quarter marks. Scanning every offset would be quadratic for
+    no additional catch.
+    """
+    n = len(text)
+    lo, hi = RUNAWAY_UNIT_RANGE
+    if n < lo * 4:
+        return (0.0, 0, 0)
+    best = (0.0, 0, 0)
+    for probe in (n // 4, n // 2, 3 * n // 4):
+        for unit in range(lo, min(hi, n // 4)):
+            segment = text[probe:probe + unit]
+            if len(segment) < unit:
+                continue
+            count = text.count(segment)
+            if count >= 3:
+                coverage = count * unit / n
+                if coverage > best[0]:
+                    best = (coverage, unit, count)
+    return best
+
+
+def detect_runaway(ref: str, hyp: str) -> dict | None:
+    """Why this hypothesis cannot be scored as a transcript, or None if it can."""
+    ref_n, hyp_n = len(chars(ref)), len(chars(hyp))
+    if ref_n and hyp_n > RUNAWAY_LENGTH_RATIO * ref_n:
+        return {
+            "kind": "length",
+            "detail": (f"hypothesis is {hyp_n} characters against a {ref_n}-character "
+                       f"reference ({hyp_n / ref_n:.2f}x, limit "
+                       f"{RUNAWAY_LENGTH_RATIO})"),
+            "ratio": round(hyp_n / ref_n, 3),
+        }
+    # The repetition rule applies only to a hypothesis long enough to have run away. A
+    # SHORT degenerate output -- the model emitting a hundred characters of one syllable
+    # against a thousand-character reference -- is a different failure, and CER already
+    # describes it correctly as deletion-dominated. Calling it a runaway would remove a
+    # real, badly-performing item from the corpus rate and flatter the arm.
+    if hyp_n < 0.5 * ref_n:
+        return None
+    coverage, unit, count = repeated_unit_coverage(hyp)
+    if coverage > RUNAWAY_REPEAT_COVERAGE:
+        return {
+            "kind": "repetition",
+            "detail": (f"a {unit}-character unit repeats {count} times, covering "
+                       f"{coverage * 100:.1f}% of the output (limit "
+                       f"{RUNAWAY_REPEAT_COVERAGE * 100:.0f}%)"),
+            "coverage": round(coverage, 4),
+            "unit_chars": unit,
+            "repeats": count,
+        }
+    return None
+
+
 def score_item(item: str, ref: str, hyp: str, entities: list[dict],
                timeline: dict, duration_s: float, family: str) -> dict:
     ref_flat = " ".join(ref.split())
     hyp_flat = " ".join(hyp.split())
+
+    runaway = detect_runaway(ref_flat, hyp_flat)
+    if runaway is not None:
+        # Return early, before the edit distance. Every metric field is absent rather than
+        # zero or None-with-a-number: a runaway has no meaningful CER, and emitting one
+        # invites it back into an average.
+        return {
+            "item_id": item, "family": family,
+            "ref_chars": len(chars(ref_flat)), "hyp_chars": len(chars(hyp_flat)),
+            "runaway": runaway,
+        }
 
     out: dict = {"item_id": item, "family": family,
                  "ref_chars": len(chars(ref_flat)), "hyp_chars": len(chars(hyp_flat))}
@@ -384,6 +488,92 @@ def score_item(item: str, ref: str, hyp: str, entities: list[dict],
 
 
 # --------------------------------------------------------------------------------------
+# Running the pool
+# --------------------------------------------------------------------------------------
+# score_item is O(len(ref) x len(hyp)) pure Python, and it runs that DP four times per item:
+# characters and word tokens, raw and normalised. Twenty items took about ten minutes. The
+# 138-call set would take about an hour and a half per arm.
+#
+# That cost is not merely slow, it is a correctness risk, and it is the specific one this
+# project keeps hitting: a scorer nobody wants to wait for is a scorer people run on five
+# items and compare against last week's twenty-item figure. Two numbers with different
+# denominators, both called "the CER".
+#
+# So: the same function, on more cores, and NOTHING else changes.
+#
+#   * score_item is untouched. No shared cache, no early exit, no reordering.
+#   * The runaway check still runs BEFORE the distance, inside score_item, where it always
+#     did. Parallelism does not make a 320M-cell DP affordable; it makes it 320M cells on a
+#     different core.
+#   * No faster edit distance. rapidfuzz agrees with levenshtein() on the DISTANCE and
+#     disagrees on the S/D/I split on 96 of 400 random pairs -- equally optimal alignments,
+#     apportioned differently -- and that split is what separates an arm that dropped a
+#     passage from one that invented it. fast_distance() uses it for the whitespace-blind
+#     diagnostic only, which is why that diagnostic publishes no split.
+#
+# ORDER IS SUBMISSION ORDER, ALWAYS. `Executor.map` yields results in the order the tasks
+# went in, whatever order the workers finish in, so `rows` never depends on scheduling and
+# two runs of the same arm serialise to identical bytes. Anything built on
+# `as_completed()` would reorder the report between runs for free, and a report whose row
+# order moves cannot be diffed against its predecessor.
+
+
+def _check_jobs(value: int) -> int:
+    """The one place --jobs is validated, so the CLI and the API refuse identically."""
+    if value < 1:
+        raise ValueError(
+            f"--jobs must be at least 1, got {value}. 1 is the serial path: every item "
+            f"scored in this process, which is what to run when a pooled figure needs "
+            f"corroborating."
+        )
+    return value
+
+
+def _jobs_arg(text: str) -> int:
+    try:
+        return _check_jobs(int(text))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
+def resolve_jobs(requested: int | None, n_items: int) -> int:
+    """Worker processes to actually use. 1 means run in this process."""
+    if requested is not None:
+        _check_jobs(requested)
+    if n_items < 1:
+        return 1
+    if requested is None:
+        # One worker per core, never more than there is work. A spawned worker on Windows
+        # costs an interpreter start plus a pythainlp dictionary load -- about a second --
+        # and a pool of fourteen against three items pays that fourteen times to do three
+        # items' work.
+        return max(1, min(os.cpu_count() or 1, n_items))
+    return min(requested, n_items)
+
+
+def _score_one(task: tuple) -> dict:
+    """Unpack one task tuple.
+
+    ProcessPoolExecutor has no starmap and a lambda cannot be pickled to a worker, so the
+    adapter has to be a module-level function. It exists for pickling and for nothing else:
+    do not let it grow logic, or the serial and parallel paths stop being the same code.
+    """
+    return score_item(*task)
+
+
+def score_items(tasks: list[tuple], jobs: int) -> list[dict]:
+    """Score every task, in submission order, across `jobs` processes."""
+    if jobs <= 1:
+        return [_score_one(t) for t in tasks]
+    with concurrent.futures.ProcessPoolExecutor(max_workers=jobs) as pool:
+        # chunksize stays at its default of 1. Per-item cost spans four orders of magnitude
+        # here -- a runaway refuses in microseconds, a ten-minute call runs the full DP --
+        # so handing each worker a fixed batch would hand one of them every expensive item
+        # and leave the rest idle.
+        return list(pool.map(_score_one, tasks))
+
+
+# --------------------------------------------------------------------------------------
 # Self-test: prove the scorer moves in the right direction before trusting it on an arm
 # --------------------------------------------------------------------------------------
 
@@ -431,7 +621,22 @@ def corrupt(text: str, kind: str, rng) -> str:
     if kind == "truncate_half":
         return text[: len(text) // 2]
     if kind == "hallucinate":
-        return text + " " + "ขอบคุณครับ ยินดีให้บริการครับ " * 40
+        # Deliberately kept BELOW the runaway thresholds. This case exists to prove the
+        # scorer can tell an arm that invents from one that gives up (insertions vs
+        # deletions), which requires it to remain scoreable. The stronger version is
+        # `runaway_loop`, whose whole point is that it must NOT be scoreable.
+        return text + " " + "ขอบคุณครับ ยินดีให้บริการครับ " * 8
+    if kind == "runaway_loop":
+        # The shape of the real ASR-012 failure: a short unit repeated until it dominates
+        # the output. detect_runaway must refuse this before the edit distance runs.
+        return text + " " + "ขอบคุณครับ ยินดีให้บริการครับ " * 60
+    if kind == "runaway_inplace":
+        # A loop that REPLACES content instead of appending it, so the output stays inside
+        # the 1.5x length limit and only the repetition rule can catch it. Without this
+        # case the coverage rule is dead code that no test would notice losing.
+        unit = "ขอบคุณครับ ยินดีให้บริการครับ "
+        head = text[: len(text) // 4]
+        return head + unit * (3 * len(text) // (4 * len(unit)))
     raise ValueError(kind)
 
 
@@ -507,6 +712,37 @@ def self_test() -> int:
     expect(lossy["truncate_half"]["cer_norm"] > lossy["drop_words"]["cer_norm"],
            "losing half the call must score worse than dropping every ninth token")
 
+    # --- the runaway gate -------------------------------------------------------------
+    # Added after ASR-012 published a CER of 16.28 into a corpus figure. Both directions
+    # are checked, because a detector that fires on everything is as useless as one that
+    # fires on nothing -- and every scoreable case above has already proved the negative.
+    print("\nrunaway detection:")
+    loop = score_item("SELFTEST", ref, corrupt(ref, "runaway_loop", rng), [],
+                      {"segments": []}, 300.0, "selftest")
+    expect("runaway" in loop, "a repeated unit dominating the output must be refused")
+    if "runaway" in loop:
+        print(f"  runaway_loop    caught: {loop['runaway']['kind']} -- "
+              f"{loop['runaway']['detail']}")
+        expect("cer_norm" not in loop,
+               "a refused item must carry NO error rate: emitting one invites it back "
+               "into an average")
+    inplace = score_item("SELFTEST", ref, corrupt(ref, "runaway_inplace", rng), [],
+                         {"segments": []}, 300.0, "selftest")
+    expect("runaway" in inplace, "an in-place loop must be refused even inside the "
+                                 "length limit")
+    if "runaway" in inplace:
+        print(f"  runaway_inplace caught: {inplace['runaway']['kind']} -- "
+              f"{inplace['runaway']['detail']}")
+        expect(inplace["runaway"]["kind"] == "repetition",
+               "an in-place loop is within the length limit, so the REPETITION rule must "
+               f"be what catches it, not {inplace['runaway']['kind']}")
+
+    for scoreable in ("identity", "tone_marks", "drop_words", "truncate_half",
+                      "hallucinate"):
+        expect("runaway" not in lossy[scoreable],
+               f"{scoreable} is a legitimate transcript and must not be refused")
+    print(f"  {len(lossy)} legitimate corruptions all scored, none refused")
+
     # --- entity scoring must actually fire --------------------------------------------
     print("\nentity recovery:")
     ent_file = C.GROUND_TRUTH_DIR / f"{items[0].stem}.entities.json"
@@ -542,6 +778,120 @@ def self_test() -> int:
 # --------------------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------------------
+# Provenance
+# --------------------------------------------------------------------------------------
+# A report stamps the code that produced it so that a published figure traces back to the
+# bytes that computed it. Until 2026-08-18 that stamp was one field -- sha256 of this file's
+# bytes ON DISK -- and it could not do the job it was there for.
+#
+# Both committed reports under asr-eval/reports/ stamp
+# scoring_code_sha256 = bed27990c1258617..., and that value matches the sha256 of no
+# committed version of this file: HEAD (d568505) hashes to 64667716d387383f... Verification
+# of the 2026-08-17 round concluded from this that the reports had been generated from lost
+# intermediate code, and wrote that conclusion into two documents.
+#
+# They had not. bed27990 is HEAD's own blob with every LF expanded to CRLF -- exactly the
+# bytes a Windows checkout puts on disk under core.autocrlf, hashed by a stamp that reads
+# the working tree. The content was HEAD's the whole time. The stamp was not wrong about
+# the bytes it hashed; it was hashing bytes that are a property of the checkout rather than
+# of the code, and an audit trail that walks its reader into the wrong conclusion costs the
+# same as one that is missing.
+#
+# Hence four fields, each answering something the others cannot:
+#
+#   sha256      the bytes as executed. UNCHANGED in meaning -- the two reports above carry
+#               this name, and redefining it would silently invalidate every comparison
+#               against them.
+#   sha256_lf   the same content with line endings normalised to LF. This is the value that
+#               survives a checkout on another platform, and the one that can be lined up
+#               against what git actually stores.
+#   commit      what HEAD was. A hash identifies bytes; only this says whether anybody else
+#               can obtain them.
+#   dirty       whether the scoring path had uncommitted changes. A commit id on its own is
+#               a claim about a tree that may not be the tree that ran.
+#
+# `dirty` covers asr_common.py and thai_num.py as well as this file, because normalise_thai
+# lives in the first and moves every `_norm` figure in the report, and the digit words
+# spoken_digit_runs matches on live in the second. A flag that only ever looked at
+# score_asr.py would report a clean tree while the normalisation underneath it was
+# uncommitted -- the same failure being fixed here, one import away.
+#
+# When git cannot answer, the fields say so in words. Omitting them would let a report
+# generated where no git exists look exactly like one generated from a clean tree.
+
+SCORING_PATH = ("score_asr.py", "asr_common.py", "thai_num.py")
+
+GIT_TIMEOUT_S = 10
+
+
+def _git(args: list[str], *, cwd: Path, git: str = "git") -> str:
+    """stdout of one git command, or OSError carrying why it could not be run.
+
+    Every failure mode folds into OSError deliberately: a missing binary, a directory that
+    is not a repository, a repository with no commits yet and a hung index all mean one
+    thing to the caller -- git did not answer -- and which one it was belongs in the
+    recorded message, not in the control flow.
+    """
+    try:
+        proc = subprocess.run([git, *args], cwd=str(cwd), capture_output=True,
+                              text=True, timeout=GIT_TIMEOUT_S)
+    except FileNotFoundError as exc:
+        raise OSError(f"git executable not found ({exc})") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise OSError(f"git {' '.join(args)} did not answer within {GIT_TIMEOUT_S}s") from exc
+    if proc.returncode != 0:
+        detail = (proc.stderr or "").strip().splitlines()
+        raise OSError(f"git {' '.join(args)} exited {proc.returncode}: "
+                      f"{detail[0][:160] if detail else 'no message'}")
+    return proc.stdout
+
+
+def file_hashes(raw: bytes) -> dict[str, str]:
+    """Both hashes of one file's bytes: as they sit on disk, and line-ending normalised.
+
+    Split out so the invariant can be tested on its own -- the same content written CRLF
+    and written LF must DIFFER in `sha256` and AGREE in `sha256_lf`. That divergence is the
+    whole 2026-08-18 incident, and a property nobody has watched hold is not a property.
+    """
+    return {
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "sha256_lf": hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest(),
+    }
+
+
+def code_provenance(paths: tuple[str, ...] | None = None, *,
+                    repo: Path | None = None, git: str = "git") -> dict:
+    """Identify the code producing this report: its bytes, its commit, its cleanliness.
+
+    `repo` is where git gets asked, defaulting to this file's directory -- the scoring code
+    and the tree it is committed in are the same question. It is a parameter so the tests
+    can stand up a real repository and drive clean, dirty and no-commits-yet directly,
+    instead of asserting against whatever state this working tree happens to be in.
+    """
+    here = repo or Path(__file__).resolve().parent
+    names = tuple(paths) if paths is not None else SCORING_PATH
+    out = dict(file_hashes(Path(__file__).resolve().read_bytes()))
+    out["files"] = list(names)
+
+    try:
+        commit = _git(["rev-parse", "HEAD"], cwd=here, git=git).strip()
+        # --porcelain reports untracked files too, and that is wanted: a scoring path
+        # holding a module git has never seen is not a clean tree, it is a tree nobody
+        # else can reproduce.
+        status = _git(["status", "--porcelain", "--", *names], cwd=here, git=git)
+    except OSError as exc:
+        out.update({"commit": None, "dirty": None, "git_status": f"unavailable: {exc}"})
+        return out
+
+    changed = sorted(line[3:].strip() for line in status.splitlines() if line.strip())
+    out["commit"] = commit
+    out["dirty"] = bool(changed)
+    out["git_status"] = ("clean" if not changed else
+                         "uncommitted changes in " + ", ".join(changed))
+    return out
+
+
 def load_hypotheses(hyp_dir: Path) -> dict[str, str]:
     hyps: dict[str, str] = {}
     for p in sorted(hyp_dir.glob("*.txt")):
@@ -560,6 +910,11 @@ def main() -> int:
     ap.add_argument("--arm", default="")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--self-test", action="store_true")
+    ap.add_argument("--jobs", type=_jobs_arg, default=None,
+                    help="worker processes (default: one per core, capped at the item "
+                         "count). 1 runs serially in this process, which is the path to "
+                         "use when a pooled figure needs corroborating -- the two must "
+                         "agree byte for byte.")
     args = ap.parse_args()
 
     if args.self_test:
@@ -574,7 +929,11 @@ def main() -> int:
         print(f"no hypotheses found in {args.hyp_dir}")
         return 1
 
-    rows = []
+    # Every read happens here, before any scoring. Two reasons, and the second is the one
+    # that matters: no worker process ever touches the filesystem, so nothing about the
+    # result can depend on how many of them there are; and the task list fixes the output
+    # order before a single item is dispatched.
+    tasks: list[tuple] = []
     for dpath in sorted(C.DIALOGUE_DIR.glob("ASR-*.json")):
         dlg = json.loads(dpath.read_text(encoding="utf-8"))
         item = dlg["item_id"]
@@ -586,13 +945,33 @@ def main() -> int:
         tlp = C.GROUND_TRUTH_DIR / f"{item}.timeline.json"
         tl = json.loads(tlp.read_text(encoding="utf-8")) if tlp.exists() else {"segments": []}
         dur = manifest.get(item, {}).get("duration_s", 300.0)
-        rows.append(score_item(item, ref, hyps[item], ents, tl, dur, dlg["family"]))
+        tasks.append((item, ref, hyps[item], ents, tl, dur, dlg["family"]))
+
+    jobs = resolve_jobs(args.jobs, len(tasks))
+    if tasks:
+        print(f"scoring {len(tasks)} items across {jobs} "
+              f"{'process' if jobs == 1 else 'processes'}")
+    rows = score_items(tasks, jobs)
 
     if not rows:
         print("nothing scored")
         return 1
 
-    print(f"\narm: {args.arm or args.hyp_dir.name}   scored {len(rows)}/20 calls\n")
+    # Runaways are separated here, once, and every aggregate below runs over `rows`.
+    # Keeping the split in one place is deliberate: an exclusion applied in some pooling
+    # helpers and not others produces figures with different denominators that all look
+    # like corpus rates.
+    runaways = [r for r in rows if "runaway" in r]
+    rows = [r for r in rows if "runaway" not in r]
+    total_items = len(rows) + len(runaways)
+    if not rows:
+        print("every item was a runaway; nothing scoreable")
+        for r in runaways:
+            print(f"  {r['item_id']}  {r['runaway']['kind']}: {r['runaway']['detail']}")
+        return 1
+
+    excluded = f", {len(runaways)} EXCLUDED as runaways" if runaways else ""
+    print(f"\narm: {args.arm or args.hyp_dir.name}   scored {len(rows)} calls{excluded}\n")
     print(f"{'item':9s} {'family':19s} {'CER':>7s} {'CERn':>7s} {'CER-ns':>7s} "
           f"{'WER':>7s} {'WERn':>7s} {'WER-ns':>7s} {'ENT':>7s} {'ins/min':>8s}")
     for r in rows:
@@ -634,11 +1013,28 @@ def main() -> int:
 
     overall["cer_nospace"] = pooled_diag("cer_nospace_errors", "ref_chars_nospace")
     overall["wer_nospace"] = pooled_diag("wer_nospace_errors", "ref_words_nospace")
+
+    # The runaway rate travels WITH the pooled error rate, never after it. An arm that
+    # loops on 1 call in 20 and transcribes the other 19 well is not a good arm, and a CER
+    # quoted without this number says it is.
+    overall["scoreable_items"] = len(rows)
+    overall["runaway_items"] = len(runaways)
+    overall["runaway_rate"] = len(runaways) / total_items if total_items else None
     print(f"\n{'POOLED':9s} {'':19s} "
           f"{overall['cer_raw']:7.4f} {overall['cer_norm']:7.4f} "
           f"{overall['cer_nospace']:7.4f} "
           f"{overall['wer_raw']:7.4f} {overall['wer_norm']:7.4f} "
           f"{overall['wer_nospace']:7.4f}")
+
+    if runaways:
+        print(f"\nRUNAWAY -- {len(runaways)} of {total_items} items "
+              f"({overall['runaway_rate'] * 100:.1f}%) excluded from every figure above.")
+        for r in runaways:
+            print(f"  {r['item_id']:9s} {r['family']:19s} {r['runaway']['kind']:11s} "
+                  f"{r['runaway']['detail']}")
+        print("  Decoder failures, not transcription errors. Excluded because pooling them")
+        print("  gives a corpus rate that describes no call in the set -- NOT because they")
+        print("  are forgiven. The rate above is the cost of the exclusion; quote it too.")
     print("  CER-ns / WER-ns ignore whitespace on BOTH sides. Diagnostic only: the contract "
           "metric is CERn.\n  Thai has no inter-word spaces, so the gap between CERn and "
           "CER-ns is convention, not mishearing.")
@@ -691,6 +1087,7 @@ def main() -> int:
         gt = sorted(C.GROUND_TRUTH_DIR.glob("ASR-*.txt"))
         gt_digest = (hashlib.sha256(b"".join(g.read_bytes() for g in gt)).hexdigest()
                      if gt else None)
+        prov = code_provenance()
         out = {
             "arm": args.arm,
             "generated_at": datetime.datetime.now(datetime.timezone.utc)
@@ -699,7 +1096,13 @@ def main() -> int:
             "items_scored": len(rows),
             "ground_truth_files": len(gt),
             "ground_truth_sha256": gt_digest,
-            "scoring_code_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            # Kept at top level, under its original name and its original meaning -- the
+            # bytes on disk. The two 2026-08-17 reports carry it here, and redefining what
+            # it measures would quietly break any comparison against them. Everything that
+            # one hash could not answer sits beside it in `scoring_code`.
+            "scoring_code_sha256": prov["sha256"],
+            "scoring_code": prov,
+            "jobs": jobs,
             "normalisation": ("asr_common.normalise_thai -- NFC, zero-width, doubled SARA E, "
                               "Thai digits, whitespace"),
             "contract_metric": "cer_norm",
@@ -715,6 +1118,11 @@ def main() -> int:
             },
             # Pooled over the corpus, never averaged over per-file rates. See pooled().
             "overall": overall,
+            "runaways": [
+                {"item_id": r["item_id"], "family": r["family"],
+                 "ref_chars": r["ref_chars"], "hyp_chars": r["hyp_chars"], **r["runaway"]}
+                for r in runaways
+            ],
             "entity_overall": {
                 "hit": ent_hit, "total": ent_total,
                 "accuracy": (ent_hit / ent_total) if ent_total else None,

@@ -128,21 +128,41 @@ def test_validate_catches(over: dict, fragment: str) -> None:
 
 
 def test_phone_index_maps_into_the_reserved_range() -> None:
+    """The first twenty are unchanged by the 2026-08-18 widening -- it is a superset.
+
+    That property is the reason the widening is safe to make: no committed value moved, so
+    every number in the frozen 20-call set still means what it always meant.
+    """
     assert C.phone_for_index(0) == "0810000301"
     assert C.phone_for_index(19) == "0810000320"
+    assert C.phone_for_index(137) == "0810000438"
 
 
 def test_phone_index_refuses_to_walk_past_the_reservation() -> None:
-    """Widening the block is a reviewed data-safety change, so this must raise, not wrap."""
+    """Widening the block is a reviewed data-safety change, so this must raise, not wrap.
+
+    The ceiling moved 320 -> 438 on 2026-08-18 to carry a 138-call set. The refusal itself
+    is the control and must survive the widening: index 138 is one past the new reservation
+    and has to raise exactly as index 20 used to.
+    """
     with pytest.raises(ValueError, match="reviewed change to a data-safety control"):
-        C.phone_for_index(20)
+        C.phone_for_index(138)
 
 
 def test_reserved_range_does_not_collide_with_the_spent_ranges() -> None:
-    """CLAUDE.md records three spent sub-ranges, measured 2026-08-12."""
+    """CLAUDE.md records three spent sub-ranges, measured 2026-08-12.
+
+    Checks the FULL claim, filenames and spoken pool together. Checking only
+    ASR_PHONE_FIRST..ASR_PHONE_LAST would miss the second in-call number entirely, and
+    spoken_phone_pool derives that from ASR_PHONE_LAST without any bound of its own -- so a
+    collision there would go unnoticed exactly the way the 2026-08-17 undercount did.
+    """
     spent = set(range(0, 100)) | set(range(101, 139)) | set(range(201, 251))
-    ours = set(range(C.ASR_PHONE_FIRST, C.ASR_PHONE_LAST + 1))
-    assert not (ours & spent), sorted(ours & spent)
+    claimed = {int(p[-3:]) for i in range(C.ASR_PHONE_LAST - C.ASR_PHONE_FIRST + 1)
+               for p in C.spoken_phone_pool(i)}
+    claimed |= set(range(C.ASR_PHONE_FIRST, C.ASR_PHONE_LAST + 1))
+    assert not (claimed & spent), sorted(claimed & spent)
+    assert max(claimed) <= 999, "the sanctioned block is 0810000000-0810000999"
 
 
 # --- normalisation --------------------------------------------------------------------
@@ -195,11 +215,15 @@ def test_composed_set_covers_every_family_twice() -> None:
     if not index_path.exists():
         pytest.skip("dialogues not composed yet")
     rows = json.loads(index_path.read_text(encoding="utf-8"))
-    assert len(rows) == 20
     from collections import Counter
     fam = Counter(r["family"] for r in rows)
     assert set(fam) == set(C.FAMILIES)
-    assert all(v == 2 for v in fam.values()), dict(fam)
+    # Was `== 2` when the set was fixed at twenty. The invariant that actually matters is
+    # BALANCE, not the literal count: no family may be starved relative to another, or a
+    # per-family metric stops being comparable across families.
+    assert len(rows) == len(json.loads(index_path.read_text(encoding="utf-8")))
+    assert min(fam.values()) >= 2, dict(fam)
+    assert max(fam.values()) - min(fam.values()) <= 1, dict(fam)
 
 
 def test_composed_set_has_both_call_directions() -> None:

@@ -196,6 +196,55 @@ See NOT OBSERVABLE at the foot for the three production error sources this pack
   (compare.py:11-13, test_differential.py).
 
 ------------------------------------------------------------------------------
+5b. PER-CLASS PRECISION AND RECALL - the detail the weighted average hides
+------------------------------------------------------------------------------
+  dimension    class                      arm          support   prec  recall     F1
+  call_result  churn                      incumbent         12  1.000   1.000  1.000
+  call_result  save                       incumbent          7  1.000   1.000  1.000
+  call_result  unknown                    incumbent          2  1.000   1.000  1.000
+  call_result  undefined                  incumbent          1  1.000   1.000  1.000
+  call_result  churn                      candidate         12  1.000   0.917  0.957
+  call_result  save                       candidate          7  0.875   1.000  0.933
+  call_result  unknown                    candidate          2  1.000   1.000  1.000
+  call_result  undefined                  candidate          1  1.000   1.000  1.000
+
+  reason       promotion related          incumbent          8  1.000   1.000  1.000
+  reason       network                    incumbent          5  1.000   1.000  1.000
+  reason       save cost                  incumbent          4  1.000   1.000  1.000
+  reason       dissatisfied service       incumbent          4  1.000   1.000  1.000
+  reason       contract end               incumbent          2  1.000   1.000  1.000
+  reason       device promotion related   incumbent          1  1.000   1.000  1.000
+  reason       sale upsell problem        incumbent          1  1.000   1.000  1.000
+  reason       other                      incumbent          1  1.000   1.000  1.000
+  reason       post to pre                incumbent          1  1.000   1.000  1.000
+  reason       customer reason            incumbent          1  1.000   1.000  1.000
+  reason       down sell not success      incumbent          1  1.000   1.000  1.000
+  reason       promotion related          candidate          8  1.000   1.000  1.000
+  reason       network                    candidate          5  1.000   1.000  1.000
+  reason       save cost                  candidate          4  1.000   1.000  1.000
+  reason       dissatisfied service       candidate          4  1.000   1.000  1.000
+  reason       contract end               candidate          2  1.000   1.000  1.000
+  reason       device promotion related   candidate          1  1.000   1.000  1.000
+  reason       sale upsell problem        candidate          1  1.000   1.000  1.000
+  reason       other                      candidate          1  1.000   1.000  1.000
+  reason       post to pre                candidate          1  1.000   1.000  1.000
+  reason       customer reason            candidate          1  1.000   1.000  1.000
+  reason       down sell not success      candidate          1  1.000   1.000  1.000
+
+  product      postpaid                   incumbent         16  1.000   1.000  1.000
+  product      tvs                        incumbent          3  1.000   1.000  1.000
+  product      tol                        incumbent          2  1.000   1.000  1.000
+  product      unknown                    incumbent          1  1.000   1.000  1.000
+  product      postpaid                   candidate         16  1.000   1.000  1.000
+  product      tvs                        candidate          3  1.000   1.000  1.000
+  product      tol                        candidate          2  1.000   1.000  1.000
+  product      unknown                    candidate          1  1.000   1.000  1.000
+
+  support = tp + fn, the number of ground-truth rows carrying that class. It is
+  also the weight each class contributes to the weighted average above, so a
+  low-support class can move F1 far more than it moves accuracy.
+
+------------------------------------------------------------------------------
 6. COST, TOKENS AND LATENCY - what this run spent, not what a model is worth
 ------------------------------------------------------------------------------
   arm           calls  prompt_tok  compl_tok  reason_tok      cost USD  no cost
@@ -291,6 +340,9 @@ HOW THIS REPORT WAS PRODUCED
 ==============================================================================
 incumbent run  <RUN DIRECTORY>
 candidate run  <RUN DIRECTORY>
+COVERAGE GATE: strict (compare.check_exact_coverage). Both arms had to cover
+  exactly the ground truth's call identities in every dimension, with nothing
+  tolerated. This is the gate a decision may be read off.
 Section 5's aggregate metrics are scored on REPLICATE 1 of each arm. Pooling
   every replicate into one prediction list would be wrong, not merely
   approximate: metrics.outer_join keys predictions by (call_id, phone,

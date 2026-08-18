@@ -37,6 +37,8 @@ additional 999 baht per month discount" -- the entire bill, free.
 
 from __future__ import annotations
 
+import random
+
 # --------------------------------------------------------------------------------------
 # Names and brands
 # --------------------------------------------------------------------------------------
@@ -64,6 +66,103 @@ CUSTOMER_THAI_NAMES = [
     "ปิยะดา", "ธีรพงศ์", "กมลวรรณ", "วีรยุทธ", "สุนิสา", "ชัยวัฒน์", "อรพรรณ",
     "พงศธร", "เบญจมาศ", "ณัฐวุฒิ", "รุ่งทิวา", "สิทธิชัย", "ขวัญฤทัย",
 ]
+
+# --------------------------------------------------------------------------------------
+# Scaling the name pools past twenty
+# --------------------------------------------------------------------------------------
+# The three lists above are index-aligned and were consumed as `AGENT_NAMES[idx]`, so call
+# index 20 raised IndexError and the set could not grow. Rather than hand-author 414 more
+# names, the extension is combinatorial: a given-name pool crossed with a surname pool,
+# enumerated deterministically.
+#
+# THE FIRST TWENTY ARE PRESERVED EXACTLY. `agent_name(0..19)` returns precisely what
+# `AGENT_NAMES[0..19]` returned, so a regenerated ASR-001 keeps the agent it has always had
+# and the diff against the frozen set stays readable. Extension appends; it does not
+# reshuffle.
+#
+# Latin names remain strictly two underscore-free tokens. The production filename contract
+# spends positional fields 4 AND 5 on the agent name and rejoins them with a space
+# (asr_common.FILENAME_POSITIONS); an underscore or a missing token shifts record_date and
+# call_direction silently, which is the trap asr_common documents at length.
+
+AGENT_GIVEN_POOL = [
+    ("ธนวัฒน์", "thanawat"), ("ปรียา", "preeya"), ("จักรพงษ์", "jakkapong"),
+    ("อารยา", "araya"), ("ศุภชัย", "supachai"), ("เมธาวี", "methawee"),
+    ("ปกรณ์", "pakorn"), ("ชนิดา", "chanida"), ("ภาณุพงศ์", "phanupong"),
+    ("วิลาวัณย์", "wilawan"), ("อรรถพล", "atthaphon"), ("สุพรรณี", "supannee"),
+]
+
+AGENT_SURNAME_POOL = [
+    ("จันทร์แก้ว", "chankaew"), ("ศรีสมบัติ", "srisombat"), ("ทองสุข", "thongsuk"),
+    ("บุญเรือง", "boonruang"), ("แสงจันทร์", "sangchan"), ("พูนทรัพย์", "poonsap"),
+    ("วัฒนกุล", "watanakul"), ("อินทรีย์", "intharee"), ("เกษมสุข", "kasemsuk"),
+    ("ปานทอง", "panthong"), ("ยอดเยี่ยม", "yodyiam"), ("สินทรัพย์", "sinsap"),
+]
+
+CUSTOMER_GIVEN_POOL = [
+    "ธีรศักดิ์", "นันทิดา", "ประวิทย์", "สุกัญญา", "อดิศร", "พรทิพย์",
+    "ณรงค์ชัย", "วิภาวดี", "สมบูรณ์", "จิราพร", "ทวีศักดิ์", "ปรารถนา",
+]
+
+CUSTOMER_SURNAME_POOL = [
+    "ชูเกียรติ", "มณีรัตน์", "แก้วประเสริฐ", "สุวรรณดี", "พงษ์พันธ์",
+    "ธารทอง", "รักไทย", "เจริญผล", "วงศ์สกุล", "อ่อนละมูล",
+    "ภูมิใจ", "สายสุนทร",
+]
+
+
+def _extended(seed: list, given: list, surname: list, combine):
+    """Seed list first, then every given x surname combination in a fixed shuffled order.
+
+    The shuffle is seeded and therefore reproducible, and it exists for one reason: a plain
+    nested loop gives twelve consecutive calls the same surname, which reads as one family
+    working through a call queue rather than twelve unrelated customers. Shuffling varies
+    both halves of the name from one call index to the next while keeping the sequence
+    identical on every run.
+    """
+    out = list(seed)
+    seen = set(seed)
+    pairs = [(g, s) for s in surname for g in given]
+    random.Random(20260818).shuffle(pairs)
+    for g, s in pairs:
+        candidate = combine(g, s)
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        out.append(candidate)
+    return out
+
+
+_AGENT_ALL = _extended(
+    list(zip(AGENT_THAI_NAMES, AGENT_NAMES)),
+    AGENT_GIVEN_POOL, AGENT_SURNAME_POOL,
+    lambda g, s: (f"{g[0]} {s[0]}", (g[1], s[1])),
+)
+
+_CUSTOMER_ALL = _extended(
+    list(CUSTOMER_THAI_NAMES),
+    CUSTOMER_GIVEN_POOL, CUSTOMER_SURNAME_POOL,
+    lambda g, s: f"{g} {s}",
+)
+
+
+def agent_name(idx: int) -> tuple[str, tuple[str, str]]:
+    """(thai_display_name, (latin_first, latin_last)) for call index `idx`."""
+    if idx >= len(_AGENT_ALL):
+        raise IndexError(
+            f"call index {idx} needs an agent name but only {len(_AGENT_ALL)} exist. "
+            "Widen AGENT_GIVEN_POOL or AGENT_SURNAME_POOL; the cross product is the supply."
+        )
+    return _AGENT_ALL[idx]
+
+
+def customer_name(idx: int) -> str:
+    if idx >= len(_CUSTOMER_ALL):
+        raise IndexError(
+            f"call index {idx} needs a customer name but only {len(_CUSTOMER_ALL)} exist. "
+            "Widen CUSTOMER_GIVEN_POOL or CUSTOMER_SURNAME_POOL."
+        )
+    return _CUSTOMER_ALL[idx]
 
 # Brand and product names. The `proper_nouns` family exists because ASR-EXPECTATION.md
 # class 4 (RET-116, คอนเซ็นเตอร์ for คอลเซ็นเตอร์) is a proper-noun mangling, and these are
@@ -442,19 +541,97 @@ COUNTER = [
     "ถ้าเทียบกันจริง ๆ แพ็กเกจนี้ได้มากกว่าที่คุณลูกค้าใช้อยู่{p}",
 ]
 
-CUSTOMER_ACCEPT = [
-    "งั้นเอาตามนั้น{p}",
-    "โอเค{p} ถ้าได้ราคานี้ก็ใช้ต่อ",
-    "ตกลง{p} ช่วยดำเนินการให้เลย",
-    "ได้{p} ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่",
-    "เอาแบบนั้นก็ได้{p} แต่ขอให้ทำตามที่บอกนะ",
+# --------------------------------------------------------------------------------------
+# The customer's closing position.
+# --------------------------------------------------------------------------------------
+# THIS BLOCK IS LOAD-BEARING FOR THE PRIMARY METRIC. It used to be two pools, ACCEPT (5
+# lines) and DECLINE (3), drawn by a coin flip. Two things were wrong with that.
+#
+#   1. The pools were disjoint and always fired, so a string match over eight sentences
+#      recovered the business outcome on 20 of 20 calls. End-to-end business accuracy
+#      measured on such a corpus is not measuring reasoning; it is measuring whether the
+#      model can spot one of eight sentences. E21's "no arm ever disagreed about the
+#      outcome across 351 calls" is that property, not a finding about the models.
+#   2. Three of the eight lines were mislabelled. "ขอคิดดูก่อน ... โทรกลับมาใหม่" (let me
+#      think, I will call back) and "ยังไม่ตัดสินใจตอนนี้" (I have not decided yet) sat in
+#      DECLINE. Those are not a churn; they are the `unknown` outcome, which the binary had
+#      no way to express at all. Production uses four values and 12% of real rows are the
+#      two this corpus could not produce.
+#
+# The replacement is keyed by the outcome the generator has ALREADY CHOSEN (see
+# business_labels.py), plus SHARED -- lines that are genuinely compatible with any outcome.
+# The composer draws from `CUSTOMER_CLOSE[result] + CUSTOMER_CLOSE_SHARED`, so roughly half
+# of all calls close on a sentence that carries no outcome information whatsoever and the
+# label has to be read off what was actually agreed earlier in the call.
+#
+# `leak_probe.py` measures exactly that and is the acceptance gate. Do not add a line here
+# that names its own outcome ("ยืนยันใช้ต่อ" is fine in `save`; putting it in SHARED is not)
+# and do not let SHARED shrink -- both raise string-match recovery, which is the number the
+# gate refuses on.
+
+CUSTOMER_CLOSE_SHARED = [
+    "รับทราบ{p}",
+    "โอเค{p} เข้าใจแล้ว",
+    "ได้{p}",
+    "อืม{p} ก็ตามนั้น",
+    "แล้วแต่จะสะดวก{p}",
+    "เดี๋ยว{self}ดูอีกทีนะ{p}",
+    "ขอบคุณที่แจ้ง{p}",
+    "รับทราบตามนั้น{p}",
+    "เข้าใจแล้ว{p} ขอบคุณ",
+    "อ๋อ{p} เป็นอย่างนั้นเอง",
+    "ก็ได้{p}",
+    "ตามที่แจ้งเลย{p}",
+    "โอเค{p} รับทราบ",
+    "เออ{p} ก็แล้วแต่",
 ]
 
-CUSTOMER_DECLINE = [
-    "ขอคิดดูก่อน{p} เดี๋ยว{self}โทรกลับมาใหม่",
-    "ไม่เอา{p} ยืนยันยกเลิกตามเดิม",
-    "ยังไม่ตัดสินใจตอนนี้{p} ขอเวลาหน่อย",
-]
+CUSTOMER_CLOSE = {
+    "save": [
+        "งั้นเอาตามนั้น{p}",
+        "โอเค{p} ถ้าได้ราคานี้ก็ใช้ต่อ",
+        "ตกลง{p} ช่วยดำเนินการให้เลย",
+        "ได้{p} ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่",
+        "เอาแบบนั้นก็ได้{p} แต่ขอให้ทำตามที่บอกนะ",
+        "ตกลง{p} ใช้ต่อตามนี้",
+        "เอา{p} จัดให้เลย",
+        "โอเค{p} ไม่ยกเลิกแล้ว",
+        "งั้นขอใช้ต่อ{p}",
+        "ตามนั้น{p} ยืนยันใช้บริการต่อ",
+        "ถ้าได้แบบนี้ก็อยู่ต่อ{p}",
+        "ตกลงตามที่เสนอ{p}",
+    ],
+    "churn": [
+        "ไม่เอา{p} ยืนยันยกเลิกตามเดิม",
+        "ยกเลิกเลย{p}",
+        "ไม่{p} ตัดสินใจแล้วว่าจะย้าย",
+        "ขอยกเลิกตามที่แจ้งไว้{p}",
+        "ไม่สนใจ{p} ยกเลิกอย่างเดียว",
+        "พอแล้ว{p} ขอปิดบริการ",
+        "ยืนยันยกเลิก{p} ไม่ต้องเสนออะไรแล้ว",
+        "ขอย้ายค่ายตามเดิม{p}",
+        "ไม่ไหวแล้ว{p} ขอเลิกใช้",
+        "ตัดสินใจยกเลิกแน่นอน{p}",
+    ],
+    "unknown": [
+        "ขอคิดดูก่อน{p} เดี๋ยว{self}โทรกลับมาใหม่",
+        "ยังไม่ตัดสินใจตอนนี้{p} ขอเวลาหน่อย",
+        "ขอปรึกษาที่บ้านก่อน{p}",
+        "ยังไม่แน่ใจ{p} ขอดูก่อน",
+        "ขอเวลาคิดสักสองสามวัน{p}",
+        "เดี๋ยวขอดูรายละเอียดก่อน{p}",
+        "ยังตอบไม่ได้ตอนนี้{p}",
+        "ขอเก็บไว้พิจารณาก่อน{p}",
+    ],
+    "undefined": [
+        "ตอนนี้ยังไม่สนใจ{p}",
+        "ไว้โอกาสหน้า{p}",
+        "ขอบคุณ{p} แต่ยังไม่ต้องการ",
+        "ไม่สะดวกคุยตอนนี้{p}",
+        "ไว้ค่อยว่ากันใหม่{p}",
+        "พอดีติดธุระอยู่{p}",
+    ],
+}
 
 # --------------------------------------------------------------------------------------
 # Phase: SLA, wrap-up, closing

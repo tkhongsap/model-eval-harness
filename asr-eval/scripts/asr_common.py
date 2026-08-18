@@ -23,6 +23,7 @@ eval set measures that separate ASR step.
 
 from __future__ import annotations
 
+import os
 import re
 import unicodedata
 from dataclasses import dataclass, field, asdict
@@ -32,7 +33,18 @@ from pathlib import Path
 # Paths
 # --------------------------------------------------------------------------------------
 
-ROOT = Path(__file__).resolve().parents[1]
+# ROOT defaults to `asr-eval/` and is overridable with ASR_EVAL_ROOT.
+#
+# The override exists so a new pack can be built WITHOUT overwriting a frozen one. The
+# twenty-call set under `asr-eval/` is the corpus every published voice number was measured
+# on; its .wav files were rendered from the dialogue JSON sitting next to them, so
+# regenerating those dialogues in place would silently leave audio that no longer matches
+# its own reference transcript -- every CER after that point would be measuring drift.
+#
+# This mirrors how the text side already handles it: `retention_challenge_v1` was added as a
+# new pack id rather than as more items inside `retention_v3`, precisely so a result on one
+# can never be mistaken for a result on the other.
+ROOT = Path(os.environ.get("ASR_EVAL_ROOT") or Path(__file__).resolve().parents[1])
 DIALOGUE_DIR = ROOT / "dialogues"
 GROUND_TRUTH_DIR = ROOT / "ground-truth"
 AUDIO_DIR = ROOT / "audio"
@@ -162,13 +174,36 @@ CALL_TIME_RE = re.compile(r"^\d{6}$")
 #   0810000101-0810000138   retention_v3 phase two
 #   0810000201-0810000250   retention_challenge_v1
 #
-# This set takes 0810000301-0810000320: inside the sanctioned block, clear of all three
+# This set takes 0810000301-0810000438: inside the sanctioned block, clear of all three
 # spent ranges and clear of the gaps beside them, one number per call. Taking a *new*
 # sub-range rather than reusing a spent one keeps the "which pack owns which number"
 # audit in CLAUDE.md answerable by inspection.
+#
+# WIDENED 2026-08-18, from 320 to 438, as a reviewed change to a data-safety control.
+#
+# What changed and why: the set grew from 20 calls to 138, and the reservation held exactly
+# 20 filename numbers. The ceiling below is the thing that refused, deliberately and by
+# design -- see the raise in phone_for_index. This is that review, not a bypass of it.
+#
+#   filenames      0810000301-0810000438   138 numbers, one per call
+#   spoken pool    0810000439-0810000576   138 more, the second in-call number
+#   TOTAL CLAIMED  0810000301-0810000576   276 numbers
+#
+# Three facts that make the widening safe, each independently checkable:
+#
+#   * It is a strict superset of the old range, so no committed value moved. Every number
+#     the 20-call set used still means what it meant.
+#   * The claimed range is contiguous and entirely unspent. Above 0810000340 nothing in
+#     either pack tree had claimed anything, leaving 660 free; 276 fits with 384 to spare.
+#   * It stays wholly inside `^0810000[0-9]{3}$`, the block src/evalgen/testsets.py:135
+#     enforces. Nothing here reaches outside the sanctioned thousand.
+#
+# The census in CLAUDE.md moves from 224 in use / 776 free to 464 / 536, and is re-measured
+# over BOTH pack trees by tests/test_phone_block_allocation.py rather than hand-edited --
+# that test exists because an earlier count scanned only one tree and missed 36 numbers.
 PHONE_BLOCK_RE = re.compile(r"^0810000\d{3}$")
 ASR_PHONE_FIRST = 301
-ASR_PHONE_LAST = 320
+ASR_PHONE_LAST = 438
 
 
 def phone_for_index(idx: int) -> str:

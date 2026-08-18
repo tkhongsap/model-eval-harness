@@ -1,0 +1,309 @@
+{
+  "generated_from": "docs/reports/*-metrics.json; recomputes no model output",
+  "items": {
+    "pack_a": 138,
+    "pack_b": 50,
+    "pooled": 188
+  },
+  "bands": {
+    "precision": {
+      "acceptable": 75.0,
+      "good": 80.0,
+      "excellent": 90.0
+    },
+    "recall": {
+      "acceptable": 75.0,
+      "good": 80.0,
+      "excellent": 90.0
+    },
+    "f1": {
+      "acceptable": 80.0,
+      "good": 85.0,
+      "excellent": 90.0
+    },
+    "accuracy": {
+      "acceptable": 80.0,
+      "good": 85.0,
+      "excellent": 90.0
+    }
+  },
+  "bands_source": "production-reference/sentiment-voice-analysis-develop/config/sentiment_qa/qa_pipeline_fact_check.yml",
+  "pooled_contract": {
+    "prompt_sha": "968a2974f0ce462e0f1ad815c9434252420a677766fa23775a69a691f3db4eee",
+    "scoring_code_sha": "9b4afc95c3d698761cebcfd19e7c9c04fa3e5a850a015d291fc21d8e5e900db3",
+    "repeats": 3
+  },
+  "graded": {
+    "gemini": {
+      "call_result": {
+        "precision": {
+          "value": 0.974,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.94,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.955,
+          "band": "excellent"
+        }
+      },
+      "reason": {
+        "precision": {
+          "value": 0.763,
+          "band": "acceptable"
+        },
+        "recall": {
+          "value": 0.964,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.838,
+          "band": "acceptable"
+        }
+      },
+      "product": {
+        "precision": {
+          "value": 0.954,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.967,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.96,
+          "band": "excellent"
+        }
+      }
+    },
+    "qwen38": {
+      "call_result": {
+        "precision": {
+          "value": 0.986,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.947,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.966,
+          "band": "excellent"
+        }
+      },
+      "reason": {
+        "precision": {
+          "value": 0.798,
+          "band": "acceptable"
+        },
+        "recall": {
+          "value": 0.928,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.834,
+          "band": "acceptable"
+        }
+      },
+      "product": {
+        "precision": {
+          "value": 0.941,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.96,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.95,
+          "band": "excellent"
+        }
+      }
+    },
+    "qwen36": {
+      "call_result": {
+        "precision": {
+          "value": 0.993,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.933,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.962,
+          "band": "excellent"
+        }
+      },
+      "reason": {
+        "precision": {
+          "value": 0.776,
+          "band": "acceptable"
+        },
+        "recall": {
+          "value": 0.922,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.821,
+          "band": "acceptable"
+        }
+      },
+      "product": {
+        "precision": {
+          "value": 0.924,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.94,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.932,
+          "band": "excellent"
+        }
+      }
+    },
+    "gemma": {
+      "call_result": {
+        "precision": {
+          "value": 0.959,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.907,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.929,
+          "band": "excellent"
+        }
+      },
+      "reason": {
+        "precision": {
+          "value": 0.713,
+          "band": "BELOW"
+        },
+        "recall": {
+          "value": 0.934,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.792,
+          "band": "BELOW"
+        }
+      },
+      "product": {
+        "precision": {
+          "value": 0.922,
+          "band": "excellent"
+        },
+        "recall": {
+          "value": 0.947,
+          "band": "excellent"
+        },
+        "f1": {
+          "value": 0.933,
+          "band": "excellent"
+        }
+      }
+    }
+  },
+  "business_accuracy": [
+    {
+      "model": "qwen38",
+      "dimension": "call_result",
+      "n": 188,
+      "incumbent_correct": 175,
+      "candidate_correct": 175,
+      "incumbent_accuracy": 0.9309,
+      "candidate_accuracy": 0.9309,
+      "incumbent_band": "excellent",
+      "candidate_band": "excellent"
+    },
+    {
+      "model": "qwen38",
+      "dimension": "reason",
+      "n": 188,
+      "incumbent_correct": 106,
+      "candidate_correct": 100,
+      "incumbent_accuracy": 0.5638,
+      "candidate_accuracy": 0.5319,
+      "incumbent_band": "BELOW",
+      "candidate_band": "BELOW"
+    },
+    {
+      "model": "qwen38",
+      "dimension": "product",
+      "n": 188,
+      "incumbent_correct": 181,
+      "candidate_correct": 180,
+      "incumbent_accuracy": 0.9628,
+      "candidate_accuracy": 0.9574,
+      "incumbent_band": "excellent",
+      "candidate_band": "excellent"
+    }
+  ],
+  "pooled_paired": [
+    {
+      "model": "qwen38",
+      "dimension": "call_result",
+      "discordant": 4,
+      "net": 0,
+      "band": null,
+      "verdict": "UNDERPOWERED",
+      "pack_a": {
+        "discordant": 3,
+        "net": 1,
+        "verdict": "UNDERPOWERED"
+      },
+      "pack_b": {
+        "discordant": 1,
+        "net": -1,
+        "verdict": "UNDERPOWERED"
+      }
+    },
+    {
+      "model": "qwen38",
+      "dimension": "reason",
+      "discordant": 40,
+      "net": -6,
+      "band": 16,
+      "verdict": "INDISTINGUISHABLE",
+      "pack_a": {
+        "discordant": 28,
+        "net": -8,
+        "verdict": "INDISTINGUISHABLE"
+      },
+      "pack_b": {
+        "discordant": 12,
+        "net": 2,
+        "verdict": "INDISTINGUISHABLE"
+      }
+    },
+    {
+      "model": "qwen38",
+      "dimension": "product",
+      "discordant": 1,
+      "net": -1,
+      "band": null,
+      "verdict": "UNDERPOWERED",
+      "pack_a": {
+        "discordant": 1,
+        "net": -1,
+        "verdict": "UNDERPOWERED"
+      },
+      "pack_b": {
+        "discordant": 0,
+        "net": 0,
+        "verdict": "UNDERPOWERED"
+      }
+    }
+  ],
+  "not_pooled": {
+    "qwen36": "ran on pack A only (n=138)",
+    "gemma": "ran on pack A only (n=138)"
+  }
+}
