@@ -210,10 +210,41 @@ def _unique_by_key(records: list[Record], role: str) -> dict[tuple, Record]:
 def _identity_set(
     records: list[Record], dimension: str, role: str
 ) -> frozenset[tuple]:
-    indexed = _unique_by_key(records, role)
+    """The items an arm covers in one dimension, at CALL grain in all three.
+
+    Call grain, not merge grain, and the difference is what decides whether this gate
+    can be switched on at all.  ``Record.key`` carries the product, so at merge grain a
+    model that answers TOL where the ground truth says Postpaid reads as one missing
+    identity plus one extra one -- indistinguishable, here, from an item that vanished
+    from the arm.  That is not a coverage fact.  It is the product dimension's finding,
+    already scored, and already printed as a regression row with ``error_type``
+    ``extra_output``.  Measured: pooled product accuracy over packs A+B is 181/188 and
+    180/188 (docs/migration-decision.md), so roughly seven calls per arm name a product
+    set the ground truth does not, and a merge-grain gate would have refused to produce
+    the Experiment 7 comparison at all rather than reporting those seven calls.
+
+    Coverage asks the narrower question -- was this call scored by both arms -- and
+    that is also the grain the paired tables are counted on (``comparison_clusters``)
+    and the grain ``scripts/pooled_bands.py`` depends on when it requires all three 2x2
+    tables to sum to the same 188.  The product dimension was already written this way;
+    the other two were not, and closing that inconsistency is what makes the strict gate
+    usable rather than merely present.
+
+    What makes call grain a real gate rather than a softer one: ``flatten.to_rows``
+    takes ``call_id`` and ``phone_number`` from the testset item and never from the
+    payload, precisely so a model cannot invent a merge key.  An arm therefore cannot
+    gain or lose a call identity by answering badly.  At this grain the gate fires only
+    when the pipeline itself dropped an item, which is the event it exists to catch.
+
+    ``_unique_by_key`` still runs on the full merge key, so duplicate rows are refused
+    here exactly as they are in every other paired path.
+    """
+    _unique_by_key(records, role)
     if dimension in {"call_result", "reason"}:
-        return frozenset(indexed)
+        return frozenset(record.call_key for record in records)
     if dimension == "product":
+        # The production scorer's explicit null-phone drop: a call with no phone is
+        # outside this dimension's population, so it is outside its coverage too.
         return frozenset(
             record.call_key for record in records if record.phone is not None
         )
@@ -226,16 +257,18 @@ def check_exact_coverage(
     candidate: list[Record],
     dimension: str,
 ) -> None:
-    """Refuse unless both arms contain exactly the expected unit identities.
+    """Refuse unless both arms cover exactly the ground truth's call identities.
 
-    ``check_coverage`` remains available for historical aggregate results, which
-    expose counts but not identities.  New decision paths should call this helper on
-    normalized records before scoring.  Equal counts are insufficient: one missing
-    expected unit and one unrelated extra unit still make a different population.
+    This is the decision path's gate, wired in at ``evalgen.cli`` as ``--coverage
+    strict`` (the default).  ``check_coverage`` remains available for exploratory runs
+    over partial data: it reads aggregate counts and tolerates 2% of drift, which on
+    188 items is about four items that can be scored in one arm and not the other.
+    Equal counts are insufficient anyway -- one missing expected item and one unrelated
+    extra item leave every count untouched and still make a different population.
 
-    The product dimension compares at call grain and mirrors the production scorer's
-    explicit null-phone drop.  The other dimensions use the normalized merge key.
-    No key values appear in the exception because phone is part of those identities.
+    ``_identity_set`` documents the grain and why the product dimension additionally
+    mirrors the production scorer's null-phone drop.  No identity values appear in the
+    exception because phone is part of them.
     """
     expected = _identity_set(gt, dimension, "ground truth")
     problems: list[str] = []

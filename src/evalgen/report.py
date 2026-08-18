@@ -1124,6 +1124,61 @@ def _metrics_section(
         "  (compare.py:11-13, test_differential.py).",
         "",
     ]
+    lines += _per_class_block(arms, order)
+    return lines
+
+
+def _per_class_block(
+    arms: Sequence[ArmSummary], order: Sequence[str]
+) -> list[str]:
+    """Precision and recall for every individual class, which nothing else prints.
+
+    `metrics.ClassMetrics` has carried per-class tp/fp/fn/tn since the scorer was written,
+    and every consumer collapses it to `DimensionResult.weighted(...)` before anyone sees
+    it. The information was computed and discarded at the report boundary.
+
+    That discard hid the largest quality finding in the project. Weighted `reason` F1 sits
+    at 0.83 for every model, which reads as uniformly acceptable; underneath it, recall is
+    excellent (90-96%) and precision is merely acceptable (71-83%) for all of them. Every
+    model over-predicts reasons, it is a property of the task rather than of any candidate,
+    and no weighted average could show it.
+
+    Classes with no ground-truth support are omitted. A class that never occurs has
+    precision 0 and recall 0 by convention, and printing a wall of zeroes for the unused
+    half of an 11-class space buries the rows that carry the data.
+    """
+    lines = [
+        _SECTION,
+        "5b. PER-CLASS PRECISION AND RECALL - the detail the weighted average hides",
+        _SECTION,
+        f"  {'dimension':<12} {'class':<26} {'arm':<12} {'support':>7} "
+        f"{'prec':>6} {'recall':>7} {'F1':>6}",
+    ]
+    printed = False
+    for name in order:
+        for arm in arms:
+            result = arm.dimensions.get(name)
+            if not isinstance(result, DimensionResult):
+                continue
+            for cls in sorted(result.classes, key=lambda c: -c.weight):
+                if not cls.weight:
+                    continue
+                printed = True
+                lines.append(
+                    f"  {name:<12} {cls.label[:26]:<26} {arm.arm:<12} "
+                    f"{cls.weight:>7} {cls.precision:>6.3f} {cls.recall:>7.3f} "
+                    f"{cls.f1:>6.3f}"
+                )
+        lines.append("")
+    if not printed:
+        lines.append("  no scored classes with ground-truth support")
+        lines.append("")
+    lines += [
+        "  support = tp + fn, the number of ground-truth rows carrying that class. It is",
+        "  also the weight each class contributes to the weighted average above, so a",
+        "  low-support class can move F1 far more than it moves accuracy.",
+        "",
+    ]
     return lines
 
 

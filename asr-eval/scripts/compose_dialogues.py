@@ -24,13 +24,16 @@ Run:
 
 from __future__ import annotations
 
+import csv
 import json
+import os
 import random
 from collections import deque
 from dataclasses import asdict
 from datetime import date, timedelta
 
 import asr_common as C
+import business_labels as B
 import thai_corpus as T
 import thai_num as N
 
@@ -68,14 +71,14 @@ RECENT_WINDOW = 22
 # under the ceiling the set promises. That is inside the band by luck, not by design: TTS
 # timing varies between runs, so the next render could put it over. 545/555 keeps both
 # calls at 9.4-9.7 minutes with ~25 s of margin.
-TARGETS = [
+SEED_TARGETS = [
     215, 245, 275, 310, 340, 370, 400, 545, 460, 490,
     230, 260, 295, 325, 355, 385, 415, 555, 430, 445,
 ]
 
 # Ten families x 2 calls. The second of each pair takes a different scenario and a
 # different speaker-gender assignment, so a family effect cannot be a speaker effect.
-PLAN: list[tuple[str, str]] = [
+SEED_PLAN: list[tuple[str, str]] = [
     ("clean_baseline", "retention"),
     ("telephony_noise", "billing_dispute"),
     ("code_switch", "net_slow"),
@@ -97,6 +100,142 @@ PLAN: list[tuple[str, str]] = [
     ("far_field_low_gain", "sim_replace"),
     ("hold_ivr", "payment_arrange"),
 ]
+
+# --------------------------------------------------------------------------------------
+# Scaling the design past twenty calls
+# --------------------------------------------------------------------------------------
+# SET_SIZE is the one number to change. The two literals above are kept as the seed so the
+# first twenty calls keep the family, scenario and duration they have always had, and a diff
+# between a 20-call and a 138-call build stays readable.
+#
+# Three invariants the seed encodes, preserved by the extension rather than re-derived:
+#
+#   * Every family gets a spread of durations. If `telephony_noise` were systematically the
+#     shortest family, a CER difference by family would be a CER difference by length.
+#   * `long_context` takes the top of the band. It is the family whose entire purpose is
+#     length; leaving it mid-range makes the label meaningless.
+#   * No family sits on one scenario. Scenario rotates with an offset per family so
+#     family x scenario coverage is spread rather than paired.
+#
+# The band is 180-600 s and the extension stays inside 195-500 for ordinary families. The
+# composer overshoots (it adds turns in pairs, then a fixed closing block), which is why the
+# seed's long_context targets are 545/555 and not 575 -- at 575 a render landed 1.8 s under
+# the ceiling, inside the band by luck rather than design.
+
+# Settable so a 20-call smoke build and the real 138 come from one code path. An env var
+# rather than a CLI flag because synthesize.py, validate_audio.py and the tests all have to
+# agree on the size and they are separate processes.
+SET_SIZE = int(os.environ.get("ASR_SET_SIZE", "20"))
+
+FAMILIES = [
+    "clean_baseline", "telephony_noise", "code_switch", "numeric_dense", "proper_nouns",
+    "disfluency", "overlap_crosstalk", "long_context", "far_field_low_gain", "hold_ivr",
+]
+
+SCENARIOS = [
+    "retention", "billing_dispute", "net_slow", "payment_arrange", "device_promo",
+    "downsell", "mnp", "coverage_issue", "sim_replace", "telesale_offer",
+]
+
+# Scenario weights, out of 100. The seed set gave every scenario two calls, which is right
+# for an ASR set -- ten acoustic families over ten call types, nothing favoured. It is wrong
+# for a RETENTION set, in a way that showed up as soon as business labels existed:
+#
+#   * This is a Retention eval. retention/downsell/mnp are the calls the decision is about
+#     and they should dominate; a uniform draw made them 30% of the set.
+#   * Uniform scenarios distorted the label mix. `telesale_offer` and `device_promo` are
+#     outbound sales with no service being retained, so they are mostly `undefined`. At 14
+#     calls each they pushed `undefined` to 12% of the set against 3.3% in the hand-labelled
+#     text packs, which would have made business accuracy on the two corpora incomparable.
+#
+# Weighted, retention-shaped calls are ~48% and outbound ~8%, which brings `undefined` back
+# near the packs. These are targets for the draw, not quotas; the realised mix is printed.
+SCENARIO_WEIGHTS = {
+    "retention": 22,
+    "downsell": 14,
+    "mnp": 12,
+    "billing_dispute": 12,
+    "net_slow": 10,
+    "coverage_issue": 8,
+    "payment_arrange": 8,
+    "sim_replace": 6,
+    "device_promo": 4,
+    "telesale_offer": 4,
+}
+
+# Ordinary families sweep this range; long_context gets its own, at the top.
+DURATION_BAND = (195, 500)
+LONG_CONTEXT_BAND = (505, 560)
+
+
+def build_design(size: int) -> tuple[list[tuple[str, str]], list[int]]:
+    """(plan, targets) of length `size`, seeded by the committed twenty."""
+    if size < len(SEED_PLAN):
+        return SEED_PLAN[:size], SEED_TARGETS[:size]
+
+    plan = list(SEED_PLAN)
+    targets = list(SEED_TARGETS)
+
+    # How many more calls each family needs, distributed as evenly as the remainder allows.
+    extra = size - len(SEED_PLAN)
+
+    # The weighted scenario supply for the extension, built once and drawn from below.
+    # Largest-remainder apportionment so the counts sum to `extra` exactly rather than
+    # drifting by a call or two, and interleaved so consecutive draws differ.
+    exact = {name: extra * weight / 100 for name, weight in SCENARIO_WEIGHTS.items()}
+    counts = {name: int(value) for name, value in exact.items()}
+    for name in sorted(exact, key=lambda k: exact[k] - counts[k], reverse=True):
+        if sum(counts.values()) >= extra:
+            break
+        counts[name] += 1
+    scenario_queue: list[str] = []
+    remaining = dict(counts)
+    while sum(remaining.values()):
+        for name in SCENARIOS:
+            if remaining.get(name):
+                scenario_queue.append(name)
+                remaining[name] -= 1
+    per_family = [extra // len(FAMILIES)] * len(FAMILIES)
+    for i in range(extra % len(FAMILIES)):
+        per_family[i] += 1
+
+    # Duration sweeps: each family walks its own band so no family clusters at one length.
+    for family_i, family in enumerate(FAMILIES):
+        count = per_family[family_i]
+        if not count:
+            continue
+        low, high = LONG_CONTEXT_BAND if family == "long_context" else DURATION_BAND
+        for k in range(count):
+            # Offset the sweep per family so two families never share a duration ladder.
+            frac = (k + 0.5 * (family_i % 2)) / max(count, 1)
+            target = int(round(low + frac * (high - low)))
+            # Scenarios come from a weighted queue rather than a rotation, so the SET hits
+            # its intended mix. The queue is consumed with a per-family offset so a family
+            # still sees several different scenarios instead of one repeated.
+            scenario = scenario_queue[(len(plan) + family_i) % len(scenario_queue)]
+            plan.append((family, scenario))
+            targets.append(target)
+
+    # Interleave the extension so consecutive call indices are not the same family. The
+    # composer alternates speaker gender on idx % 2; leaving families in blocks would pair
+    # every family with one gender and reintroduce the confound the seed avoids.
+    tail = list(zip(plan[len(SEED_PLAN):], targets[len(SEED_TARGETS):]))
+    by_family: dict[str, list] = {}
+    for entry in tail:
+        by_family.setdefault(entry[0][0], []).append(entry)
+    interleaved = []
+    while any(by_family.values()):
+        for family in FAMILIES:
+            bucket = by_family.get(family)
+            if bucket:
+                interleaved.append(bucket.pop(0))
+
+    plan = plan[:len(SEED_PLAN)] + [entry[0] for entry in interleaved]
+    targets = targets[:len(SEED_TARGETS)] + [entry[1] for entry in interleaved]
+    return plan, targets
+
+
+PLAN, TARGETS = build_design(SET_SIZE)
 
 PARTICLES = {
     "f": {"p": "ค่ะ", "pq": "คะ", "self": "ดิฉัน"},
@@ -159,10 +298,24 @@ class Composer:
         self.agent_gender = "f" if idx % 2 == 0 else "m"
         self.cust_gender = "m" if idx % 2 == 0 else "f"
 
-        self.agent_thai = T.AGENT_THAI_NAMES[idx]
-        self.agent_latin = T.AGENT_NAMES[idx]
-        self.cust_thai = T.CUSTOMER_THAI_NAMES[idx]
-        self.brand = self.rng.choice(T.BRANDS)
+        # Accessors, not direct indexing: the three name lists are 20 long and `[idx]`
+        # raised IndexError at call 20, which is what capped the set. agent_name/
+        # customer_name return the same values for 0..19 and extend combinatorially past it.
+        self.agent_thai, self.agent_latin = T.agent_name(idx)
+        self.cust_thai = T.customer_name(idx)
+
+        # --- the business label, drawn BEFORE any text exists ------------------------
+        # This is the inversion that makes the audio set scoreable end to end. The old
+        # composer flipped a coin mid-dialogue and the outcome was whatever the coin said,
+        # so the only way to know a call's label was to read its transcript back. Here the
+        # label is an INPUT: the dialogue is rendered to express it, `business.csv` records
+        # it, and nothing downstream has to recover it from text. See business_labels.py.
+        self.product = B.choose_product(self.rng)
+        self.call_result = B.choose_call_result(self.rng, scenario)
+        self.main, self.secondary, self.third = B.choose_reasons(self.rng, scenario)
+        # Brand follows product rather than being drawn independently: a TrueVisions call
+        # labelled `postpaid` would be a row nobody could defend.
+        self.brand = T.BRANDS[B.brand_index_for(self.rng, self.product)]
 
         self.direction = "OUT" if scenario in C.OUTBOUND_SCENARIOS else "IN"
 
@@ -296,6 +449,23 @@ class Composer:
         return text
 
     # -- turn construction --------------------------------------------------------------
+
+    def business_label(self) -> B.BusinessLabel:
+        """The row this call contributes to ground truth.
+
+        `call_id` and `phone_number` must match the values the composer already put in
+        `CallMeta`, because that is what the scorer joins on -- see metrics.outer_join,
+        which merges on (call_id, phone, product).
+        """
+        return B.BusinessLabel(
+            call_id=f"{7100 + self.idx}",
+            phone_number=self.phone,
+            product=self.product,
+            call_result=self.call_result,
+            main=self.main,
+            secondary=self.secondary,
+            third=self.third,
+        )
 
     def add(self, speaker: str, pool: list[str], kind: str = "speech") -> None:
         g = self.agent_gender if speaker == "agent" else self.cust_gender
@@ -450,10 +620,10 @@ class Composer:
                 self.add("agent", T.SMALLTALK)
                 self.add("customer", T.BACKCHANNEL_CUSTOMER)
 
-        self.add(
-            "customer",
-            T.CUSTOMER_ACCEPT if self.rng.random() < 0.7 else T.CUSTOMER_DECLINE,
-        )
+        # The outcome was decided in __init__, before a word was written. This renders it.
+        # Drawing from the outcome's own pool PLUS the shared pool is what stops the closing
+        # sentence from being a lookup table for the label -- see thai_corpus.CUSTOMER_CLOSE.
+        self.add("customer", T.CUSTOMER_CLOSE[self.call_result] + T.CUSTOMER_CLOSE_SHARED)
         self.add("agent", T.SLA)
         self.add("agent", T.WRAPUP[self.scenario] + T.WRAPUP_GENERIC)
         self.add("agent", T.ANYTHING_ELSE)
@@ -497,6 +667,7 @@ def main() -> None:
     C.GROUND_TRUTH_DIR.mkdir(parents=True, exist_ok=True)
 
     index = []
+    business: list[B.BusinessLabel] = []
     for i, (family, scenario) in enumerate(PLAN):
         comp = Composer(i, family, scenario, TARGETS[i])
         dlg = comp.build()
@@ -528,8 +699,15 @@ def main() -> None:
                 "entities": len(dlg.all_entities()),
                 "agent_voice": dlg.agent_voice,
                 "customer_voice": dlg.customer_voice,
+                # The business label, carried alongside the acoustic metadata so a reader of
+                # index.json can see the whole design of a call in one place.
+                "product": comp.product,
+                "call_result": comp.call_result,
+                "main": comp.main,
+                "secondary": comp.secondary,
             }
         )
+        business.append(comp.business_label())
         print(
             f"{dlg.item_id}  {family:19s} {scenario:16s} {dlg.call_direction:3s} "
             f"target={comp.target_s:4d}s est={comp.est_s:6.1f}s "
@@ -540,8 +718,32 @@ def main() -> None:
     (C.DIALOGUE_DIR / "index.json").write_text(
         json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+
+    # business.csv -- the file that turns this from an ASR fixture into an end-to-end one.
+    # Columns and order match tests/fixtures/testsets/retention_v3.gt.csv exactly, so
+    # evalharness.metrics scores this set through the same code path as the text packs
+    # rather than a parallel implementation that could drift from it.
+    gt_path = C.GROUND_TRUTH_DIR / "business.csv"
+    with gt_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(B.BusinessLabel.header())
+        for label in business:
+            writer.writerow(label.row())
+
     total = sum(r["estimated_s"] for r in index)
     print(f"\n{len(index)} dialogues, estimated total {total / 60:.1f} min")
+
+    # Print the realised mix. The targets in business_labels.py are a distribution, not a
+    # quota, so what actually landed is a fact about this build and belongs in the log.
+    print(f"wrote {gt_path.name}: {len(business)} rows")
+    for field in ("product", "call_result", "main"):
+        counts: dict[str, int] = {}
+        for label in business:
+            counts[getattr(label, field)] = counts.get(getattr(label, field), 0) + 1
+        rendered = "  ".join(
+            f"{k or '(empty)'}={v}" for k, v in sorted(counts.items(), key=lambda kv: -kv[1])
+        )
+        print(f"  {field:12} {rendered}")
 
 
 if __name__ == "__main__":

@@ -141,6 +141,7 @@ from evalharness import manifest as manifest_mod
 from evalharness.compare import (
     CoverageMismatch,
     check_coverage,
+    check_exact_coverage,
     disagreement,
     paired_verdict,
     regressions,
@@ -151,6 +152,7 @@ from evalharness.records import Record, from_row
 
 __all__ = [
     "COST_PER_CORRECT_DIMENSION",
+    "COVERAGE_GATES",
     "EXIT_OK",
     "EXIT_PROBLEMS",
     "EXIT_REFUSED",
@@ -271,6 +273,15 @@ DEFAULT_OUT = REPO_ROOT / "out" / "runs"
 EXIT_OK = 0
 EXIT_PROBLEMS = 1  # the harness ran; the inputs or the arms have problems
 EXIT_REFUSED = 2  # the harness declined to run, or to compare
+
+# The two coverage gates `compare` can run, strict first because it is the default.
+# `strict` is `compare.check_exact_coverage`: both arms must cover exactly the ground
+# truth's call identities, and nothing is tolerated. `loose` is `compare.check_coverage`,
+# which compares scored-item counts with a 2% tolerance -- a legitimate gate for an
+# exploratory run over partial data, and not one a decision may be read off. Which one
+# ran is printed in the report footer (`_COVERAGE_GATE_LINES`); the block in
+# `cmd_compare` is where what the loose gate can and cannot see is written down.
+COVERAGE_GATES = ("strict", "loose")
 
 # `_SCORERS` used to live here as a hand-written tuple. It is now DERIVED from
 # the retention contract's own dimensions and `labelspaces.RETENTION`, by
@@ -3446,10 +3457,30 @@ def cmd_compare(args: argparse.Namespace) -> int:
     except ReportError as exc:
         raise CliError(str(exc)) from exc
 
-    # The coverage gate, per dimension. It cannot fire while `flatten.to_rows` keeps
-    # emitting a ground-truth skeleton for every failure -- which is the point of that
-    # guarantee -- so this is here to fail loudly if that ever stops being true.
+    # The coverage gate, per dimension. Neither half can fire because an arm FAILED,
+    # while `flatten.to_rows` keeps emitting a ground-truth skeleton for every failure
+    # -- which is the point of that guarantee -- so both are here to fail loudly if that
+    # ever stops being true.
+    #
+    # STRICT (`check_exact_coverage`, the default) is the decision-grade half: it
+    # compares call identities against the ground truth and tolerates nothing.
+    #
+    # LOOSE (`check_coverage`) compares the two arms' scored-item COUNTS and tolerates
+    # 2% of drift, and that tolerance is not its real limit. Every one of those counts
+    # is derived from the GROUND TRUTH -- `score_call_result` counts gt rows carrying a
+    # label, `score_reason` counts the whole outer join, `score_product` unions the gt
+    # groups -- so predictions that vanished from one arm move it by nothing at all.
+    # MEASURED in `tests/test_compare.py`: delete 45 of one arm's 50 items and the loose
+    # gate still reads 50 against 50 and passes. What it CAN see is an arm with extra
+    # orphan keys, which is what every committed report showing a coverage warning has
+    # turned out to be. Meanwhile `pooled_bands.py` goes on assuming all three 2x2
+    # tables cover the same 188 calls.
+    #
+    # The loose check runs in BOTH modes. Strict adds a refusal; it never removes one.
+    inc_rows, cand_rows = per_replicate[incumbent.arm][0], per_replicate[candidate.arm][0]
+    coverage_mode = getattr(args, "coverage", "strict")
     coverage_warnings: list[str] = []
+    coverage_refusals: list[str] = []
     for name in ("call_result", "reason", "product"):
         try:
             check_coverage(
@@ -3458,8 +3489,24 @@ def cmd_compare(args: argparse.Namespace) -> int:
             )
         except CoverageMismatch as exc:
             coverage_warnings.append(str(exc))
+        if coverage_mode != "strict":
+            continue
+        try:
+            check_exact_coverage(gt, inc_rows, cand_rows, name)
+        except CoverageMismatch as exc:
+            coverage_refusals.append(str(exc))
+    if coverage_refusals:
+        raise CliError(
+            "the arms were not scored over the same items:\n  - "
+            + "\n  - ".join(coverage_refusals)
+            + "\nA paired verdict, and the pooled bands built on top of it, both assume "
+            "every dimension's 2x2 table covers one shared call population. An item "
+            "present in one arm and absent from the other quietly changes which items "
+            "the verdict is about, and no number in the report moves to say so. Fix the "
+            "gap, or pass --coverage loose to get an exploratory report -- which says "
+            "in its own footer that it is exploratory and is not decision-grade."
+        )
 
-    inc_rows, cand_rows = per_replicate[incumbent.arm][0], per_replicate[candidate.arm][0]
     disagreements = [
         disagreement(gt, inc_rows, cand_rows, name)
         for name in ("call_result", "reason", "product")
@@ -3523,7 +3570,7 @@ difference between these two runs.
 
 """
         ) + text
-    text += _footer(incumbent, candidate, deltas, coverage_warnings)
+    text += _footer(incumbent, candidate, deltas, coverage_warnings, coverage_mode)
 
     print()
     print(text)
@@ -4184,11 +4231,31 @@ def _observed_model_id(loaded: LoadedRun) -> str:
     return "MIXED: " + ", ".join(f"{name}x{count}" for name, count in observed.items())
 
 
+# Which coverage gate ran, in the reader's words rather than a flag name. A report
+# whose gate is not stated is a report whose reader must assume the strictest one ran,
+# and the loose gate exists precisely for runs where it did not.
+_COVERAGE_GATE_LINES: dict[str, tuple[str, ...]] = {
+    "strict": (
+        "COVERAGE GATE: strict (compare.check_exact_coverage). Both arms had to cover",
+        "  exactly the ground truth's call identities in every dimension, with nothing",
+        "  tolerated. This is the gate a decision may be read off.",
+    ),
+    "loose": (
+        "COVERAGE GATE: loose (compare.check_coverage, 2% tolerance), asked for with",
+        "  --coverage loose. Its 2% is not the limit that matters: it compares the arms'",
+        "  scored-item COUNTS, which metrics.py derives from the ground truth alone, so",
+        "  items that vanished from one arm and not the other move them by nothing.",
+        "  This report is EXPLORATORY and must not be quoted in a decision.",
+    ),
+}
+
+
 def _footer(
     incumbent: LoadedRun,
     candidate: LoadedRun,
     deltas: Sequence[str],
     coverage_warnings: Sequence[str],
+    coverage_mode: str,
 ) -> str:
     """What the CLI knows and `render` cannot: which replicate was scored, and where.
 
@@ -4204,6 +4271,7 @@ def _footer(
         "=" * 78,
         f"incumbent run  {incumbent.directory}",
         f"candidate run  {candidate.directory}",
+        *_COVERAGE_GATE_LINES[coverage_mode],
         "Section 5's aggregate metrics are scored on REPLICATE 1 of each arm. Pooling",
         "  every replicate into one prediction list would be wrong, not merely",
         "  approximate: metrics.outer_join keys predictions by (call_id, phone,",
@@ -4220,7 +4288,13 @@ def _footer(
         lines.append("Recorded arm differences (expected, not blocking):")
         lines.extend(f"  - {delta}" for delta in deltas)
     if coverage_warnings:
-        lines.append("COVERAGE REFUSALS (the arms did not score comparable item sets):")
+        # Renamed from "COVERAGE REFUSALS" when the strict gate was wired in. Nothing
+        # was refused: the report the reader is holding was produced anyway, and every
+        # committed report carrying this block printed a full comparison underneath a
+        # heading that said otherwise. A refusal now stops the run and prints on stderr.
+        lines.append(
+            "LOOSE COVERAGE GATE, NOT BLOCKING (the arms scored different item counts):"
+        )
         lines.extend(f"  - {warning}" for warning in coverage_warnings)
     return "\n".join(lines) + "\n"
 
@@ -4405,6 +4479,16 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--testset", default=None, help="override the recorded path")
     compare.add_argument("--gt", default=None, help="override the recorded path")
     compare.add_argument("--report", default=None, help="also write the report here")
+    compare.add_argument(
+        "--coverage",
+        choices=COVERAGE_GATES,
+        default="strict",
+        help="which coverage gate to run. strict (the default) refuses unless both arms "
+        "cover exactly the ground truth's call identities in every dimension. loose "
+        "keeps the historical 2%% count tolerance for exploratory runs over partial "
+        "data, and labels the report EXPLORATORY. Whichever runs is named in the "
+        "report footer.",
+    )
     compare.add_argument(
         "--prompts-may-differ",
         action="store_true",

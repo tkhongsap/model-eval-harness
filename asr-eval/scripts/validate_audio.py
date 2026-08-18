@@ -240,6 +240,18 @@ def check_file(path, dlg: dict, rep: Report, manifest_row: dict | None) -> dict:
     }
 
 
+def _expected_set_size() -> int:
+    """How many calls the design says there should be.
+
+    Imported rather than hardcoded so `ASR_SET_SIZE=138` moves the generator and the
+    validator together. A validator carrying its own copy of the set size passes a
+    half-generated set the moment the two drift.
+    """
+    import compose_dialogues
+
+    return compose_dialogues.SET_SIZE
+
+
 def check_set(rows: list[dict], rep: Report) -> None:
     """Cross-file properties. A per-file pass says nothing about coverage."""
     fam = Counter(r["family"] for r in rows)
@@ -247,6 +259,11 @@ def check_set(rows: list[dict], rep: Report) -> None:
             f"missing {sorted(set(C.FAMILIES) - set(fam))}")
     rep.add("SET", "SET", "every family has >= 2 calls", all(v >= 2 for v in fam.values()),
             str(dict(fam)))
+    # Balance, not a fixed count: a family with 3 calls beside families with 14 makes its
+    # per-family CER incomparable to theirs, which is the one thing the family split exists
+    # to support.
+    rep.add("SET", "SET", "families balanced to within one call",
+            max(fam.values()) - min(fam.values()) <= 1, str(dict(fam)))
 
     dirs = Counter(r["direction"] for r in rows)
     rep.add("SET", "SET", "both call directions present", set(dirs) >= {"IN", "OUT"},
@@ -263,7 +280,12 @@ def check_set(rows: list[dict], rep: Report) -> None:
     d = [r["duration_s"] for r in rows]
     rep.add("SET", "SET", "durations span at least 5 minutes", max(d) - min(d) >= 300,
             f"{min(d):.0f}s to {max(d):.0f}s, spread {max(d) - min(d):.0f}s")
-    rep.add("SET", "SET", "20 files delivered", len(rows) == 20, f"{len(rows)} files")
+    # Was a literal 20. The set is now sized by compose_dialogues.SET_SIZE, so the check
+    # asks the design how many it expects rather than carrying a second copy of the number
+    # that would silently disagree the first time the set grows.
+    expected = _expected_set_size()
+    rep.add("SET", "SET", f"{expected} files delivered", len(rows) == expected,
+            f"{len(rows)} files")
 
     shas = [r["sha256"] for r in rows]
     rep.add("SET", "SET", "no two files are byte-identical", len(set(shas)) == len(shas), "")

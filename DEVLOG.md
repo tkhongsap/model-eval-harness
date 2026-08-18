@@ -111,8 +111,20 @@ through the identical scorer. Mixing in the QA task would make a CER difference 
 attribute to transcription versus labelling. This is also the first time anything in this
 repository has sent audio anywhere; `src/evalgen/prompts.py` sends Thai *text*.
 
-Pooled over the 20 calls: **CER 0.0445**, **WER 0.1176** (newmm tokens), **entity 320/465 =
-68.8%**.
+Pooled over the 20 calls: **CER 0.0445**, **WER 0.1176** (newmm tokens), ~~**entity 320/465 =
+68.8%**~~.
+
+> **Corrected 2026-08-18.** The entity figure here is wrong and was never updated. It is a
+> pre-fix number from an even earlier scorer than the one commit `d568505` corrected, which
+> recorded 314/465. **The current figure for this arm is 450/465 = 96.8%.** The scorer's
+> surface match was an exact substring test that included spaces, so an arm writing the
+> identical words with different phrase spacing scored the entity *lost*; Gemini, which spells
+> numbers as Thai words, was penalised hardest. See `docs/eval-round-report.md`.
+>
+> **The paragraph below is therefore also wrong** and is kept only so the correction has
+> something to point at. Entities are not "31% gone" for this arm — they are 3.2% gone. The
+> reasoning it illustrates (that a low CER can hide field-level loss) remains sound; this arm
+> is simply not an example of it.
 
 **The headline is the gap between those numbers, and it is exactly what the entity metric was
 built to expose.** A 4.45% CER reads as an excellent transcript. Underneath it, **31% of the
