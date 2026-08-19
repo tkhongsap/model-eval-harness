@@ -1,0 +1,125 @@
+{
+  "run": "20260820-e23-with-typhoon",
+  "policy": "first",
+  "operational": {
+    "ceiling": {
+      "calls": 408,
+      "ok": 408,
+      "statuses": {
+        "ok": 408
+      },
+      "lat_p50": 18.22,
+      "lat_p95": 27.03,
+      "lat_max": 37.86,
+      "lat_mean": 19.209411764705884,
+      "prompt_med": 3770.5,
+      "compl_med": 245.0,
+      "prompt_total": 1541538,
+      "compl_total": 102135,
+      "cost_total": null,
+      "cost_calls": 0
+    },
+    "format-control": {
+      "calls": 408,
+      "ok": 408,
+      "statuses": {
+        "ok": 408
+      },
+      "lat_p50": 18.335,
+      "lat_p95": 26.23,
+      "lat_max": 36.53,
+      "lat_mean": 19.240122549019606,
+      "prompt_med": 3661.5,
+      "compl_med": 245.0,
+      "prompt_total": 1492146,
+      "compl_total": 102800,
+      "cost_total": null,
+      "cost_calls": 0
+    },
+    "qwen-pipeline": {
+      "calls": 408,
+      "ok": 408,
+      "statuses": {
+        "ok": 408
+      },
+      "lat_p50": 18.445,
+      "lat_p95": 26.43,
+      "lat_max": 44.15,
+      "lat_mean": 19.305906862745097,
+      "prompt_med": 3708.0,
+      "compl_med": 243.0,
+      "prompt_total": 1850037,
+      "compl_total": 102722,
+      "cost_total": null,
+      "cost_calls": 0
+    },
+    "gemini-audio": {
+      "calls": 408,
+      "ok": 388,
+      "statuses": {
+        "ok": 388,
+        "parse_failed": 20
+      },
+      "lat_p50": 23.785,
+      "lat_p95": 41.31,
+      "lat_max": 89.02,
+      "lat_mean": 24.39381443298969,
+      "prompt_med": 11466.0,
+      "compl_med": 235.0,
+      "prompt_total": 4501696,
+      "compl_total": 92596,
+      "cost_total": 3.36545347,
+      "cost_calls": 388
+    },
+    "typhoon-pipeline": {
+      "calls": 414,
+      "ok": 414,
+      "statuses": {
+        "ok": 414
+      },
+      "lat_p50": 18.465,
+      "lat_p95": 30.03,
+      "lat_max": 141.45,
+      "lat_mean": 21.850289855072464,
+      "prompt_med": 3664.0,
+      "compl_med": 244.0,
+      "prompt_total": 1510911,
+      "compl_total": 104200,
+      "cost_total": null,
+      "cost_calls": 0
+    }
+  },
+  "asr": {
+    "gemini-audio": {},
+    "typhoon-pipeline": {
+      "cer": 0.04382037675463884,
+      "wer": 0.07741523913165844,
+      "scoreable": 138,
+      "runaway_items": 0,
+      "runaway_rate": 0.0,
+      "entity": 0.952521283562541,
+      "on_disk": 138,
+      "transcribed_ok": 138,
+      "transcribed_failed": 0,
+      "asr_sec_med": 45.55,
+      "asr_sec_total": 6323.4,
+      "rtf_med": 0.121,
+      "chunk_seconds": 30.0
+    },
+    "qwen-pipeline": {
+      "cer": 0.1120186282811177,
+      "wer": 0.16909238868204438,
+      "scoreable": 120,
+      "runaway_items": 16,
+      "runaway_rate": 0.11764705882352941,
+      "entity": 0.9595003785011355,
+      "on_disk": 136,
+      "transcribed_ok": 0,
+      "transcribed_failed": 2,
+      "asr_sec_med": null,
+      "asr_sec_total": null,
+      "rtf_med": null,
+      "chunk_seconds": 180.0
+    }
+  }
+}
