@@ -1,0 +1,43 @@
+{
+  "run": "20260819-125109Z-e21",
+  "policy": "first",
+  "seed": 20260820,
+  "resamples": 20000,
+  "incumbent": "gemini-audio",
+  "candidate": "qwen-pipeline",
+  "dimensions": [
+    {
+      "dimension": "call_result",
+      "n_calls": 136,
+      "net": 14,
+      "discordant": 36,
+      "band": 14,
+      "verdict": "AHEAD",
+      "margin": 0,
+      "calls_that_flip_it_alone": 25,
+      "bootstrap_agreement": 0.52645
+    },
+    {
+      "dimension": "reason",
+      "n_calls": 136,
+      "net": -1,
+      "discordant": 41,
+      "band": 15,
+      "verdict": "INDISTINGUISHABLE",
+      "margin": -16,
+      "calls_that_flip_it_alone": 0,
+      "bootstrap_agreement": 0.9788
+    },
+    {
+      "dimension": "product",
+      "n_calls": 136,
+      "net": 4,
+      "discordant": 26,
+      "band": 12,
+      "verdict": "INDISTINGUISHABLE",
+      "margin": -8,
+      "calls_that_flip_it_alone": 0,
+      "bootstrap_agreement": 0.941
+    }
+  ]
+}

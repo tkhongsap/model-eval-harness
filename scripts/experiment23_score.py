@@ -134,13 +134,35 @@ def modal(values: list[str]) -> tuple[str | None, bool]:
     return top, n == len(values)
 
 
-def collapse(run_dir: Path) -> tuple[dict, dict, dict]:
-    """(arm -> item -> modal fields, arm -> instability, arm -> failure counts).
+def collapse(run_dir: Path, policy: str = "first") -> tuple[dict, dict, dict]:
+    """(arm -> item -> fields, arm -> instability, arm -> failure counts).
 
     Replicates are collapsed BEFORE scoring, not averaged after. `unstable` counts items
     whose replicates did not agree, which is a reportable property of the arm rather than
     noise to be smoothed away.
+
+    `policy` decides WHICH collapse, and the default is not a matter of taste.
+
+      * ``first``  -- replicate 1 alone. This is what `experiments/retention-e23.plan.json`
+                      preregistered, in its own words: "Every headline figure is computed
+                      on replicate 1 alone. Replicates 2 and 3 feed ONLY the stability /
+                      noise-floor metric. Preregistered because Experiment 2 showed a
+                      metric crossing a decision band on a single draw from an arm that
+                      flips; choosing the replicate after seeing three of them is choosing
+                      the answer."
+      * ``modal``  -- majority vote across all three replicates.
+
+    This module shipped computing `modal` while the plan said `first`, and nobody noticed
+    because both are defensible estimators. They are not interchangeable HERE: the arm
+    disagrees with itself on 37 of 138 items and the published verdict cleared its band by
+    exactly one call. A three-replicate vote is the better estimator in general and is
+    still available; it is simply not the one that was preregistered, and swapping the
+    analysis after seeing the data is the failure the preregistration exists to prevent.
+
+    So `first` is the default, `modal` is opt-in, and the report prints both.
     """
+    if policy not in {"first", "modal"}:
+        raise Refused(f"unknown replicate policy {policy!r}; expected 'first' or 'modal'")
     path = run_dir / "results.jsonl"
     if not path.exists():
         raise Refused(f"no results at {path}")
@@ -150,6 +172,11 @@ def collapse(run_dir: Path) -> tuple[dict, dict, dict]:
         if line.strip():
             rec = json.loads(line)
             by_key[(rec["arm"], rec["item_id"])].append(rec)
+    # Sort by replicate index so `first` means replicate 1, not "whichever line the
+    # concurrent writer happened to append first". With --jobs 8 the file order is
+    # interleaved across arms and items, so this is load-bearing, not tidiness.
+    for recs in by_key.values():
+        recs.sort(key=lambda r: r.get("replicate", 0))
 
     collapsed: dict[str, dict[str, dict]] = collections.defaultdict(dict)
     unstable: dict[str, int] = collections.Counter()
@@ -175,23 +202,32 @@ def collapse(run_dir: Path) -> tuple[dict, dict, dict]:
             if rec.get("status") == "ok" and "fields" not in rec and rec.get("response"):
                 rec["fields"] = _extract_fields(rec["response"])
 
-        ok = [r for r in recs if r.get("status") == "ok" and r.get("fields")]
-        if not ok:
+        ok_all = [r for r in recs if r.get("status") == "ok" and r.get("fields")]
+        if not ok_all:
             collapsed[arm][item] = {"__failed__": True, "statuses": statuses}
             continue
 
+        # Instability is ALWAYS measured across every replicate, whatever the scoring
+        # policy is. Measuring it over the single replicate being scored would report
+        # every arm as perfectly stable by construction.
+        keys_all = set().union(*(set(r["fields"]) for r in ok_all))
+        for key in keys_all:
+            vals = [json.dumps(r["fields"].get(key), ensure_ascii=False, sort_keys=True)
+                    for r in ok_all]
+            _, agreed = modal(vals)
+            if not agreed:
+                unstable[arm] += 1
+                break
+
+        ok = ok_all if policy == "modal" else ok_all[:1]
         keys = set().union(*(set(r["fields"]) for r in ok))
         fields: dict = {}
-        unanimous = True
         for key in keys:
             vals = [json.dumps(r["fields"].get(key), ensure_ascii=False, sort_keys=True)
                     for r in ok]
-            mode, agreed = modal(vals)
-            unanimous &= agreed
+            mode, _ = modal(vals)
             fields[key] = json.loads(mode) if mode is not None else None
         collapsed[arm][item] = fields
-        if not unanimous:
-            unstable[arm] += 1
 
     return dict(collapsed), dict(unstable), {a: dict(c) for a, c in failures.items()}
 
@@ -288,10 +324,13 @@ def main() -> int:
     ap.add_argument("--incumbent", default="gemini-audio")
     ap.add_argument("--candidate", default="qwen-pipeline")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--replicate-policy", choices=("first", "modal"), default="first",
+                    help="first = replicate 1 alone, as preregistered (default); "
+                         "modal = majority vote over all three replicates")
     args = ap.parse_args()
 
     truth, phones = load_truth(args.pack)
-    collapsed, unstable, failures = collapse(args.run)
+    collapsed, unstable, failures = collapse(args.run, args.replicate_policy)
 
     # A total shutout is never a real result. Four independent arms -- one of which reads
     # the PERFECT reference transcript -- cannot all score zero unless the join is broken.
@@ -399,13 +438,24 @@ def main() -> int:
     for arm in sorted(scored):
         counts = ", ".join(f"{k}={v}" for k, v in sorted(failures.get(arm, {}).items()))
         print(f"  {arm:18} {scored[arm]['_items']:>6} {unstable.get(arm, 0):>9}   {counts}")
-    print("\n  unstable = items whose replicates did not agree on every field. Collapsed by")
-    print("  mode before scoring, never averaged: a model that answers three ways to one")
-    print("  question has a problem the mean would hide.")
+    print("\n  unstable = items whose replicates did not agree on every field. Measured")
+    print("  over ALL three replicates whatever the scoring policy is -- measuring it over")
+    print("  the one replicate being scored would report every arm as perfectly stable by")
+    print("  construction. Never averaged: a model that answers three ways to one question")
+    print("  has a problem the mean would hide.")
+    if args.replicate_policy == "first":
+        print("\n  scored on REPLICATE 1 ALONE, as preregistered. Re-run with")
+        print("  --replicate-policy modal for the three-replicate majority vote.")
+    else:
+        print("\n  scored on the MODAL vote over three replicates. This is NOT what")
+        print("  experiments/retention-e23.plan.json preregistered -- that says replicate 1")
+        print("  alone. Both are reported; the preregistered one is the headline.")
 
     if args.json:
         args.json.write_text(json.dumps({
             "run": args.run.name, "pack": args.pack.name,
+            # Stamped so a published figure can never be traced back to the wrong collapse.
+            "replicate_policy": args.replicate_policy,
             "calls_with_truth": len(truth),
             "alpha_per_side": 1 / 64,
             "arms": payload_arms,

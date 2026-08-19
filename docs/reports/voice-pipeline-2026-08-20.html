@@ -1,0 +1,362 @@
+<title>Voice Pipeline Scorecard</title>
+<style>
+:root{
+  --ground:#F5F3EF; --raised:#FFFFFF; --sunken:#EDEAE4;
+  --ink:#1A1D21; --ink-mid:#565C64; --ink-faint:#8A9099;
+  --rule:#DCD8D0; --rule-firm:#BFB9AE;
+  --prod:#3B6EA8; --ours:#B5651D; --best:#2C7A57; --bad:#A8322A;
+  --warn-bg:#FBF3E4; --warn-line:#C9922E;
+  --serif:"Charter","Bitstream Charter","Iowan Old Style",Cambria,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14161A; --raised:#1C1F24; --sunken:#191C21;
+  --ink:#E8E6E1; --ink-mid:#A2A8B0; --ink-faint:#767C85;
+  --rule:#2C3037; --rule-firm:#3D434B;
+  --prod:#6BA3DC; --ours:#D8933F; --best:#5FB98C; --bad:#DE7A70;
+  --warn-bg:#2A2317; --warn-line:#B9862A;
+}}
+:root[data-theme="dark"]{
+  --ground:#14161A; --raised:#1C1F24; --sunken:#191C21;
+  --ink:#E8E6E1; --ink-mid:#A2A8B0; --ink-faint:#767C85;
+  --rule:#2C3037; --rule-firm:#3D434B;
+  --prod:#6BA3DC; --ours:#D8933F; --best:#5FB98C; --bad:#DE7A70;
+  --warn-bg:#2A2317; --warn-line:#B9862A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:60rem;margin:0 auto;padding:3rem 1.5rem 5rem}
+h1,h2,h3{font-family:var(--sans);text-wrap:balance;line-height:1.22;margin:0}
+h1{font-size:2.35rem;font-weight:660;letter-spacing:-.021em}
+h2{font-size:1.32rem;font-weight:640;letter-spacing:-.012em;margin:3.2rem 0 .5rem;
+  padding-top:1.4rem;border-top:1px solid var(--rule)}
+h3{font-size:1.02rem;font-weight:640;margin:1.9rem 0 .4rem}
+p{margin:.85rem 0}
+.eyebrow{font-family:var(--sans);font-size:.7rem;font-weight:680;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-faint);margin:0 0 .75rem}
+.standfirst{font-size:1.16rem;color:var(--ink-mid);margin:1rem 0 0;max-width:52ch}
+.meta{font-family:var(--sans);font-size:.79rem;color:var(--ink-faint);
+  margin:1.6rem 0 0;padding-top:.9rem;border-top:1px solid var(--rule)}
+.meta b{color:var(--ink-mid);font-weight:600}
+strong{font-weight:680}
+code{font-family:var(--mono);font-size:.86em;background:var(--sunken);
+  padding:.1em .34em;border-radius:3px}
+
+.verdict{background:var(--raised);border:1px solid var(--rule);
+  border-left:3px solid var(--ours);border-radius:5px;
+  padding:1.3rem 1.5rem;margin:1.8rem 0}
+.verdict p{margin:.5rem 0}
+.verdict p:first-child{margin-top:0}
+.verdict p:last-child{margin-bottom:0}
+
+.caution{background:var(--warn-bg);border:1px solid var(--rule);
+  border-left:3px solid var(--warn-line);border-radius:5px;
+  padding:1.15rem 1.4rem;margin:1.5rem 0;font-size:.96rem}
+.caution p{margin:.45rem 0}
+.caution p:first-child{margin-top:0}
+.caution p:last-child{margin-bottom:0}
+
+.scroll{overflow-x:auto;margin:1.4rem 0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.87rem}
+th{text-align:left;font-weight:640;color:var(--ink-mid);padding:.5rem .7rem;
+  border-bottom:1.5px solid var(--rule-firm);white-space:nowrap;font-size:.76rem;
+  letter-spacing:.03em;text-transform:uppercase}
+td{padding:.52rem .7rem;border-bottom:1px solid var(--rule);
+  font-variant-numeric:tabular-nums}
+td.n,th.n{text-align:right}
+tr:last-child td{border-bottom:none}
+tbody tr.hero td{background:var(--sunken);font-weight:620}
+.arm{font-family:var(--mono);font-size:.83rem}
+.note{color:var(--ink-faint);font-weight:400;font-size:.93em}
+
+.bar{position:relative;height:7px;background:var(--rule);border-radius:4px;
+  min-width:66px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;display:block}
+
+.tag{display:inline-block;font-family:var(--sans);font-size:.7rem;font-weight:660;
+  letter-spacing:.05em;padding:.13em .5em;border-radius:3px;white-space:nowrap}
+.tag.ahead{color:var(--best);background:color-mix(in srgb,var(--best) 13%,transparent)}
+.tag.ind{color:var(--ink-mid);background:var(--sunken)}
+.tag.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,transparent)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));
+  gap:.9rem;margin:1.5rem 0}
+.stat{background:var(--raised);border:1px solid var(--rule);border-radius:5px;
+  padding:1rem 1.1rem}
+.stat .k{font-family:var(--sans);font-size:.7rem;font-weight:660;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.stat .v{font-family:var(--sans);font-size:1.85rem;font-weight:680;
+  letter-spacing:-.02em;margin:.25rem 0 .1rem;font-variant-numeric:tabular-nums}
+.stat .s{font-size:.85rem;color:var(--ink-mid);line-height:1.42}
+.v.good{color:var(--best)} .v.warn{color:var(--warn-line)} .v.bad{color:var(--bad)}
+
+ul,ol{margin:.85rem 0;padding-left:1.3rem}
+li{margin:.4rem 0}
+.tight li{margin:.22rem 0}
+footer{margin-top:3.5rem;padding-top:1.3rem;border-top:1px solid var(--rule);
+  font-family:var(--sans);font-size:.79rem;color:var(--ink-faint)}
+</style>
+
+<div class="wrap">
+
+<p class="eyebrow">True Corp · Retention · overnight run</p>
+<h1>Typhoon fixes the transcription. It does not change the decision.</h1>
+<p class="standfirst">Thai ASR just got 2.6&times; better and its worst failure mode
+disappeared — and the business outcome moved by one call in 138. Here is why, and what
+actually needs fixing next.</p>
+<p class="meta"><b>20 August 2026</b> &nbsp;·&nbsp; 138 synthetic Thai calls &nbsp;·&nbsp;
+5 arms &nbsp;·&nbsp; 2,046 label calls &nbsp;·&nbsp; &alpha; = 1/64 &nbsp;·&nbsp;
+$3.74 spent &nbsp;·&nbsp; <b>RECONCILED: NO</b></p>
+
+<h2>1 · The transcription stage is fixed</h2>
+
+<p>Both models transcribed the same 138 calls through the same gateway. Typhoon Whisper
+large-v3 wins on every measure, and it removes an entire class of failure rather than
+merely reducing it.</p>
+
+<div class="scroll">
+<table>
+<thead><tr>
+  <th>Metric</th><th class="n">Qwen3-ASR 1.7B</th><th class="n">Typhoon large-v3</th>
+  <th>Lower is better&hairsp;/&hairsp;higher is better</th>
+</tr></thead>
+<tbody>
+<tr><td>Character error rate</td><td class="n">0.1120</td>
+  <td class="n"><strong>0.0438</strong></td>
+  <td><div class="bar"><i style="width:100%;background:var(--prod)"></i></div></td></tr>
+<tr><td>Word error rate</td><td class="n">0.1691</td>
+  <td class="n"><strong>0.0774</strong></td>
+  <td><div class="bar"><i style="width:46%;background:var(--ours)"></i></div></td></tr>
+<tr class="hero"><td>Catastrophic runaways</td>
+  <td class="n"><span class="tag bad">16 &nbsp;(11.8%)</span></td>
+  <td class="n"><span class="tag ahead">0</span></td>
+  <td class="note">an entire failure class, gone</td></tr>
+<tr><td>Calls transcribed at all</td><td class="n">136 / 138</td>
+  <td class="n"><strong>138 / 138</strong></td>
+  <td class="note">Qwen gave up on two after 8 attempts each</td></tr>
+<tr><td>Calls scoreable after exclusions</td><td class="n">120</td>
+  <td class="n"><strong>138</strong></td>
+  <td class="note">runaways are excluded, never averaged in</td></tr>
+<tr><td>Entity accuracy</td><td class="n">95.95%</td><td class="n">95.25%</td>
+  <td class="note">a tie, on 15% more entities</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Qwen's 0.1120 <strong>already excludes its 16 runaways</strong>. Typhoon has none to
+exclude, so the real gap is wider than the ratio suggests.</p>
+
+<h2>2 · And it barely moves the business outcome</h2>
+
+<p>End-to-end business F1 on <code>call_result</code>, scored on replicate&nbsp;1 alone as
+preregistered.</p>
+
+<div class="scroll">
+<table>
+<thead><tr>
+  <th>Arm</th><th class="n">call_result F1</th><th class="n">Accuracy</th>
+  <th class="n">reason F1</th><th class="n">product F1</th>
+</tr></thead>
+<tbody>
+<tr><td class="arm">format-control <span class="note">— zero mishearing</span></td>
+  <td class="n">0.663</td><td class="n">85/136</td><td class="n">0.239</td>
+  <td class="n">0.804</td></tr>
+<tr><td class="arm">ceiling <span class="note">— perfect transcript</span></td>
+  <td class="n">0.645</td><td class="n">84/136</td><td class="n">0.228</td>
+  <td class="n">0.808</td></tr>
+<tr class="hero"><td class="arm">typhoon-pipeline</td>
+  <td class="n">0.597</td><td class="n">76/138</td><td class="n">0.230</td>
+  <td class="n">0.791</td></tr>
+<tr><td class="arm">qwen-pipeline</td>
+  <td class="n">0.588</td><td class="n">74/136</td><td class="n">0.207</td>
+  <td class="n">0.762</td></tr>
+<tr><td class="arm">gemini-audio <span class="note">— production today</span></td>
+  <td class="n">0.495</td><td class="n">60/136</td><td class="n">0.267</td>
+  <td class="n">0.727</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="verdict">
+<p><strong>Typhoon versus Qwen, end to end: indistinguishable on all three dimensions.</strong></p>
+<p>Net +1 on <code>call_result</code> (13 discordant calls), +5 on <code>reason</code>,
++1 on <code>product</code>. Halving the character error rate and deleting a 12% catastrophic
+failure rate changed the business answer on <strong>one call out of 138</strong>.</p>
+</div>
+
+<p>The explanation is in the table above it. The <code>ceiling</code> arm — a labeller reading
+the <em>perfect</em> transcript — scores 0.645. The Typhoon pipeline is already within 0.05 of
+its own ceiling. There is almost nothing left upstream for a better transcriber to recover.
+<strong>The binding constraint is the labelling step, not the audio.</strong></p>
+
+<h3>Against production</h3>
+<div class="scroll">
+<table>
+<thead><tr><th>Comparison</th><th>call_result</th><th>reason</th><th>product</th></tr></thead>
+<tbody>
+<tr><td class="arm">typhoon vs gemini</td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+15, band ±15</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+4</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+5</span></td></tr>
+<tr><td class="arm">qwen vs gemini</td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+14, band ±14</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">−1</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+4</span></td></tr>
+<tr class="hero"><td class="arm">typhoon vs qwen</td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+1, d=13</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+5, d=17</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+1, d=11</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>3 · How much weight "AHEAD" can carry</h2>
+
+<p>Both AHEAD verdicts clear their decision band by <strong>exactly zero</strong>. Twenty
+thousand bootstrap resamples over calls — not rows, because one call contributes several
+correlated product rows — say how often that survives.</p>
+
+<div class="grid">
+  <div class="stat">
+    <div class="k">Qwen vs Gemini</div>
+    <div class="v bad">52.6%</div>
+    <div class="s">of resamples still AHEAD. A coin flip. <strong>25 individual calls</strong>
+    could each flip it alone.</div>
+  </div>
+  <div class="stat">
+    <div class="k">Typhoon vs Gemini</div>
+    <div class="v warn">61.0%</div>
+    <div class="s">still AHEAD. Better, still thin. No single call flips it.</div>
+  </div>
+  <div class="stat">
+    <div class="k">The null results</div>
+    <div class="v good">94–98%</div>
+    <div class="s">bootstrap agreement on INDISTINGUISHABLE. <strong>The null findings are
+    the sturdy ones here.</strong></div>
+  </div>
+</div>
+
+<div class="caution">
+<p><strong>How this should be said out loud.</strong> Not "the internal pipeline wins."
+Rather: production's audio arm is clearly the weakest on <code>call_result</code>, both
+internal pipelines beat it, and the margin is too thin to bank a migration on.</p>
+</div>
+
+<h3>A correction to the 19 August headline</h3>
+<p>The preregistration says every headline figure is computed on <strong>replicate 1
+alone</strong> — <em>"choosing the replicate after seeing three of them is choosing the
+answer."</em> The scorer was collapsing all three by majority vote. It now defaults to the
+preregistered rule and stamps the policy into its output. <strong>Both policies agree</strong>
+— AHEAD on <code>call_result</code>, indistinguishable elsewhere — so the conclusion survives.
+It is now verified rather than assumed.</p>
+
+<h2>4 · The 30–50k token issue</h2>
+
+<p>Same model, two configurations, measured rather than estimated. The retention task —
+1,632 calls already on disk — spends a median of <strong>245</strong> completion tokens with
+<strong>zero</strong> reasoning tokens.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Arm</th><th class="n">Median output</th><th class="n">Of which thinking</th>
+  <th class="n">Share</th><th class="n">Valid JSON</th></tr></thead>
+<tbody>
+<tr><td class="arm">baseline <span class="note">— production's regime</span></td>
+  <td class="n">11,961</td><td class="n">8,774</td><td class="n"><strong>73%</strong></td>
+  <td class="n">14/24</td></tr>
+<tr><td class="arm">reasoning: low</td><td class="n">13,160</td><td class="n">9,668</td>
+  <td class="n">73%</td><td class="n">14/24</td></tr>
+<tr class="hero"><td class="arm">reasoning off</td>
+  <td class="n"><strong>3,440</strong></td><td class="n">0</td><td class="n">0%</td>
+  <td class="n"><strong>22/24</strong></td></tr>
+<tr><td class="arm">temperature 0 / top_p 0</td><td class="n">11,159</td>
+  <td class="n">8,213</td><td class="n">74%</td><td class="n">17/24</td></tr>
+<tr><td class="arm">"think 1…5" block deleted</td><td class="n">10,839</td>
+  <td class="n">8,028</td><td class="n">74%</td><td class="n">11/24</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Three quarters of the output is thinking, not answer.</strong> Turning it off cuts
+output tokens <strong>71%</strong> and still returns the complete <strong>118-key</strong>
+object every time. The three levers that <em>don't</em> work are as informative as the one
+that does:</p>
+
+<ul class="tight">
+<li><code>reasoning: low</code> does nothing — "low" is not low.</li>
+<li>Retention's decoding (<code>temperature 0</code>, <code>top_p 0</code>) does nothing.</li>
+<li><strong>Deleting the "think 1…5" prompt block does nothing.</strong> Prompt surgery is not
+the lever; the budget is.</li>
+</ul>
+
+<div class="caution">
+<p><strong>What this cannot show.</strong> Production runs on Vertex, which has
+<code>thinkingBudget</code>; this ran on OpenRouter, which does not. These arms test the prompt
+and schema faithfully and the budget only by proxy. Nor is accuracy measured — there is no
+labelled sentiment_qa batch in this repo, so "does capping thinking cost quality" stays open.</p>
+<p>One number settles it, costs nothing and contains no customer data: a single real batch
+response's <code>usageMetadata.thoughtsTokenCount</code>. The ask is drafted in EN and TH.</p>
+</div>
+
+<h3>What to change, in order</h3>
+<ol class="tight">
+<li><strong><code>thinkingBudget: -1</code> → a finite value.</strong> Three call sites; the
+highest-volume is the daily batch <code>qa_pipeline_tasks.yml:76</code>, not the fact-check
+path usually quoted.</li>
+<li><strong>The prompt contradicts itself.</strong> Lines 18–24 demand five numbered reasoning
+steps; the Thai line at 26 says the reason must <em>not</em> be step by step. Free to fix.</li>
+<li><strong><code>maxOutputTokens: 65535</code> is not a backstop</strong> — it is the API
+maximum, so nothing caps a runaway today.</li>
+</ol>
+
+<h2>5 · Six defects found and fixed</h2>
+<ol class="tight">
+<li><strong>Typhoon was reported unavailable, and wasn't.</strong> The catalog probe used
+<code>/chat/completions</code>; an ASR model answers <code>/audio/transcriptions</code>. A
+confident false negative.</li>
+<li><strong>The transcriber sent unauthenticated requests</strong> — it never loads
+<code>.env</code>, so a missing key became a bare nginx 401 on every item.</li>
+<li><strong>The retry loop discarded the error it retried on</strong>, reporting only
+"failed after N attempts".</li>
+<li><strong>The arm→transcript map was duplicated.</strong> If the two copies drifted, one
+arm's calls would be labelled with another arm's transcripts and every number would be
+internally consistent and wrong.</li>
+<li><strong>An unknown <code>--arms</code> value ran zero arms and exited 0.</strong></li>
+<li><strong>The ASR test suite could not be collected at all.</strong> The documented separate
+virtualenv did not exist; the full 152-test suite now runs.</li>
+</ol>
+
+<h2>6 · Limits, unchanged</h2>
+<ul class="tight">
+<li>Synthetic TTS audio, two voices — speaker variety is prosody only.</li>
+<li>Generator-authored labels. <strong>RECONCILED: NO.</strong></li>
+<li>Every F1 here is an <strong>upper bound</strong>: the corpus states its labels in ~100% of
+calls, and the measured leak is published rather than hidden.</li>
+<li>No arm exceeds ~0.66 on <code>call_result</code> because no labeller ever emits
+<code>unknown</code> or <code>undefined</code> — <strong>21 of 136 calls are unwinnable for
+every arm</strong>, production included.</li>
+</ul>
+
+<h2>7 · What comes next</h2>
+<ol class="tight">
+<li><strong>Adopt Typhoon for the ASR stage</strong> — on reliability grounds. Expect no
+business-metric change, and say so up front.</li>
+<li><strong>Send the Vertex token ask.</strong> One field turns a directional finding into a
+settled one.</li>
+<li><strong>Send Ask&nbsp;1.</strong> Still the only path off <code>RECONCILED: NO</code>.</li>
+<li><strong>Fix the ceiling, not the microphone.</strong> A perfect transcript scores 0.645.
+Until the labeller can emit <code>unknown</code> and <code>undefined</code>, no upstream
+improvement can move the headline. That is where the next experiment belongs.</li>
+</ol>
+
+<footer>
+Run <code>20260820-e23-with-typhoon</code> · 2,046 records, 5 arms, 3 replicates ·
+paired sign test at &alpha;&nbsp;=&nbsp;1/64 · 20,000-resample cluster bootstrap over calls ·
+root suite 1034 passed / 12 skipped, differential 1045 / 1, asr-eval 152 / 2 xfailed ·
+screening eval, not a production gate
+</footer>
+
+</div>

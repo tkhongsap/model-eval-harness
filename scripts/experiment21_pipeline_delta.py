@@ -96,8 +96,22 @@ DECODING = {"temperature": 0.0, "top_p": 1.0, "seed": 0, "max_tokens": 8000}
 
 RETENTION_SHAPED = {"retention", "downsell", "mnp"}
 
-ARMS = ("ceiling", "format-control", "qwen-pipeline", "gemini-asr-text",
-        "gemini-audio", "ceiling-gemini")
+ARMS = ("ceiling", "format-control", "qwen-pipeline", "typhoon-pipeline",
+        "gemini-asr-text", "gemini-audio", "ceiling-gemini")
+
+# Which transcript set each text arm reads. ONE definition, deliberately.
+#
+# This map used to be written out twice -- once in `build_inputs` to load the text and once
+# in `main` to record `input_paths` for the provenance/drift refusal. Two copies of a
+# mapping from arm to transcript directory is the single worst place in this file for a
+# copy-paste to diverge: the run would label arm A's calls with arm B's transcripts and
+# every downstream number would be internally consistent and wrong. Adding the typhoon arm
+# meant touching both copies, which is exactly when that happens, so they are now one.
+HYP_DIRS = {
+    "qwen-pipeline": "qwen3-asr-1.7b",
+    "typhoon-pipeline": "typhoon-whisper-large-v3",
+    "gemini-asr-text": "gemini-2.5-flash-audio",
+}
 
 
 class Refused(SystemExit):
@@ -245,8 +259,7 @@ def build_inputs(wanted: tuple[str, ...] = ARMS,
                 inputs[arm][it] = ref
         if "format-control" in inputs:
             inputs["format-control"][it] = build_format_control(it)
-        for arm, hyp_dir in (("qwen-pipeline", "qwen3-asr-1.7b"),
-                             ("gemini-asr-text", "gemini-2.5-flash-audio")):
+        for arm, hyp_dir in HYP_DIRS.items():
             if arm not in inputs:
                 continue
             f = HYPS / hyp_dir / f"{it}.txt"
@@ -448,8 +461,11 @@ def score(run_dir: Path) -> dict:
 
     pairs = {}
     want = [("ceiling", "format-control"), ("ceiling", "qwen-pipeline"),
-            ("ceiling", "gemini-asr-text"), ("ceiling-gemini", "gemini-audio"),
-            ("qwen-pipeline", "gemini-audio")]
+            ("ceiling", "typhoon-pipeline"), ("ceiling", "gemini-asr-text"),
+            ("ceiling-gemini", "gemini-audio"),
+            ("qwen-pipeline", "gemini-audio"),
+            ("typhoon-pipeline", "gemini-audio"),
+            ("qwen-pipeline", "typhoon-pipeline")]
     for a, b in want:
         if a in arms_run and b in arms_run:
             pairs[f"{a}|{b}"] = compare(a, b)
@@ -508,6 +524,13 @@ def main() -> int:
         return 0
 
     env = load_env()
+    # An unknown --arms value used to be dropped in silence by this filter: ask for
+    # `typhoon-pipline` and you got a clean run of nothing, exit 0, and a results file that
+    # looked fine until someone counted the rows. Name it instead.
+    unknown = sorted(set(args.arms) - set(ARMS))
+    if unknown:
+        raise Refused(f"unknown arm(s) {unknown}; known arms are {list(ARMS)}. "
+                      "A misspelled arm silently running nothing is worse than a failure.")
     run_arms = [a for a in ARMS if a in args.arms]
     run_items = args.items or (
         ["ASR-001", "ASR-011"] if args.smoke else items())
@@ -536,8 +559,7 @@ def main() -> int:
                   f"{med('spaces_per_100'):>11}")
     # Only for arms actually being run: these dicts are keyed on `inputs`, which no longer
     # carries every arm unconditionally.
-    for arm, hyp_dir in (("qwen-pipeline", "qwen3-asr-1.7b"),
-                         ("gemini-asr-text", "gemini-2.5-flash-audio")):
+    for arm, hyp_dir in HYP_DIRS.items():
         if arm in inputs:
             input_paths[arm] = {it: str(HYPS / hyp_dir / f"{it}.txt")
                                 for it in inputs[arm]}

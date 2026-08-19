@@ -1,0 +1,125 @@
+{
+  "model": "google/gemini-2.5-flash",
+  "items": 1,
+  "cap_usd": 3.0,
+  "spent_usd": 0.1772,
+  "summary": [
+    {
+      "arm": "baseline",
+      "n": 1,
+      "median_completion": 13008,
+      "median_reasoning": 9766,
+      "median_keys": 118,
+      "json_ok": 1,
+      "cost_usd": 0.0418
+    },
+    {
+      "arm": "reasoning-low",
+      "n": 1,
+      "median_completion": 13546,
+      "median_reasoning": 9885,
+      "median_keys": 118,
+      "json_ok": 1,
+      "cost_usd": 0.0432
+    },
+    {
+      "arm": "reasoning-off",
+      "n": 1,
+      "median_completion": 3938,
+      "median_reasoning": 0,
+      "median_keys": 118,
+      "json_ok": 1,
+      "cost_usd": 0.0192
+    },
+    {
+      "arm": "temp0",
+      "n": 1,
+      "median_completion": 9864,
+      "median_reasoning": 7046,
+      "median_keys": 118,
+      "json_ok": 1,
+      "cost_usd": 0.034
+    },
+    {
+      "arm": "no-think-block",
+      "n": 1,
+      "median_completion": 11880,
+      "median_reasoning": 8642,
+      "median_keys": 124,
+      "json_ok": 1,
+      "cost_usd": 0.039
+    }
+  ],
+  "rows": [
+    {
+      "status": "ok",
+      "latency_s": 71.42,
+      "prompt_tokens": 31099,
+      "completion_tokens": 13008,
+      "reasoning_tokens": 9766,
+      "cost": 0.0418497,
+      "chars": 10994,
+      "json_ok": true,
+      "keys": 118,
+      "finish_reason": "stop",
+      "arm": "baseline",
+      "item_id": "ASR-001"
+    },
+    {
+      "status": "ok",
+      "latency_s": 75.51,
+      "prompt_tokens": 31099,
+      "completion_tokens": 13546,
+      "reasoning_tokens": 9885,
+      "cost": 0.0431947,
+      "chars": 12647,
+      "json_ok": true,
+      "keys": 118,
+      "finish_reason": "stop",
+      "arm": "reasoning-low",
+      "item_id": "ASR-001"
+    },
+    {
+      "status": "ok",
+      "latency_s": 23.83,
+      "prompt_tokens": 31099,
+      "completion_tokens": 3938,
+      "reasoning_tokens": 0,
+      "cost": 0.0191747,
+      "chars": 13625,
+      "json_ok": true,
+      "keys": 118,
+      "finish_reason": "stop",
+      "arm": "reasoning-off",
+      "item_id": "ASR-001"
+    },
+    {
+      "status": "ok",
+      "latency_s": 46.69,
+      "prompt_tokens": 31099,
+      "completion_tokens": 9864,
+      "reasoning_tokens": 7046,
+      "cost": 0.0339897,
+      "chars": 9099,
+      "json_ok": true,
+      "keys": 118,
+      "finish_reason": "stop",
+      "arm": "temp0",
+      "item_id": "ASR-001"
+    },
+    {
+      "status": "ok",
+      "latency_s": 65.16,
+      "prompt_tokens": 31026,
+      "completion_tokens": 11880,
+      "reasoning_tokens": 8642,
+      "cost": 0.0390078,
+      "chars": 10536,
+      "json_ok": true,
+      "keys": 124,
+      "finish_reason": "stop",
+      "arm": "no-think-block",
+      "item_id": "ASR-001"
+    }
+  ]
+}

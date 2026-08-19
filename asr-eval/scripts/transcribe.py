@@ -228,7 +228,15 @@ def post_audio(base_url: str, model: str, api_key: str, filename: str, blob: byt
             last = exc
             if attempt < retries - 1:
                 time.sleep(2.0 * (attempt + 1))
-    raise RuntimeError(f"transcription failed after {retries} attempts") from last
+    # Name the last failure in the message, not only in __cause__. The caller prints
+    # `str(exc)` into the per-item runlog and nothing else, so a bare "failed after N
+    # attempts" is what reaches the operator -- true, and useless. It cost a full
+    # diagnostic detour on 2026-08-20 to rediscover an HTTP status the server had
+    # already reported three times.
+    raise RuntimeError(
+        f"transcription failed after {retries} attempts: "
+        f"{type(last).__name__}: {last}"
+    ) from last
 
 
 # --------------------------------------------------------------------------------------
@@ -318,6 +326,21 @@ def main() -> int:
     args = ap.parse_args()
 
     api_key = os.environ.get(args.api_key_env, "")
+    if not api_key:
+        # Refuse rather than send an unauthenticated request. Without this the run sends no
+        # Authorization header at all, the gateway's nginx answers a bare
+        # "401 Authorization Required", and the retry loop reports "transcription failed
+        # after 3 attempts" for every item -- which reads like a broken model, not a missing
+        # variable. Cost a real diagnostic detour on 2026-08-20.
+        #
+        # Note this script deliberately does NOT read .env (it keeps its dependency surface
+        # tiny, see the module docstring), so the variable must be exported by the caller:
+        #     export TOKEN_FACTORY_API_KEY=...    # or run it via scripts/typhoon_watch.py
+        print(f"no ${args.api_key_env} in the environment. This script does not read .env; "
+              f"export the variable first, or invoke it through a wrapper that does. "
+              f"Refusing rather than sending an unauthenticated request that would fail "
+              f"as a confusing 401 on every item.")
+        return 2
     if args.cacert and not Path(args.cacert).is_file():
         print(f"--cacert {args.cacert} does not exist")
         return 2
