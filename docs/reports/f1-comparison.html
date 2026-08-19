@@ -1,0 +1,655 @@
+<title>Retention Migration Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ink: #12181f;
+    --ground: #f6f8fa;
+    --surface: #ffffff;
+    --rule: #dde2e8;
+    --muted: #5b6773;
+    --accent: #1a5fb4;
+    --accent-soft: #e8effa;
+
+    /* Reserved for verdict only. Never used decoratively. */
+    --below: #b3261e;
+    --below-soft: #fbeae9;
+    --unresolved: #8a6a12;
+    --unresolved-soft: #fdf3de;
+    --clears: #166f45;
+    --clears-soft: #e6f4ec;
+
+    --shadow: 0 1px 2px rgba(18, 24, 31, .05), 0 4px 14px rgba(18, 24, 31, .04);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e8ecf1;
+      --ground: #0f1319;
+      --surface: #161b23;
+      --rule: #2a323d;
+      --muted: #99a4b2;
+      --accent: #7aa9ee;
+      --accent-soft: #17253b;
+      --below: #f2837a;
+      --below-soft: #2e1b1a;
+      --unresolved: #e0b95c;
+      --unresolved-soft: #2c2517;
+      --clears: #5fc38f;
+      --clears-soft: #14291f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #e8ecf1;
+    --ground: #0f1319;
+    --surface: #161b23;
+    --rule: #2a323d;
+    --muted: #99a4b2;
+    --accent: #7aa9ee;
+    --accent-soft: #17253b;
+    --below: #f2837a;
+    --below-soft: #2e1b1a;
+    --unresolved: #e0b95c;
+    --unresolved-soft: #2c2517;
+    --clears: #5fc38f;
+    --clears-soft: #14291f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  h1, h2, h3 { font-family: Newsreader, ui-serif, Georgia, serif; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2rem, 4.4vw, 2.9rem); font-weight: 600; line-height: 1.15; letter-spacing: -.012em; }
+  h2 { font-size: clamp(1.35rem, 2.4vw, 1.6rem); font-weight: 600; line-height: 1.25; }
+  h3 { font-size: 1.05rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  header { display: flex; flex-direction: column; gap: .85rem; }
+  header .sub { color: var(--muted); font-size: 1.05rem; max-width: 60ch; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.5rem;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .76rem; color: var(--muted);
+    border-top: 1px solid var(--rule); padding-top: .85rem; margin-top: .35rem;
+  }
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+  .lede { font-size: 1.02rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1.35rem;
+    display: flex; flex-direction: column; gap: .75rem;
+  }
+
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+    font-size: .875rem;
+    min-width: 40rem;
+  }
+  caption {
+    text-align: left; color: var(--muted); font-size: .8rem;
+    padding-bottom: .6rem; caption-side: top;
+  }
+  th, td { text-align: right; padding: .5rem .6rem; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-size: .7rem; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); font-weight: 600; border-bottom: 1.5px solid var(--rule);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .model { font-weight: 500; white-space: nowrap; }
+  .incumbent::after {
+    content: "incumbent"; display: inline-block; margin-left: .5rem;
+    font-family: "IBM Plex Mono", monospace; font-size: .62rem; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--accent);
+    background: var(--accent-soft); padding: .1rem .35rem; border-radius: 2px;
+    vertical-align: .08em;
+  }
+
+  .chip {
+    display: inline-block; white-space: nowrap;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .66rem; font-weight: 500; letter-spacing: .05em; text-transform: uppercase;
+    padding: .12rem .4rem; border-radius: 2px; border: 1px solid transparent;
+  }
+  .chip.below      { color: var(--below);      background: var(--below-soft);      border-color: color-mix(in srgb, var(--below) 25%, transparent); }
+  .chip.unresolved { color: var(--unresolved); background: var(--unresolved-soft); border-color: color-mix(in srgb, var(--unresolved) 25%, transparent); }
+  .chip.clears     { color: var(--clears);     background: var(--clears-soft);     border-color: color-mix(in srgb, var(--clears) 25%, transparent); }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: .9rem 1.1rem; border-radius: 0 3px 3px 0;
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .callout.warn { border-left-color: var(--below); background: var(--below-soft); }
+  .callout strong { font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .stat { background: var(--surface); padding: .95rem 1.1rem; display: flex; flex-direction: column; gap: .2rem; }
+  .stat .k { font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .stat .v { font-family: Newsreader, serif; font-size: 1.7rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .n { font-size: .78rem; color: var(--muted); }
+
+  .note { font-size: .84rem; color: var(--muted); max-width: 74ch; }
+  .note code, code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .88em; background: var(--accent-soft); padding: .08rem .3rem; border-radius: 2px; }
+
+  .pending { border-style: dashed; }
+  .pending .eyebrow { color: var(--accent); }
+
+  ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: .45rem; max-width: 68ch; }
+  li::marker { color: var(--muted); }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1.1rem; color: var(--muted); font-size: .8rem; display: flex; flex-direction: column; gap: .4rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card, .stat { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">True Corp &middot; Retention call labelling</div>
+    <h1>Can Gemini 2.5 Flash be replaced by models on our own GPU?</h1>
+    <p class="sub">Weighted F1 across four models on 188 hand-labelled calls &mdash; and, more
+      importantly, which of those differences survive a statistical test.</p>
+    <div class="meta">
+      <span>19 Aug 2026</span>
+      <span>188 items &middot; 3 replicates</span>
+      <span>&alpha; = 1/64 per side</span>
+      <span>RECONCILED: NO</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>The short answer</h2>
+    <div class="stats">
+      <div class="stat">
+        <span class="k">Qwen3.8 27B</span>
+        <span class="v">Viable</span>
+        <span class="n">No detectable difference from Gemini on labelling</span>
+      </div>
+      <div class="stat">
+        <span class="k">Qwen3.6 27B</span>
+        <span class="v">Viable</span>
+        <span class="n">Also indistinguishable, marginally weaker</span>
+      </div>
+      <div class="stat">
+        <span class="k">Gemma 4 12B</span>
+        <span class="v" style="color:var(--below)">Excluded</span>
+        <span class="n">Measurably behind on all three dimensions</span>
+      </div>
+      <div class="stat">
+        <span class="k">Qwen3-ASR 1.7B</span>
+        <span class="v" style="color:var(--below)">Blocked</span>
+        <span class="n">2.6&times; the character error rate, plus a failure mode</span>
+      </div>
+    </div>
+    <p class="note">The labelling stage and the transcription stage give different answers, which
+      is why the recommendation splits them: move text&nbsp;&rarr;&nbsp;label onto the internal
+      GPU, keep audio&nbsp;&rarr;&nbsp;text external.</p>
+  </section>
+
+  <section>
+    <h2>Weighted F1, by model</h2>
+    <p class="lede">All four models read the <em>same reference transcripts</em>, so this measures
+      reasoning quality with transcription held constant. Every figure is graded against
+      production&rsquo;s own published thresholds &mdash; 80 acceptable, 85 good, 90 excellent
+      &mdash; read from <code>qa_pipeline_fact_check.yml</code> at runtime rather than retyped.</p>
+
+    <div class="card scroll">
+      <table>
+        <caption><strong>Pack A</strong> &mdash; <code>retention_v3</code>, 138 items. Higher is better.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col">call_result</th>
+            <th scope="col">reason</th>
+            <th scope="col">product</th>
+            <th scope="col">Verdict vs Gemini</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model incumbent">Gemini 2.5 Flash</td>
+            <td class="num">95.5</td>
+            <td class="num">83.8</td>
+            <td class="num">96.0</td>
+            <td>&mdash;</td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3.8 27B</td>
+            <td class="num">96.6</td>
+            <td class="num">83.4</td>
+            <td class="num">95.0</td>
+            <td><span class="chip unresolved">no difference found</span></td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3.6 27B</td>
+            <td class="num">96.2</td>
+            <td class="num">82.1</td>
+            <td class="num">93.2</td>
+            <td><span class="chip unresolved">no difference found</span></td>
+          </tr>
+          <tr>
+            <td class="model">Gemma 4 12B</td>
+            <td class="num">92.9</td>
+            <td class="num" style="color:var(--below);font-weight:600">79.2</td>
+            <td class="num">93.3</td>
+            <td><span class="chip below">behind on all three</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card scroll">
+      <table>
+        <caption><strong>Pack B</strong> &mdash; <code>retention_challenge_v1</code>, 50 deliberately harder items. Only two arms were run.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col">call_result</th>
+            <th scope="col">reason</th>
+            <th scope="col">product</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model incumbent">Gemini 2.5 Flash</td>
+            <td class="num">95.1</td>
+            <td class="num">83.1</td>
+            <td class="num">97.6</td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3.8 27B</td>
+            <td class="num">93.0</td>
+            <td class="num">83.3</td>
+            <td class="num">97.0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>The lead changes sides between packs.</strong>
+      <p>On <code>call_result</code>, Qwen3.8 is ahead by 1.1 on pack A and behind by 2.1 on pack
+        B. A quantity that changes sign between two samples of the same population is noise, not a
+        ranking &mdash; which is exactly what the paired test concludes independently.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Is any of it a real difference?</h2>
+    <p class="lede">F1 alone will mislead you here. The test that decides is a paired sign test at
+      &alpha;&nbsp;=&nbsp;1/64, and the number that matters is <strong>d</strong> &mdash; the count
+      of calls where exactly one model was right. Calls both models get right, or both get wrong,
+      carry no information about which is better.</p>
+
+    <div class="card scroll">
+      <table>
+        <caption>Pooled across both packs, 188 items. Qwen3.8 against Gemini.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Dimension</th>
+            <th scope="col">d</th>
+            <th scope="col">net</th>
+            <th scope="col">band</th>
+            <th scope="col">Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>call_result</td>
+            <td class="num">4</td>
+            <td class="num">0</td>
+            <td class="num">&mdash;</td>
+            <td><span class="chip unresolved">underpowered</span></td>
+          </tr>
+          <tr>
+            <td>reason</td>
+            <td class="num">40</td>
+            <td class="num">&minus;6</td>
+            <td class="num">&plusmn;16</td>
+            <td><span class="chip clears">indistinguishable</span></td>
+          </tr>
+          <tr>
+            <td>product</td>
+            <td class="num">1</td>
+            <td class="num">&minus;1</td>
+            <td class="num">&mdash;</td>
+            <td><span class="chip unresolved">underpowered</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>&ldquo;Underpowered&rdquo; is not &ldquo;the same&rdquo;.</strong>
+      <p>On <code>call_result</code> the two models disagreed on four calls out of 188 &mdash; below
+        the six the test needs at this &alpha;. That is <em>we cannot tell</em>, not <em>we have
+        shown they match</em>, and the harness refuses to collapse the two. The one dimension with
+        enough disagreement to test, <code>reason</code>, comes back genuinely indistinguishable:
+        an observed gap of 6 against a noise band of 16.</p>
+    </div>
+
+    <p class="note">Why so little disagreement? Not because the task is easy &mdash; because the
+      errors are <em>shared</em>. Each arm gets 13 <code>call_result</code> calls wrong and 11 are
+      the same calls; co-failure runs about 12&times; what independence would predict. Both models
+      fail the same hard calls, which is a more useful finding than a tie.</p>
+  </section>
+
+  <section>
+    <h2>Business accuracy &mdash; the metric production acts on</h2>
+    <div class="stats">
+      <div class="stat">
+        <span class="k">Gemini 2.5 Flash</span>
+        <span class="v">175 / 188</span>
+        <span class="n">93.1% &nbsp;[88.0, 96.1]</span>
+      </div>
+      <div class="stat">
+        <span class="k">Qwen3.8 27B</span>
+        <span class="v">175 / 188</span>
+        <span class="n">93.1% &nbsp;[88.0, 96.1]</span>
+      </div>
+      <div class="stat">
+        <span class="k">Majority-class baseline</span>
+        <span class="v">50.0%</span>
+        <span class="n">Observed sits 43 points above chance</span>
+      </div>
+    </div>
+    <p class="note">Same <em>count</em>, different <em>calls</em>: the pooled 2&times;2 is
+      both-right&nbsp;173, both-wrong&nbsp;11, Gemini-only&nbsp;2, Qwen-only&nbsp;2. They disagree
+      on four calls, two each way, and those cancel exactly on pooling. The interval is roughly
+      &plusmn;4 points &mdash; wider than every per-dimension difference in this report.</p>
+  </section>
+
+  <section>
+    <h2>What the F1 column hides</h2>
+    <p class="lede">Every model has <strong>excellent recall and mediocre precision</strong> on
+      <code>reason</code>. F1 averages the two and conceals it.</p>
+    <div class="card scroll">
+      <table>
+        <caption>Pack A, <code>reason</code> dimension, split out.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Model</th>
+            <th scope="col">Precision</th>
+            <th scope="col">Recall</th>
+            <th scope="col">F1</th>
+            <th scope="col">Precision vs floor&nbsp;75</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model incumbent">Gemini 2.5 Flash</td>
+            <td class="num">76.3</td>
+            <td class="num">96.4</td>
+            <td class="num">83.8</td>
+            <td><span class="chip unresolved">acceptable only</span></td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3.8 27B</td>
+            <td class="num">79.8</td>
+            <td class="num">92.8</td>
+            <td class="num">83.4</td>
+            <td><span class="chip unresolved">acceptable only</span></td>
+          </tr>
+          <tr>
+            <td class="model">Qwen3.6 27B</td>
+            <td class="num">77.6</td>
+            <td class="num">92.2</td>
+            <td class="num">82.1</td>
+            <td><span class="chip unresolved">acceptable only</span></td>
+          </tr>
+          <tr>
+            <td class="model">Gemma 4 12B</td>
+            <td class="num" style="color:var(--below);font-weight:600">71.3</td>
+            <td class="num">93.4</td>
+            <td class="num">79.2</td>
+            <td><span class="chip below">below floor</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Every model over-predicts reasons &mdash; it lists reasons the call does not
+      support. That is a property of the task and the prompt, not of any candidate, and the
+      incumbent has it too. It is the largest quality gap in the labelling stage and no weighted
+      average could show it. Gemma&rsquo;s 71.3 is the only figure anywhere below production&rsquo;s
+      own floor, which is what excludes it &mdash; on True&rsquo;s published criteria, not ours.</p>
+  </section>
+
+  <section>
+    <h2>The transcription stage is a different story</h2>
+    <div class="stats">
+      <div class="stat">
+        <span class="k">Gemini &mdash; character error</span>
+        <span class="v">0.044</span>
+        <span class="n">Normalised CER, 20-call set</span>
+      </div>
+      <div class="stat">
+        <span class="k">Qwen3-ASR &mdash; character error</span>
+        <span class="v" style="color:var(--below)">0.115</span>
+        <span class="n">2.6&times; worse &middot; BEHIND at &alpha; 1/64</span>
+      </div>
+      <div class="stat">
+        <span class="k">Runaway rate, 138 calls</span>
+        <span class="v" style="color:var(--below)">13.9%</span>
+        <span class="n">19 of 137 &nbsp;[8.7, 21.4]</span>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <strong>New today, and it moves the wrong way.</strong>
+      <p>The 20-call set showed one repetition runaway in twenty &mdash; 5%. Transcribing all 138
+        new calls produced <strong>19 in 137, or 13.9%</strong>. The earlier estimate was not wrong
+        so much as uninformative: its interval spanned 0.8&ndash;26.2% and contained the new figure
+        all along. A twenty-call sample could never have bounded this.</p>
+      <p>One further call, <code>ASR-027</code>, failed transcription outright after six attempts.
+        It is the second-<em>shortest</em> call in the set, so length does not explain it.</p>
+    </div>
+
+    <p class="note">Character error rate is reported here as a <em>diagnostic</em> &mdash; it
+      explains why the arms differ, and the preregistration explicitly forbids it from carrying the
+      decision. What blocks the ASR migration is not the average; it is a catastrophic failure on
+      roughly one call in seven, which no chunking configuration has removed.</p>
+  </section>
+
+  <section>
+    <h2>End to end: audio in, decision out</h2>
+    <p class="lede">Everything above measures the two stages <em>separately</em>. This measures the
+      whole pipeline against business labels authored before any dialogue was written &mdash; the
+      thing the previous experiment could not do, because it could only check whether two arms
+      <em>agreed</em>, and two pipelines wrong in the same way agree perfectly.</p>
+
+    <div class="callout">
+      <strong>The internal pipeline produces better business decisions than production &mdash;
+        despite transcribing worse.</strong>
+      <p>Qwen3-ASR has 2.6&times; the character error rate and loses roughly one call in eight to
+        repetition runaways. The pipeline built on it still wins the save/churn decision. A
+        stronger reasoner reading a flawed transcript beats a weaker one reading the audio.</p>
+    </div>
+
+    <div class="card scroll">
+      <table>
+        <caption>136 calls &middot; 3 replicates &middot; identical prompt, schema and decoding across arms.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Arm</th>
+            <th scope="col">call_result F1</th>
+            <th scope="col">accuracy</th>
+            <th scope="col">product F1</th>
+            <th scope="col">parse failures</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model">format-control <span style="color:var(--muted)">&mdash; zero mishearing</span></td>
+            <td class="num">0.663</td>
+            <td class="num">85/136</td>
+            <td class="num">0.804</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td class="model">ceiling <span style="color:var(--muted)">&mdash; perfect transcript</span></td>
+            <td class="num">0.638</td>
+            <td class="num">83/136</td>
+            <td class="num">0.808</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td class="model">Qwen pipeline <span style="color:var(--muted)">&mdash; candidate</span></td>
+            <td class="num" style="font-weight:600">0.582</td>
+            <td class="num">74/136</td>
+            <td class="num" style="font-weight:600">0.759</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td class="model incumbent">Gemini audio</td>
+            <td class="num">0.490</td>
+            <td class="num">59/136</td>
+            <td class="num">0.721</td>
+            <td class="num" style="color:var(--below);font-weight:600">20 / 408</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card scroll">
+      <table>
+        <caption>Paired at the call grain, Qwen pipeline against Gemini audio. &alpha; = 1/64 per side.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Dimension</th>
+            <th scope="col">d</th>
+            <th scope="col">net</th>
+            <th scope="col">band</th>
+            <th scope="col">Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>call_result</strong></td>
+            <td class="num">37</td>
+            <td class="num"><strong>+15</strong></td>
+            <td class="num">&plusmn;15</td>
+            <td><span class="chip clears">Qwen ahead</span></td>
+          </tr>
+          <tr>
+            <td>reason</td>
+            <td class="num">41</td>
+            <td class="num">&minus;3</td>
+            <td class="num">&plusmn;15</td>
+            <td><span class="chip unresolved">indistinguishable</span></td>
+          </tr>
+          <tr>
+            <td>product</td>
+            <td class="num">27</td>
+            <td class="num">+5</td>
+            <td class="num">&plusmn;13</td>
+            <td><span class="chip unresolved">indistinguishable</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note"><strong>It clears by one.</strong> Net +15 against a band of &plusmn;15 is the
+      narrowest possible pass. Only <code>call_result</code> resolves; reason and product are
+      genuinely indistinguishable and are not wins.</p>
+
+    <h3 style="margin-top:.5rem">Where Gemini loses: it misses churn</h3>
+    <div class="card scroll">
+      <table>
+        <caption>Product-matched calls only, so the outcome is compared like for like.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Arm</th>
+            <th scope="col">outcome correct</th>
+            <th scope="col">churn recall</th>
+            <th scope="col">save recall</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="model incumbent">Gemini audio</td>
+            <td class="num">56/92 &nbsp;61%</td>
+            <td class="num" style="color:var(--below);font-weight:600">33/52 &nbsp;63%</td>
+            <td class="num">23/24 &nbsp;96%</td>
+          </tr>
+          <tr>
+            <td class="model">Qwen pipeline</td>
+            <td class="num">74/103 &nbsp;72%</td>
+            <td class="num" style="font-weight:600">43/55 &nbsp;78%</td>
+            <td class="num">31/31 &nbsp;100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Gemini records <strong>19 of 52 churning customers as saved</strong>. For a
+      Retention pipeline that is the expensive direction to be wrong in &mdash; a missed churn is a
+      customer who leaves without anyone knowing they were at risk. Qwen misses 12 of 55.</p>
+
+    <div class="callout warn">
+      <strong>Read these as upper bounds, not as production numbers.</strong>
+      <p>This corpus states its labels in <em>every</em> call; real calls rarely do, so both arms
+        will score lower in production. And no arm exceeds ~0.66 because neither labeller ever
+        emits <code>unknown</code> or <code>undefined</code> &mdash; 21 of 136 calls are
+        unwinnable for everyone, which caps the whole table.</p>
+      <p>Gemini's 20 parse failures did <em>not</em> cost it the comparison: no call lost all three
+        replicates, so every item stayed scoreable. Its deficit is genuine labelling, not
+        truncated JSON. But production has no second replicate to fall back on.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div>Synthetic Thai call audio and hand-computed labels. No production call has been through
+      any part of this, and every figure carries <code>RECONCILED: NO</code> until one has.</div>
+    <div>Sources: <code>docs/reports/pooled-bands.json</code>,
+      <code>model-comparison-metrics.json</code>, <code>asr-eval/reports/</code>. Published figures
+      in the decision memo are re-derived from these files by <code>scripts/doc_claims.py</code> on
+      every test run.</div>
+  </footer>
+
+</div>
