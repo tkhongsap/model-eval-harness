@@ -2,6 +2,88 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-20, overnight): Typhoon fixes the transcription stage and does NOT change
+the business outcome — and yesterday's headline needs two corrections.**
+Full write-up: `docs/overnight-2026-08-20.md`. Report:
+https://claude.ai/code/artifact/18def122-f7a7-436a-9d46-531b9056f3eb
+Run `out/runs/20260820-e23-with-typhoon`, five arms, 2,046 records. Spend $3.74.
+
+**1. `typhoon-whisper-large-v3` is a large, clean win on transcription.** Same 138-call
+corpus, same gateway:
+
+| | Qwen3-ASR 1.7B | Typhoon large-v3 |
+|---|---:|---:|
+| CER (normalised) | 0.1120 | **0.0438** |
+| WER (normalised) | 0.1691 | **0.0774** |
+| calls transcribed | 136/138 | **138/138** |
+| catastrophic runaways | **16 (11.8%)** | **0** |
+
+Qwen's 0.1120 already EXCLUDES its 16 runaways, so the true gap is wider than 2.6x. Qwen never
+produced ASR-082 or ASR-089 after 8 attempts each; Typhoon transcribed both.
+
+**2. And it buys nothing end-to-end.** `typhoon-pipeline` vs `qwen-pipeline` is
+INDISTINGUISHABLE on all three dimensions — net +1 on `call_result` over 13 discordant calls,
++5 reason, +1 product. Halving CER and deleting an 11.8% failure rate moved the business answer
+on ONE call in 138. The reason: `ceiling` (perfect transcript) scores 0.645 and typhoon scores
+0.597, so the pipeline is already within 0.05 of its own ceiling. **The binding constraint is
+the labelling step, not the audio.** Adopt Typhoon for reliability, not to win the migration
+argument, and say so when proposing it.
+
+| arm | call_result F1 | accuracy | reason | product |
+|---|---:|---:|---:|---:|
+| format-control | 0.663 | 85/136 | 0.239 | 0.804 |
+| ceiling | 0.645 | 84/136 | 0.228 | 0.808 |
+| **typhoon-pipeline** | **0.597** | 76/138 | 0.230 | **0.791** |
+| qwen-pipeline | 0.588 | 74/136 | 0.207 | 0.762 |
+| gemini-audio | 0.495 | 60/136 | 0.267 | 0.727 |
+
+**3. TWO CORRECTIONS to the 2026-08-19 entry below.** Neither reverses it; both change how much
+weight it carries.
+
+- *It was scored the wrong way.* The preregistration says every headline figure is computed on
+  **replicate 1 alone** — "choosing the replicate after seeing three of them is choosing the
+  answer" — and `experiment23_score.py` was collapsing all three by modal vote.
+  `--replicate-policy` now defaults to `first` and is stamped into the output JSON. Both
+  policies agree, so the conclusion survives; it is now verified rather than assumed.
+- *"AHEAD" is much weaker than it reads.* Both AHEAD verdicts clear their band by EXACTLY ZERO.
+  20,000-resample cluster bootstrap over calls: **qwen vs gemini 52.6%**, typhoon vs gemini
+  61.0%, and **25 single calls could each flip the qwen result alone**. The INDISTINGUISHABLE
+  findings are the robust ones (94–98%). **Do not present this as "the internal pipeline
+  wins."** Production's audio arm is clearly the weakest on `call_result`; the margin is too
+  thin to bank.
+
+**4. Tar's token issue is solved, and it is one lever.** Retention control, already on disk:
+245 median completion tokens, 0 reasoning. sentiment_qa measured on production's real prompt
+and the real 94k-char `user_config.xlsx`, 24 calls/arm: baseline 11,961 output of which
+**8,774 (73%) is thinking**; `reasoning` off gives **3,440 and still returns all 118 keys** —
+a 71% cut. `reasoning: low` does nothing, retention's decoding does nothing, and **deleting
+the prompt's "think 1…5" block does nothing**. The budget is the lever, at three call sites
+(highest-volume is the daily batch `qa_pipeline_tasks.yml:76`, not fact-check).
+NOT claimed: that capping thinking preserves accuracy — untestable here, no labelled
+sentiment_qa batch exists. `docs/sentiment-qa-token-ask.md` (EN+TH) asks production for the one
+Vertex field that settles the budget question.
+
+**Environment note for the next session:** the ASR tooling needs `.venv-asr`, not `.venv`. The
+root pins numpy 2.3.4; `requirements-asr.txt` pins 2.5.2 and says the two "must never merge".
+It now exists and the full asr-eval suite runs — 152 passed, 2 xfailed, including `test_dsp.py`
+and `test_tooling.py`, which had never been collectable here.
+
+**NEXT ACTION, in order:**
+
+1. **Fix the ceiling, not the microphone.** A perfect transcript scores 0.645 because no
+   labeller ever emits `unknown` or `undefined` — 21 of 136 calls are unwinnable for every arm,
+   production included. That is where the next experiment belongs, and no upstream work can
+   move the headline until it is done.
+2. **Send `docs/sentiment-qa-token-ask.md`** — one field converts a directional finding into a
+   settled one.
+3. **Send `docs/ask1-email-draft.md`** — still the only thing that retires `RECONCILED: NO`.
+4. Adopt Typhoon for the ASR stage on reliability grounds.
+
+Open PR: #35.
+
+---
+
+
 **Latest (2026-08-19, E23): the internal pipeline WINS the business decision, by one call.**
 Four arms, 136 scored calls x 3 replicates = 1,632 label calls, run
 `out/runs/20260819-125109Z-e21`. On the primary dimension `call_result`, `qwen-pipeline` is
