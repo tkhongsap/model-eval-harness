@@ -34,6 +34,7 @@ from datetime import date, timedelta
 
 import asr_common as C
 import business_labels as B
+import reason_lines as R
 import thai_corpus as T
 import thai_num as N
 
@@ -316,6 +317,9 @@ class Composer:
         # Brand follows product rather than being drawn independently: a TrueVisions call
         # labelled `postpaid` would be a row nobody could defend.
         self.brand = T.BRANDS[B.brand_index_for(self.rng, self.product)]
+        # How the customer and agent refer to the service. Makes `product`
+        # a statement in the call rather than an inference from the brand.
+        self.service = self.rng.choice(R.PRODUCT_PHRASE[self.product])
 
         self.direction = "OUT" if scenario in C.OUTBOUND_SCENARIOS else "IN"
 
@@ -354,6 +358,7 @@ class Composer:
             agent_thai=self.agent_thai,
             cust_thai=self.cust_thai,
             brand=self.brand,
+            service=self.service,
             package=self.package,
             package2=self.package2,
             phone=N.read_digits(self.phone),
@@ -547,8 +552,26 @@ class Composer:
 
         self.add("agent", T.GREETING_OUT if self.direction == "OUT" else T.GREETING_IN)
         self.add("customer", T.GREETING_REPLY)
-        self.add("customer", T.PROBLEM[self.scenario])
+        # The customer states the grievance that IS the reason label. Drawn from the pool
+        # for this (scenario, reason) plus a reason-free shared pool, so the label is
+        # readable without being a lookup -- see reason_lines.py.
+        #
+        # Before this, `self.main` was chosen and then never consulted: the reason went into
+        # business.csv and never into the call. A labeller reading the exact reference
+        # transcript recovered it on 1 of 137 calls, which is what an unrecoverable label
+        # looks like when you finally measure it.
+        # Same two-turn shape, for the same reason: a generic opener that carries no reason,
+        # then the grievance that IS the reason. Mixing them in one pool left the reason
+        # stated in 39% of calls, which caps ceiling accuracy at 39% no matter the model.
+        self.add("customer", R.PROBLEM_SHARED)
+        if self.main:
+            self.add("customer", R.PROBLEM_BY_REASON[(self.scenario, self.main)])
+        # An empty reason is a real production value (6% of ground-truth rows). Such a call
+        # states a problem without attributing one, so it gets the shared opener only and
+        # must NOT draw a reason-bearing line -- that would contradict its own label.
         self.add("agent", T.BACKCHANNEL_AGENT)
+        # Name the service, so `product` is stated rather than inferred from the brand.
+        self.add("agent", T.PRODUCT_CONFIRM)
 
         # Identity verification -- always present, because production's QA rubric scores
         # `customer_verification` and `data_privacy` as their own fields.
@@ -620,10 +643,24 @@ class Composer:
                 self.add("agent", T.SMALLTALK)
                 self.add("customer", T.BACKCHANNEL_CUSTOMER)
 
-        # The outcome was decided in __init__, before a word was written. This renders it.
-        # Drawing from the outcome's own pool PLUS the shared pool is what stops the closing
-        # sentence from being a lookup table for the label -- see thai_corpus.CUSTOMER_CLOSE.
-        self.add("customer", T.CUSTOMER_CLOSE[self.call_result] + T.CUSTOMER_CLOSE_SHARED)
+        # The outcome was decided in __init__, before a word was written. These two turns
+        # render it.
+        #
+        # TWO TURNS, NOT ONE POOL. The first version drew from
+        # `CUSTOMER_CLOSE[outcome] + CUSTOMER_CLOSE_SHARED` in a single turn, so the
+        # reason-free shared pool (14 lines) beat the outcome pool (6-12) most draws and the
+        # outcome ended up stated in **38% of calls**. Measured consequence: a labeller
+        # reading the exact reference transcript scored 0.277 on call_result, emitted `save`
+        # 117 times against `churn` 27, and never emitted `unknown` or `undefined` at all --
+        # because 62% of calls gave it nothing to read and it defaulted.
+        #
+        # A label that is not stated is not ground truth. So the outcome line is now
+        # unconditional, and the shared line becomes a separate, preceding acknowledgement
+        # that carries no outcome. Dilution now comes from variety WITHIN the outcome pools,
+        # never from omitting the outcome.
+        self.add("customer", T.CUSTOMER_CLOSE_SHARED)
+        self.add("agent", T.BACKCHANNEL_AGENT)
+        self.add("customer", T.CUSTOMER_CLOSE[self.call_result])
         self.add("agent", T.SLA)
         self.add("agent", T.WRAPUP[self.scenario] + T.WRAPUP_GENERIC)
         self.add("agent", T.ANYTHING_ELSE)
