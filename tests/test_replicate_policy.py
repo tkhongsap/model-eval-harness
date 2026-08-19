@@ -54,14 +54,25 @@ def _run_dir(tmp_path: Path, records: list[dict]) -> Path:
 def _rec(replicate: int, outcome: str, *, arm: str = "arm-a", item: str = "ASR-001") -> dict:
     """One record whose only varying content is the call outcome.
 
-    The shape is the runner's real one, and `retention_outcome` is the real key --
-    `extract_fields` reads exactly that. An invented key would make every assertion below
-    pass or fail for reasons unrelated to the collapse policy.
+    Carries BOTH the runner's raw `response` and the derived `fields`, on purpose.
+
+    `collapse` derives `fields` from `response` only when `fields` is absent, and it does so
+    by exec'ing `experiment21_pipeline_delta` -- which imports `httpx` at module scope
+    because it calls models. `requirements.txt` pins production's scoring dependencies
+    exactly and contains no HTTP client, so on CI that path raises ModuleNotFoundError.
+    Supplying `fields` keeps these tests on the collapse policy, which is what they are
+    about, instead of on the runner's import graph.
+
+    The `response` is still the runner's real shape, with the real `retention_outcome` key,
+    so the two stay honest about what a record looks like. The response -> fields derivation
+    itself is covered by `tests/test_experiment23_score.py`.
     """
     return {
         "arm": arm, "item_id": item, "replicate": replicate, "status": "ok",
         "response": {"product": {"TOL": {"main": {"reason": "network", "keyword": "x"},
                                          "retention_outcome": outcome}}},
+        "fields": {"products": ["TOL"], "TOL.outcome": outcome,
+                   "TOL.reasons": ["network"]},
     }
 
 
