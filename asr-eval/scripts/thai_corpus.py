@@ -569,6 +569,24 @@ COUNTER = [
 # and do not let SHARED shrink -- both raise string-match recovery, which is the number the
 # gate refuses on.
 
+# The agent naming the service under discussion. Added because `product` was chosen by the
+# generator and then never spoken: only the BRAND was constrained by it, which is a hint, not
+# a statement, and a labeller reading a perfect transcript recovered the product on 79 of 137
+# calls -- barely above what guessing the majority class gets.
+#
+# The {service} slot carries the customer-facing name for the drawn product (reason_lines.
+# PRODUCT_PHRASE), so these lines make the label readable without any of them being a
+# reason-style giveaway: naming which service a call is about is what a real agent does
+# first, and it does not reveal the outcome or the reason.
+PRODUCT_CONFIRM = [
+    "ขอเช็กก่อนนะ{p} เรื่อง{service}ที่ใช้กับ{brand} ใช่ไหม{pq}",
+    "รับทราบ{p} เป็นเรื่อง{service}นะ{p} เดี๋ยว{self}ดูให้",
+    "อ๋อ{p} {service}ของ{brand} ใช่ไหม{pq}",
+    "ขออนุญาตยืนยันนะ{p} ที่คุยอยู่คือ{service}",
+    "ได้{p} {self}ขอดูข้อมูล{service}ของคุณลูกค้าก่อน",
+    "เข้าใจแล้ว{p} เป็น{service}ที่สมัครไว้กับ{brand}นะ{p}",
+]
+
 CUSTOMER_CLOSE_SHARED = [
     "รับทราบ{p}",
     "โอเค{p} เข้าใจแล้ว",

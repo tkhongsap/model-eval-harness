@@ -97,14 +97,41 @@ def _ids(first: int, last: int) -> list[str]:
 
 
 def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
-    """Return every preregistration defect without making a network call.
+    """Route a plan to the contract validator that owns it.
 
-    The Retention enterprise experiment contract is intentionally specific.  A generic
-    validator would accept a plan that has the right fields but silently changes the
-    approved sample size, retry policy or load subset.  These checks pin the decisions
-    that determine its meaning while allowing a new, explicitly named repeat of the
-    same contract.  ``retention-e5`` remains the historical legacy-policy run;
-    ``retention-e7`` is the decision-grade repeat.
+    There is no generic plan validator here, and that is the point: a generic one would
+    accept a plan with the right field NAMES while the approved sample size, retry policy
+    or alpha had been quietly changed.  Each contract therefore gets its own checker, and
+    a plan whose ``experiment_id`` no checker claims is a REFUSAL rather than a pass --
+    otherwise dropping a new plan into ``experiments/`` would add a gate that validates
+    nothing and reports success.
+
+    Why this dispatch exists at all: ``verify.py`` globs ``experiments/*.plan.json`` and
+    runs this on every match.  When ``retention-e23`` landed it was graded against the
+    E5/E7 text contract, which expects ``RET-*`` item ids and E7's three OpenRouter arms,
+    and produced 27 defects for an entirely well-formed plan.  E23 is a different
+    experiment -- audio in, two arms, its own thresholds -- not a malformed repeat of an
+    old one.
+    """
+    experiment_id = plan.get("experiment_id")
+    if experiment_id in {"retention-e5", "retention-e7"}:
+        return _validate_retention_text_plan(plan, root=root)
+    if experiment_id == "retention-e23":
+        return _validate_e23_audio_plan(plan, root=root)
+    return [
+        f"experiment_id: no contract validator is registered for {experiment_id!r}. "
+        "Registered: 'retention-e5', 'retention-e7', 'retention-e23'. Add a validator "
+        "for the new contract rather than relaxing an existing one -- an unvalidated "
+        "plan in experiments/ is a gate that reports success without checking anything."
+    ]
+
+
+def _validate_retention_text_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
+    """The Retention TEXT experiment contract: retention-e5 and retention-e7.
+
+    ``retention-e5`` remains the historical legacy-policy run; ``retention-e7`` is the
+    decision-grade repeat.  Both read the same 138-item ``RET-*`` testset through the same
+    prompt registry, so one checker pins both.
     """
     problems: list[str] = []
 
@@ -115,6 +142,8 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
     expect("schema_version", plan.get("schema_version"), 1)
     experiment_id = plan.get("experiment_id")
     if experiment_id not in {"retention-e5", "retention-e7"}:
+        # Unreachable through validate_plan's dispatch, kept because this function is
+        # also called directly by tests and would otherwise grade any plan handed to it.
         problems.append(
             "experiment_id: expected 'retention-e5' or 'retention-e7', "
             f"found {experiment_id!r}"
@@ -489,6 +518,151 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
     return problems
 
 
+def _validate_e23_audio_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
+    """The E23 END-TO-END AUDIO contract.
+
+    E23 asks a different question from the text experiments -- audio in, business label
+    out, two arms rather than three -- so it pins different things.  What it pins are the
+    decisions that would change the VERDICT if edited after a number existed: the primary
+    metric, the primary dimension, the alpha, the replicate the headline is computed on,
+    and the item set.
+
+    Three checks here cross-reference CODE rather than restating a constant, which is the
+    only kind that catches drift:
+
+      * ``alpha_per_side`` must equal ``compare.exact_band``'s default.  A plan claiming
+        1/64 while the scorer had moved to 1/20 would silently widen every band.
+      * ``failure_categories.label_stage`` must equal the ``Outcome`` literal exactly.  A
+        preregistered taxonomy that has fallen behind the runner's is how a failure gets
+        reclassified into a friendlier bucket after the fact.
+      * ``call_budget.total_logical_calls`` must equal its own components summed.  The
+        arithmetic is spelled out in the plan's prose; this checks the prose against the
+        numbers beside it.
+
+    Asset sha256 values are deliberately NOT required to be non-null here.  The plan's
+    ``sha256_stamping_policy`` says each is stamped exactly once at corpus freeze, and a
+    validator demanding them earlier would force someone to invent a hash for bytes that
+    do not exist yet -- the precise failure that policy was written to prevent.
+    """
+    from evalharness.compare import exact_band
+
+    from .outcomes import Outcome
+
+    problems: list[str] = []
+
+    def expect(path: str, actual: Any, expected: Any) -> None:
+        if actual != expected:
+            problems.append(f"{path}: expected {expected!r}, found {actual!r}")
+
+    expect("schema_version", plan.get("schema_version"), 1)
+    expect("experiment_id", plan.get("experiment_id"), "retention-e23")
+    expect("app", plan.get("app"), "retention")
+    if plan.get("status") not in {"draft", "qualified", "locked"}:
+        problems.append("status: expected draft, qualified, or locked")
+
+    metrics = plan.get("metrics") or {}
+    primary = metrics.get("primary") if isinstance(metrics, Mapping) else None
+    primary = primary if isinstance(primary, Mapping) else {}
+    expect("metrics.primary.id", primary.get("id"), "business_f1_call_result")
+    if not primary.get("definition"):
+        problems.append("metrics.primary.definition: required, and must name the scorer")
+
+    gates = plan.get("quality_gates") or {}
+    gates = gates if isinstance(gates, Mapping) else {}
+    expect(
+        "quality_gates.primary_dimension", gates.get("primary_dimension"), "call_result"
+    )
+    expect(
+        "quality_gates.secondary_paired_dimensions",
+        gates.get("secondary_paired_dimensions"),
+        ["reason", "product"],
+    )
+
+    # Cross-check 1: the alpha the plan preregisters against the one the scorer defaults
+    # to. Restating 0.015625 as a literal here would pass even if compare.py had moved.
+    default_alpha = exact_band.__kwdefaults__["alpha_per_side"]
+    expect("quality_gates.alpha_per_side", gates.get("alpha_per_side"), default_alpha)
+
+    workload = plan.get("workload") or {}
+    workload = workload if isinstance(workload, Mapping) else {}
+    expect("workload.replicates", workload.get("replicates"), 3)
+    expect("workload.max_attempts", workload.get("max_attempts"), 1)
+    expect(
+        "workload.point_estimate_replicate", workload.get("point_estimate_replicate"), 1
+    )
+
+    # Cross-check 2: the preregistered failure taxonomy against the runner's own literal.
+    categories = plan.get("failure_categories") or {}
+    categories = categories if isinstance(categories, Mapping) else {}
+    expect(
+        "failure_categories.label_stage",
+        categories.get("label_stage"),
+        list(Outcome.__args__),
+    )
+
+    arms = plan.get("arms")
+    if not isinstance(arms, list) or len(arms) != 2:
+        count = len(arms) if isinstance(arms, list) else None
+        problems.append(f"arms: expected exactly 2, found {count!r}")
+    else:
+        roles = [arm.get("role") for arm in arms if isinstance(arm, Mapping)]
+        if sorted(roles) != ["candidate", "incumbent"]:
+            problems.append(
+                f"arms: expected one 'incumbent' and one 'candidate', found {roles!r}"
+            )
+
+    slices = plan.get("slices") or {}
+    slices = slices if isinstance(slices, Mapping) else {}
+    full = slices.get("full") if isinstance(slices.get("full"), Mapping) else {}
+    item_ids = full.get("item_ids")
+    expected_ids = [f"ASR-{number:03d}" for number in range(1, 139)]
+    if item_ids != expected_ids:
+        found = len(item_ids) if isinstance(item_ids, list) else None
+        problems.append(
+            "slices.full.item_ids: expected the 138 contiguous ids ASR-001..ASR-138, "
+            f"found {found!r} ids"
+        )
+
+    # Cross-check 3: the budget against its own components.
+    budget = plan.get("call_budget") or {}
+    budget = budget if isinstance(budget, Mapping) else {}
+    parts = (
+        "asr_transcription",
+        "asr_stability_probe",
+        "label_calls_incumbent",
+        "label_calls_candidate",
+    )
+    values = [budget.get(name) for name in parts]
+    if all(isinstance(value, int) for value in values):
+        expect(
+            "call_budget.total_logical_calls",
+            budget.get("total_logical_calls"),
+            sum(values),
+        )
+    else:
+        problems.append(f"call_budget: {', '.join(parts)} must all be integers")
+
+    thresholds = plan.get("success_thresholds") or {}
+    thresholds = thresholds if isinstance(thresholds, Mapping) else {}
+    expect("success_thresholds.verbatim", thresholds.get("verbatim"), True)
+    if not thresholds.get("source_path"):
+        problems.append(
+            "success_thresholds.source_path: required. A band with no cited source is a "
+            "band that can be moved to fit a result."
+        )
+
+    decision_block = plan.get("decision") or {}
+    decision_block = decision_block if isinstance(decision_block, Mapping) else {}
+    reconciliation = str(decision_block.get("reconciliation") or "")
+    if "RECONCILED remains NO" not in reconciliation:
+        problems.append(
+            "decision.reconciliation: E23 uses synthetic audio and generator-authored "
+            "labels, so it must state that RECONCILED remains NO."
+        )
+
+    return problems
+
+
 def arm_by_id(plan: Mapping[str, Any], arm_id: str) -> Mapping[str, Any]:
     matches = [
         arm
@@ -501,7 +675,23 @@ def arm_by_id(plan: Mapping[str, Any], arm_id: str) -> Mapping[str, Any]:
 
 
 def logical_call_budget(plan: Mapping[str, Any]) -> dict[str, int]:
-    """Return full/load budget and the maximum over the current provider inventory."""
+    """Return full/load budget and the maximum over the current provider inventory.
+
+    A plan carrying its own ``call_budget`` block is returned verbatim under a
+    ``declared`` key.  The derivation below reconstructs the budget from the E5/E7 plan
+    shape -- ``assets.testset.items`` times replicates times arms, plus a load sweep and a
+    provider qualification pass.  E23 has none of those: its input is a corpus of .wav
+    files rather than a testset row count, it runs no load sweep, and it has one runtime
+    per stage so there is no provider inventory to qualify against.  Deriving a number
+    from fields that do not apply would produce a confident wrong total; reading the one
+    the plan states, and checking its internal arithmetic in the validator, does not.
+    """
+    declared = plan.get("call_budget")
+    if isinstance(declared, Mapping) and "total_logical_calls" in declared:
+        return {
+            "declared": True,
+            "total": int(declared["total_logical_calls"]),
+        }
     items = int(plan["assets"]["testset"]["items"])
     arms = len(plan["arms"])
     full = items * int(plan["workload"]["replicates"]) * arms
@@ -518,6 +708,8 @@ def logical_call_budget(plan: Mapping[str, Any]) -> dict[str, int]:
         * int(qualification_plan["replicates"])
         * sum(len(arm["provider_candidates"]) for arm in plan["arms"])
     )
+    # No "declared" key here on purpose: retention-e5 and retention-e7 embed this exact
+    # dict in their plans and validate by equality, so an extra key fails both.
     return {
         "qualification_max": qualification_calls,
         "full": full,

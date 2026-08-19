@@ -177,3 +177,9 @@ Untitled.*
 # that is meant to be a complete, checkable reference copy.
 # ===================================================================
 !production-reference/**/*.xlsx
+
+# E23 working pack. Storage decision (git-lfs vs out-of-tree) is deliberately
+# deferred, so the render is not blocked on it. MEASURED total is 3.34 GB, not the
+# 819 MB of delivered audio alone: 811 MB PCM + 2,433 MB of 24 kHz masters that
+# render() also writes + 97 MB TTS cache. Size storage for 3.3 GB.
+asr-eval-v2/

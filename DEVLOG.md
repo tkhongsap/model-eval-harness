@@ -2,6 +2,57 @@
 
 ## 🔴 Active Task
 
+**Latest (2026-08-19, E23): the internal pipeline WINS the business decision, by one call.**
+Four arms, 136 scored calls x 3 replicates = 1,632 label calls, run
+`out/runs/20260819-125109Z-e21`. On the primary dimension `call_result`, `qwen-pipeline` is
+**AHEAD** of `gemini-audio`: d=37 discordant, net **+15**, band **±15** at alpha 1/64. That is
+the narrowest possible pass — one call the other way and it does not clear.
+
+| arm | call_result F1 | accuracy | product F1 | parse failures |
+|---|---:|---:|---:|---:|
+| `format-control` (ASR-shaped text, zero mishearing) | 0.663 | 85/136 | 0.804 | 0 |
+| `ceiling` (perfect transcript) | 0.638 | 83/136 | 0.808 | 0 |
+| **`qwen-pipeline`** (Qwen3-ASR -> Qwen3.8-27B) | **0.582** | 74/136 | **0.759** | 0 |
+| `gemini-audio` (production today) | 0.490 | 59/136 | 0.721 | **20/408** |
+
+**The result answers the question that was actually asked.** Qwen3-ASR transcribes worse —
+2.6x the CER, ~1 call in 8 lost to a runaway — and the pipeline built on it still makes better
+business decisions. The stronger reasoner absorbs the transcription damage. CER was
+deliberately not re-tested; it cannot carry this decision.
+
+**Why it is believable rather than merely reported.** `format-control` scored *above*
+`ceiling`, so formatting costs nothing here and Qwen's shortfall against ceiling is genuine
+mishearing — the control that caught two false headlines before. Gemini's 20 parse failures
+did NOT decide it: no item lost all three replicates, so every call stayed scoreable. Its
+deficit is labelling. Concretely it books **19 of 52 churning customers as saved** (63% churn
+recall) against Qwen's 78% — for a Retention pipeline, the expensive direction.
+
+**What is NOT claimed.** `reason` (net -3) and `product` (+5) are both INDISTINGUISHABLE, not
+wins. Every score is an **upper bound**: this corpus states its labels in ~100% of calls, and
+`leak_probe.py` reports lift 1.00 on the outcome channel rather than hiding it. No arm exceeds
+~0.66 because neither labeller ever emits `unknown` or `undefined`, leaving 21 of 136 calls
+unwinnable for everyone. Synthetic TTS audio, two voices, generator-authored labels.
+**`RECONCILED: NO` stands** — `docs/ask1-email-draft.md` is still the only thing that retires it.
+
+**This reverses the earlier split recommendation.** "Keep ASR external, move labelling
+internal" came from stage-by-stage measurement. End-to-end it does not hold.
+
+**NEXT ACTION — two open threads, in order:**
+
+1. **Tar's sentiment_qa token cost** (30–40k output tokens per call). Cause identified, not yet
+   fixed: `thinkingBudget: -1` (unlimited) and `temperature: 1`, where retention uses `0` and
+   `0.0`; the prompt also instructs "When evaluating, think: 1…5". 118 output keys is ~4–7k
+   tokens, so ~80% is thinking, not fields. Three config changes proposed, none tested.
+2. **`typhoon-whisper-large-v3`** appeared on the gateway on 2026-08-19 — Thai-specialised ASR,
+   directly aimed at the one stage E23 shows to be weakest. Untested.
+
+Deferred with the user's agreement: the **ASR-repair arm** (approved, no repair prompt exists
+in `prompts.py` yet) and the **git-lfs decision** for the 3.34 GB pack under `asr-eval-v2/`,
+which stays gitignored meanwhile.
+
+---
+
+
 **Latest (2026-08-16, tooling): Harbor was evaluated and DECLINED for now, with the trigger
 list written down so it is a decision and not a recurring debate.**
 [`harbor-framework/harbor`](https://github.com/harbor-framework/harbor) — Apache 2.0, Python,

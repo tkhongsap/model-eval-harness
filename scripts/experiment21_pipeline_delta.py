@@ -72,7 +72,11 @@ import httpx  # noqa: E402  (a dependency of the pinned openai client in .venv)
 from evalgen.decoding import decoding_schema  # noqa: E402
 from evalgen import prompts as P  # noqa: E402
 
-ASR = REPO / "asr-eval"
+# The pack root, overridable with ASR_EVAL_ROOT so a second corpus can be run without
+# disturbing the frozen twenty-call set. Mirrors asr_common.ROOT, which does the same for
+# the generator and scorer -- a runner that ignored the override would silently score a new
+# corpus against the old corpus's ground truth, which is the worst kind of wrong.
+ASR = Path(os.environ.get("ASR_EVAL_ROOT") or (REPO / "asr-eval"))
 GT = ASR / "ground-truth"
 DIALOGUES = ASR / "dialogues"
 AUDIO = ASR / "audio"
@@ -160,9 +164,33 @@ def response_format() -> dict:
 
 
 def items() -> list[str]:
+    """Every reference transcript in the pack, cross-checked against its own manifest.
+
+    This used to assert `len(ids) == 20`, which was right when one pack existed and became
+    a false alarm the moment a second one did -- it refused a complete 138-call corpus for
+    the crime of not being the old corpus.
+
+    The check it is replaced by is the one that was actually wanted: the transcripts must
+    match the pack's OWN manifest. That still catches a half-generated pack, a pack whose
+    audio and ground truth have drifted apart, and the wrong ASR_EVAL_ROOT -- while letting
+    a legitimately larger corpus through. A hardcoded count cannot tell those apart.
+    """
     ids = sorted(p.stem for p in GT.glob("ASR-*.txt"))
-    if len(ids) != 20:
-        raise Refused(f"expected 20 reference transcripts, found {len(ids)}")
+    if not ids:
+        raise Refused(f"no reference transcripts under {GT}")
+    manifest = ASR / "manifest.json"
+    if manifest.is_file():
+        declared = sorted(r["item_id"] for r in json.loads(
+            manifest.read_text(encoding="utf-8")))
+        if declared != ids:
+            missing = sorted(set(declared) - set(ids))
+            extra = sorted(set(ids) - set(declared))
+            raise Refused(
+                f"{ASR.name}: manifest declares {len(declared)} items, ground truth has "
+                f"{len(ids)}. missing={missing[:5]} extra={extra[:5]}. The pack is "
+                "half-built or its audio and transcripts have drifted apart; scoring it "
+                "would compare arms over different item sets."
+            )
     return ids
 
 
@@ -190,31 +218,47 @@ def build_format_control(item: str) -> str:
     return re.sub(r"\s+", " ", " ".join(texts)).strip()
 
 
-def build_inputs() -> dict[str, dict[str, str]]:
-    """arm -> item -> input text. The audio arm maps item -> wav path (string)."""
+def build_inputs(wanted: tuple[str, ...] = ARMS,
+                 only: tuple[str, ...] | None = None) -> dict[str, dict[str, str]]:
+    """arm -> item -> input text. The audio arm maps item -> wav path (string).
+
+    `wanted` restricts construction to the arms actually being run. Building every arm
+    unconditionally made `--arms` a lie: a run of four arms still refused if the inputs for
+    a fifth were absent, which is what happens on any pack that does not carry a Gemini
+    transcript set. The refusals below are kept -- they just now fire for arms you asked for
+    rather than for ones you did not.
+    """
     wavs = {p.stem.split("_")[1]: p for p in AUDIO.glob("*.wav")}
     by_phone = {}
     for d in sorted(DIALOGUES.glob("ASR-*.json")):
         o = json.loads(d.read_text(encoding="utf-8"))
         by_phone[o["item_id"]] = o["meta"]["phone_number"]
 
-    inputs: dict[str, dict[str, str]] = {a: {} for a in ARMS}
-    for it in items():
+    inputs: dict[str, dict[str, str]] = {a: {} for a in wanted}
+    # `only` restricts to an explicit item list. Without it build_inputs re-derived the
+    # full set from ground truth and --items had no effect here, so a run deliberately
+    # scoped around a known-bad item still refused on that item.
+    for it in (list(only) if only else items()):
         ref = (GT / f"{it}.txt").read_text(encoding="utf-8").strip()
         for arm in ("ceiling", "ceiling-gemini"):
-            inputs[arm][it] = ref
-        inputs["format-control"][it] = build_format_control(it)
+            if arm in inputs:
+                inputs[arm][it] = ref
+        if "format-control" in inputs:
+            inputs["format-control"][it] = build_format_control(it)
         for arm, hyp_dir in (("qwen-pipeline", "qwen3-asr-1.7b"),
                              ("gemini-asr-text", "gemini-2.5-flash-audio")):
+            if arm not in inputs:
+                continue
             f = HYPS / hyp_dir / f"{it}.txt"
             if not f.is_file():
-                raise Refused(f"{arm}: missing hypothesis {f}. The 2026-08-17 transcripts "
-                              f"are the frozen inputs; re-create them before running.")
+                raise Refused(f"{arm}: missing hypothesis {f}. Transcripts are frozen "
+                              f"inputs; re-create them before running.")
             inputs[arm][it] = f.read_text(encoding="utf-8").strip()
-        wav = wavs.get(by_phone[it])
-        if wav is None:
-            raise Refused(f"gemini-audio: no wav for {it}")
-        inputs["gemini-audio"][it] = str(wav)
+        if "gemini-audio" in inputs:
+            wav = wavs.get(by_phone[it])
+            if wav is None:
+                raise Refused(f"gemini-audio: no wav for {it}")
+            inputs["gemini-audio"][it] = str(wav)
     return inputs
 
 
@@ -438,6 +482,12 @@ def main() -> int:
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--items", nargs="*", default=[])
     ap.add_argument("--replicates", type=int, default=3)
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="concurrent in-flight calls. Default 1: the serial path that "
+                         "produced every published E21 figure. Raise it for a new "
+                         "experiment, where three hours of serial audio calls is the "
+                         "difference between an eval you can iterate on and one you can "
+                         "afford to run once.")
     ap.add_argument("--arms", nargs="*", default=list(ARMS))
     ap.add_argument("--score", type=Path, default=None)
     ap.add_argument("--resume", type=Path, default=None,
@@ -458,15 +508,18 @@ def main() -> int:
         return 0
 
     env = load_env()
-    inputs = build_inputs()
+    run_arms = [a for a in ARMS if a in args.arms]
+    run_items = args.items or (
+        ["ASR-001", "ASR-011"] if args.smoke else items())
+    inputs = build_inputs(tuple(run_arms), tuple(run_items))
     sys_text = text_prompt()
     audio_sys = audio_prompt_text()
 
     # ---- dry-run output: shas + the format-parity table, before any model call --------
-    input_sha = {arm: {} for arm in ARMS}
-    input_paths = {arm: {} for arm in ARMS}
+    input_sha = {arm: {} for arm in run_arms}
+    input_paths = {arm: {} for arm in run_arms}
     print(f"{'arm':16} {'digits':>7} {'newlines':>9} {'spaces/100':>11}   (medians over 20)")
-    for arm in ARMS:
+    for arm in run_arms:
         stats = []
         for it, val in inputs[arm].items():
             if arm == "gemini-audio":
@@ -481,19 +534,20 @@ def main() -> int:
             med = lambda k: sorted(s[k] for s in stats)[len(stats) // 2]  # noqa: E731
             print(f"{arm:16} {med('digits'):>7} {med('newlines'):>9} "
                   f"{med('spaces_per_100'):>11}")
-    input_paths["qwen-pipeline"] = {it: str(HYPS / 'qwen3-asr-1.7b' / f'{it}.txt')
-                                    for it in inputs["qwen-pipeline"]}
-    input_paths["gemini-asr-text"] = {it: str(HYPS / 'gemini-2.5-flash-audio' / f'{it}.txt')
-                                      for it in inputs["gemini-asr-text"]}
+    # Only for arms actually being run: these dicts are keyed on `inputs`, which no longer
+    # carries every arm unconditionally.
+    for arm, hyp_dir in (("qwen-pipeline", "qwen3-asr-1.7b"),
+                         ("gemini-asr-text", "gemini-2.5-flash-audio")):
+        if arm in inputs:
+            input_paths[arm] = {it: str(HYPS / hyp_dir / f"{it}.txt")
+                                for it in inputs[arm]}
     print(f"\nprompt v9_16_base sha {sys_text.sha[:16]}...  "
           f"audio-reversed sha {sha(audio_sys)[:16]}...")
     if args.dry_run:
         print("dry run: no model calls made.")
         return 0
 
-    run_items = args.items or (["ASR-001", "ASR-011"] if args.smoke else items())
     reps = 1 if args.smoke else args.replicates
-    run_arms = [a for a in ARMS if a in args.arms]
 
     if args.resume:
         run_dir = args.resume
@@ -525,24 +579,64 @@ def main() -> int:
                 if (a, i, r) not in done)
     n = 0
     t_start = time.time()
-    for arm in run_arms:
-        system = audio_sys if arm == "gemini-audio" else sys_text.system_text
-        for it in run_items:
-            for rep in range(reps):
-                if (arm, it, rep) in done:
-                    continue
-                n += 1
-                val = inputs[arm][it]
-                rec = call_labeller(
-                    tf if arm not in ("gemini-audio", "ceiling-gemini") else None,
-                    env, arm, system,
-                    None if arm == "gemini-audio" else val,
-                    val if arm == "gemini-audio" else None, rep)
-                rec["item_id"] = it
-                results.write(json.dumps(rec, ensure_ascii=False) + "\n")
-                results.flush()
-                print(f"[{n}/{total}] {arm:16} {it} r{rep} {rec['status']:16} "
-                      f"{rec.get('latency_s', '-')}s", flush=True)
+    # The work list is materialised before anything runs, so --jobs can change how many
+    # calls are in flight but never WHICH calls are made. Resume is applied here, once.
+    work = [
+        (arm, it, rep,
+         audio_sys if arm == "gemini-audio" else sys_text.system_text,
+         inputs[arm][it])
+        for arm in run_arms
+        for it in run_items
+        for rep in range(reps)
+        if (arm, it, rep) not in done
+    ]
+
+    def run_one(job):
+        arm, it, rep, system, val = job
+        rec = call_labeller(
+            tf if arm not in ("gemini-audio", "ceiling-gemini") else None,
+            env, arm, system,
+            None if arm == "gemini-audio" else val,
+            val if arm == "gemini-audio" else None, rep)
+        rec["item_id"] = it
+        return rec
+
+    if args.jobs <= 1:
+        # The serial path is kept, and kept as the DEFAULT, because every published E21
+        # figure came from it. Concurrency is opt-in so re-running that experiment
+        # reproduces byte for byte rather than merely closely.
+        for job in work:
+            n += 1
+            rec = run_one(job)
+            results.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            results.flush()
+            print(f"[{n}/{total}] {job[0]:16} {job[1]} r{job[2]} {rec['status']:16} "
+                  f"{rec.get('latency_s', '-')}s", flush=True)
+    else:
+        # Concurrency is a WALL-CLOCK change only. Every record carries its own arm, item
+        # and replicate, and `score()` reads results.jsonl by those keys rather than by
+        # position, so completion order cannot affect any number. What it does affect is
+        # affordability: at one call in flight, 414 audio calls is three hours, which makes
+        # a re-run a day's decision instead of a coffee break.
+        #
+        # One append-mode handle is shared by every worker, so writes go under a lock.
+        # Without it two records interleave mid-line and the file stops being valid JSONL --
+        # a corruption that would look like a model failure when scoring later refused it.
+        import threading
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        write_lock = threading.Lock()
+        with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            futures = {pool.submit(run_one, job): job for job in work}
+            for fut in as_completed(futures):
+                job = futures[fut]
+                rec = fut.result()
+                with write_lock:
+                    n += 1
+                    results.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    results.flush()
+                    print(f"[{n}/{total}] {job[0]:16} {job[1]} r{job[2]} "
+                          f"{rec['status']:16} {rec.get('latency_s', '-')}s", flush=True)
     results.close()
     print(f"\n{run_dir}  ({time.time() - t_start:.0f}s)")
     print(f"score with: python scripts/experiment21_pipeline_delta.py --score {run_dir}")

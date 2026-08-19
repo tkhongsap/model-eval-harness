@@ -2538,11 +2538,15 @@ def cmd_experiment_check(args: argparse.Namespace) -> int:
     except (KeyError, TypeError, ValueError) as exc:
         problems.append(f"cannot compute call budget: {exc}")
     else:
-        print(
-            f"call budget  qualification<={budget['qualification_max']} "
-            f"full={budget['full']} load={budget['load']} total<="
-            f"{budget['grand_total_max']} for current inventory"
-        )
+        if budget.get("declared"):
+            # Labelled "declared" so nobody reads a stated total as a derived one.
+            print(f"call budget  declared total={budget['total']} logical calls")
+        else:
+            print(
+                f"call budget  qualification<={budget['qualification_max']} "
+                f"full={budget['full']} load={budget['load']} total<="
+                f"{budget['grand_total_max']} for current inventory"
+            )
     if problems:
         print(f"\n{len(problems)} PROBLEM(S):")
         for problem in problems:
