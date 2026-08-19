@@ -184,16 +184,23 @@ def test_experiment_7_can_repeat_the_pinned_retention_contract():
 
 
 def test_enterprise_plan_refuses_an_unregistered_experiment_id():
+    """An id no contract validator claims is a refusal, and the ONLY problem reported.
+
+    `validate_plan` dispatches on `experiment_id`, so an unregistered one cannot be
+    graded against some other contract's expectations -- it stops there. That matters
+    because the alternative is what happened to `retention-e23`: it was graded against
+    the E5/E7 text contract and reported 27 defects for a perfectly well-formed plan,
+    which trains the reader to ignore this gate's output.
+    """
     plan = json.loads(json.dumps(load_plan(PLAN)))
     plan["experiment_id"] = "retention-e8"
     plan["status"] = "draft"
 
     problems = validate_plan(plan, root=ROOT)
 
-    assert problems == [
-        "experiment_id: expected 'retention-e5' or 'retention-e7', "
-        "found 'retention-e8'"
-    ]
+    assert len(problems) == 1
+    assert "no contract validator is registered for 'retention-e8'" in problems[0]
+    assert "retention-e23" in problems[0]      # the registry lists what IS known
 
 
 def test_committed_gate2_execution_and_reports_are_complete_and_untampered():
