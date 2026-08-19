@@ -1,0 +1,67 @@
+
+                                         END-TO-END PIPELINE SCORECARD                                          
+                        138 synthetic Thai retention calls  |  replicate policy 'first'                         
+
+                                            Gemini 2.5 Flash         Typhoon + Qwen3.8        Qwen ASR + Qwen3.8
+================================================================================================================
+PIPELINE SHAPE                                                                                                  
+  transcriber                            none - direct audio  Typhoon Whisper large-v3            Qwen3-ASR 1.7B
+  labeller                                      (same model)           Qwen3.8-27B-fp8           Qwen3.8-27B-fp8
+  model calls per item                                     1                         2                         2
+  runtime                                         OpenRouter             Token Factory             Token Factory
+----------------------------------------------------------------------------------------------------------------
+BUSINESS OUTCOME  (primary)                                                                                     
+  weighted f1 - call_result                            0.495                     0.597                     0.588
+  weighted f1 - reason                                 0.267                     0.230                     0.207
+  weighted f1 - product                                0.727                     0.791                     0.762
+  weighted precision - call_result                     0.620                     0.670                     0.684
+  weighted precision - reason                          0.227                     0.182                     0.157
+  weighted precision - product                         0.732                     0.777                     0.744
+  weighted recall - call_result                        0.463                     0.580                     0.559
+  weighted recall - reason                             0.450                     0.479                     0.443
+  weighted recall - product                            0.765                     0.826                     0.794
+  call accuracy - call_result                60/136  (44.1%)           76/138  (55.1%)           74/136  (54.4%)
+  call accuracy - reason                     56/136  (41.2%)           61/138  (44.2%)           55/136  (40.4%)
+  call accuracy - product                    99/136  (72.8%)          106/138  (76.8%)          103/136  (75.7%)
+----------------------------------------------------------------------------------------------------------------
+TRANSCRIPTION STAGE                                                                                             
+  CER (normalised)                              no ASR stage                    0.0438                    0.1120
+  WER (normalised)                              no ASR stage                    0.0774                    0.1691
+  entity accuracy                               no ASR stage                     95.3%                     96.0%
+  calls transcribed                             no ASR stage                   138/138                   136/138
+  runaway failures                              no ASR stage                 0  (0.0%)               16  (11.8%)
+  scoreable after exclusion                     no ASR stage                       138                       120
+----------------------------------------------------------------------------------------------------------------
+LATENCY  (seconds)                                                                                              
+  ASR stage, median                             no ASR stage                      45.5              not recorded
+  label call, median                                    23.8                      18.5                      18.4
+  label call, p95                                       41.3                      30.0                      26.4
+  label call, max                                       89.0                     141.4                      44.1
+  END TO END, median                                    23.8                      64.0       >18.4 (ASR untimed)
+  ASR real-time factor                          no ASR stage                     0.121              not recorded
+----------------------------------------------------------------------------------------------------------------
+TOKENS  (label call)                                                                                            
+  input, median                                       11,466                     3,664                     3,708
+  output, median                                         235                       244                       243
+  input, total                                     4,501,696                 1,510,911                 1,850,037
+  output, total                                       92,596                   104,200                   102,722
+----------------------------------------------------------------------------------------------------------------
+RELIABILITY                                                                                                     
+  label calls made                                       408                       414                       408
+  parse failures                                      20/408                     0/414                     0/408
+  unstable items (of 3 reps)                           6/136                    30/138                    37/136
+----------------------------------------------------------------------------------------------------------------
+COST                                                                                                            
+  metered cost, all calls                            $3.3655              internal GPU              internal GPU
+  metered cost, per call                            $0.00867               not metered               not metered
+================================================================================================================
+
+READING THIS TABLE
+  Gemini has no transcription stage -- audio goes in and JSON comes out of
+  ONE call -- so every ASR row is blank for it rather than zero.
+  Typhoon and Qwen share the same labeller and differ only in the
+  transcriber, so the gap between those two columns IS the ASR stage.
+  Cost is metered only on OpenRouter; the internal arms run on company GPU
+  with no per-call price, which is not the same as being free.
+  Business figures follow the preregistered replicate-1 rule; latency and
+  tokens pool every call actually made.
