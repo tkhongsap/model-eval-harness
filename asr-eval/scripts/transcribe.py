@@ -350,6 +350,23 @@ def main() -> int:
     out_dir = C.ROOT / "hypotheses" / args.arm
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # One wav per call, enforced. See the note in experiment21_pipeline_delta.py: a
+    # regenerated pack can leave a stale render beside a fresh one, because the measured
+    # duration is part of the filename. The phone->item map below would then transcribe
+    # whichever the filesystem returned last, and a faithful transcription of the wrong
+    # audio is indistinguishable downstream from a correct one.
+    _dupe: dict[str, list[str]] = {}
+    for _w in C.AUDIO_DIR.glob(f"*{C.AUDIO_EXT}"):
+        _dupe.setdefault(_w.stem.split("_")[1], []).append(_w.name)
+    _multi = {k: v for k, v in _dupe.items() if len(v) > 1}
+    if _multi:
+        example = sorted(_multi.items())[0]
+        print(f"REFUSING: {len(_multi)} call(s) have more than one audio file in "
+              f"{C.AUDIO_DIR}. A stale render is sitting beside a fresh one and this run "
+              f"would transcribe whichever the filesystem returned last. Example: phone "
+              f"{example[0]} has {example[1]}.")
+        return 2
+
     wavs = sorted(C.AUDIO_DIR.glob(f"*{C.AUDIO_EXT}"))
     if not wavs:
         print("no audio; run synthesize.py first")
