@@ -47,6 +47,42 @@ in full on every call, with `prompt_tokens_details.cached_tokens: 0` -- nothing 
 **So please confirm which counter the 30-40k came from.** The `usageMetadata` block above
 answers it directly, because it carries all three.
 
+## Where every token actually goes, measured
+
+The structured output is real and it IS a long extended JSON -- but it is not where the
+tokens are. Read against the production code
+(`prep_payload_task._get_analysis_schema`, 89 leaf fields / 30 objects / 1 array), and
+against a real filled response:
+
+| component | measured size | approx tokens |
+|---|---:|---:|
+| `user_config.xlsx` field definitions | 94,174 chars | **~31,400** |
+| `response_schema` sent in `generationConfig` | 13,457 chars | ~4,500 |
+| `system_prompt.txt` | 7,012 chars | ~2,300 |
+| the call transcript itself | ~3,100 chars | ~1,000 |
+| **INPUT subtotal** | | **~35,000-38,000** |
+| | | |
+| **the filled 118-key JSON answer** | **8,353 chars** | **~2,800** |
+| thinking, when `thinkingBudget: -1` | -- | ~9,800 |
+| **OUTPUT subtotal** | | **~12,600** |
+
+**The structured answer is about 2,800 tokens.** Even with unlimited thinking on top, the
+whole output lands near 12,600 -- an order of magnitude short of 30-40k. The input is the
+side that sits in that range, and `user_config.xlsx` alone is most of it.
+
+Within the answer, `service_quality` is 4,258 of the 8,353 characters -- **51% of the output
+is 24 blocks of `{evaluation, reason}` with a mandatory Thai free-text reason each**
+(`system_prompt.txt:26`). That is the one part of the output worth questioning on size, and
+no thinking budget touches it.
+
+Two further measurements, both from enforcing the real schema rather than plain JSON mode:
+
+  * Enforcing `response_schema` **reduced** output rather than growing it -- 2,862 tokens
+    against 3,440 for `{"type": "json_object"}` -- and still returned all 118 keys.
+  * `response_schema` **plus** unlimited thinking failed outright (`finish_reason: error`,
+    no content). Thinking-off with the same schema succeeded. That matches the reliability
+    pattern in the table below.
+
 ## What we measured about thinking, which is true either way
 
 | arm | median completion tokens | of which thinking | keys returned | valid JSON |
