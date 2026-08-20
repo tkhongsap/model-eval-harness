@@ -324,6 +324,9 @@ def main() -> int:
     ap.add_argument("--incumbent", default="gemini-audio")
     ap.add_argument("--candidate", default="qwen-pipeline")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--allow-thin-coverage", action="store_true",
+                    help="score arms that answered under 90%% of their items. Off by "
+                         "default: a partial arm's F1 reads exactly like a model result.")
     ap.add_argument("--replicate-policy", choices=("first", "modal"), default="first",
                     help="first = replicate 1 alone, as preregistered (default); "
                          "modal = majority vote over all three replicates")
@@ -346,6 +349,47 @@ def main() -> int:
             "`ceiling` arm that reads the exact reference transcript. That is a broken "
             "join, not four models failing identically. Check that the runner's record "
             "shape still matches what collapse() reads."
+        )
+
+    # A TOTAL shutout is not the only shutout. An arm that answered a fraction of its calls
+    # is scored on that fraction, and the F1 comes out looking like a model result.
+    #
+    # Measured 2026-08-20 on run 20260820-055342Z: a VPN drop mid-run produced 297
+    # "unreachable host" errors, and `format-control` completed 130 of 414 calls. It scored
+    # 0.358 against the 0.663 it had scored a day earlier -- a 0.3 collapse that reads
+    # exactly like a broken arm and was in fact a broken network. `ceiling` and
+    # `qwen-pipeline` lost 14.5% each; `gemini-audio`, which goes out through OpenRouter
+    # rather than the VPN, lost 1.2% and looked fine beside them.
+    #
+    # Section 3 printed the failure counts, and that was not enough: the F1 table above it
+    # still showed tidy numbers, and a reader comparing arms would have believed them. So
+    # this refuses instead. The floor is deliberately low -- it is not a quality bar, it is
+    # a "did the run actually happen" bar.
+    MIN_COVERAGE = 0.90
+    # Denominator is the TRUTH set, not what happens to be in the run file.
+    #
+    # Counting against the run's own rows makes the gate blind in exactly the case it is
+    # for: an item whose every replicate failed leaves no row at all, so it vanishes from
+    #  and the surviving items look like 100% coverage. Worse, the standard
+    # recovery -- strip the failed rows and --resume -- deletes the evidence on purpose.
+    expected = len(truth)
+    thin = {}
+    for arm, items in collapsed.items():
+        answered = sum(1 for fields in items.values() if not fields.get("__failed__"))
+        share = answered / expected if expected else 1.0
+        if share < MIN_COVERAGE:
+            thin[arm] = (answered, expected, share)
+    if thin and not args.allow_thin_coverage:
+        lines = "\n".join(
+            f"    {arm}: {a} of {n} items answered ({s:.1%})"
+            for arm, (a, n, s) in sorted(thin.items(), key=lambda kv: kv[1][2]))
+        raise Refused(
+            f"{len(thin)} arm(s) answered less than {MIN_COVERAGE:.0%} of their items:\n"
+            f"{lines}\n"
+            "  Scoring an arm on the calls that happened to succeed reports a transport "
+            "failure as a model result, and the F1 looks entirely plausible while it does "
+            "so. Re-run the missing calls (--resume drops straight back in) or pass "
+            "--allow-thin-coverage if a partial arm is genuinely what you want to read."
         )
 
     print("=" * 78)

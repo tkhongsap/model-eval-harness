@@ -107,12 +107,12 @@ footer{margin-top:3.5rem;padding-top:1.3rem;border-top:1px solid var(--rule);
 <div class="wrap">
 
 <p class="eyebrow">True Corp · Retention · overnight run</p>
-<h1>Typhoon fixes the transcription. It does not change the decision.</h1>
-<p class="standfirst">Thai ASR just got 2.6&times; better and its worst failure mode
-disappeared — and the business outcome moved by one call in 138. Here is why, and what
-actually needs fixing next.</p>
+<h1>The corpus was wrong. Fixing it changed everything except the ASR verdict.</h1>
+<p class="standfirst">A labelling defect was costing every pipeline ~0.13 F1. Corrected, the
+internal pipeline&rsquo;s win over production goes from a coin flip to decisive — while the
+Typhoon-vs-Qwen result survives untouched.</p>
 <p class="meta"><b>20 August 2026</b> &nbsp;·&nbsp; 138 synthetic Thai calls &nbsp;·&nbsp;
-5 arms &nbsp;·&nbsp; 2,046 label calls &nbsp;·&nbsp; &alpha; = 1/64 &nbsp;·&nbsp;
+5 arms &nbsp;·&nbsp; 2,070 label calls, zero failures &nbsp;·&nbsp; &alpha; = 1/64 &nbsp;·&nbsp;
 $3.74 spent &nbsp;·&nbsp; <b>RECONCILED: NO</b></p>
 
 <h2>1 &middot; The whole comparison, in one table</h2>
@@ -139,82 +139,80 @@ ASR stage alone.</p>
 <tr><td>Model calls per item</td><td class="n">1</td><td class="n">2</td><td class="n">2</td></tr>
 <tr><td>Runtime</td><td class="n">OpenRouter</td><td class="n">Token Factory</td>
   <td class="n">Token Factory</td></tr>
-<tr><td>Calls scored <span class="note">— common set</span></td><td class="n">136</td>
-  <td class="n">136</td><td class="n">136</td></tr>
-<tr><td>Items this arm ran</td><td class="n">136</td><td class="n">138</td>
-  <td class="n">136</td></tr>
+<tr><td>Calls scored <span class="note">— common set</span></td><td class="n">138</td>
+  <td class="n">138</td><td class="n">138</td></tr>
 
 <tr class="sec"><td colspan="4">Business outcome &nbsp;<span class="note">— primary</span></td></tr>
-<tr class="hero"><td>Weighted F1 — call_result</td><td class="n">0.495</td>
-  <td class="n"><strong>0.600</strong></td><td class="n">0.588</td></tr>
-<tr><td>Weighted F1 — reason</td><td class="n"><strong>0.267</strong></td>
-  <td class="n">0.230</td><td class="n">0.207</td></tr>
-<tr><td>Weighted F1 — product</td><td class="n">0.727</td>
-  <td class="n"><strong>0.788</strong></td><td class="n">0.762</td></tr>
-<tr><td>Precision — call_result</td><td class="n">0.620</td><td class="n">0.675</td>
-  <td class="n"><strong>0.684</strong></td></tr>
-<tr><td>Recall — call_result</td><td class="n">0.463</td>
-  <td class="n"><strong>0.581</strong></td><td class="n">0.559</td></tr>
-<tr class="hero"><td>Call accuracy — call_result</td><td class="n">60/136 &nbsp;44.1%</td>
-  <td class="n"><strong>75/136 &nbsp;55.1%</strong></td><td class="n">74/136 &nbsp;54.4%</td></tr>
-<tr><td>Call accuracy — reason</td><td class="n">56/136 &nbsp;41.2%</td>
-  <td class="n"><strong>60/136 &nbsp;44.1%</strong></td><td class="n">55/136 &nbsp;40.4%</td></tr>
-<tr><td>Call accuracy — product</td><td class="n">99/136 &nbsp;72.8%</td>
-  <td class="n"><strong>104/136 &nbsp;76.5%</strong></td><td class="n">103/136 &nbsp;75.7%</td></tr>
+<tr class="hero"><td>Weighted F1 — call_result</td><td class="n">0.524</td>
+  <td class="n"><strong>0.711</strong></td><td class="n">0.682</td></tr>
+<tr><td>Weighted F1 — reason</td><td class="n">0.222</td>
+  <td class="n"><strong>0.229</strong></td><td class="n">0.223</td></tr>
+<tr><td>Weighted F1 — product</td><td class="n">0.692</td>
+  <td class="n"><strong>0.807</strong></td><td class="n">0.761</td></tr>
+<tr><td>Precision — call_result</td><td class="n">0.732</td>
+  <td class="n"><strong>0.810</strong></td><td class="n">0.802</td></tr>
+<tr><td>Recall — call_result</td><td class="n">0.478</td>
+  <td class="n"><strong>0.667</strong></td><td class="n">0.623</td></tr>
+<tr class="hero"><td>Call accuracy — call_result</td><td class="n">62/138 &nbsp;44.9%</td>
+  <td class="n"><strong>87/138 &nbsp;63.0%</strong></td><td class="n">84/138 &nbsp;60.9%</td></tr>
+<tr><td>Call accuracy — reason</td><td class="n">50/138 &nbsp;36.2%</td>
+  <td class="n"><strong>57/138 &nbsp;41.3%</strong></td><td class="n">56/138 &nbsp;40.6%</td></tr>
+<tr><td>Call accuracy — product</td><td class="n">96/138 &nbsp;69.6%</td>
+  <td class="n"><strong>110/138 &nbsp;79.7%</strong></td><td class="n">105/138 &nbsp;76.1%</td></tr>
 
 <tr class="sec"><td colspan="4">Transcription stage</td></tr>
 <tr><td>CER (normalised)</td><td class="n na">no ASR stage</td>
-  <td class="n"><strong>0.0438</strong></td><td class="n">0.1120</td></tr>
+  <td class="n"><strong>0.0452</strong></td><td class="n">0.1127</td></tr>
 <tr><td>WER (normalised)</td><td class="n na">no ASR stage</td>
-  <td class="n"><strong>0.0774</strong></td><td class="n">0.1691</td></tr>
-<tr><td>Entity accuracy</td><td class="n na">no ASR stage</td><td class="n">95.3%</td>
+  <td class="n"><strong>0.0784</strong></td><td class="n">0.1699</td></tr>
+<tr><td>Entity accuracy</td><td class="n na">no ASR stage</td><td class="n">94.6%</td>
   <td class="n"><strong>96.0%</strong></td></tr>
 <tr><td>Calls transcribed</td><td class="n na">no ASR stage</td>
-  <td class="n"><strong>138/138</strong></td><td class="n">136/138</td></tr>
+  <td class="n"><strong>138/138</strong></td><td class="n"><strong>138/138</strong></td></tr>
 <tr class="hero"><td>Catastrophic runaways</td><td class="n na">no ASR stage</td>
   <td class="n"><span class="tag ahead">0 &nbsp;0.0%</span></td>
-  <td class="n"><span class="tag bad">16 &nbsp;11.8%</span></td></tr>
+  <td class="n"><span class="tag bad">16 &nbsp;11.6%</span></td></tr>
 <tr><td>Scoreable after exclusions</td><td class="n na">no ASR stage</td>
-  <td class="n"><strong>138</strong></td><td class="n">120</td></tr>
+  <td class="n"><strong>138</strong></td><td class="n">122</td></tr>
 
 <tr class="sec"><td colspan="4">Latency &nbsp;<span class="note">— seconds</span></td></tr>
-<tr><td>ASR stage, median</td><td class="n na">no ASR stage</td><td class="n">45.5</td>
-  <td class="n na">not recorded</td></tr>
-<tr><td>Label call, median</td><td class="n">23.8</td><td class="n">18.5</td>
-  <td class="n"><strong>18.4</strong></td></tr>
-<tr><td>Label call, p95</td><td class="n">41.3</td><td class="n">30.0</td>
-  <td class="n"><strong>26.4</strong></td></tr>
-<tr><td>Label call, max</td><td class="n">89.0</td><td class="n">141.4</td>
-  <td class="n"><strong>44.1</strong></td></tr>
-<tr class="hero"><td>End to end, median</td><td class="n"><strong>23.8</strong></td>
-  <td class="n">64.0</td><td class="n na">&gt;18.4 &nbsp;ASR untimed</td></tr>
-<tr><td>ASR real-time factor</td><td class="n na">no ASR stage</td><td class="n">0.121</td>
-  <td class="n na">not recorded</td></tr>
+<tr><td>ASR stage, median</td><td class="n na">no ASR stage</td><td class="n">43.2</td>
+  <td class="n"><strong>25.0</strong></td></tr>
+<tr><td>Label call, median</td><td class="n"><strong>6.1</strong></td><td class="n">19.3</td>
+  <td class="n">20.8</td></tr>
+<tr><td>Label call, p95</td><td class="n"><strong>9.2</strong></td><td class="n">24.5</td>
+  <td class="n">30.0</td></tr>
+<tr><td>Label call, max</td><td class="n"><strong>21.2</strong></td><td class="n">37.9</td>
+  <td class="n">90.7</td></tr>
+<tr class="hero"><td>End to end, median</td><td class="n"><strong>6.1</strong></td>
+  <td class="n">62.5</td><td class="n">45.8</td></tr>
+<tr><td>ASR real-time factor</td><td class="n na">no ASR stage</td><td class="n">0.118</td>
+  <td class="n"><strong>0.066</strong></td></tr>
 
 <tr class="sec"><td colspan="4">Tokens &nbsp;<span class="note">— label call</span></td></tr>
-<tr><td>Input, median</td><td class="n">11,466</td><td class="n"><strong>3,664</strong></td>
+<tr><td>Input, median</td><td class="n">11,628</td><td class="n"><strong>3,664</strong></td>
   <td class="n">3,708</td></tr>
 <tr><td>Output, median</td><td class="n"><strong>235</strong></td><td class="n">244</td>
   <td class="n">243</td></tr>
-<tr><td>Input, total</td><td class="n">4,501,696</td>
+<tr><td>Input, total</td><td class="n">4,570,000</td>
   <td class="n"><strong>1,510,911</strong></td><td class="n">1,850,037</td></tr>
 <tr><td>Output, total</td><td class="n"><strong>92,596</strong></td><td class="n">104,200</td>
   <td class="n">102,722</td></tr>
 
 <tr class="sec"><td colspan="4">Reliability</td></tr>
-<tr><td>Label calls made</td><td class="n">408</td><td class="n">414</td>
-  <td class="n">408</td></tr>
+<tr><td>Label calls made</td><td class="n">414</td><td class="n">414</td>
+  <td class="n">414</td></tr>
 <tr class="hero"><td>Parse failures</td>
-  <td class="n"><span class="tag bad">20/408</span></td>
   <td class="n"><span class="tag ahead">0/414</span></td>
-  <td class="n"><span class="tag ahead">0/408</span></td></tr>
-<tr><td>Unstable items (of 3 replicates)</td><td class="n"><strong>6/136</strong></td>
-  <td class="n">30/138</td><td class="n">37/136</td></tr>
+  <td class="n"><span class="tag ahead">0/414</span></td>
+  <td class="n"><span class="tag ahead">0/414</span></td></tr>
+<tr><td>Unstable items (of 3 replicates)</td><td class="n"><strong>21/138</strong></td>
+  <td class="n">29/138</td><td class="n">29/138</td></tr>
 
 <tr class="sec"><td colspan="4">Cost</td></tr>
-<tr><td>Metered cost, all calls</td><td class="n">$3.3655</td>
+<tr><td>Metered cost, all calls</td><td class="n">$3.6379</td>
   <td class="n na">internal GPU</td><td class="n na">internal GPU</td></tr>
-<tr><td>Metered cost, per call</td><td class="n">$0.00867</td>
+<tr><td>Metered cost, per call</td><td class="n">$0.00879</td>
   <td class="n na">not metered</td><td class="n na">not metered</td></tr>
 </tbody>
 </table>
@@ -259,12 +257,7 @@ over-predicts <code>save</code>.</p>
 No better transcriber can fix it.</p>
 </div>
 
-<p><strong>All three columns are scored on the same 136 calls.</strong> Typhoon actually
-transcribed 138; the two extra (<code>ASR-082</code>, <code>ASR-089</code>) are the calls
-Qwen3-ASR never produced, so no other arm ran them and they are held out of the business
-figures. Scoring 138 against 136 would compare arms on different item sets. The effect is
-small — Typhoon&rsquo;s call_result F1 moves 0.597 &rarr; 0.600 — but small is something you
-learn <em>after</em> restricting, not a reason to skip it.</p>
+<p><strong>All three columns are scored on the same 138 calls</strong>, and every arm answered all of them — 2,070 records, zero failures. An earlier attempt at this run was destroyed by a VPN drop that left <code>format-control</code> with 130 of 414 calls; it scored 0.358, which reads exactly like a broken arm and was a broken network. The scorer now refuses any arm under 90% coverage rather than printing a plausible number.</p>
 
 <p>Two things jump out of the table that the headline numbers alone hide. <strong>Gemini's
 input cost is 3&times; the internal arms'</strong> — 11,466 median input tokens against ~3,700,
@@ -323,20 +316,20 @@ preregistered.</p>
 </tr></thead>
 <tbody>
 <tr><td class="arm">format-control <span class="note">— zero mishearing</span></td>
-  <td class="n">0.663</td><td class="n">85/136</td><td class="n">0.239</td>
-  <td class="n">0.804</td></tr>
+  <td class="n">0.796</td><td class="n">101/138</td><td class="n">0.219</td>
+  <td class="n">0.807</td></tr>
 <tr><td class="arm">ceiling <span class="note">— perfect transcript</span></td>
-  <td class="n">0.645</td><td class="n">84/136</td><td class="n">0.228</td>
-  <td class="n">0.808</td></tr>
+  <td class="n">0.787</td><td class="n">100/138</td><td class="n">0.229</td>
+  <td class="n">0.812</td></tr>
 <tr class="hero"><td class="arm">typhoon-pipeline</td>
-  <td class="n">0.600</td><td class="n">75/136</td><td class="n">0.230</td>
-  <td class="n">0.788</td></tr>
+  <td class="n">0.711</td><td class="n">87/138</td><td class="n">0.229</td>
+  <td class="n">0.807</td></tr>
 <tr><td class="arm">qwen-pipeline</td>
-  <td class="n">0.588</td><td class="n">74/136</td><td class="n">0.207</td>
-  <td class="n">0.762</td></tr>
+  <td class="n">0.682</td><td class="n">84/138</td><td class="n">0.223</td>
+  <td class="n">0.761</td></tr>
 <tr><td class="arm">gemini-audio <span class="note">— production today</span></td>
-  <td class="n">0.495</td><td class="n">60/136</td><td class="n">0.267</td>
-  <td class="n">0.727</td></tr>
+  <td class="n">0.524</td><td class="n">62/138</td><td class="n">0.222</td>
+  <td class="n">0.692</td></tr>
 </tbody>
 </table>
 </div>
@@ -349,7 +342,7 @@ failure rate changed the business answer on <strong>one call out of 138</strong>
 </div>
 
 <p>The explanation is in the table above it. The <code>ceiling</code> arm — a labeller reading
-the <em>perfect</em> transcript — scores 0.645. The Typhoon pipeline is already within 0.05 of
+the <em>perfect</em> transcript — scores 0.787. The Typhoon pipeline is already within 0.076 of
 its own ceiling. There is almost nothing left upstream for a better transcriber to recover.
 <strong>The binding constraint is the labelling step, not the audio.</strong></p>
 
@@ -358,18 +351,18 @@ its own ceiling. There is almost nothing left upstream for a better transcriber 
 <table>
 <thead><tr><th>Comparison</th><th>call_result</th><th>reason</th><th>product</th></tr></thead>
 <tbody>
-<tr><td class="arm">typhoon vs gemini</td>
-  <td><span class="tag ahead">AHEAD</span> <span class="note">+15, band ±15</span></td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">+4</span></td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">+5</span></td></tr>
+<tr class="hero"><td class="arm">typhoon vs gemini</td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+25, band ±15</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+7</span></td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+14, band ±12</span></td></tr>
 <tr><td class="arm">qwen vs gemini</td>
-  <td><span class="tag ahead">AHEAD</span> <span class="note">+14, band ±14</span></td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">−1</span></td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">+4</span></td></tr>
-<tr class="hero"><td class="arm">typhoon vs qwen</td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">+1, d=13</span></td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">+5, d=17</span></td>
-  <td><span class="tag ind">INDIST.</span> <span class="note">+1, d=11</span></td></tr>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+22, band ±16</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+6</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+9</span></td></tr>
+<tr><td class="arm">typhoon vs qwen</td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+3, d=21</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+1, d=21</span></td>
+  <td><span class="tag ind">INDIST.</span> <span class="note">+5, d=13</span></td></tr>
 </tbody>
 </table>
 </div>
@@ -382,28 +375,27 @@ correlated product rows — say how often that survives.</p>
 
 <div class="grid">
   <div class="stat">
-    <div class="k">Qwen vs Gemini</div>
-    <div class="v bad">52.6%</div>
-    <div class="s">of resamples still AHEAD. A coin flip. <strong>25 individual calls</strong>
-    could each flip it alone.</div>
+    <div class="k">Before the corpus fix</div>
+    <div class="v bad">61.0%</div>
+    <div class="s">of resamples still AHEAD, clearing the band by <strong>zero</strong>.
+    Barely better than a coin flip.</div>
   </div>
   <div class="stat">
-    <div class="k">Typhoon vs Gemini</div>
-    <div class="v warn">61.0%</div>
-    <div class="s">still AHEAD. Better, still thin. No single call flips it.</div>
+    <div class="k">After the corpus fix</div>
+    <div class="v good">98.3%</div>
+    <div class="s">still AHEAD, clearing by <strong>+10</strong>. No single call flips it.
+    This is a result you can bank.</div>
   </div>
   <div class="stat">
-    <div class="k">The null results</div>
-    <div class="v good">94–98%</div>
-    <div class="s">bootstrap agreement on INDISTINGUISHABLE. <strong>The null findings are
-    the sturdy ones here.</strong></div>
+    <div class="k">Typhoon vs Qwen</div>
+    <div class="v">+3</div>
+    <div class="s">still <strong>INDISTINGUISHABLE</strong> on all three dimensions. The
+    ASR finding survived the corpus fix untouched.</div>
   </div>
 </div>
 
 <div class="caution">
-<p><strong>How this should be said out loud.</strong> Not "the internal pipeline wins."
-Rather: production's audio arm is clearly the weakest on <code>call_result</code>, both
-internal pipelines beat it, and the margin is too thin to bank a migration on.</p>
+<p><strong>How this should be said out loud.</strong> Production&rsquo;s audio arm is clearly the weakest on <code>call_result</code> — 0.524 against 0.711 — and the margin now survives resampling 98.3% of the time. That is strong enough to act on. It was <em>not</em> before the corpus was fixed, and the difference was a labelling defect rather than anything either model did.</p>
 </div>
 
 <h3>A correction to the 19 August headline</h3>
@@ -528,17 +520,20 @@ business-metric change, and say so up front.</li>
 <li><strong>Send the Vertex token ask.</strong> One field turns a directional finding into a
 settled one.</li>
 <li><strong>Send Ask&nbsp;1.</strong> Still the only path off <code>RECONCILED: NO</code>.</li>
-<li><strong>Fix the corpus, not the labeller.</strong> A perfect transcript scores 0.645
-because the corpus&rsquo;s <code>unknown</code> calls are labelled against the spec, not
-because the labeller is timid. Teaching it to emit <code>unknown</code> on indecision would
-train it to <em>violate</em> the production spec to score better on bad data. The repair is
-three edits in <code>asr-eval/scripts/</code> and costs no model calls.</li>
+<li><strong>DONE — the corpus was fixed, and this page reports the re-run.</strong> A perfect
+transcript scored 0.645 because the corpus labelled its <code>unknown</code> calls against the
+spec the labeller is given. Three edits in <code>asr-eval/scripts/</code>, fresh audio, both
+ASR models re-transcribed, all five arms re-labelled: <strong>ceiling 0.645 &rarr; 0.787</strong>
+and the headline verdict went from a 61% coin flip to <strong>98.3%</strong>.</li>
+<li><strong>Still open: <code>undefined</code>.</strong> 8 of 138 rows, never predicted, and
+not fixable in the closing line — those calls are 68–86 turns of a real retention
+conversation. Needs a scenario whose body is out of scope.</li>
 </ol>
 
 <footer>
-Run <code>20260820-e23-with-typhoon</code> · 2,046 records, 5 arms, 3 replicates ·
+Run <code>20260820-055342Z-e21</code> · 2,070 records, 5 arms, 3 replicates, zero failures ·
 paired sign test at &alpha;&nbsp;=&nbsp;1/64 · 20,000-resample cluster bootstrap over calls ·
-root suite 1034 passed / 12 skipped, differential 1045 / 1, asr-eval 152 / 2 xfailed ·
+root suite 1038 passed / 12 skipped, asr-eval 163 / 2 xfailed ·
 screening eval, not a production gate
 </footer>
 

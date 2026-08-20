@@ -1,0 +1,1299 @@
+{
+  "run": "20260820-055342Z-e21",
+  "pack": "asr-eval-v2",
+  "replicate_policy": "first",
+  "calls_with_truth": 138,
+  "alpha_per_side": 0.015625,
+  "arms": {
+    "ceiling": {
+      "call_result": {
+        "f1": 0.7874925960341914,
+        "precision": 0.8596014492753623,
+        "recall": 0.7391304347826086,
+        "accuracy_correct": 100,
+        "accuracy_n": 138,
+        "accuracy": 0.7246376811594203,
+        "ci_wilson": [
+          0.6364420341629,
+          0.7982211604285994
+        ],
+        "ci_clopper_pearson": [
+          0.6340966408394284,
+          0.8035256379386766
+        ],
+        "classes": [
+          {
+            "label": "save",
+            "support": 42,
+            "tp": 35,
+            "fp": 13,
+            "fn": 7,
+            "precision": 0.7291666666666666,
+            "recall": 0.8333333333333334,
+            "f1": 0.7777777777777777
+          },
+          {
+            "label": "churn",
+            "support": 73,
+            "tp": 54,
+            "fp": 0,
+            "fn": 19,
+            "precision": 1.0,
+            "recall": 0.7397260273972602,
+            "f1": 0.8503937007874016
+          },
+          {
+            "label": "unknown",
+            "support": 15,
+            "tp": 13,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.8666666666666667,
+            "f1": 0.9285714285714286
+          },
+          {
+            "label": "undefined",
+            "support": 8,
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "reason": {
+        "f1": 0.2290602961622862,
+        "precision": 0.17879927551184172,
+        "recall": 0.4925373134328358,
+        "accuracy_correct": 59,
+        "accuracy_n": 138,
+        "accuracy": 0.427536231884058,
+        "ci_wilson": [
+          0.3406420605138781,
+          0.5191440057469288
+        ],
+        "ci_clopper_pearson": [
+          0.3360744414030552,
+          0.5227382464545463
+        ],
+        "classes": [
+          {
+            "label": "network",
+            "support": 28,
+            "tp": 20,
+            "fp": 64,
+            "fn": 8,
+            "precision": 0.23809523809523808,
+            "recall": 0.7142857142857143,
+            "f1": 0.35714285714285715
+          },
+          {
+            "label": "promotion related",
+            "support": 19,
+            "tp": 11,
+            "fp": 51,
+            "fn": 8,
+            "precision": 0.1774193548387097,
+            "recall": 0.5789473684210527,
+            "f1": 0.2716049382716049
+          },
+          {
+            "label": "device promotion related",
+            "support": 2,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "save cost",
+            "support": 26,
+            "tp": 19,
+            "fp": 65,
+            "fn": 7,
+            "precision": 0.2261904761904762,
+            "recall": 0.7307692307692307,
+            "f1": 0.34545454545454546
+          },
+          {
+            "label": "contract end",
+            "support": 9,
+            "tp": 2,
+            "fp": 1,
+            "fn": 7,
+            "precision": 0.6666666666666666,
+            "recall": 0.2222222222222222,
+            "f1": 0.3333333333333333
+          },
+          {
+            "label": "sale upsell problem",
+            "support": 2,
+            "tp": 1,
+            "fp": 30,
+            "fn": 1,
+            "precision": 0.03225806451612903,
+            "recall": 0.5,
+            "f1": 0.06060606060606061
+          },
+          {
+            "label": "dissatisfied service",
+            "support": 19,
+            "tp": 13,
+            "fp": 112,
+            "fn": 6,
+            "precision": 0.104,
+            "recall": 0.6842105263157895,
+            "f1": 0.18055555555555555
+          },
+          {
+            "label": "other",
+            "support": 8,
+            "tp": 0,
+            "fp": 8,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "post to pre",
+            "support": 6,
+            "tp": 0,
+            "fp": 2,
+            "fn": 6,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "customer reason",
+            "support": 11,
+            "tp": 0,
+            "fp": 4,
+            "fn": 11,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "down sell not success",
+            "support": 4,
+            "tp": 0,
+            "fp": 0,
+            "fn": 4,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "product": {
+        "f1": 0.8120773866334184,
+        "precision": 0.8106746498050846,
+        "recall": 0.8333333333333334,
+        "accuracy_correct": 112,
+        "accuracy_n": 138,
+        "accuracy": 0.8115942028985508,
+        "ci_wilson": [
+          0.7302146410322213,
+          0.87270527404631
+        ],
+        "ci_clopper_pearson": [
+          0.7287109512484484,
+          0.8781964517436107
+        ],
+        "classes": [
+          {
+            "label": "postpaid",
+            "support": 68,
+            "tp": 61,
+            "fp": 13,
+            "fn": 7,
+            "precision": 0.8243243243243243,
+            "recall": 0.8970588235294118,
+            "f1": 0.8591549295774648
+          },
+          {
+            "label": "tol",
+            "support": 32,
+            "tp": 31,
+            "fp": 11,
+            "fn": 1,
+            "precision": 0.7380952380952381,
+            "recall": 0.96875,
+            "f1": 0.8378378378378379
+          },
+          {
+            "label": "tvs",
+            "support": 35,
+            "tp": 23,
+            "fp": 2,
+            "fn": 12,
+            "precision": 0.92,
+            "recall": 0.6571428571428571,
+            "f1": 0.7666666666666667
+          },
+          {
+            "label": "unknown",
+            "support": 3,
+            "tp": 0,
+            "fp": 3,
+            "fn": 3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      }
+    },
+    "format-control": {
+      "call_result": {
+        "f1": 0.7957900380402869,
+        "precision": 0.8568215892053973,
+        "recall": 0.7536231884057971,
+        "accuracy_correct": 101,
+        "accuracy_n": 138,
+        "accuracy": 0.7318840579710145,
+        "ci_wilson": [
+          0.6440987418051111,
+          0.8045858461603076
+        ],
+        "ci_clopper_pearson": [
+          0.6418192202561628,
+          0.8099147270591365
+        ],
+        "classes": [
+          {
+            "label": "save",
+            "support": 42,
+            "tp": 36,
+            "fp": 12,
+            "fn": 6,
+            "precision": 0.75,
+            "recall": 0.8571428571428571,
+            "f1": 0.7999999999999999
+          },
+          {
+            "label": "churn",
+            "support": 73,
+            "tp": 57,
+            "fp": 1,
+            "fn": 16,
+            "precision": 0.9827586206896551,
+            "recall": 0.7808219178082192,
+            "f1": 0.8702290076335878
+          },
+          {
+            "label": "unknown",
+            "support": 15,
+            "tp": 11,
+            "fp": 0,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.7333333333333333,
+            "f1": 0.846153846153846
+          },
+          {
+            "label": "undefined",
+            "support": 8,
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "reason": {
+        "f1": 0.21855533677897077,
+        "precision": 0.166053587526009,
+        "recall": 0.5074626865671642,
+        "accuracy_correct": 59,
+        "accuracy_n": 138,
+        "accuracy": 0.427536231884058,
+        "ci_wilson": [
+          0.3406420605138781,
+          0.5191440057469288
+        ],
+        "ci_clopper_pearson": [
+          0.3360744414030552,
+          0.5227382464545463
+        ],
+        "classes": [
+          {
+            "label": "network",
+            "support": 28,
+            "tp": 23,
+            "fp": 72,
+            "fn": 5,
+            "precision": 0.24210526315789474,
+            "recall": 0.8214285714285714,
+            "f1": 0.37398373983739835
+          },
+          {
+            "label": "promotion related",
+            "support": 19,
+            "tp": 9,
+            "fp": 47,
+            "fn": 10,
+            "precision": 0.16071428571428573,
+            "recall": 0.47368421052631576,
+            "f1": 0.24
+          },
+          {
+            "label": "device promotion related",
+            "support": 2,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "save cost",
+            "support": 26,
+            "tp": 18,
+            "fp": 66,
+            "fn": 8,
+            "precision": 0.21428571428571427,
+            "recall": 0.6923076923076923,
+            "f1": 0.32727272727272727
+          },
+          {
+            "label": "contract end",
+            "support": 9,
+            "tp": 1,
+            "fp": 1,
+            "fn": 8,
+            "precision": 0.5,
+            "recall": 0.1111111111111111,
+            "f1": 0.1818181818181818
+          },
+          {
+            "label": "sale upsell problem",
+            "support": 2,
+            "tp": 2,
+            "fp": 27,
+            "fn": 0,
+            "precision": 0.06896551724137931,
+            "recall": 1.0,
+            "f1": 0.12903225806451613
+          },
+          {
+            "label": "dissatisfied service",
+            "support": 19,
+            "tp": 15,
+            "fp": 114,
+            "fn": 4,
+            "precision": 0.11627906976744186,
+            "recall": 0.7894736842105263,
+            "f1": 0.2027027027027027
+          },
+          {
+            "label": "other",
+            "support": 8,
+            "tp": 0,
+            "fp": 12,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "post to pre",
+            "support": 6,
+            "tp": 0,
+            "fp": 2,
+            "fn": 6,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "customer reason",
+            "support": 11,
+            "tp": 0,
+            "fp": 4,
+            "fn": 11,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "down sell not success",
+            "support": 4,
+            "tp": 0,
+            "fp": 0,
+            "fn": 4,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "product": {
+        "f1": 0.8074793909742677,
+        "precision": 0.8014112648656744,
+        "recall": 0.8478260869565217,
+        "accuracy_correct": 111,
+        "accuracy_n": 138,
+        "accuracy": 0.8043478260869565,
+        "ci_wilson": [
+          0.7222250330402323,
+          0.8666734886643798
+        ],
+        "ci_clopper_pearson": [
+          0.7206462790827985,
+          0.8721599995883587
+        ],
+        "classes": [
+          {
+            "label": "postpaid",
+            "support": 68,
+            "tp": 67,
+            "fp": 22,
+            "fn": 1,
+            "precision": 0.7528089887640449,
+            "recall": 0.9852941176470589,
+            "f1": 0.8535031847133758
+          },
+          {
+            "label": "tol",
+            "support": 32,
+            "tp": 31,
+            "fp": 3,
+            "fn": 1,
+            "precision": 0.9117647058823529,
+            "recall": 0.96875,
+            "f1": 0.9393939393939394
+          },
+          {
+            "label": "tvs",
+            "support": 35,
+            "tp": 19,
+            "fp": 3,
+            "fn": 16,
+            "precision": 0.8636363636363636,
+            "recall": 0.5428571428571428,
+            "f1": 0.6666666666666666
+          },
+          {
+            "label": "unknown",
+            "support": 3,
+            "tp": 0,
+            "fp": 3,
+            "fn": 3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      }
+    },
+    "gemini-audio": {
+      "call_result": {
+        "f1": 0.5237001976627511,
+        "precision": 0.7318840579710145,
+        "recall": 0.4782608695652174,
+        "accuracy_correct": 62,
+        "accuracy_n": 138,
+        "accuracy": 0.4492753623188406,
+        "ci_wilson": [
+          0.3612033170998277,
+          0.540646929282737
+        ],
+        "ci_clopper_pearson": [
+          0.356767564214749,
+          0.5444006478357664
+        ],
+        "classes": [
+          {
+            "label": "save",
+            "support": 42,
+            "tp": 29,
+            "fp": 31,
+            "fn": 13,
+            "precision": 0.48333333333333334,
+            "recall": 0.6904761904761905,
+            "f1": 0.5686274509803921
+          },
+          {
+            "label": "churn",
+            "support": 73,
+            "tp": 36,
+            "fp": 4,
+            "fn": 37,
+            "precision": 0.9,
+            "recall": 0.4931506849315068,
+            "f1": 0.6371681415929203
+          },
+          {
+            "label": "unknown",
+            "support": 15,
+            "tp": 1,
+            "fp": 0,
+            "fn": 14,
+            "precision": 1.0,
+            "recall": 0.06666666666666667,
+            "f1": 0.125
+          },
+          {
+            "label": "undefined",
+            "support": 8,
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "reason": {
+        "f1": 0.2223885374451657,
+        "precision": 0.1861781927007871,
+        "recall": 0.41044776119402987,
+        "accuracy_correct": 50,
+        "accuracy_n": 138,
+        "accuracy": 0.36231884057971014,
+        "ci_wilson": [
+          0.2799953197270582,
+          0.4535982061684745
+        ],
+        "ci_clopper_pearson": [
+          0.2750673661434401,
+          0.45668651156113504
+        ],
+        "classes": [
+          {
+            "label": "network",
+            "support": 28,
+            "tp": 16,
+            "fp": 62,
+            "fn": 12,
+            "precision": 0.20512820512820512,
+            "recall": 0.5714285714285714,
+            "f1": 0.3018867924528302
+          },
+          {
+            "label": "promotion related",
+            "support": 19,
+            "tp": 15,
+            "fp": 104,
+            "fn": 4,
+            "precision": 0.12605042016806722,
+            "recall": 0.7894736842105263,
+            "f1": 0.2173913043478261
+          },
+          {
+            "label": "device promotion related",
+            "support": 2,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "save cost",
+            "support": 26,
+            "tp": 9,
+            "fp": 11,
+            "fn": 17,
+            "precision": 0.45,
+            "recall": 0.34615384615384615,
+            "f1": 0.3913043478260869
+          },
+          {
+            "label": "contract end",
+            "support": 9,
+            "tp": 4,
+            "fp": 20,
+            "fn": 5,
+            "precision": 0.16666666666666666,
+            "recall": 0.4444444444444444,
+            "f1": 0.24242424242424243
+          },
+          {
+            "label": "sale upsell problem",
+            "support": 2,
+            "tp": 1,
+            "fp": 60,
+            "fn": 1,
+            "precision": 0.01639344262295082,
+            "recall": 0.5,
+            "f1": 0.031746031746031744
+          },
+          {
+            "label": "dissatisfied service",
+            "support": 19,
+            "tp": 8,
+            "fp": 73,
+            "fn": 11,
+            "precision": 0.09876543209876543,
+            "recall": 0.42105263157894735,
+            "f1": 0.16
+          },
+          {
+            "label": "other",
+            "support": 8,
+            "tp": 0,
+            "fp": 10,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "post to pre",
+            "support": 6,
+            "tp": 1,
+            "fp": 4,
+            "fn": 5,
+            "precision": 0.2,
+            "recall": 0.16666666666666666,
+            "f1": 0.1818181818181818
+          },
+          {
+            "label": "customer reason",
+            "support": 11,
+            "tp": 0,
+            "fp": 1,
+            "fn": 11,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "down sell not success",
+            "support": 4,
+            "tp": 1,
+            "fp": 7,
+            "fn": 3,
+            "precision": 0.125,
+            "recall": 0.25,
+            "f1": 0.16666666666666666
+          }
+        ]
+      },
+      "product": {
+        "f1": 0.6918573807154994,
+        "precision": 0.6971948679711002,
+        "recall": 0.7318840579710145,
+        "accuracy_correct": 96,
+        "accuracy_n": 138,
+        "accuracy": 0.6956521739130435,
+        "ci_wilson": [
+          0.6060635090019182,
+          0.7725141120939039
+        ],
+        "ci_clopper_pearson": [
+          0.6034610855342111,
+          0.7777090362781021
+        ],
+        "classes": [
+          {
+            "label": "postpaid",
+            "support": 68,
+            "tp": 62,
+            "fp": 27,
+            "fn": 6,
+            "precision": 0.6966292134831461,
+            "recall": 0.9117647058823529,
+            "f1": 0.7898089171974523
+          },
+          {
+            "label": "tol",
+            "support": 32,
+            "tp": 23,
+            "fp": 15,
+            "fn": 9,
+            "precision": 0.6052631578947368,
+            "recall": 0.71875,
+            "f1": 0.6571428571428571
+          },
+          {
+            "label": "tvs",
+            "support": 35,
+            "tp": 16,
+            "fp": 3,
+            "fn": 19,
+            "precision": 0.8421052631578947,
+            "recall": 0.45714285714285713,
+            "f1": 0.5925925925925926
+          },
+          {
+            "label": "unknown",
+            "support": 3,
+            "tp": 0,
+            "fp": 3,
+            "fn": 3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      }
+    },
+    "qwen-pipeline": {
+      "call_result": {
+        "f1": 0.6819788224367695,
+        "precision": 0.801603733280752,
+        "recall": 0.6231884057971014,
+        "accuracy_correct": 84,
+        "accuracy_n": 138,
+        "accuracy": 0.6086956521739131,
+        "ci_wilson": [
+          0.5170741240137837,
+          0.6932467765950063
+        ],
+        "ci_clopper_pearson": [
+          0.5137558264389628,
+          0.6980215275983277
+        ],
+        "classes": [
+          {
+            "label": "save",
+            "support": 42,
+            "tp": 31,
+            "fp": 23,
+            "fn": 11,
+            "precision": 0.5740740740740741,
+            "recall": 0.7380952380952381,
+            "f1": 0.6458333333333334
+          },
+          {
+            "label": "churn",
+            "support": 73,
+            "tp": 48,
+            "fp": 1,
+            "fn": 25,
+            "precision": 0.9795918367346939,
+            "recall": 0.6575342465753424,
+            "f1": 0.7868852459016392
+          },
+          {
+            "label": "unknown",
+            "support": 15,
+            "tp": 7,
+            "fp": 0,
+            "fn": 8,
+            "precision": 1.0,
+            "recall": 0.4666666666666667,
+            "f1": 0.6363636363636364
+          },
+          {
+            "label": "undefined",
+            "support": 8,
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "reason": {
+        "f1": 0.22285548767112828,
+        "precision": 0.17119399769948496,
+        "recall": 0.4701492537313433,
+        "accuracy_correct": 56,
+        "accuracy_n": 138,
+        "accuracy": 0.4057971014492754,
+        "ci_wilson": [
+          0.32025096245764484,
+          0.497470923681404
+        ],
+        "ci_clopper_pearson": [
+          0.3155570838035221,
+          0.5009011241769918
+        ],
+        "classes": [
+          {
+            "label": "network",
+            "support": 28,
+            "tp": 16,
+            "fp": 81,
+            "fn": 12,
+            "precision": 0.16494845360824742,
+            "recall": 0.5714285714285714,
+            "f1": 0.256
+          },
+          {
+            "label": "promotion related",
+            "support": 19,
+            "tp": 9,
+            "fp": 51,
+            "fn": 10,
+            "precision": 0.15,
+            "recall": 0.47368421052631576,
+            "f1": 0.2278481012658228
+          },
+          {
+            "label": "device promotion related",
+            "support": 2,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "save cost",
+            "support": 26,
+            "tp": 19,
+            "fp": 67,
+            "fn": 7,
+            "precision": 0.22093023255813954,
+            "recall": 0.7307692307692307,
+            "f1": 0.3392857142857143
+          },
+          {
+            "label": "contract end",
+            "support": 9,
+            "tp": 3,
+            "fp": 2,
+            "fn": 6,
+            "precision": 0.6,
+            "recall": 0.3333333333333333,
+            "f1": 0.42857142857142855
+          },
+          {
+            "label": "sale upsell problem",
+            "support": 2,
+            "tp": 1,
+            "fp": 27,
+            "fn": 1,
+            "precision": 0.03571428571428571,
+            "recall": 0.5,
+            "f1": 0.06666666666666667
+          },
+          {
+            "label": "dissatisfied service",
+            "support": 19,
+            "tp": 13,
+            "fp": 111,
+            "fn": 6,
+            "precision": 0.10483870967741936,
+            "recall": 0.6842105263157895,
+            "f1": 0.18181818181818185
+          },
+          {
+            "label": "other",
+            "support": 8,
+            "tp": 1,
+            "fp": 8,
+            "fn": 7,
+            "precision": 0.1111111111111111,
+            "recall": 0.125,
+            "f1": 0.11764705882352941
+          },
+          {
+            "label": "post to pre",
+            "support": 6,
+            "tp": 0,
+            "fp": 2,
+            "fn": 6,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "customer reason",
+            "support": 11,
+            "tp": 1,
+            "fp": 7,
+            "fn": 10,
+            "precision": 0.125,
+            "recall": 0.09090909090909091,
+            "f1": 0.10526315789473685
+          },
+          {
+            "label": "down sell not success",
+            "support": 4,
+            "tp": 0,
+            "fp": 0,
+            "fn": 4,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "product": {
+        "f1": 0.7611103063160648,
+        "precision": 0.743108309644546,
+        "recall": 0.7971014492753623,
+        "accuracy_correct": 105,
+        "accuracy_n": 138,
+        "accuracy": 0.7608695652173914,
+        "ci_wilson": [
+          0.6749925294240917,
+          0.8297776320370045
+        ],
+        "ci_clopper_pearson": [
+          0.672983554462776,
+          0.8351902591934581
+        ],
+        "classes": [
+          {
+            "label": "postpaid",
+            "support": 68,
+            "tp": 60,
+            "fp": 19,
+            "fn": 8,
+            "precision": 0.759493670886076,
+            "recall": 0.8823529411764706,
+            "f1": 0.8163265306122449
+          },
+          {
+            "label": "tol",
+            "support": 32,
+            "tp": 29,
+            "fp": 12,
+            "fn": 3,
+            "precision": 0.7073170731707317,
+            "recall": 0.90625,
+            "f1": 0.7945205479452054
+          },
+          {
+            "label": "tvs",
+            "support": 35,
+            "tp": 21,
+            "fp": 5,
+            "fn": 14,
+            "precision": 0.8076923076923077,
+            "recall": 0.6,
+            "f1": 0.6885245901639345
+          },
+          {
+            "label": "unknown",
+            "support": 3,
+            "tp": 0,
+            "fp": 3,
+            "fn": 3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      }
+    },
+    "typhoon-pipeline": {
+      "call_result": {
+        "f1": 0.710709289980617,
+        "precision": 0.8104938271604939,
+        "recall": 0.6666666666666666,
+        "accuracy_correct": 87,
+        "accuracy_n": 138,
+        "accuracy": 0.6304347826086957,
+        "ci_wilson": [
+          0.5390396575997037,
+          0.7133454231308444
+        ],
+        "ci_clopper_pearson": [
+          0.5358930720098605,
+          0.7182361932870551
+        ],
+        "classes": [
+          {
+            "label": "save",
+            "support": 42,
+            "tp": 33,
+            "fp": 22,
+            "fn": 9,
+            "precision": 0.6,
+            "recall": 0.7857142857142857,
+            "f1": 0.6804123711340206
+          },
+          {
+            "label": "churn",
+            "support": 73,
+            "tp": 53,
+            "fp": 1,
+            "fn": 20,
+            "precision": 0.9814814814814815,
+            "recall": 0.726027397260274,
+            "f1": 0.8346456692913385
+          },
+          {
+            "label": "unknown",
+            "support": 15,
+            "tp": 6,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.4,
+            "f1": 0.5714285714285715
+          },
+          {
+            "label": "undefined",
+            "support": 8,
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      },
+      "reason": {
+        "f1": 0.22944092517100437,
+        "precision": 0.18540904162085628,
+        "recall": 0.48507462686567165,
+        "accuracy_correct": 57,
+        "accuracy_n": 138,
+        "accuracy": 0.41304347826086957,
+        "ci_wilson": [
+          0.32702888140915665,
+          0.5047143981038115
+        ],
+        "ci_clopper_pearson": [
+          0.3223764443217537,
+          0.5081997859268652
+        ],
+        "classes": [
+          {
+            "label": "network",
+            "support": 28,
+            "tp": 19,
+            "fp": 75,
+            "fn": 9,
+            "precision": 0.20212765957446807,
+            "recall": 0.6785714285714286,
+            "f1": 0.3114754098360656
+          },
+          {
+            "label": "promotion related",
+            "support": 19,
+            "tp": 11,
+            "fp": 42,
+            "fn": 8,
+            "precision": 0.20754716981132076,
+            "recall": 0.5789473684210527,
+            "f1": 0.3055555555555556
+          },
+          {
+            "label": "device promotion related",
+            "support": 2,
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "save cost",
+            "support": 26,
+            "tp": 18,
+            "fp": 64,
+            "fn": 8,
+            "precision": 0.21951219512195122,
+            "recall": 0.6923076923076923,
+            "f1": 0.3333333333333333
+          },
+          {
+            "label": "contract end",
+            "support": 9,
+            "tp": 2,
+            "fp": 3,
+            "fn": 7,
+            "precision": 0.4,
+            "recall": 0.2222222222222222,
+            "f1": 0.2857142857142857
+          },
+          {
+            "label": "sale upsell problem",
+            "support": 2,
+            "tp": 2,
+            "fp": 30,
+            "fn": 0,
+            "precision": 0.0625,
+            "recall": 1.0,
+            "f1": 0.11764705882352941
+          },
+          {
+            "label": "dissatisfied service",
+            "support": 19,
+            "tp": 12,
+            "fp": 114,
+            "fn": 7,
+            "precision": 0.09523809523809523,
+            "recall": 0.631578947368421,
+            "f1": 0.16551724137931034
+          },
+          {
+            "label": "other",
+            "support": 8,
+            "tp": 0,
+            "fp": 5,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "post to pre",
+            "support": 6,
+            "tp": 0,
+            "fp": 3,
+            "fn": 6,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "customer reason",
+            "support": 11,
+            "tp": 0,
+            "fp": 4,
+            "fn": 11,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "label": "down sell not success",
+            "support": 4,
+            "tp": 1,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.25,
+            "f1": 0.4
+          }
+        ]
+      },
+      "product": {
+        "f1": 0.8065537937241429,
+        "precision": 0.7973334395073526,
+        "recall": 0.8333333333333334,
+        "accuracy_correct": 110,
+        "accuracy_n": 138,
+        "accuracy": 0.7971014492753623,
+        "ci_wilson": [
+          0.7142710954502554,
+          0.8606060328804372
+        ],
+        "ci_clopper_pearson": [
+          0.7126183214313724,
+          0.8660854286127111
+        ],
+        "classes": [
+          {
+            "label": "postpaid",
+            "support": 68,
+            "tp": 62,
+            "fp": 13,
+            "fn": 6,
+            "precision": 0.8266666666666667,
+            "recall": 0.9117647058823529,
+            "f1": 0.8671328671328671
+          },
+          {
+            "label": "tol",
+            "support": 32,
+            "tp": 30,
+            "fp": 12,
+            "fn": 2,
+            "precision": 0.7142857142857143,
+            "recall": 0.9375,
+            "f1": 0.8108108108108109
+          },
+          {
+            "label": "tvs",
+            "support": 35,
+            "tp": 23,
+            "fp": 3,
+            "fn": 12,
+            "precision": 0.8846153846153846,
+            "recall": 0.6571428571428571,
+            "f1": 0.7540983606557377
+          },
+          {
+            "label": "unknown",
+            "support": 3,
+            "tp": 0,
+            "fp": 1,
+            "fn": 3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        ]
+      }
+    }
+  },
+  "paired": {
+    "incumbent": "gemini-audio",
+    "candidate": "typhoon-pipeline",
+    "dimensions": {
+      "call_result": {
+        "both_right": 56,
+        "both_wrong": 45,
+        "incumbent_only": 6,
+        "candidate_only": 31,
+        "discordant": 37,
+        "net": 25,
+        "band": 15,
+        "verdict": "AHEAD"
+      },
+      "reason": {
+        "both_right": 38,
+        "both_wrong": 69,
+        "incumbent_only": 12,
+        "candidate_only": 19,
+        "discordant": 31,
+        "net": 7,
+        "band": 13,
+        "verdict": "INDISTINGUISHABLE"
+      },
+      "product": {
+        "both_right": 92,
+        "both_wrong": 24,
+        "incumbent_only": 4,
+        "candidate_only": 18,
+        "discordant": 22,
+        "net": 14,
+        "band": 12,
+        "verdict": "AHEAD"
+      }
+    }
+  },
+  "unstable_items": {
+    "ceiling": 21,
+    "format-control": 25,
+    "qwen-pipeline": 29,
+    "typhoon-pipeline": 29,
+    "gemini-audio": 21
+  },
+  "failure_counts": {
+    "ceiling": {
+      "ok": 414
+    },
+    "format-control": {
+      "ok": 414
+    },
+    "qwen-pipeline": {
+      "ok": 414
+    },
+    "typhoon-pipeline": {
+      "ok": 414
+    },
+    "gemini-audio": {
+      "ok": 414
+    }
+  }
+}

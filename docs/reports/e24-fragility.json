@@ -1,0 +1,43 @@
+{
+  "run": "20260820-055342Z-e21",
+  "policy": "first",
+  "seed": 20260820,
+  "resamples": 20000,
+  "incumbent": "gemini-audio",
+  "candidate": "typhoon-pipeline",
+  "dimensions": [
+    {
+      "dimension": "call_result",
+      "n_calls": 138,
+      "net": 25,
+      "discordant": 37,
+      "band": 15,
+      "verdict": "AHEAD",
+      "margin": 10,
+      "calls_that_flip_it_alone": 0,
+      "bootstrap_agreement": 0.9831
+    },
+    {
+      "dimension": "reason",
+      "n_calls": 138,
+      "net": 7,
+      "discordant": 31,
+      "band": 13,
+      "verdict": "INDISTINGUISHABLE",
+      "margin": -6,
+      "calls_that_flip_it_alone": 0,
+      "bootstrap_agreement": 0.85515
+    },
+    {
+      "dimension": "product",
+      "n_calls": 138,
+      "net": 14,
+      "discordant": 22,
+      "band": 12,
+      "verdict": "AHEAD",
+      "margin": 2,
+      "calls_that_flip_it_alone": 0,
+      "bootstrap_agreement": 0.78935
+    }
+  ]
+}
