@@ -22,23 +22,40 @@ output, containing three integers:
 **No customer data is involved.** `usageMetadata` is a sibling of the response content, not
 part of it. Copying only that block sends three counts and nothing a customer said.
 
-## Why it settles the question by itself
+## First: which number is 30,000-40,000?
 
-Tar reported sentiment_qa calls returning 30,000–50,000 output tokens. The diagnosis is that
-most of that is *thinking*, not answer — but until 2026-08-20 that was an estimate written
-in `DEVLOG.md` and never measured.
+**This is the question, and it decides which fix is right.** Tar reported "30,000 to 40,000
+tokens". Measured off-platform on 120 calls using production's own `system_prompt.txt` and the
+real `user_config.xlsx`:
 
-We have now measured it **off-platform**, on OpenRouter, using production's own
-`system_prompt.txt` and the real `user_config.xlsx` field definitions:
+| what | measured | in Tar's range? |
+|---|---:|---|
+| **input (prompt) tokens** | **30,985 - 32,825**, median 31,926 | **yes -- dead centre, on every call** |
+| output (completion) tokens | 8,564 - 17,054, median 11,961 | **no -- not one call of 120 reached 30,000** |
+| total (input + output) | ~35,400 - 44,056 | close |
+
+We could **not** reproduce 30-40k *output* tokens, and we tried: raising the reasoning budget
+explicitly changes nothing (identical to the token), output does not scale with call length
+(correlation 0.12), and Gemini 2.5 **Pro is lower than Flash**, not higher. Nothing was
+truncated -- no call ended with `finish_reason: length`.
+
+The input, by contrast, sits in that range on **every single call** and barely moves, which is
+also how a stable "30,000 to 40,000" gets quoted. It is almost entirely one thing:
+`user_config.xlsx` is **94,174 characters = ~31,400 tokens** of Thai field definitions, re-sent
+in full on every call, with `prompt_tokens_details.cached_tokens: 0` -- nothing is cached.
+
+**So please confirm which counter the 30-40k came from.** The `usageMetadata` block above
+answers it directly, because it carries all three.
+
+## What we measured about thinking, which is true either way
 
 | arm | median completion tokens | of which thinking | keys returned | valid JSON |
 |---|---:|---:|---:|---:|
-| production's regime (unlimited thinking) | ~13,000 | **~75%** | 118 | yes |
-| thinking off | **~3,900** | 0 | 118 | yes |
+| production's regime (unlimited thinking) | 11,961 | **73%** | 118 | 14/24 |
+| thinking off | **3,440** | 0 | 118 | **22/24** |
 
-So roughly **three quarters of the output is reasoning**, and turning it off still returns
-the complete 118-key object. That is a ~70% reduction in output tokens with the full schema
-intact.
+Roughly **three quarters of the output is reasoning**, and turning it off still returns the
+complete 118-key object -- a ~71% reduction in output tokens with the full schema intact.
 
 **But OpenRouter is not Vertex.** It has no `thinkingConfig.thinkingBudget`; the nearest
 lever is `reasoning.effort`. Our numbers are therefore a faithful test of the *prompt and
@@ -49,7 +66,17 @@ the direct measurement, and it costs nothing to produce because the batch alread
 
 Confirm — or correct — the recommendation below before anyone changes a production config.
 
-## The three changes we would then propose, in order of confidence
+## The changes we would propose -- but the order depends on your answer above
+
+**If the 30-40k is INPUT**, the lever is the prompt, not the thinking budget:
+
+0. **Cache or trim the ~31,400-token field-definition prompt.** It is identical on
+   every call and is currently re-sent and re-charged each time; our records show
+   `cached_tokens: 0`, i.e. nothing is cached at all. Vertex context caching on a
+   fixed prefix is the direct fix; trimming `user_config.xlsx` to the fields actually
+   scored is the other.
+
+**If the 30-40k is OUTPUT**, or regardless, these still hold:
 
 1. **`thinkingBudget: -1` → a finite value.** It is set at **three** call sites, and the
    highest-volume one is the daily batch, not the fact-check path usually quoted:
@@ -88,9 +115,15 @@ inferring from token counts.
 
 **ไม่มีข้อมูลลูกค้าเกี่ยวข้อง** — `usageMetadata` อยู่แยกจากเนื้อหาคำตอบ ส่งเฉพาะบล็อกนี้ได้เลย
 
-**ทำไมถึงสำคัญ:** เราวัดนอกแพลตฟอร์ม (OpenRouter) ด้วย system prompt และ user_config จริงของ production
-พบว่าประมาณ **75% ของ output tokens เป็นการ "คิด" (thinking)** ไม่ใช่คำตอบ และเมื่อปิด thinking
-เหลือ ~3,900 tokens จาก ~13,000 โดยยังได้ครบทั้ง **118 keys** และ JSON ถูกต้อง
+**คำถามแรก: ตัวเลข 30,000-40,000 คือ input หรือ output?** เราวัด 120 calls นอกแพลตฟอร์ม (OpenRouter)
+ด้วย system prompt และ user_config จริงของ production พบว่า **input = 30,985-32,825 tokens ทุก call**
+(อยู่ในช่วง 30-40k พอดี) แต่ **output = 8,564-17,054 tokens ไม่มี call ไหนถึง 30,000 เลย**
+
+ถ้าเป็น input ตัวการคือ `user_config.xlsx` ขนาด 94,174 ตัวอักษร ประมาณ 31,400 tokens ที่ถูกส่งซ้ำทุกครั้ง
+และตอนนี้ไม่มีการ cache เลย (`cached_tokens: 0`) วิธีแก้คือ context caching หรือลดขนาด prompt
+
+**ส่วนเรื่อง thinking (จริงทั้งสองกรณี):** ประมาณ **73% ของ output tokens เป็นการ "คิด"** และเมื่อปิด
+thinking เหลือ ~3,440 tokens จาก ~11,961 โดยยังได้ครบทั้ง **118 keys** และ JSON ถูกต้อง
 
 แต่ OpenRouter ไม่ใช่ Vertex และไม่มี `thinkingBudget` ตัวเลข `thoughtsTokenCount` จาก batch จริง
 จะยืนยันเรื่องนี้ได้โดยตรง และ batch ก็สร้างตัวเลขนี้อยู่แล้ว ไม่มีต้นทุนเพิ่ม
