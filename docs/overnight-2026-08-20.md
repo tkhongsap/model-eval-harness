@@ -262,6 +262,12 @@ pinned 2.3.4 / 2.3.3). Everything above ran in `.venv`.
   `leak_probe.py` reports lift 1.00 on the outcome channel rather than hiding it.
 - **No arm exceeds ~0.66 on `call_result`** because no labeller ever emits `unknown` or
   `undefined` — 21 of 136 calls are unwinnable for every arm, production included.
+  **CORRECTED 2026-08-20: this is wrong.** Those calls are mislabelled against the prompt's
+  own spec, not unwinnable. `retention_v9_16_body.txt:80` rules indecision to be `save`, and
+  the corpus's `unknown` pool is made of exactly those indecision phrases, so a spec-obeying
+  model must answer `save`. The same models emit both classes freely on the text packs (33
+  `unknown`, 19 `undefined` in `20260814-132425Z-e17-gemini`). Relabelling only those 15 calls
+  lifts every arm ~+0.13 with no prediction changed. The repair belongs in the corpus.
 - Typhoon's end-to-end arm scored **138** items against the others' 136, because Qwen never
   produced two transcripts. The paired tests use only calls both arms answered.
 
@@ -274,3 +280,62 @@ pinned 2.3.4 / 2.3.3). Everything above ran in `.venv`.
 4. **The real ceiling problem.** `ceiling` scores 0.645. Until the labeller can emit
    `unknown`/`undefined`, no upstream improvement can move the headline much. That, not
    transcription, is where the next experiment belongs.
+
+---
+
+## 8. Follow-up, same day: the corpus was fixed and the ceiling moved
+
+Section 7's item 4 above is now out of date — it recommends teaching the labeller to emit
+`unknown`/`undefined`. That was the wrong repair. This section records the right one and what
+it measured.
+
+**Three edits. No prompt change, no model change.**
+
+1. `asr-eval/scripts/thai_corpus.py` — the `unknown` pool now expresses an interrupted call,
+   which is what `body:81` defines, instead of indecision, which `body:80` explicitly calls a
+   `save`.
+2. `asr-eval/scripts/compose_dialogues.py` — `unknown` calls now actually end there. Before,
+   a "dropped call" still received a polite six-turn farewell. The scenario wrap-up is also no
+   longer drawn on non-`save` calls, where it narrated a completed save and contradicted the
+   label on 7 calls.
+3. `asr-eval/scripts/business_labels.py` — `undefined` calls no longer carry a cancellation
+   reason, which had made every one of them read as retention-relevant.
+
+**Measured on the `ceiling` arm — perfect transcript, 138 calls, replicate 1:**
+
+| class | F1 before | F1 after |
+|---|---:|---:|
+| `save` | 0.532 | **0.787** |
+| `churn` | 0.624 | **0.850** |
+| `unknown` | **0.000** | **0.966** |
+| `undefined` | 0.000 | 0.000 |
+| **weighted** | **0.645** | **0.794** |
+
+`unknown` went from unreachable to **14 of 15 correct at precision 1.000**. The labeller could
+do this the whole time; the corpus was asking it for something its own spec forbade.
+
+### `undefined` is NOT fixed, and both attempts are recorded
+
+Rewriting the closing line to *"I didn't call about the package"* scored 0.222 — but it is
+incoherent: **6 of the 8 `undefined` calls are outbound**, so the customer never called
+anyone. The direction-neutral replacement is coherent and scores **0.000**; the labeller
+answers `save` on 7 of 8.
+
+**It is right to.** These calls are 68–86 turns of a genuine retention conversation, and
+`body:82` requires the *focus* of the call to be out of scope — not just its last sentence.
+
+So `undefined` cannot be repaired in the closing pool at all. It needs a scenario whose body
+is not a retention call: a new generator branch, plus a decision about what an out-of-scope
+call even looks like in an outbound sales pack. Left as a known **8-row (5.8%) limitation**.
+
+The coherent lines were kept over the higher-scoring incoherent ones deliberately. Shipping
+dialogue that is nonsense for three quarters of the calls that use it, to gain 0.016 weighted
+F1 from a single lucky match, is optimising the metric against the truth — the same failure
+this whole section exists to correct.
+
+### What this does not change
+
+The published arm ordering and every paired verdict stand: the correction lifts all arms
+together. The end-to-end arms have **not** been re-run on the corrected corpus — that needs
+fresh audio for the changed calls (`resume_render.py`, ~1 h) then a re-run, and it is the
+natural next step.

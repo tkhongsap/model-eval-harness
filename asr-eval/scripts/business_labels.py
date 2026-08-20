@@ -169,8 +169,22 @@ def choose_call_result(rng: random.Random, scenario: str) -> str:
     return _weighted(rng, CALL_RESULT_MIX)
 
 
-def choose_reasons(rng: random.Random, scenario: str) -> tuple[str, str, str]:
-    """(main, secondary, third). Empty strings where production would write them."""
+def choose_reasons(rng: random.Random, scenario: str,
+                   call_result: str = "") -> tuple[str, str, str]:
+    """(main, secondary, third). Empty strings where production would write them.
+
+    `call_result` is consulted for one case only, and it is a correctness fix rather than a
+    refinement. `undefined` means, per `retention_v9_16_body.txt:82`, that the conversation
+    was "irrelevant to retention ... the client did not call to discuss changing, cancelling
+    or downgrading their service". A call carrying a CANCELLATION REASON is by definition a
+    retention conversation, so attaching one to an `undefined` call contradicts its own
+    label -- and before 2026-08-20 every `undefined` call got one.
+
+    That is half of why no arm ever produced `undefined` here: the transcript argued against
+    the label. The other half was the closing pool, corrected in `thai_corpus.py`.
+    """
+    if call_result == "undefined":
+        return ("", "", "")
     if rng.random() < EMPTY_REASON_RATE:
         return ("", "", "")
     main = _weighted(rng, REASON_BY_SCENARIO[scenario])

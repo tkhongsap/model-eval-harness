@@ -2,6 +2,53 @@
 
 ## 🔴 Active Task
 
+**CORRECTION (2026-08-20, later): the ceiling is a CORPUS defect, not a labeller limitation.
+The entry below states the opposite and is wrong.**
+
+The published claim was *"no labeller ever emits `unknown` or `undefined` — 21 of 136 calls are
+unwinnable for every arm, production included."* Three things are wrong with it.
+
+**It is not true of the models.** On the text packs the same models use both classes freely:
+run `20260814-132425Z-e17-gemini` emits `unknown` 33 times and `undefined` 19. The "never
+emits" observation is scoped to the ASR corpus alone.
+
+**It is not true of the prompt.** `src/evalgen/prompts/retention_v9_16_body.txt:81-82` defines
+both classes with explicit criteria. The earlier investigation only read production's
+*wrapper* (`config/system_prompt/retention.yml`), which is half the prompt — the body is
+fetched from SharePoint at run time and committed separately here.
+
+**The corpus contradicts the spec it is scored against.** `retention_v9_16_body.txt:80` says
+verbatim that *"Client expresses indecision or asks for time to think (ลังเล ขอเวลาคิดก่อน
+ยังตัดสินใจไม่ได้) … is counted as a `save`"*. The corpus's entire `unknown` pool
+(`asr-eval/scripts/thai_corpus.py:634-643`) is those exact indecision phrases. A model that
+follows the spec **must** call all 15 of those calls `save` — and it does, on 174 of 186
+blocks. The label is not unrecoverable; it is *anti-recoverable*.
+
+`undefined` has the mirror fault: the spec defines it as out-of-scope, but the corpus fires it
+on calls carrying a real cancellation reason, including inbound `retention` (ASR-076) and
+`sim_replace` (ASR-133).
+
+**Measured cost, relabelling only the 15 `unknown` calls, no prediction changed:**
+
+| arm | published | spec-aligned | delta |
+|---|---:|---:|---:|
+| format-control | 0.663 | 0.794 | +0.131 |
+| ceiling | 0.645 | 0.776 | +0.131 |
+| typhoon-pipeline | 0.600 | 0.725 | +0.126 |
+| qwen-pipeline | 0.588 | 0.720 | +0.132 |
+| gemini-audio | 0.495 | 0.607 | +0.113 |
+
+**~0.13 of every arm's score is corpus defect.** The ordering is unchanged, so no verdict
+flips — but the levels do, and the "0.838 structural ceiling" story built on them was wrong.
+
+**Why this matters beyond bookkeeping:** the previous next-action was to make the labeller emit
+`unknown`/`undefined`. Doing that would have trained it to **violate the production spec** in
+order to score better against mislabelled data — the exact failure CLAUDE.md names: *"When a
+test fails, ask whether the fixture is wrong before assuming the code is."*
+
+---
+
+
 **Latest (2026-08-20, overnight): Typhoon fixes the transcription stage and does NOT change
 the business outcome — and yesterday's headline needs two corrections.**
 Full write-up: `docs/overnight-2026-08-20.md`. Report:
@@ -70,10 +117,13 @@ and `test_tooling.py`, which had never been collectable here.
 
 **NEXT ACTION, in order:**
 
-1. **Fix the ceiling, not the microphone.** A perfect transcript scores 0.645 because no
-   labeller ever emits `unknown` or `undefined` — 21 of 136 calls are unwinnable for every arm,
-   production included. That is where the next experiment belongs, and no upstream work can
-   move the headline until it is done.
+1. **Fix the CORPUS, not the labeller.** *(Corrected 2026-08-20 — the entry below and the
+   first version of this line both had this backwards; see the correction block above.)* A
+   perfect transcript scores 0.645 because the corpus's `unknown` closing lines are the
+   indecision phrases `retention_v9_16_body.txt:80` explicitly rules to be `save`. The
+   labeller is obeying its spec; the labels contradict it. Relabelling only those 15 calls
+   lifts every arm ~+0.13 with no change to any prediction. The repair is in
+   `asr-eval/scripts/thai_corpus.py`, not in the prompt.
 2. **Send `docs/sentiment-qa-token-ask.md`** — one field converts a directional finding into a
    settled one.
 3. **Send `docs/ask1-email-draft.md`** — still the only thing that retires `RECONCILED: NO`.
@@ -112,8 +162,11 @@ recall) against Qwen's 78% — for a Retention pipeline, the expensive direction
 **What is NOT claimed.** `reason` (net -3) and `product` (+5) are both INDISTINGUISHABLE, not
 wins. Every score is an **upper bound**: this corpus states its labels in ~100% of calls, and
 `leak_probe.py` reports lift 1.00 on the outcome channel rather than hiding it. No arm exceeds
-~0.66 because neither labeller ever emits `unknown` or `undefined`, leaving 21 of 136 calls
-unwinnable for everyone. Synthetic TTS audio, two voices, generator-authored labels.
+~0.66 on `call_result`; ~~because neither labeller ever emits `unknown` or `undefined`, leaving
+21 of 136 calls unwinnable for everyone~~ *(corrected 2026-08-20: those calls are mislabelled
+against the prompt's own spec, not unwinnable, and the same models emit both classes freely on
+the text packs — 33 `unknown` and 19 `undefined` in run `20260814-132425Z-e17-gemini`. It costs
+~0.13 F1 on every arm.)* Synthetic TTS audio, two voices, generator-authored labels.
 **`RECONCILED: NO` stands** — `docs/ask1-email-draft.md` is still the only thing that retires it.
 
 **This reverses the earlier split recommendation.** "Keep ASR external, move labelling
