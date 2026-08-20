@@ -313,7 +313,8 @@ class Composer:
         # it, and nothing downstream has to recover it from text. See business_labels.py.
         self.product = B.choose_product(self.rng)
         self.call_result = B.choose_call_result(self.rng, scenario)
-        self.main, self.secondary, self.third = B.choose_reasons(self.rng, scenario)
+        self.main, self.secondary, self.third = B.choose_reasons(
+            self.rng, scenario, self.call_result)
         # Brand follows product rather than being drawn independently: a TrueVisions call
         # labelled `postpaid` would be a row nobody could defend.
         self.brand = T.BRANDS[B.brand_index_for(self.rng, self.product)]
@@ -661,13 +662,50 @@ class Composer:
         self.add("customer", T.CUSTOMER_CLOSE_SHARED)
         self.add("agent", T.BACKCHANNEL_AGENT)
         self.add("customer", T.CUSTOMER_CLOSE[self.call_result])
+
+        # `unknown` MEANS THE CALL ENDED. So it has to actually end.
+        #
+        # `retention_v9_16_body.txt:81` defines `unknown` as a conversation that "ends before
+        # making a final decision due to an unresolved outcome, such as the call being
+        # technically interrupted". Before 2026-08-20 every call, including these, received
+        # the full six-turn farewell below -- SLA, wrap-up, "anything else?", "no thanks",
+        # goodbye, goodbye. A dropped call that politely says goodbye is not a dropped call,
+        # and no reader could have labelled it one.
+        #
+        # The agent's two confused follow-ups are deliberate: they are what the transcript of
+        # a real dropped call looks like from the surviving side, and they mark the ending as
+        # an interruption rather than a truncated file.
+        if self.call_result == "unknown":
+            self.add("agent", T.LINE_LOST)
+            self.add("agent", T.LINE_LOST_RETRY)
+            return self._finish()
+
         self.add("agent", T.SLA)
-        self.add("agent", T.WRAPUP[self.scenario] + T.WRAPUP_GENERIC)
+        # WRAP-UP MUST NOT CONTRADICT THE OUTCOME. The scenario pools narrate a completed
+        # result ("your service is retained as-is, with the discount effective...") and were
+        # drawn with no reference to `call_result`, so on 2026-08-20 they contradicted the
+        # label on 7 calls -- including a `churn` call whose last substantive line announced
+        # a save. The spec says only the end of the conversation counts (`body:72`), which
+        # makes that the most damaging place in the call to be wrong.
+        if self.call_result == "save":
+            self.add("agent", T.WRAPUP[self.scenario] + T.WRAPUP_GENERIC)
+        else:
+            self.add("agent", T.WRAPUP_GENERIC)
         self.add("agent", T.ANYTHING_ELSE)
         self.add("customer", T.NOTHING_ELSE)
         self.add("agent", T.CLOSING)
         self.add("customer", T.CLOSING_REPLY)
 
+        return self._finish()
+
+    def _finish(self) -> C.Dialogue:
+        """Stamp the metadata and return the dialogue.
+
+        Extracted from the tail of `build()` so the `unknown` branch can end the call early
+        without duplicating any of it -- a second copy of the filename-contract construction
+        is exactly the kind of divergence `meta.validate()` exists to catch and should not
+        have to.
+        """
         meta = C.CallMeta(
             call_id=f"{7100 + self.idx}",
             phone_number=self.phone,

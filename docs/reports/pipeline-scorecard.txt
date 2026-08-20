@@ -58,10 +58,16 @@ COST
   metered cost, per call                            $0.00867               not metered               not metered
 ================================================================================================================
 
-  STRUCTURAL CEILING on call_result: no arm ever predicts unknown or undefined,
-  which together are 22 of 136 ground-truth rows. Those rows score zero for
-  every arm by construction, so the highest weighted F1 anyone can reach here is
-  0.838, not 1.000. Read the F1 column against that, not against 1.
+  unknown and undefined were never predicted by any arm here, and are 22 of
+  136 ground-truth rows -- so the highest weighted F1 reachable on this run is
+  0.838, not 1.000.
+
+  That is a CORPUS defect, not a model limitation, and the difference decides the fix.
+  retention_v9_16_body.txt:80 rules that indecision ("ขอเวลาคิดก่อน") is a `save`; this
+  corpus builds its `unknown` calls out of exactly those phrases, so a spec-obeying
+  model MUST answer `save`. The same models emit both classes freely on the text
+  packs. Relabelling those calls to what the spec says lifts every arm ~+0.13 with
+  no prediction changed. Fix the corpus, not the labeller.
 
 READING THIS TABLE
   Gemini has no transcription stage -- audio goes in and JSON comes out of

@@ -554,9 +554,15 @@ COUNTER = [
 #      outcome across 351 calls" is that property, not a finding about the models.
 #   2. Three of the eight lines were mislabelled. "ขอคิดดูก่อน ... โทรกลับมาใหม่" (let me
 #      think, I will call back) and "ยังไม่ตัดสินใจตอนนี้" (I have not decided yet) sat in
-#      DECLINE. Those are not a churn; they are the `unknown` outcome, which the binary had
-#      no way to express at all. Production uses four values and 12% of real rows are the
-#      two this corpus could not produce.
+#      DECLINE. Those are not a churn.
+#
+#      ~~They are the `unknown` outcome.~~ **WRONG, corrected 2026-08-20.** They are a
+#      `save`. `retention_v9_16_body.txt:80` rules indecision to be a save explicitly, and
+#      quotes these exact phrases while doing it. Moving them to `unknown` created 15 calls
+#      that a spec-obeying labeller could not get right, and cost every arm ~0.13 F1. See
+#      the note on the `unknown` pool below. Production does use four values; the way to
+#      produce the other two is to render what the spec says they ARE, not to relabel
+#      whatever the binary could not express.
 #
 # The replacement is keyed by the outcome the generator has ALREADY CHOSEN (see
 # business_labels.py), plus SHARED -- lines that are genuinely compatible with any outcome.
@@ -586,6 +592,24 @@ PRODUCT_CONFIRM = [
     "ได้{p} {self}ขอดูข้อมูล{service}ของคุณลูกค้าก่อน",
     "เข้าใจแล้ว{p} เป็น{service}ที่สมัครไว้กับ{brand}นะ{p}",
 ]
+
+# The agent's side of a dropped call: two unanswered follow-ups, then nothing. Used only by
+# the `unknown` branch in compose_dialogues, which ends the call here rather than continuing
+# into the farewell sequence.
+LINE_LOST = [
+    "ฮัลโหล{p} ยังอยู่ไหม{p}",
+    "ฮัลโหล{p} ได้ยิน{self}ไหม{p}",
+    "คุณลูกค้า{p} ฮัลโหล{p}",
+    "ฮัลโหล{p} สัญญาณหายไปหรือเปล่า{p}",
+]
+
+LINE_LOST_RETRY = [
+    "สายหลุดไปแล้ว เดี๋ยว{self}โทรกลับนะ{p}",
+    "ไม่ได้ยินแล้ว เดี๋ยว{self}ติดต่อกลับใหม่{p}",
+    "สายตัดไปก่อน{p} เดี๋ยว{self}โทรกลับ",
+    "ขาดการติดต่อ{p} เดี๋ยว{self}โทรกลับอีกครั้ง",
+]
+
 
 CUSTOMER_CLOSE_SHARED = [
     "รับทราบ{p}",
@@ -631,23 +655,99 @@ CUSTOMER_CLOSE = {
         "ไม่ไหวแล้ว{p} ขอเลิกใช้",
         "ตัดสินใจยกเลิกแน่นอน{p}",
     ],
+    # `unknown` = THE CALL ENDED WITHOUT AN ANSWER. Not indecision.
+    #
+    # CORRECTED 2026-08-20, and the previous contents were the single largest defect in this
+    # corpus. This pool used to hold indecision lines -- "ขอคิดดูก่อน" (let me think first),
+    # "ยังไม่ตัดสินใจตอนนี้ ขอเวลาหน่อย" (I have not decided, give me time). The comment above
+    # even argued for putting them here.
+    #
+    # But the spec these calls are SCORED against says the opposite, verbatim
+    # (`src/evalgen/prompts/retention_v9_16_body.txt:80`):
+    #
+    #     Client expresses indecision or asks for time to think ("ลังเล ขอเวลาคิดก่อน
+    #     ยังตัดสินใจไม่ได้"). This is counted as a 'save' because the final decision to
+    #     churn has not been executed or confirmed.
+    #
+    # The rule quotes the very phrases this pool used. So a labeller obeying its instructions
+    # HAD to answer `save` on all 15 of these calls -- and did, on 174 of 186 blocks. The
+    # label was not merely unrecoverable, it was anti-recoverable: the better the model
+    # followed the spec, the more reliably it "failed". Measured cost: ~0.13 weighted F1 on
+    # every arm, with no prediction changed.
+    #
+    # `body:81` defines `unknown` as "Conversation ends before making a final decision due to
+    # an unresolved outcome, such as the call being technically interrupted or crashing (e.g.,
+    # dropped call), or any other reason where the client did not explicitly state a final
+    # outcome". So these lines are interruptions, and `compose_dialogues` truncates the call
+    # after them -- a dropped call that still receives a polite six-turn farewell is not a
+    # dropped call.
     "unknown": [
-        "ขอคิดดูก่อน{p} เดี๋ยว{self}โทรกลับมาใหม่",
-        "ยังไม่ตัดสินใจตอนนี้{p} ขอเวลาหน่อย",
-        "ขอปรึกษาที่บ้านก่อน{p}",
-        "ยังไม่แน่ใจ{p} ขอดูก่อน",
-        "ขอเวลาคิดสักสองสามวัน{p}",
-        "เดี๋ยวขอดูรายละเอียดก่อน{p}",
-        "ยังตอบไม่ได้ตอนนี้{p}",
-        "ขอเก็บไว้พิจารณาก่อน{p}",
+        "ฮัลโหล{p} ฮัลโหล ได้ยินไหม สัญญาณ...",
+        "สายไม่ค่อยดีเลย{p} เดี๋ยว...",
+        "ขอโทษ{p} แบตเตอรี่จะหมดแล้ว เดี๋ยว...",
+        "เดี๋ยวนะ{p} มีคนมาหาที่บ้าน ขอ...",
+        "เสียงขาดๆ หายๆ{p} ไม่ได้ยินเลย...",
+        "อ้าว{p} ฮัลโหล ยังอยู่ไหม...",
+        "ขอโทษ{p} ต้องรีบไปแล้ว เดี๋ยว...",
+        "สัญญาณตัดๆ{p} พูดใหม่ได้ไหม...",
     ],
+    # `undefined` = THE CALL WAS NEVER ABOUT RETENTION. Not a polite decline.
+    #
+    # CORRECTED 2026-08-20 for the mirror-image reason. This pool used to hold soft declines
+    # of an offer -- "ตอนนี้ยังไม่สนใจ" (not interested right now), "ไว้โอกาสหน้า" (maybe next
+    # time). Those describe someone declining a retention offer, which is a retention
+    # conversation, and `body:82` defines `undefined` as the opposite:
+    #
+    #     Conversation irrelevant to retention / The client did not call to discuss changing,
+    #     cancelling, or downgrading their service ... the focus of the call is completely
+    #     outside the scope of retention
+    #
+    # Two of the eight `undefined` calls were also generated on inbound `retention` and
+    # `sim_replace` scenarios (ASR-076, ASR-133), which are in scope by definition. The lines
+    # below say plainly that the caller wanted something else, and `business_labels` no longer
+    # attaches a cancellation reason to these calls.
+    # DIRECTION-NEUTRAL, and that constraint is not cosmetic.
+    #
+    # The first attempt at this pool (2026-08-20) used lines like "{self}ไม่ได้โทรมาเรื่อง
+    # แพ็กเกจ" -- "I didn't CALL about the package". Measured result: `undefined` recall
+    # 0.125, barely moved. The reason is in the corpus's own design: 6 of the 8 `undefined`
+    # calls are OUTBOUND (`business_labels.py:167-168` forces the label at 0.55 for
+    # `telesale_offer` and `device_promo`, both of which are OUT). On an outbound call the
+    # customer never called anyone -- the agent called them -- so the sentence is incoherent
+    # for three quarters of the calls that use it, and a reader is right to distrust it.
+    #
+    # These lines instead say there is nothing to retain, which is true whoever dialled, and
+    # is what `body:82` actually describes: the client "did not call to discuss changing,
+    # cancelling, or downgrading their service", so no retention effort was required.
+    # STILL UNSOLVED, and measured rather than assumed. Both attempts scored ~0:
+    #
+    #   "I didn't call about the package"  -> undefined F1 0.222 (1 of 8), but INCOHERENT:
+    #                                         6 of the 8 calls are OUTBOUND, so the customer
+    #                                         never called anyone.
+    #   the direction-neutral lines below -> undefined F1 0.000; the labeller answers `save`
+    #                                         on 7 of 8.
+    #
+    # The labeller is not wrong. These calls are 68-86 turns of a full retention
+    # conversation -- an agent pitching, a customer discussing their package -- and one
+    # closing sentence cannot outweigh that, nor should it. `body:82` requires the FOCUS of
+    # the call to be outside retention; here only the last line is.
+    #
+    # So `undefined` is not fixable in the closing pool at all. It needs a call whose BODY is
+    # not a retention conversation, which is a new scenario rather than a new sentence, and
+    # a decision about what such a call looks like for an outbound sales pack. Left as a
+    # known 8-row (5.8%) limitation, stated in the report, rather than papered over by
+    # keeping the higher-scoring but incoherent lines.
+    #
+    # The coherent version is kept deliberately: shipping dialogue that is nonsense for 75%
+    # of the calls that use it, to gain 0.016 weighted F1 from a single lucky match, is
+    # optimising the metric against the truth.
     "undefined": [
-        "ตอนนี้ยังไม่สนใจ{p}",
-        "ไว้โอกาสหน้า{p}",
-        "ขอบคุณ{p} แต่ยังไม่ต้องการ",
-        "ไม่สะดวกคุยตอนนี้{p}",
-        "ไว้ค่อยว่ากันใหม่{p}",
-        "พอดีติดธุระอยู่{p}",
+        "{self}ไม่ได้จะเปลี่ยนหรือยกเลิกอะไรอยู่แล้ว{p}",
+        "เรื่องนี้ไม่เกี่ยวกับแพ็กเกจที่{self}ใช้อยู่{p}",
+        "{self}ไม่ได้ใช้บริการตัวนั้นอยู่แล้ว{p}",
+        "แพ็กเกจเดิม{self}ก็ใช้อยู่ปกติ ไม่มีปัญหาอะไร{p}",
+        "{self}ว่าคุยผิดเรื่องแล้ว{p} ไม่ได้จะทำอะไรกับแพ็กเกจ",
+        "ตรงนี้ไม่ได้เกี่ยวกับการยกเลิกหรือลดแพ็กเกจเลย{p}",
     ],
 }
 

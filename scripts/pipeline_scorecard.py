@@ -362,24 +362,56 @@ def main() -> int:
 
     # The cap is arithmetic, not a model property, and without it the F1 column reads as
     # though every arm is simply bad.
+    # A class no arm predicts caps the reachable F1 -- but WHY it goes unpredicted decides
+    # whether that cap is a model limitation or a corpus defect, and the first version of
+    # this note asserted the former without checking.
+    #
+    # It is the latter, measured 2026-08-20. `retention_v9_16_body.txt:80` rules that a
+    # client who "expresses indecision or asks for time to think" is a `save`. The corpus's
+    # entire `unknown` pool (asr-eval/scripts/thai_corpus.py:634-643) is exactly those
+    # indecision phrases, so a model FOLLOWING ITS SPEC must answer `save` on all of them --
+    # and does, on 174 of 186 blocks. The same models emit `unknown` 33 times and `undefined`
+    # 19 times on the text packs (run 20260814-132425Z-e17-gemini), so they are willing.
+    #
+    # Emission is therefore MEASURED here rather than assumed, and the wording distinguishes
+    # "no arm predicted this" from "no arm can".
+    import collections as _c
+
     gt_all, _ = e23.build_pair(truth, phones,
                                {k: v for k, v in collapsed[present[0]].items()
                                 if k in shared}) if present else ([], [])
-    import collections as _c
     support = _c.Counter(r.call_result for r in gt_all)
-    never = [c for c in ("unknown", "undefined") if support.get(c)]
-    if never:
-        blocked = sum(support[c] for c in never)
+    emitted: _c.Counter = _c.Counter()
+    for arm, *_ in COLUMNS:
+        if arm not in collapsed:
+            continue
+        _gt, arm_pred = e23.build_pair(
+            truth, phones, {k: v for k, v in collapsed[arm].items() if k in shared})
+        emitted.update(r.call_result for r in arm_pred)
+
+    unpredicted = [c for c in ("unknown", "undefined")
+                   if support.get(c) and not emitted.get(c)]
+    if unpredicted:
+        blocked = sum(support[c] for c in unpredicted)
         total = sum(support.values())
         lines.append("")
-        lines.append(f"  STRUCTURAL CEILING on call_result: no arm ever predicts "
-                     f"{' or '.join(never)},")
-        lines.append(f"  which together are {blocked} of {total} ground-truth rows. Those "
-                     f"rows score zero for")
-        lines.append(f"  every arm by construction, so the highest weighted F1 anyone can "
-                     f"reach here is")
-        lines.append(f"  {(total - blocked) / total:.3f}, not 1.000. Read the F1 column "
-                     f"against that, not against 1.")
+        lines.append(f"  {' and '.join(unpredicted)} were never predicted by any arm here, "
+                     f"and are {blocked} of")
+        lines.append(f"  {total} ground-truth rows -- so the highest weighted F1 reachable "
+                     f"on this run is")
+        lines.append(f"  {(total - blocked) / total:.3f}, not 1.000.")
+        lines.append("")
+        lines.append("  That is a CORPUS defect, not a model limitation, and the difference "
+                     "decides the fix.")
+        lines.append("  retention_v9_16_body.txt:80 rules that indecision (\"ขอเวลาคิดก่อน\") "
+                     "is a `save`; this")
+        lines.append("  corpus builds its `unknown` calls out of exactly those phrases, so a "
+                     "spec-obeying")
+        lines.append("  model MUST answer `save`. The same models emit both classes freely "
+                     "on the text")
+        lines.append("  packs. Relabelling those calls to what the spec says lifts every arm "
+                     "~+0.13 with")
+        lines.append("  no prediction changed. Fix the corpus, not the labeller.")
 
     lines.append("")
     lines.append("READING THIS TABLE")

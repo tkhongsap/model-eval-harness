@@ -235,11 +235,21 @@ it.</p>
 </div>
 
 <div class="caution">
-<p><strong>Why every F1 in this table looks low: 1.000 is not reachable.</strong></p>
-<p>Ground truth for <code>call_result</code> carries four classes — but <strong>no arm ever
-predicts <code>unknown</code> or <code>undefined</code></strong>, and those are
-<strong>22 of 136 rows</strong>. Those rows score zero for every arm by construction, so the
-highest weighted F1 anyone can reach on this dimension is <strong>0.838</strong>, not 1.000.</p>
+<p><strong>Why every F1 in this table looks low — and why it is the corpus, not the models.</strong></p>
+<p>No arm predicted <code>unknown</code> or <code>undefined</code> on this run, and those are
+<strong>22 of 136 rows</strong>, so the highest weighted F1 reachable here is
+<strong>0.838</strong>, not 1.000.</p>
+<p><strong>That is a corpus defect, and the distinction decides the fix.</strong> The
+labelling spec (<code>retention_v9_16_body.txt:80</code>) states that a client who
+&ldquo;expresses indecision or asks for time to think&rdquo; is a <code>save</code>. This
+corpus builds its <code>unknown</code> calls out of exactly those phrases — so a model
+<em>following its instructions</em> must answer <code>save</code>, and does, on 174 of 186
+blocks. The same models emit <code>unknown</code> 33 times and <code>undefined</code> 19 times
+on the text packs, so they are perfectly willing to use both.</p>
+<p><strong>Relabelling only those 15 calls to what the spec says they are — with no prediction
+changed — lifts every arm by ~0.13:</strong> ceiling 0.645&nbsp;&rarr;&nbsp;0.776, Typhoon
+0.600&nbsp;&rarr;&nbsp;0.725, Qwen 0.588&nbsp;&rarr;&nbsp;0.720, Gemini
+0.495&nbsp;&rarr;&nbsp;0.607. The ordering does not change, so no verdict flips.</p>
 <p>Restricted to the two classes the models actually use, the same runs read
 <strong>Gemini 0.590 · Qwen 0.702 · Typhoon 0.716</strong> — and the ordering is unchanged.
 The per-class detail shows why: on <code>churn</code>, precision is <strong>0.92–1.00</strong>
@@ -504,9 +514,11 @@ virtualenv did not exist; the full 152-test suite now runs.</li>
 <li>Generator-authored labels. <strong>RECONCILED: NO.</strong></li>
 <li>Every F1 here is an <strong>upper bound</strong>: the corpus states its labels in ~100% of
 calls, and the measured leak is published rather than hidden.</li>
-<li>No arm exceeds ~0.66 on <code>call_result</code> because no labeller ever emits
-<code>unknown</code> or <code>undefined</code> — <strong>21 of 136 calls are unwinnable for
-every arm</strong>, production included.</li>
+<li>No arm exceeds ~0.66 on <code>call_result</code>, but <strong>not because those calls are
+unwinnable</strong> — an earlier version of this page said so and was wrong. The corpus labels
+22 of 136 rows <code>unknown</code>/<code>undefined</code> in a way that contradicts the
+labelling spec, which routes those same sentences to <code>save</code>. Worth ~0.13 F1 on every
+arm. The repair is in the corpus.</li>
 </ul>
 
 <h2>8 · What comes next</h2>
@@ -516,9 +528,11 @@ business-metric change, and say so up front.</li>
 <li><strong>Send the Vertex token ask.</strong> One field turns a directional finding into a
 settled one.</li>
 <li><strong>Send Ask&nbsp;1.</strong> Still the only path off <code>RECONCILED: NO</code>.</li>
-<li><strong>Fix the ceiling, not the microphone.</strong> A perfect transcript scores 0.645.
-Until the labeller can emit <code>unknown</code> and <code>undefined</code>, no upstream
-improvement can move the headline. That is where the next experiment belongs.</li>
+<li><strong>Fix the corpus, not the labeller.</strong> A perfect transcript scores 0.645
+because the corpus&rsquo;s <code>unknown</code> calls are labelled against the spec, not
+because the labeller is timid. Teaching it to emit <code>unknown</code> on indecision would
+train it to <em>violate</em> the production spec to score better on bad data. The repair is
+three edits in <code>asr-eval/scripts/</code> and costs no model calls.</li>
 </ol>
 
 <footer>
