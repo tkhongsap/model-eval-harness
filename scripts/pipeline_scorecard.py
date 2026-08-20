@@ -401,17 +401,26 @@ def main() -> int:
                      f"on this run is")
         lines.append(f"  {(total - blocked) / total:.3f}, not 1.000.")
         lines.append("")
-        lines.append("  That is a CORPUS defect, not a model limitation, and the difference "
-                     "decides the fix.")
-        lines.append("  retention_v9_16_body.txt:80 rules that indecision (\"ขอเวลาคิดก่อน\") "
-                     "is a `save`; this")
-        lines.append("  corpus builds its `unknown` calls out of exactly those phrases, so a "
-                     "spec-obeying")
-        lines.append("  model MUST answer `save`. The same models emit both classes freely "
-                     "on the text")
-        lines.append("  packs. Relabelling those calls to what the spec says lifts every arm "
-                     "~+0.13 with")
-        lines.append("  no prediction changed. Fix the corpus, not the labeller.")
+        lines.append("  That is a CORPUS limitation, not a model one, and it is a KNOWN "
+                     "one rather than a")
+        lines.append("  discovery. `unknown` used to sit here too: the corpus built those "
+                     "calls from the")
+        lines.append("  indecision phrases retention_v9_16_body.txt:80 explicitly rules to "
+                     "be a `save`, so a")
+        lines.append("  spec-obeying model could never label them right. That was fixed on "
+                     "2026-08-20 and")
+        lines.append("  `unknown` now scores 0.966.")
+        lines.append("")
+        lines.append("  `undefined` resisted the same treatment and the reason is worth "
+                     "keeping. The spec")
+        lines.append("  (body:82) requires the FOCUS of the call to be outside retention; "
+                     "these calls are")
+        lines.append("  68-86 turns of a real retention conversation with one closing line "
+                     "saying otherwise,")
+        lines.append("  and the labeller answers `save` on 7 of 8. It is right to. Fixing it "
+                     "needs a scenario")
+        lines.append("  whose BODY is out of scope -- a new generator branch, not another "
+                     "sentence.")
 
     lines.append("")
     lines.append("READING THIS TABLE")

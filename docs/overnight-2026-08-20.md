@@ -4,6 +4,11 @@
 **Spend:** $3.74 OpenRouter (cap was $12). Token Factory calls are unmetered.
 **Runs:** `out/runs/20260820-e23-with-typhoon` (2,046 records, five arms).
 
+**SUPERSEDED IN PART — see section 9.** Sections 1–3 report the run on the corpus as it stood
+before the labelling defect in section 8 was found and fixed. Their arm ORDERING still holds,
+but every F1 level is understated by ~0.13 and the fragility figures are much worse than the
+corrected run. Section 9 has the numbers to quote.
+
 ---
 
 ## 1. The headline, and the thing that undercuts it
@@ -339,3 +344,95 @@ The published arm ordering and every paired verdict stand: the correction lifts 
 together. The end-to-end arms have **not** been re-run on the corrected corpus — that needs
 fresh audio for the changed calls (`resume_render.py`, ~1 h) then a re-run, and it is the
 natural next step.
+
+---
+
+## 9. The re-run on the corrected corpus — every number in sections 1–3 is superseded
+
+Section 8 fixed the corpus and measured the `ceiling` arm alone. This is the full re-run:
+fresh audio for all 138 calls, both ASR models re-transcribed from that audio, all five arms
+re-labelled. **Run `out/runs/20260820-055342Z-e21`, 2,070 records, every arm 414 ok, zero
+failures.**
+
+### Business outcome — replicate 1, 138 calls in every column
+
+| arm | call_result F1 | accuracy | reason F1 | product F1 |
+|---|---:|---:|---:|---:|
+| `format-control` | **0.796** | 101/138 | 0.219 | 0.807 |
+| `ceiling` | 0.787 | 100/138 | 0.229 | **0.812** |
+| **`typhoon-pipeline`** | **0.711** | 87/138 | 0.229 | 0.807 |
+| `qwen-pipeline` | 0.682 | 84/138 | 0.223 | 0.761 |
+| `gemini-audio` | 0.524 | 62/138 | 0.222 | 0.692 |
+
+Compare with section 1: `ceiling` 0.645 → **0.787**, typhoon 0.597 → **0.711**, qwen 0.588 →
+**0.682**, gemini 0.495 → **0.524**. The corpus fix lifted every arm, and lifted the internal
+arms more than production's — because the mislabelled `unknown` calls were ones the internal
+labeller was getting right and being marked wrong for.
+
+`format-control` sits just above `ceiling` again (0.796 vs 0.787), which is the control
+behaving: ASR-shaped formatting costs nothing, so the gap to the pipelines is mishearing.
+
+### The verdict is no longer fragile
+
+| comparison | call_result | reason | product |
+|---|---|---|---|
+| typhoon vs **gemini** | **AHEAD** +25, band ±15 | INDISTINGUISHABLE +7 | **AHEAD** +14, band ±12 |
+| qwen vs **gemini** | **AHEAD** +22, band ±16 | INDISTINGUISHABLE +6 | INDISTINGUISHABLE +9 |
+| **typhoon vs qwen** | INDISTINGUISHABLE +3 | INDISTINGUISHABLE +1 | INDISTINGUISHABLE +5 |
+
+Fragility, 20,000 cluster bootstrap resamples over calls:
+
+| | before the corpus fix | after |
+|---|---:|---:|
+| typhoon vs gemini, `call_result` margin | +0 | **+10** |
+| bootstrap still AHEAD | 61.0% | **98.3%** |
+| single calls that flip it alone | 0 | **0** |
+
+**This is the substantive change.** The old headline cleared its band by exactly zero and
+survived resampling 61% of the time — a coin flip. It now clears by 10 and survives 98.3%.
+The internal pipeline genuinely beats production's audio arm on the business outcome, and
+`product` has crossed into AHEAD as well.
+
+### What did NOT change
+
+**Typhoon vs Qwen is still INDISTINGUISHABLE on all three dimensions** (+3, +1, +5). The
+finding from section 1 survives the corpus fix intact: a 2.5× better transcriber with zero
+runaways does not measurably change the business answer. `ceiling` at 0.787 against
+typhoon's 0.711 says there is 0.076 of headroom left upstream, and Typhoon has already taken
+most of what was available.
+
+### ASR stage, re-measured on the new audio
+
+| metric | Qwen3-ASR 1.7B | Typhoon large-v3 |
+|---|---:|---:|
+| CER | 0.1127 | **0.0452** |
+| WER | 0.1699 | **0.0784** |
+| calls transcribed | **138/138** | **138/138** |
+| runaways | **16 (11.6%)** | **0** |
+| ASR latency, median | **25.0 s** | 43.2 s |
+| real-time factor | **0.066** | 0.118 |
+
+Both reproduce to three decimal places on independently rendered audio, which is the
+strongest evidence yet that the ASR gap is real and not a corpus artifact. Two changes worth
+noting: Qwen transcribed **all 138** this time (it previously gave up on two), and its
+per-item latency is now recorded — it is **1.7× faster** than Typhoon, which is the one
+operational column where Qwen wins.
+
+### The remaining ceiling
+
+`undefined` is still never predicted — 8 of 138 rows — so the reachable maximum on
+`call_result` is **0.942**, not 1.000. That is the known limitation from section 8, unchanged:
+these calls are 68–86 turns of a real retention conversation, and fixing them needs a scenario
+whose body is out of scope rather than another closing line.
+
+### A defect the re-run exposed
+
+The first attempt at this run was **destroyed by a VPN drop** — 297 "unreachable host"
+errors, and `format-control` completed 130 of 414 calls. It scored **0.358**, which reads
+exactly like a broken arm and was a broken network. Section 3 of the scorer printed the
+failure counts, and that was not enough: the F1 table above it still showed plausible numbers.
+
+`experiment23_score.py` now **refuses** any arm that answered under 90% of the truth set,
+naming the arms and their coverage. The denominator is the truth set rather than the run's own
+rows, because the standard recovery — strip failed rows and `--resume` — otherwise deletes the
+very evidence the gate needs.

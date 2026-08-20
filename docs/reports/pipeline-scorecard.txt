@@ -1,6 +1,6 @@
 
                                          END-TO-END PIPELINE SCORECARD                                          
-                         136 calls scored in EVERY column  |  replicate policy 'first'                          
+                         138 calls scored in EVERY column  |  replicate policy 'first'                          
 
                                             Gemini 2.5 Flash         Typhoon + Qwen3.8        Qwen ASR + Qwen3.8
 ================================================================================================================
@@ -9,65 +9,70 @@ PIPELINE SHAPE
   labeller                                      (same model)           Qwen3.8-27B-fp8           Qwen3.8-27B-fp8
   model calls per item                                     1                         2                         2
   runtime                                         OpenRouter             Token Factory             Token Factory
-  calls scored (common set)                              136                       136                       136
-  items this arm ran                                     136                       138                       136
+  calls scored (common set)                              138                       138                       138
+  items this arm ran                                     138                       138                       138
 ----------------------------------------------------------------------------------------------------------------
 BUSINESS OUTCOME  (primary)                                                                                     
-  weighted f1 - call_result                            0.495                     0.600                     0.588
-  weighted f1 - reason                                 0.267                     0.230                     0.207
-  weighted f1 - product                                0.727                     0.788                     0.762
-  weighted precision - call_result                     0.620                     0.675                     0.684
-  weighted precision - reason                          0.227                     0.181                     0.157
-  weighted precision - product                         0.732                     0.774                     0.744
-  weighted recall - call_result                        0.463                     0.581                     0.559
-  weighted recall - reason                             0.450                     0.479                     0.443
-  weighted recall - product                            0.765                     0.824                     0.794
-  call accuracy - call_result                60/136  (44.1%)           75/136  (55.1%)           74/136  (54.4%)
-  call accuracy - reason                     56/136  (41.2%)           60/136  (44.1%)           55/136  (40.4%)
-  call accuracy - product                    99/136  (72.8%)          104/136  (76.5%)          103/136  (75.7%)
+  weighted f1 - call_result                            0.524                     0.711                     0.682
+  weighted f1 - reason                                 0.222                     0.229                     0.223
+  weighted f1 - product                                0.692                     0.807                     0.761
+  weighted precision - call_result                     0.732                     0.810                     0.802
+  weighted precision - reason                          0.186                     0.185                     0.171
+  weighted precision - product                         0.697                     0.797                     0.743
+  weighted recall - call_result                        0.478                     0.667                     0.623
+  weighted recall - reason                             0.410                     0.485                     0.470
+  weighted recall - product                            0.732                     0.833                     0.797
+  call accuracy - call_result                62/138  (44.9%)           87/138  (63.0%)           84/138  (60.9%)
+  call accuracy - reason                     50/138  (36.2%)           57/138  (41.3%)           56/138  (40.6%)
+  call accuracy - product                    96/138  (69.6%)          110/138  (79.7%)          105/138  (76.1%)
 ----------------------------------------------------------------------------------------------------------------
 TRANSCRIPTION STAGE                                                                                             
-  CER (normalised)                              no ASR stage                    0.0438                    0.1120
-  WER (normalised)                              no ASR stage                    0.0774                    0.1691
-  entity accuracy                               no ASR stage                     95.3%                     96.0%
-  calls transcribed                             no ASR stage                   138/138                   136/138
-  runaway failures                              no ASR stage                 0  (0.0%)               16  (11.8%)
-  scoreable after exclusion                     no ASR stage                       138                       120
+  CER (normalised)                              no ASR stage                    0.0452                    0.1127
+  WER (normalised)                              no ASR stage                    0.0784                    0.1699
+  entity accuracy                               no ASR stage                     94.6%                     96.0%
+  calls transcribed                             no ASR stage                   138/138                   138/138
+  runaway failures                              no ASR stage                 0  (0.0%)               16  (11.6%)
+  scoreable after exclusion                     no ASR stage                       138                       122
 ----------------------------------------------------------------------------------------------------------------
 LATENCY  (seconds)                                                                                              
-  ASR stage, median                             no ASR stage                      45.5              not recorded
-  label call, median                                    23.8                      18.5                      18.4
-  label call, p95                                       41.3                      30.0                      26.4
-  label call, max                                       89.0                     141.4                      44.1
-  END TO END, median                                    23.8                      64.0       >18.4 (ASR untimed)
-  ASR real-time factor                          no ASR stage                     0.121              not recorded
+  ASR stage, median                             no ASR stage                      43.2                      25.0
+  label call, median                                     6.1                      19.3                      20.8
+  label call, p95                                        9.2                      24.5                      30.0
+  label call, max                                       21.2                      37.9                      90.7
+  END TO END, median                                     6.1                      62.5                      45.8
+  ASR real-time factor                          no ASR stage                     0.118                     0.066
 ----------------------------------------------------------------------------------------------------------------
 TOKENS  (label call)                                                                                            
-  input, median                                       11,466                     3,664                     3,708
-  output, median                                         235                       244                       243
-  input, total                                     4,501,696                 1,510,911                 1,850,037
-  output, total                                       92,596                   104,200                   102,722
+  input, median                                       11,628                     3,660                     3,682
+  output, median                                         233                       246                       245
+  input, total                                     4,776,249                 1,506,687                 1,859,067
+  output, total                                       98,029                   103,753                   104,823
 ----------------------------------------------------------------------------------------------------------------
 RELIABILITY                                                                                                     
-  label calls made                                       408                       414                       408
-  parse failures                                      20/408                     0/414                     0/408
-  unstable items (of 3 reps)                           6/136                    30/138                    37/136
+  label calls made                                       414                       414                       414
+  parse failures                                       0/414                     0/414                     0/414
+  unstable items (of 3 reps)                          21/138                    29/138                    29/138
 ----------------------------------------------------------------------------------------------------------------
 COST                                                                                                            
-  metered cost, all calls                            $3.3655              internal GPU              internal GPU
-  metered cost, per call                            $0.00867               not metered               not metered
+  metered cost, all calls                            $3.6379              internal GPU              internal GPU
+  metered cost, per call                            $0.00879               not metered               not metered
 ================================================================================================================
 
-  unknown and undefined were never predicted by any arm here, and are 22 of
-  136 ground-truth rows -- so the highest weighted F1 reachable on this run is
-  0.838, not 1.000.
+  undefined were never predicted by any arm here, and are 8 of
+  138 ground-truth rows -- so the highest weighted F1 reachable on this run is
+  0.942, not 1.000.
 
-  That is a CORPUS defect, not a model limitation, and the difference decides the fix.
-  retention_v9_16_body.txt:80 rules that indecision ("ขอเวลาคิดก่อน") is a `save`; this
-  corpus builds its `unknown` calls out of exactly those phrases, so a spec-obeying
-  model MUST answer `save`. The same models emit both classes freely on the text
-  packs. Relabelling those calls to what the spec says lifts every arm ~+0.13 with
-  no prediction changed. Fix the corpus, not the labeller.
+  That is a CORPUS limitation, not a model one, and it is a KNOWN one rather than a
+  discovery. `unknown` used to sit here too: the corpus built those calls from the
+  indecision phrases retention_v9_16_body.txt:80 explicitly rules to be a `save`, so a
+  spec-obeying model could never label them right. That was fixed on 2026-08-20 and
+  `unknown` now scores 0.966.
+
+  `undefined` resisted the same treatment and the reason is worth keeping. The spec
+  (body:82) requires the FOCUS of the call to be outside retention; these calls are
+  68-86 turns of a real retention conversation with one closing line saying otherwise,
+  and the labeller answers `save` on 7 of 8. It is right to. Fixing it needs a scenario
+  whose BODY is out of scope -- a new generator branch, not another sentence.
 
 READING THIS TABLE
   Gemini has no transcription stage -- audio goes in and JSON comes out of
@@ -79,4 +84,3 @@ READING THIS TABLE
   Business figures follow the preregistered replicate-1 rule and are
   restricted to the calls EVERY column answered; latency and tokens pool
   every call actually made, which is why their denominators differ.
-  typhoon-pipeline: 2 item(s) held out of the business figures because no other arm ran them -- ASR-082, ASR-089.
