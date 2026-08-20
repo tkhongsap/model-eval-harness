@@ -167,11 +167,28 @@ def main() -> int:
     collapsed, unstable, _failures = e23.collapse(args.run, args.policy)
     ops = operational(args.run)
 
+    # EVERY COLUMN IS SCORED ON THE SAME ITEMS, and that is not a formality here.
+    #
+    # The four original arms ran 136 items; the typhoon arm was added later by a resume and
+    # ran 138, because Qwen3-ASR never produced transcripts for ASR-082 and ASR-089 and the
+    # original run was therefore restricted to what every arm could answer. Reporting
+    # typhoon's F1 over 138 beside the others' over 136 compares arms on different item
+    # sets -- exactly the mistake `items()` refuses a mismatched manifest to prevent, and
+    # the same class of error as a pack-A figure printed under a pooled heading.
+    #
+    # The effect measured 2026-08-20 is small (call_result 0.597 over 138 vs 0.600 over the
+    # shared 136) but "small" is a fact discovered after restricting, not a reason to skip
+    # it. The paired test already intersected; this makes section 1 agree with it.
+    present = [arm for arm, *_ in COLUMNS if arm in collapsed]
+    shared = set.intersection(*(set(collapsed[arm]) for arm in present)) if present else set()
+    dropped = {arm: sorted(set(collapsed[arm]) - shared) for arm in present}
+
     business: dict = {}
     for arm, *_ in COLUMNS:
         if arm not in collapsed:
             continue
-        gt, pred = e23.build_pair(truth, phones, collapsed[arm])
+        subset = {k: v for k, v in collapsed[arm].items() if k in shared}
+        gt, pred = e23.build_pair(truth, phones, subset)
         # The same three scorers section 1 of experiment23_score uses, called the same way,
         # so this table cannot drift from the report it summarises.
         entry = {
@@ -183,6 +200,7 @@ def main() -> int:
         for dim in ("call_result", "reason", "product"):
             verdicts = e23.call_level_correct(gt, pred, dim)
             entry[f"{dim}_acc"] = (sum(verdicts.values()), len(verdicts))
+        entry["_n"] = len(subset)
         business[arm] = entry
 
     asr = {arm: asr_stage(args.pack, stem) for arm, _n, _t, stem in COLUMNS}
@@ -201,8 +219,8 @@ def main() -> int:
 
     lines.append("")
     lines.append("END-TO-END PIPELINE SCORECARD".center(34 + w * len(COLUMNS)))
-    lines.append(f"138 synthetic Thai retention calls  |  replicate policy '{args.policy}'"
-                 .center(34 + w * len(COLUMNS)))
+    lines.append(f"{len(shared)} calls scored in EVERY column  |  replicate policy "
+                 f"'{args.policy}'".center(34 + w * len(COLUMNS)))
     lines.append("")
     row("", heads)
     rule("=")
@@ -212,6 +230,10 @@ def main() -> int:
     row("labeller", ["(same model)", "Qwen3.8-27B-fp8", "Qwen3.8-27B-fp8"], indent=True)
     row("model calls per item", ["1", "2", "2"], indent=True)
     row("runtime", ["OpenRouter", "Token Factory", "Token Factory"], indent=True)
+    row("calls scored (common set)", [
+        str(business.get(a, {}).get("_n", 0)) for a, *_ in COLUMNS], indent=True)
+    row("items this arm ran", [
+        str(len(collapsed.get(a, {}))) for a, *_ in COLUMNS], indent=True)
     rule()
 
     row("BUSINESS OUTCOME  (primary)", ["" for _ in COLUMNS])
@@ -338,6 +360,27 @@ def main() -> int:
     row("metered cost, per call", per_call, indent=True)
     rule("=")
 
+    # The cap is arithmetic, not a model property, and without it the F1 column reads as
+    # though every arm is simply bad.
+    gt_all, _ = e23.build_pair(truth, phones,
+                               {k: v for k, v in collapsed[present[0]].items()
+                                if k in shared}) if present else ([], [])
+    import collections as _c
+    support = _c.Counter(r.call_result for r in gt_all)
+    never = [c for c in ("unknown", "undefined") if support.get(c)]
+    if never:
+        blocked = sum(support[c] for c in never)
+        total = sum(support.values())
+        lines.append("")
+        lines.append(f"  STRUCTURAL CEILING on call_result: no arm ever predicts "
+                     f"{' or '.join(never)},")
+        lines.append(f"  which together are {blocked} of {total} ground-truth rows. Those "
+                     f"rows score zero for")
+        lines.append(f"  every arm by construction, so the highest weighted F1 anyone can "
+                     f"reach here is")
+        lines.append(f"  {(total - blocked) / total:.3f}, not 1.000. Read the F1 column "
+                     f"against that, not against 1.")
+
     lines.append("")
     lines.append("READING THIS TABLE")
     lines.append("  Gemini has no transcription stage -- audio goes in and JSON comes out of")
@@ -346,8 +389,13 @@ def main() -> int:
     lines.append("  transcriber, so the gap between those two columns IS the ASR stage.")
     lines.append("  Cost is metered only on OpenRouter; the internal arms run on company GPU")
     lines.append("  with no per-call price, which is not the same as being free.")
-    lines.append("  Business figures follow the preregistered replicate-1 rule; latency and")
-    lines.append("  tokens pool every call actually made.")
+    lines.append("  Business figures follow the preregistered replicate-1 rule and are")
+    lines.append("  restricted to the calls EVERY column answered; latency and tokens pool")
+    lines.append("  every call actually made, which is why their denominators differ.")
+    for arm, missing in dropped.items():
+        if missing:
+            lines.append(f"  {arm}: {len(missing)} item(s) held out of the business figures "
+                         f"because no other arm ran them -- {', '.join(missing)}.")
 
     text = "\n".join(lines)
     print(text)

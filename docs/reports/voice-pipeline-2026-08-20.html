@@ -139,24 +139,28 @@ ASR stage alone.</p>
 <tr><td>Model calls per item</td><td class="n">1</td><td class="n">2</td><td class="n">2</td></tr>
 <tr><td>Runtime</td><td class="n">OpenRouter</td><td class="n">Token Factory</td>
   <td class="n">Token Factory</td></tr>
+<tr><td>Calls scored <span class="note">— common set</span></td><td class="n">136</td>
+  <td class="n">136</td><td class="n">136</td></tr>
+<tr><td>Items this arm ran</td><td class="n">136</td><td class="n">138</td>
+  <td class="n">136</td></tr>
 
 <tr class="sec"><td colspan="4">Business outcome &nbsp;<span class="note">— primary</span></td></tr>
 <tr class="hero"><td>Weighted F1 — call_result</td><td class="n">0.495</td>
-  <td class="n"><strong>0.597</strong></td><td class="n">0.588</td></tr>
+  <td class="n"><strong>0.600</strong></td><td class="n">0.588</td></tr>
 <tr><td>Weighted F1 — reason</td><td class="n"><strong>0.267</strong></td>
   <td class="n">0.230</td><td class="n">0.207</td></tr>
 <tr><td>Weighted F1 — product</td><td class="n">0.727</td>
-  <td class="n"><strong>0.791</strong></td><td class="n">0.762</td></tr>
-<tr><td>Precision — call_result</td><td class="n">0.620</td><td class="n">0.670</td>
+  <td class="n"><strong>0.788</strong></td><td class="n">0.762</td></tr>
+<tr><td>Precision — call_result</td><td class="n">0.620</td><td class="n">0.675</td>
   <td class="n"><strong>0.684</strong></td></tr>
 <tr><td>Recall — call_result</td><td class="n">0.463</td>
-  <td class="n"><strong>0.580</strong></td><td class="n">0.559</td></tr>
+  <td class="n"><strong>0.581</strong></td><td class="n">0.559</td></tr>
 <tr class="hero"><td>Call accuracy — call_result</td><td class="n">60/136 &nbsp;44.1%</td>
-  <td class="n"><strong>76/138 &nbsp;55.1%</strong></td><td class="n">74/136 &nbsp;54.4%</td></tr>
+  <td class="n"><strong>75/136 &nbsp;55.1%</strong></td><td class="n">74/136 &nbsp;54.4%</td></tr>
 <tr><td>Call accuracy — reason</td><td class="n">56/136 &nbsp;41.2%</td>
-  <td class="n"><strong>61/138 &nbsp;44.2%</strong></td><td class="n">55/136 &nbsp;40.4%</td></tr>
+  <td class="n"><strong>60/136 &nbsp;44.1%</strong></td><td class="n">55/136 &nbsp;40.4%</td></tr>
 <tr><td>Call accuracy — product</td><td class="n">99/136 &nbsp;72.8%</td>
-  <td class="n"><strong>106/138 &nbsp;76.8%</strong></td><td class="n">103/136 &nbsp;75.7%</td></tr>
+  <td class="n"><strong>104/136 &nbsp;76.5%</strong></td><td class="n">103/136 &nbsp;75.7%</td></tr>
 
 <tr class="sec"><td colspan="4">Transcription stage</td></tr>
 <tr><td>CER (normalised)</td><td class="n na">no ASR stage</td>
@@ -230,6 +234,28 @@ which would report a two-stage pipeline as faster than it is, in the direction t
 it.</p>
 </div>
 
+<div class="caution">
+<p><strong>Why every F1 in this table looks low: 1.000 is not reachable.</strong></p>
+<p>Ground truth for <code>call_result</code> carries four classes — but <strong>no arm ever
+predicts <code>unknown</code> or <code>undefined</code></strong>, and those are
+<strong>22 of 136 rows</strong>. Those rows score zero for every arm by construction, so the
+highest weighted F1 anyone can reach on this dimension is <strong>0.838</strong>, not 1.000.</p>
+<p>Restricted to the two classes the models actually use, the same runs read
+<strong>Gemini 0.590 · Qwen 0.702 · Typhoon 0.716</strong> — and the ordering is unchanged.
+The per-class detail shows why: on <code>churn</code>, precision is <strong>0.92–1.00</strong>
+for all three (when they say churn, they are right) while recall is only 0.47–0.64. Every arm
+over-predicts <code>save</code>.</p>
+<p>That is the real bottleneck, and it is a schema-and-corpus problem rather than a model one.
+No better transcriber can fix it.</p>
+</div>
+
+<p><strong>All three columns are scored on the same 136 calls.</strong> Typhoon actually
+transcribed 138; the two extra (<code>ASR-082</code>, <code>ASR-089</code>) are the calls
+Qwen3-ASR never produced, so no other arm ran them and they are held out of the business
+figures. Scoring 138 against 136 would compare arms on different item sets. The effect is
+small — Typhoon&rsquo;s call_result F1 moves 0.597 &rarr; 0.600 — but small is something you
+learn <em>after</em> restricting, not a reason to skip it.</p>
+
 <p>Two things jump out of the table that the headline numbers alone hide. <strong>Gemini's
 input cost is 3&times; the internal arms'</strong> — 11,466 median input tokens against ~3,700,
 because the audio itself is tokenised. And <strong>Gemini is the most stable arm by a wide
@@ -293,8 +319,8 @@ preregistered.</p>
   <td class="n">0.645</td><td class="n">84/136</td><td class="n">0.228</td>
   <td class="n">0.808</td></tr>
 <tr class="hero"><td class="arm">typhoon-pipeline</td>
-  <td class="n">0.597</td><td class="n">76/138</td><td class="n">0.230</td>
-  <td class="n">0.791</td></tr>
+  <td class="n">0.600</td><td class="n">75/136</td><td class="n">0.230</td>
+  <td class="n">0.788</td></tr>
 <tr><td class="arm">qwen-pipeline</td>
   <td class="n">0.588</td><td class="n">74/136</td><td class="n">0.207</td>
   <td class="n">0.762</td></tr>
