@@ -242,6 +242,36 @@ def build_inputs(wanted: tuple[str, ...] = ARMS,
     transcript set. The refusals below are kept -- they just now fire for arms you asked for
     rather than for ones you did not.
     """
+
+    # One wav per call, enforced.
+    #
+    # WHY THIS REFUSAL EXISTS. `synthesize.py` writes the MEASURED duration into the wav
+    # filename, so re-rendering a call whose script changed produces a file with a NEW name
+    # beside the old one. On 2026-08-20 a corpus regeneration left the pack holding 185 wavs
+    # for 138 calls -- 47 calls with two each, differing only in the duration field.
+    #
+    # Every consumer maps wav -> call by the phone token, and a dict built from `glob` keeps
+    # whichever file the filesystem happened to return last. So an arm could transcribe
+    # YESTERDAY's audio while being scored against TODAY's labels, and nothing downstream could
+    # detect it: the transcript would be a faithful transcription of the wrong words, the counts
+    # would be right, and the number would be wrong.
+    #
+    # Refusing is the only safe response -- picking the newest would silently paper over a pack
+    # that is in an unexpected state.
+    _by_phone_files: dict[str, list[str]] = {}
+    for _w in AUDIO.glob("*.wav"):
+        _by_phone_files.setdefault(_w.stem.split("_")[1], []).append(_w.name)
+    _dupes = {k: v for k, v in _by_phone_files.items() if len(v) > 1}
+    if _dupes:
+        _first = sorted(_dupes.items())[0]
+        raise Refused(
+            f"{len(_dupes)} call(s) have more than one .wav in {AUDIO}. A stale "
+            f"render was left beside a fresh one, and the wav->call map would pick "
+            f"whichever the filesystem returned last -- transcribing old audio against new "
+            f"labels. Example: phone {_first[0]} has {_first[1]}. Remove the stale files "
+            f"before running."
+        )
+
     wavs = {p.stem.split("_")[1]: p for p in AUDIO.glob("*.wav")}
     by_phone = {}
     for d in sorted(DIALOGUES.glob("ASR-*.json")):
