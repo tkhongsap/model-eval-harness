@@ -134,6 +134,25 @@ The input sits in the range on every call and barely varies, which is also how a
 `prompt_tokens_details.cached_tokens: 0` -- nothing cached. If that is the number Tar read,
 the lever is **context caching or a smaller prompt**, not the thinking budget.
 
+**Where every token goes, measured against the production code.** The output IS a long
+extended structured JSON -- 118 keys, 9 blocks -- and it is *not* where the tokens are:
+
+| component | measured | approx tokens |
+|---|---:|---:|
+| `user_config.xlsx` field definitions | 94,174 chars | **~31,400** |
+| `response_schema` in `generationConfig` | 13,457 chars | ~4,500 |
+| `system_prompt.txt` | 7,012 chars | ~2,300 |
+| the transcript | ~3,100 chars | ~1,000 |
+| **input subtotal** | | **~35,000-38,000** |
+| **the filled 118-key answer** | **8,353 chars** | **~2,800** |
+| thinking, unlimited | | ~9,800 |
+| **output subtotal** | | **~12,600** |
+
+`service_quality` is 4,258 of the answer's 8,353 characters -- 51% of the output is 24
+`{evaluation, reason}` blocks with a mandatory Thai free-text reason each. Enforcing the real
+`response_schema` *reduced* output (2,862 vs 3,440 tokens) while still returning all 118 keys;
+schema plus unlimited thinking failed outright with `finish_reason: error`.
+
 Which counter Tar read decides which fix matters most, and `docs/sentiment-qa-token-ask.md`
 now requests all three numbers so it cannot stay ambiguous. The thinking finding below is
 true either way.
