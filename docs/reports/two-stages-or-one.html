@@ -1,0 +1,446 @@
+<title>Two Stages or One</title>
+<style>
+:root{
+  --ground:#F5F3EF; --raised:#FFFFFF; --sunken:#EDEAE4;
+  --ink:#1A1D21; --ink-mid:#565C64; --ink-faint:#8A9099;
+  --rule:#DCD8D0; --rule-firm:#BFB9AE;
+  --prod:#3B6EA8; --ours:#B5651D; --best:#2C7A57; --bad:#A8322A;
+  --warn-bg:#FBF3E4; --warn-line:#C9922E;
+  --serif:"Charter","Bitstream Charter","Iowan Old Style",Cambria,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14161A; --raised:#1C1F24; --sunken:#191C21;
+  --ink:#E8E6E1; --ink-mid:#A2A8B0; --ink-faint:#767C85;
+  --rule:#2C3037; --rule-firm:#3D434B;
+  --prod:#6BA3DC; --ours:#D8933F; --best:#5FB98C; --bad:#DE7A70;
+  --warn-bg:#2A2317; --warn-line:#B9862A;
+}}
+:root[data-theme="dark"]{
+  --ground:#14161A; --raised:#1C1F24; --sunken:#191C21;
+  --ink:#E8E6E1; --ink-mid:#A2A8B0; --ink-faint:#767C85;
+  --rule:#2C3037; --rule-firm:#3D434B;
+  --prod:#6BA3DC; --ours:#D8933F; --best:#5FB98C; --bad:#DE7A70;
+  --warn-bg:#2A2317; --warn-line:#B9862A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--serif);font-size:17px;line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:60rem;margin:0 auto;padding:3rem 1.5rem 5rem}
+h1,h2,h3{font-family:var(--sans);text-wrap:balance;line-height:1.22;margin:0}
+h1{font-size:2.4rem;font-weight:660;letter-spacing:-.022em}
+h2{font-size:1.3rem;font-weight:640;letter-spacing:-.012em;margin:3rem 0 .5rem;
+  padding-top:1.3rem;border-top:1px solid var(--rule)}
+h3{font-size:1rem;font-weight:640;margin:1.8rem 0 .4rem}
+p{margin:.85rem 0}
+.eyebrow{font-family:var(--sans);font-size:.7rem;font-weight:680;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--ink-faint);margin:0 0 .75rem}
+.standfirst{font-size:1.16rem;color:var(--ink-mid);margin:1rem 0 0;max-width:53ch}
+.meta{font-family:var(--sans);font-size:.79rem;color:var(--ink-faint);
+  margin:1.5rem 0 0;padding-top:.9rem;border-top:1px solid var(--rule)}
+.meta b{color:var(--ink-mid);font-weight:600}
+strong{font-weight:680}
+code{font-family:var(--mono);font-size:.86em;background:var(--sunken);
+  padding:.1em .34em;border-radius:3px}
+
+figure{margin:2rem 0 1.2rem}
+figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figcaption{font-family:var(--sans);font-size:.83rem;color:var(--ink-mid);
+  margin-top:.9rem;text-align:center;max-width:52ch;margin-left:auto;margin-right:auto}
+
+.verdict{background:var(--raised);border:1px solid var(--rule);
+  border-left:3px solid var(--ours);border-radius:5px;
+  padding:1.25rem 1.5rem;margin:1.7rem 0}
+.verdict p{margin:.5rem 0}
+.verdict p:first-child{margin-top:0}
+.verdict p:last-child{margin-bottom:0}
+.caution{background:var(--warn-bg);border:1px solid var(--rule);
+  border-left:3px solid var(--warn-line);border-radius:5px;
+  padding:1.1rem 1.4rem;margin:1.5rem 0;font-size:.95rem}
+.caution p{margin:.45rem 0}
+.caution p:first-child{margin-top:0}
+.caution p:last-child{margin-bottom:0}
+
+.scroll{overflow-x:auto;margin:1.4rem 0;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.87rem}
+th{text-align:left;font-weight:640;color:var(--ink-mid);padding:.5rem .7rem;
+  border-bottom:1.5px solid var(--rule-firm);white-space:nowrap;font-size:.75rem;
+  letter-spacing:.03em;text-transform:uppercase}
+td{padding:.52rem .7rem;border-bottom:1px solid var(--rule);
+  font-variant-numeric:tabular-nums}
+td.n,th.n{text-align:right}
+tr:last-child td{border-bottom:none}
+tbody tr.hero td{background:var(--sunken);font-weight:620}
+tr.sec td{background:var(--sunken);font-family:var(--sans);font-weight:660;
+  font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-mid);
+  padding-top:.55rem;padding-bottom:.55rem}
+td.na{color:var(--ink-faint);font-style:italic}
+.note{color:var(--ink-faint);font-weight:400;font-size:.93em}
+.win{color:var(--best);font-weight:680}
+
+.tag{display:inline-block;font-family:var(--sans);font-size:.7rem;font-weight:660;
+  letter-spacing:.05em;padding:.13em .5em;border-radius:3px;white-space:nowrap}
+.tag.ahead{color:var(--best);background:color-mix(in srgb,var(--best) 14%,transparent)}
+.tag.ind{color:var(--ink-mid);background:var(--sunken)}
+.tag.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));
+  gap:.9rem;margin:1.5rem 0}
+.stat{background:var(--raised);border:1px solid var(--rule);border-radius:5px;
+  padding:1rem 1.1rem}
+.stat .k{font-family:var(--sans);font-size:.69rem;font-weight:660;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-faint)}
+.stat .v{font-family:var(--sans);font-size:1.8rem;font-weight:680;
+  letter-spacing:-.02em;margin:.25rem 0 .1rem;font-variant-numeric:tabular-nums}
+.stat .s{font-size:.85rem;color:var(--ink-mid);line-height:1.42}
+.v.good{color:var(--best)} .v.warn{color:var(--warn-line)} .v.bad{color:var(--bad)}
+
+ul,ol{margin:.85rem 0;padding-left:1.3rem}
+li{margin:.38rem 0}
+.tight li{margin:.2rem 0}
+footer{margin-top:3.2rem;padding-top:1.3rem;border-top:1px solid var(--rule);
+  font-family:var(--sans);font-size:.78rem;color:var(--ink-faint)}
+</style>
+
+<div class="wrap">
+
+<p class="eyebrow">True Corp · Retention call labelling · 20 August 2026</p>
+<h1>Two stages or one</h1>
+<p class="standfirst">Production sends the audio to Gemini and gets labels back in a single
+call. Our pipeline transcribes first, then labels the text — two models, two hops. Here is
+what each step costs and what it buys.</p>
+<p class="meta"><b>138 synthetic Thai retention calls</b> &nbsp;·&nbsp; 3 replicates
+&nbsp;·&nbsp; 2,070 label calls, zero failures &nbsp;·&nbsp; &alpha;&nbsp;=&nbsp;1/64
+&nbsp;·&nbsp; <b>RECONCILED: NO</b></p>
+
+<h2>1 &middot; The two shapes, and where the time goes</h2>
+
+<figure>
+<svg viewBox="0 0 900 430" role="img"
+     aria-label="Production sends a wav file to Gemini 2.5 Flash in one call, taking 6.1 seconds. Our pipeline sends the same wav to an ASR model, which produces a Thai transcript in 25 to 43 seconds, then sends that text to Qwen 3.8 for labelling in about 20 seconds, totalling 46 to 63 seconds.">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+    <marker id="ar-o" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ours)"/>
+    </marker>
+    <marker id="ar-p" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--prod)"/>
+    </marker>
+  </defs>
+
+  <!-- ============ PRODUCTION ============ -->
+  <text x="30" y="30" font-family="system-ui" font-size="12" font-weight="700"
+        fill="var(--prod)" letter-spacing="1.4">PRODUCTION TODAY &mdash; ONE CALL</text>
+
+  <rect x="30" y="52" width="120" height="54" rx="5" fill="none"
+        stroke="currentColor" stroke-width="1.5"/>
+  <text x="90" y="76" text-anchor="middle" font-family="ui-monospace,monospace"
+        font-size="12" fill="currentColor">call.wav</text>
+  <text x="90" y="93" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">3–9 min audio</text>
+
+  <line x1="150" y1="79" x2="352" y2="79" stroke="var(--prod)" stroke-width="1.6"
+        marker-end="url(#ar-p)"/>
+  <text x="251" y="70" text-anchor="middle" font-family="system-ui" font-size="11"
+        fill="var(--prod)">audio in, base64</text>
+  <text x="251" y="97" text-anchor="middle" font-family="system-ui" font-size="10.5"
+        fill="var(--ink-faint)">11,628 input tokens</text>
+
+  <rect x="355" y="52" width="180" height="54" rx="5" fill="none"
+        stroke="var(--prod)" stroke-width="2"/>
+  <text x="445" y="76" text-anchor="middle" font-family="system-ui" font-size="12.5"
+        font-weight="640" fill="var(--prod)">Gemini 2.5 Flash</text>
+  <text x="445" y="93" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">OpenRouter · 6.1 s</text>
+
+  <line x1="535" y1="79" x2="742" y2="79" stroke="var(--prod)" stroke-width="1.6"
+        marker-end="url(#ar-p)"/>
+  <text x="638" y="70" text-anchor="middle" font-family="system-ui" font-size="11"
+        fill="var(--prod)">labels out</text>
+  <text x="638" y="97" text-anchor="middle" font-family="system-ui" font-size="10.5"
+        fill="var(--ink-faint)">233 output tokens</text>
+
+  <rect x="745" y="52" width="125" height="54" rx="5" fill="none"
+        stroke="currentColor" stroke-width="1.5"/>
+  <text x="807" y="76" text-anchor="middle" font-family="ui-monospace,monospace"
+        font-size="12" fill="currentColor">JSON</text>
+  <text x="807" y="93" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">outcome · reason</text>
+
+  <text x="450" y="139" text-anchor="middle" font-family="system-ui" font-size="12.5"
+        font-weight="640" fill="var(--prod)">6.1 s end to end &nbsp;·&nbsp; $0.00879 a call
+        &nbsp;·&nbsp; call_result F1 0.524</text>
+
+  <line x1="30" y1="168" x2="870" y2="168" stroke="var(--rule-firm)" stroke-width="1"
+        stroke-dasharray="3 4"/>
+
+  <!-- ============ OURS ============ -->
+  <text x="30" y="200" font-family="system-ui" font-size="12" font-weight="700"
+        fill="var(--ours)" letter-spacing="1.4">OUR PIPELINE &mdash; TWO CALLS, BOTH INTERNAL</text>
+
+  <rect x="30" y="222" width="120" height="54" rx="5" fill="none"
+        stroke="currentColor" stroke-width="1.5"/>
+  <text x="90" y="246" text-anchor="middle" font-family="ui-monospace,monospace"
+        font-size="12" fill="currentColor">call.wav</text>
+  <text x="90" y="263" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">the same file</text>
+
+  <line x1="150" y1="249" x2="232" y2="249" stroke="var(--ours)" stroke-width="1.6"
+        marker-end="url(#ar-o)"/>
+  <text x="191" y="240" text-anchor="middle" font-family="system-ui" font-size="10.5"
+        fill="var(--ours)">30 s chunks</text>
+
+  <rect x="235" y="222" width="165" height="54" rx="5" fill="none"
+        stroke="var(--ours)" stroke-width="2"/>
+  <text x="317" y="243" text-anchor="middle" font-family="system-ui" font-size="12"
+        font-weight="640" fill="var(--ours)">STAGE 1 · ASR</text>
+  <text x="317" y="259" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">Typhoon 43 s · Qwen 25 s</text>
+  <text x="317" y="272" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">Token Factory GPU</text>
+
+  <line x1="400" y1="249" x2="472" y2="249" stroke="var(--ours)" stroke-width="1.6"
+        marker-end="url(#ar-o)"/>
+  <text x="436" y="240" text-anchor="middle" font-family="system-ui" font-size="10.5"
+        fill="var(--ours)">Thai text</text>
+
+  <rect x="475" y="222" width="115" height="54" rx="5" fill="none"
+        stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="532" y="246" text-anchor="middle" font-family="ui-monospace,monospace"
+        font-size="11.5" fill="currentColor">transcript</text>
+  <text x="532" y="263" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">~3,660 tokens</text>
+
+  <line x1="590" y1="249" x2="662" y2="249" stroke="var(--ours)" stroke-width="1.6"
+        marker-end="url(#ar-o)"/>
+  <text x="626" y="240" text-anchor="middle" font-family="system-ui" font-size="10.5"
+        fill="var(--ours)">text in</text>
+
+  <rect x="665" y="222" width="165" height="54" rx="5" fill="none"
+        stroke="var(--ours)" stroke-width="2"/>
+  <text x="747" y="243" text-anchor="middle" font-family="system-ui" font-size="12"
+        font-weight="640" fill="var(--ours)">STAGE 2 · LABEL</text>
+  <text x="747" y="259" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">Qwen3.8-27B · ~20 s</text>
+  <text x="747" y="272" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">Token Factory GPU</text>
+
+  <path d="M 830 249 L 858 249 L 858 318 L 92 318 L 92 336"
+        fill="none" stroke="var(--ours)" stroke-width="1.6" marker-end="url(#ar-o)"/>
+  <text x="470" y="311" text-anchor="middle" font-family="system-ui" font-size="10.5"
+        fill="var(--ink-faint)">246 output tokens</text>
+
+  <rect x="30" y="339" width="125" height="52" rx="5" fill="none"
+        stroke="currentColor" stroke-width="1.5"/>
+  <text x="92" y="362" text-anchor="middle" font-family="ui-monospace,monospace"
+        font-size="12" fill="currentColor">JSON</text>
+  <text x="92" y="379" text-anchor="middle" font-family="system-ui" font-size="10"
+        fill="var(--ink-faint)">same schema</text>
+
+  <text x="520" y="360" text-anchor="middle" font-family="system-ui" font-size="12.5"
+        font-weight="640" fill="var(--ours)">46–63 s end to end &nbsp;·&nbsp; no per-call price
+        &nbsp;·&nbsp; call_result F1 0.682–0.711</text>
+  <text x="520" y="380" text-anchor="middle" font-family="system-ui" font-size="11"
+        fill="var(--ink-faint)">8&ndash;10&times; slower, 3&times; fewer input tokens, and it reads the call better</text>
+</svg>
+<figcaption>The whole trade in one picture: production pays one hop and 11,628 input tokens
+because the audio itself is tokenised; we pay two hops and a transcript, and get a
+materially better answer for it.</figcaption>
+</figure>
+
+<div class="verdict">
+<p><strong>The internal pipeline reads the call better, and the margin is solid.</strong>
+On <code>call_result</code> — the save/churn decision the business acts on — it is
+<strong>AHEAD</strong> of production at &alpha;&nbsp;=&nbsp;1/64, clearing the decision band
+by <strong>+10</strong> and surviving 20,000 bootstrap resamples <strong>98.3%</strong> of
+the time.</p>
+<p><strong>It is also 8&ndash;10&times; slower per call</strong>, because a transcription step
+now exists that did not before. For batch labelling that is irrelevant; for anything
+interactive it is the whole story.</p>
+</div>
+
+<h2>2 &middot; Every measurement, side by side</h2>
+
+<p>Both internal columns share the same labeller and differ <em>only</em> in the transcriber,
+so the gap between them is a clean read on stage 1 alone.</p>
+
+<div class="scroll">
+<table>
+<thead><tr>
+  <th>Metric</th>
+  <th class="n">Gemini 2.5&nbsp;Flash<br><span class="note">production, 1 call</span></th>
+  <th class="n">Typhoon&nbsp;+&nbsp;Qwen3.8<br><span class="note">ours, 2 calls</span></th>
+  <th class="n">Qwen&nbsp;ASR&nbsp;+&nbsp;Qwen3.8<br><span class="note">ours, 2 calls</span></th>
+</tr></thead>
+<tbody>
+
+<tr class="sec"><td colspan="4">Business outcome &nbsp;— the primary metric</td></tr>
+<tr class="hero"><td>Weighted F1 — call_result</td><td class="n">0.524</td>
+  <td class="n win">0.711</td><td class="n">0.682</td></tr>
+<tr><td>Weighted F1 — product</td><td class="n">0.692</td>
+  <td class="n win">0.807</td><td class="n">0.761</td></tr>
+<tr><td>Weighted F1 — reason</td><td class="n">0.222</td>
+  <td class="n win">0.229</td><td class="n">0.223</td></tr>
+<tr><td>Precision — call_result</td><td class="n">0.732</td>
+  <td class="n win">0.810</td><td class="n">0.802</td></tr>
+<tr><td>Recall — call_result</td><td class="n">0.478</td>
+  <td class="n win">0.667</td><td class="n">0.623</td></tr>
+<tr class="hero"><td>Calls labelled correctly — call_result</td>
+  <td class="n">62/138 &nbsp;44.9%</td>
+  <td class="n win">87/138 &nbsp;63.0%</td><td class="n">84/138 &nbsp;60.9%</td></tr>
+<tr><td>Calls labelled correctly — product</td><td class="n">96/138 &nbsp;69.6%</td>
+  <td class="n win">110/138 &nbsp;79.7%</td><td class="n">105/138 &nbsp;76.1%</td></tr>
+<tr><td>Calls labelled correctly — reason</td><td class="n">50/138 &nbsp;36.2%</td>
+  <td class="n win">57/138 &nbsp;41.3%</td><td class="n">56/138 &nbsp;40.6%</td></tr>
+
+<tr class="sec"><td colspan="4">Stage 1 — transcription &nbsp;<span class="note">(production has no such stage)</span></td></tr>
+<tr><td>Character error rate</td><td class="n na">no ASR stage</td>
+  <td class="n win">0.0452</td><td class="n">0.1127</td></tr>
+<tr><td>Word error rate</td><td class="n na">no ASR stage</td>
+  <td class="n win">0.0784</td><td class="n">0.1699</td></tr>
+<tr class="hero"><td>Catastrophic runaways</td><td class="n na">no ASR stage</td>
+  <td class="n"><span class="tag ahead">0</span></td>
+  <td class="n"><span class="tag bad">16 &nbsp;11.6%</span></td></tr>
+<tr><td>Calls transcribed</td><td class="n na">no ASR stage</td>
+  <td class="n">138/138</td><td class="n">138/138</td></tr>
+<tr><td>Entity accuracy</td><td class="n na">no ASR stage</td><td class="n">94.6%</td>
+  <td class="n win">96.0%</td></tr>
+
+<tr class="sec"><td colspan="4">Latency &nbsp;— seconds per call</td></tr>
+<tr><td>Stage 1 — ASR, median</td><td class="n na">—</td><td class="n">43.2</td>
+  <td class="n win">25.0</td></tr>
+<tr><td>Stage 2 — labelling, median</td><td class="n win">6.1</td><td class="n">19.3</td>
+  <td class="n">20.8</td></tr>
+<tr><td>Stage 2 — labelling, p95</td><td class="n win">9.2</td><td class="n">24.5</td>
+  <td class="n">30.0</td></tr>
+<tr><td>Stage 2 — labelling, worst</td><td class="n win">21.2</td><td class="n">37.9</td>
+  <td class="n">90.7</td></tr>
+<tr class="hero"><td>End to end, median</td><td class="n win">6.1</td>
+  <td class="n">62.5</td><td class="n">45.8</td></tr>
+<tr><td>ASR real-time factor</td><td class="n na">—</td><td class="n">0.118</td>
+  <td class="n win">0.066</td></tr>
+
+<tr class="sec"><td colspan="4">Tokens &nbsp;— per labelling call</td></tr>
+<tr class="hero"><td>Input, median</td><td class="n">11,628</td>
+  <td class="n win">3,660</td><td class="n">3,682</td></tr>
+<tr><td>Output, median</td><td class="n win">233</td><td class="n">246</td>
+  <td class="n">245</td></tr>
+<tr><td>Input, all 414 calls</td><td class="n">4,776,249</td>
+  <td class="n win">1,506,687</td><td class="n">1,859,067</td></tr>
+<tr><td>Output, all 414 calls</td><td class="n win">98,029</td><td class="n">103,753</td>
+  <td class="n">104,823</td></tr>
+
+<tr class="sec"><td colspan="4">Reliability</td></tr>
+<tr><td>Labelling calls made</td><td class="n">414</td><td class="n">414</td>
+  <td class="n">414</td></tr>
+<tr><td>Parse failures</td><td class="n">0/414</td><td class="n">0/414</td>
+  <td class="n">0/414</td></tr>
+<tr><td>Items where 3 replicates disagreed</td><td class="n win">21/138</td>
+  <td class="n">29/138</td><td class="n">29/138</td></tr>
+
+<tr class="sec"><td colspan="4">Cost</td></tr>
+<tr class="hero"><td>Per call, metered</td><td class="n">$0.00879</td>
+  <td class="n na">internal GPU</td><td class="n na">internal GPU</td></tr>
+<tr><td>All 414 calls</td><td class="n">$3.64</td>
+  <td class="n na">not metered</td><td class="n na">not metered</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="caution">
+<p><strong>Two cells are words on purpose.</strong> <em>&ldquo;no ASR stage&rdquo;</em> —
+production never produces a transcript, so a CER of 0 there would invite a comparison that
+does not exist. <em>&ldquo;internal GPU&rdquo;</em> — the Token Factory arms have no per-call
+price; printing $0.00 would say <em>free</em> where the truth is <em>not metered here</em>.</p>
+</div>
+
+<h2>3 &middot; Is the difference real?</h2>
+
+<p>Paired sign test at &alpha;&nbsp;=&nbsp;1/64, compared call by call — only the calls where
+the two arms actually disagreed count toward the test.</p>
+
+<div class="scroll">
+<table>
+<thead><tr><th>Comparison</th><th>call_result</th><th>product</th><th>reason</th></tr></thead>
+<tbody>
+<tr class="hero"><td>Typhoon pipeline vs <strong>production</strong></td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+25, band ±15</span></td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+14, band ±12</span></td>
+  <td><span class="tag ind">no difference</span> <span class="note">+7</span></td></tr>
+<tr><td>Qwen pipeline vs <strong>production</strong></td>
+  <td><span class="tag ahead">AHEAD</span> <span class="note">+22, band ±16</span></td>
+  <td><span class="tag ind">no difference</span> <span class="note">+9</span></td>
+  <td><span class="tag ind">no difference</span> <span class="note">+6</span></td></tr>
+<tr><td>Typhoon vs Qwen <span class="note">— the ASR choice</span></td>
+  <td><span class="tag ind">no difference</span> <span class="note">+3</span></td>
+  <td><span class="tag ind">no difference</span> <span class="note">+5</span></td>
+  <td><span class="tag ind">no difference</span> <span class="note">+1</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="grid">
+  <div class="stat">
+    <div class="k">Margin over the band</div>
+    <div class="v good">+10</div>
+    <div class="s">on <code>call_result</code> against production. Before the corpus defect was fixed,
+    the same comparison cleared by <strong>zero</strong>.</div>
+  </div>
+  <div class="stat">
+    <div class="k">Bootstrap agreement</div>
+    <div class="v good">98.3%</div>
+    <div class="s">of 20,000 resamples over calls still say AHEAD. No single call flips it.</div>
+  </div>
+  <div class="stat">
+    <div class="k">Churn caught</div>
+    <div class="v good">+19 pts</div>
+    <div class="s">recall on <code>call_result</code>: 0.478 &rarr; 0.667. Production
+    records more leaving customers as saved.</div>
+  </div>
+</div>
+
+<h2>4 &middot; What this means for the ASR choice</h2>
+
+<p><strong>Typhoon is clearly the better transcriber and it does not change the business
+answer.</strong> It halves the character error rate and removes the runaway failure mode
+entirely — 16 catastrophic transcripts to zero — yet Typhoon and Qwen are
+indistinguishable end to end on all three dimensions.</p>
+
+<p>The reason is that stage 2 is now the constraint. A labeller reading a <em>perfect</em>
+transcript scores <strong>0.787</strong>; Typhoon's pipeline already scores 0.711. There is
+only 0.076 of headroom left upstream, and Typhoon has taken most of what was available.</p>
+
+<p>So adopt Typhoon on <strong>reliability</strong> grounds — one call in eight no longer
+produces garbage — and do not expect the business numbers to move when you do. Note also
+that Qwen is <strong>1.7&times; faster</strong> at transcription (25.0 s vs 43.2 s), which
+is the one column where it wins.</p>
+
+<h2>5 &middot; Limits worth stating</h2>
+<ul class="tight">
+<li><strong>Synthetic TTS audio</strong>, two Thai voices — speaker variety is prosody only.</li>
+<li><strong>Labels authored by the generator</strong>, not by a human. <code>RECONCILED: NO</code>:
+no production call, no production label and no human adjudication has been through any part
+of this. It is a screening eval, not a production gate.</li>
+<li><strong>Scores are upper bounds.</strong> The corpus states its labels in nearly every
+call; real calls do so far less often, so all three arms will do worse in production.</li>
+<li><strong>8 of 138 calls are unwinnable</strong> for every arm — a known corpus limitation,
+capping the reachable F1 at 0.942 rather than 1.000. Accepted, not a defect in any model.</li>
+<li><strong>Cost is only half-measured.</strong> Gemini bills per call and the figure is real;
+the internal GPU has no per-call price, which is not the same as being free. A like-for-like
+comparison needs the amortised GPU cost, which is outside this harness.</li>
+</ul>
+
+<footer>
+Run <code>20260820-055342Z-e21</code> · 2,070 records, 5 arms, 3 replicates, zero failures ·
+scored on replicate 1 as preregistered · paired sign test at &alpha;&nbsp;=&nbsp;1/64 ·
+20,000-resample cluster bootstrap over calls, not rows · root suite 1038 passed / 12 skipped
+</footer>
+
+</div>
