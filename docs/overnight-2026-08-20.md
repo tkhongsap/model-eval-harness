@@ -114,8 +114,29 @@ pipelines are clearly better than it, and the margin is too thin to bank.
 
 ## 3. Tar's token issue: measured, and the cause is one lever
 
-Tar reported sentiment_qa calls returning 30,000–50,000 output tokens. **The diagnosis is
-confirmed and the fix is a single configuration value.**
+**Correction, made later on 2026-08-20: we did not reproduce 30-40k OUTPUT tokens. The
+number that does land in that range is the INPUT.**
+
+| what | measured over 120 calls | in the reported range? |
+|---|---:|---|
+| **input (prompt) tokens** | **30,985 - 32,825**, median 31,926 | **yes -- on every call** |
+| output (completion) tokens | 8,564 - 17,054, median 11,961 | **no -- zero of 120 reached 30,000** |
+| total | ~35,400 - 44,056 | close |
+
+Three candidate explanations for a 30-40k *output* were tested and ruled out: raising the
+reasoning budget explicitly changes nothing (byte-identical result), output does not scale
+with call length (correlation 0.12 across 2.8k-6.7k chars), and Gemini 2.5 **Pro is lower than
+Flash** (9,232 vs 13,008). Nothing was truncated -- no call ended `finish_reason: length`.
+
+The input sits in the range on every call and barely varies, which is also how a stable
+"30,000 to 40,000" gets quoted. It is almost entirely `user_config.xlsx`: **94,174 characters
+= ~31,400 tokens** of Thai field definitions, re-sent in full every time, with
+`prompt_tokens_details.cached_tokens: 0` -- nothing cached. If that is the number Tar read,
+the lever is **context caching or a smaller prompt**, not the thinking budget.
+
+Which counter Tar read decides which fix matters most, and `docs/sentiment-qa-token-ask.md`
+now requests all three numbers so it cannot stay ambiguous. The thinking finding below is
+true either way.
 
 Control, already on disk from 1,632 retention calls: **245** median completion tokens,
 `reasoning_tokens` **0**. Same model. The difference is entirely configuration.

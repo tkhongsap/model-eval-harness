@@ -380,9 +380,27 @@ It is now verified rather than assumed.</p>
 
 <h2>5 · The 30–50k token issue</h2>
 
-<p>Same model, two configurations, measured rather than estimated. The retention task —
-1,632 calls already on disk — spends a median of <strong>245</strong> completion tokens with
-<strong>zero</strong> reasoning tokens.</p>
+<div class="caution">
+<p><strong>Correction: we did not reproduce 30–40k <em>output</em> tokens. The number that
+lands in that range is the <em>input</em>.</strong></p>
+<p>Across 120 calls with production&rsquo;s own prompt: <strong>input 30,985–32,825</strong>
+(median 31,926) on every single call — but <strong>output 8,564–17,054</strong> (median
+11,961), and <strong>zero of 120 reached 30,000</strong>.</p>
+<p>Three explanations for a 30–40k output were tested and ruled out: an explicit reasoning
+budget changes nothing (byte-identical result), output does not scale with call length
+(correlation 0.12), and Gemini 2.5 <strong>Pro is lower than Flash</strong>. Nothing was
+truncated.</p>
+<p>The input is almost entirely <code>user_config.xlsx</code> — <strong>94,174 characters
+&asymp; 31,400 tokens</strong> of Thai field definitions, re-sent in full every call with
+<code>cached_tokens: 0</code>. If that is the number being read, the lever is
+<strong>context caching or a smaller prompt</strong>, not the thinking budget. The drafted
+ask now requests all three counters so it cannot stay ambiguous.</p>
+</div>
+
+<p>The thinking measurement below is true either way. Same model, two configurations,
+measured rather than estimated. The retention task — 1,632 calls already on disk — spends a
+median of <strong>245</strong> completion tokens with <strong>zero</strong> reasoning
+tokens.</p>
 
 <div class="scroll">
 <table>
