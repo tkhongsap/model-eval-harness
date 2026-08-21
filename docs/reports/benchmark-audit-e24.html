@@ -410,8 +410,10 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
       <td class="n">&mdash;</td><td class="n">no ASR stage</td></tr>
     <tr><td>Input tokens, median</td><td class="n">11,466</td><td class="n">3,664</td>
       <td class="n">&mdash;</td><td class="n">3,759</td></tr>
-    <tr><td>Parse failures</td><td class="n">3 / 138</td><td class="n">0 / 138</td>
+    <tr><td>Parse failures (replicate 1)</td><td class="n">3 / 138</td><td class="n">0 / 138</td>
       <td class="n">&mdash;</td><td class="n">0 / 138</td></tr>
+    <tr><td>Unstable items (3 replicates)</td><td class="n">17 / 138</td><td class="n">33 / 138</td>
+      <td class="n">&mdash;</td><td class="n">21 / 138</td></tr>
     <tr><td>Metered cost</td><td class="n">$0.0065 / call</td><td class="n">internal GPU</td>
       <td class="n">internal GPU</td><td class="n">internal GPU</td></tr>
   </tbody>
@@ -440,11 +442,17 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
   labels did not change. Something about the labeller's behaviour did:
 </p>
 <ul>
-  <li>the old run had <strong>30 of 138</strong> Typhoon items unstable across replicates;</li>
   <li>on 57 calls with byte&#8209;identical audio and identical labels, the two runs disagree on
       <strong>16&ndash;20%</strong> of <code>call_result</code> answers;</li>
-  <li>and the old run <strong>recorded no model identity at all</strong>, so whether the served
-      model changed cannot be established after the fact.</li>
+  <li>within a single run, arms disagree with <em>themselves</em> across three replicates on
+      <strong>17 to 33 items of 138</strong> &mdash; and the old run was no different
+      (Typhoon 30 of 138). Instability is a standing property of this task, not something
+      that changed between the runs;</li>
+  <li>but on the identical&#8209;audio control the ceiling arm's <code>call_result</code>
+      accuracy rose <strong>73.2% &rarr; 91.1%</strong>, which is more than replicate noise
+      comfortably accounts for &mdash; and the old run
+      <strong>recorded no model identity at all</strong>, so whether the served labeller
+      changed cannot be established after the fact.</li>
 </ul>
 <p>
   That last point is why the parity work matters more than its individual fixes did. Every
@@ -463,6 +471,38 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
     with reasoning enabled &mdash; reasoning tokens were already zero on all 408 calls. Of the
     four parity findings, <strong>two were real</strong>: a stray text fragment sent only to
     the audio arm, and the missing model identity.
+  </p>
+</div>
+
+<div class="note warn">
+  <h4>A scoring path that does not match the preregistration</h4>
+  <p>
+    The plan says two things: every headline figure is computed on
+    <strong>replicate 1 alone</strong>, and <strong>a parse failure is scored as incorrect,
+    never dropped</strong> &mdash; the second existing precisely so an arm cannot improve its
+    score by failing to answer. The scorer's collapse takes the first <em>parseable</em>
+    replicate, which is a third thing: an item whose replicate&nbsp;1 did not parse is scored
+    from replicate&nbsp;2.
+  </p>
+  <p>
+    On this run that rescues exactly three items &mdash; ASR&#8209;120, ASR&#8209;122,
+    ASR&#8209;135 &mdash; and all three belong to <strong>Gemini, the only arm with any parse
+    failures</strong>. So the deviation moves one arm, in that arm's favour:
+  </p>
+  <div class="tw" style="box-shadow:none; margin:14px 0 12px">
+  <table>
+    <thead><tr><th>Gemini 2.5 Flash</th><th class="n">Strict replicate 1</th><th class="n">With fallback</th></tr></thead>
+    <tbody>
+      <tr><td>call_result F1</td><td class="n"><strong>0.564</strong></td><td class="n">0.570</td></tr>
+      <tr><td>product F1</td><td class="n"><strong>0.798</strong></td><td class="n">0.807</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    The strict column is what this report quotes, because it is what was preregistered. The
+    scorer was <em>not</em> changed to produce it &mdash; rewriting an estimator after seeing
+    which arm it favours is the failure a preregistration exists to prevent. Both numbers are
+    reported and the discrepancy is left for a reviewed decision.
   </p>
 </div>
 
