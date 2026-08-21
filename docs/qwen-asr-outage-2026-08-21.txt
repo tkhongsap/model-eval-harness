@@ -128,3 +128,35 @@ losses succeeded on a quiet retry.
 
 Recording the difference because a reader who checks section 5 against a later probe would
 otherwise find it contradicted and have no way to know which reading was right.
+
+==============================================================================
+7. CLOSED, 17:31Z -- IT DID NOT COME BACK
+==============================================================================
+A watcher polled both models every 10 minutes from 10:40Z and gave up at its 6-hour
+deadline. Final state, 17:31Z:
+
+  gemma-4-12b-it       READY     0.16s
+  qwen3-asr-1.7b       FAILED   60.04s   ReadTimeout
+  qwen3.8-27b-fp8      READY     0.29s
+
+qwen3-asr-1.7b was down for TEN HOURS AND FORTY MINUTES, 06:52Z to at least 17:31Z, without
+one successful response. Over the same window the labeller it shares with the Typhoon arm
+answered in well under a second on every poll but one, and gemma-4-12b-it was never affected.
+Whatever failed, it was that model, not the gateway, not the network, and not the audio.
+
+Transcripts on disk: 120 of 138, unchanged since the pass stopped.
+
+THE VERDICT IS FINAL FOR E24. `qwen-pipeline` is UNAVAILABLE. 120/138 is 87.0%, under the 90%
+coverage gate, so it is not scored -- reporting it on the calls that happened to survive would
+put a number behind a denominator nobody would notice had moved.
+
+WHAT WOULD BE NEEDED TO ADD IT LATER. Not a resume of E24. The 18 missing transcripts would
+have to be produced, merged under the provenance rules, and the arm run -- and the E24 run
+directory now has drifted inputs on the Typhoon arm (section 6 of this file and
+asr-eval-v3/hypotheses/typhoon-whisper-large-v3/DRIFT.md), so a scored comparison against
+those four arms cannot be reconstructed from disk. A Qwen figure obtained later is a new
+experiment id, not a late column in this one.
+
+WHAT IS NOT AFFECTED. The four arms that completed. They were scored 07:40-09:38Z against a
+corpus frozen before the first model call, with model identity recorded per call, and the
+absence of a fifth arm does not touch any of their numbers.
