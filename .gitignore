@@ -183,3 +183,11 @@ Untitled.*
 # 819 MB of delivered audio alone: 811 MB PCM + 2,433 MB of 24 kHz masters that
 # render() also writes + 97 MB TTS cache. Size storage for 3.3 GB.
 asr-eval-v2/
+
+# E24 working pack -- the same corpus with the product labels corrected, rendered into its
+# own root rather than over v2. The plan's stamping policy is the reason: "No hash in this
+# file may be recomputed after the freeze -- a changed hash is a new experiment id." E23's
+# corpus has to stay exactly as E23 read it for its numbers to remain checkable, so a
+# corrected corpus is a new root and a new experiment, never an edit in place.
+# Ignored before it exists, so no window opens where 3 GB of audio is committable.
+asr-eval-v3/

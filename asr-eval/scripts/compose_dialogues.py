@@ -311,7 +311,7 @@ class Composer:
         # so the only way to know a call's label was to read its transcript back. Here the
         # label is an INPUT: the dialogue is rendered to express it, `business.csv` records
         # it, and nothing downstream has to recover it from text. See business_labels.py.
-        self.product = B.choose_product(self.rng)
+        self.product = B.choose_product(self.rng, scenario)
         self.call_result = B.choose_call_result(self.rng, scenario)
         self.main, self.secondary, self.third = B.choose_reasons(
             self.rng, scenario, self.call_result)
