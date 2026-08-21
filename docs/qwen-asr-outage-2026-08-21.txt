@@ -78,7 +78,7 @@ Typhoon's zero, and normalised CER 0.1127 against 0.0452. The reliability argume
 Typhoon rests on THAT, measured over a completed run, and not on this outage.
 
 ==============================================================================
-5. ADDENDUM, 10:36Z -- THE WHOLE BACKEND FOLLOWED
+5. ADDENDUM, 10:36Z -- AND ITS CORRECTION AT 11:20Z
 ==============================================================================
 Two hours after the ASR model stopped, the LABELLER stopped too:
 
@@ -104,3 +104,27 @@ coverage refusal would have voided three arms rather than one.
 Nothing in this file is a reason to re-run anything that completed. The four arms that
 finished are scored against a frozen corpus, with model identity recorded per call, and
 they do not become less true because the gateway fell over afterwards.
+
+==============================================================================
+6. CORRECTION, 11:20Z -- "THE WHOLE BACKEND" WAS TOO STRONG
+==============================================================================
+Section 5 above says the whole backend followed. That was written from a single probe at
+10:36Z at which both models timed out. Re-probed 44 minutes later:
+
+  gemma-4-12b-it       READY     0.24s
+  qwen3-asr-1.7b       FAILED   60.10s   ReadTimeout
+  qwen3.8-27b-fp8      READY     1.35s
+
+The labeller recovered and is flapping -- the 10:40Z watcher saw it ready, then not, then
+ready again. `gemma-4-12b-it` was never affected. Only qwen3-asr-1.7b is PERSISTENTLY down,
+and it has been since 06:52Z.
+
+WHAT SURVIVES AND WHAT DOES NOT. Section 5's conclusion stands: this outage says nothing about
+Qwen3-ASR's quality. But the ARGUMENT it gave for that conclusion -- "the labeller went down
+the same way, so whatever is wrong is upstream of both" -- does not, because the labeller came
+back and the ASR model did not. The conclusion now rests on the evidence in section 4 instead:
+Typhoon completed 135 of 138 on the same gateway in the same window, and all three of its
+losses succeeded on a quiet retry.
+
+Recording the difference because a reader who checks section 5 against a later probe would
+otherwise find it contradicted and have no way to know which reading was right.

@@ -150,6 +150,18 @@
       "the_checks_premise_was_tested_not_assumed": "The check states that outside 2-8 Hz 'the file may not carry speech at all'. Against a 3,513-character reference on ASR-049, Qwen3-ASR returned 3,365 characters and Typhoon 3,377; on ASR-069, 4,035 and 4,263 against 4,403. Two independent ASR systems transcribed ~96% of the reference length. The files carry speech.",
       "what_was_deliberately_not_done": "The 2-8 Hz band was NOT widened. Lowering it to 1 Hz would disable the check for all 138 files across every family so that one run could pass. The threshold is unchanged, the report still says FAIL, and what was added is an enumerated allowlist that aborts on any failure not named in it -- including the same check failing on a different item. tests/test_check_audio_validation.py asserts that abort fires.",
       "cannot_be_a_difference_between_e23_and_e24": "These two files are byte-identical to the same two in asr-eval-v2/, which E23 ran against."
+    },
+    "parse_valid_gate_observed": {
+      "measured_utc": "2026-08-21",
+      "gate": "minimum_parse_valid_calls 410 of 414 label calls (99%)",
+      "e24": {
+        "gemini-audio": "411/414 = 99.3% PASS",
+        "ceiling": "414/414 PASS",
+        "format-control": "414/414 PASS",
+        "typhoon-pipeline": "414/414 PASS"
+      },
+      "e23_for_comparison": "gemini-audio 388/408 = 95.1% FAIL",
+      "correction_note": "An earlier note in this session claimed the incumbent fails this gate in BOTH experiments. That was wrong for E24: it compared a replicate-1 parse-failure count (3 of 138) against a bar defined over all 414 label calls. E23's incumbent genuinely missed it; E24's does not."
     }
   },
   "slices": {
@@ -688,6 +700,27 @@
       "audio_items": 138,
       "ground_truth_rows": 138,
       "note": "Stamped from the rendered bytes before the first model call of this experiment, which is what the stamping policy asks for and what E23 did not get."
+    }
+  ],
+  "amendments": [
+    {
+      "dated_utc": "2026-08-21T11:30:00Z",
+      "field": "scorer behaviour for workload.replicate_policy 'first' (scripts/experiment23_score.py collapse)",
+      "old_value": "took the first PARSEABLE replicate: an item whose replicate 1 did not parse was scored from replicate 2",
+      "new_value": "takes replicate 1 and marks the item failed if replicate 1 did not parse",
+      "reason": "The plan states two things that together forbid the old behaviour: 'Every headline figure is computed on replicate 1 alone' (workload.replicate_policy) and 'A parse failure is scored as incorrect, never dropped' (metrics.primary.parse_failure_handling -- which exists so an arm cannot improve its score by failing to answer). The code did not implement either. This amendment records the code being brought into line with the preregistration, NOT the preregistration being changed.",
+      "why_this_is_not_choosing_the_answer_after_seeing_it": "The strict rule was written down before the run. Implementing a rule the plan already specified is not the same as swapping estimators after seeing which arm one favours. The distinction matters because the effect is NOT neutral: the fallback rescued items only ever for the incumbent, which is the only arm producing parse failures.",
+      "measured_effect": {
+        "e24_gemini_items_rescued": 3,
+        "e23_gemini_items_rescued": 8,
+        "e24_figures": "unchanged -- the strict figures were already the published ones",
+        "e23_gemini_call_result": "0.495 -> 0.482",
+        "e23_gemini_reason": "0.263 -> 0.252",
+        "e23_gemini_product": "0.727 -> 0.693",
+        "all_other_arms": "byte-identical before and after in both runs, which is the check that the change did what it claims: an arm with no parse failures cannot be affected by how parse failures are handled"
+      },
+      "modal_policy": "untouched -- a majority vote across three replicates is a different preregistered estimator and is entitled to use the replicates that answered",
+      "regression_test": "tests/test_experiment23_score.py::test_a_replicate_1_parse_failure_is_not_rescued_by_a_later_replicate -- confirmed failing against the old scorer before the fix. Its sibling asserted the same invariant and passed for weeks because its fixture failed on ALL THREE replicates and never reached this branch."
     }
   ]
 }

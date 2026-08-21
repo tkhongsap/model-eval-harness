@@ -54,15 +54,21 @@ Two derivations that never saw each other, landing on the same corrections.
 ### 3. What E23's product numbers were measured against
 
 Every one of these was computed against ground truth in which 21.7% of product labels
-contradicted their audio, so the product column below is the one to expect to move:
+contradicted their audio, so the product column below is the one to expect to move.
+**Re-derived 2026-08-21 under strict replicate-1 scoring** (see "Two process findings"), which
+moved Gemini and nothing else:
 
 | arm | call_result F1 | reason | product |
 |---|---:|---:|---:|
-| format-control | 0.663 | 0.239 | 0.804 |
-| ceiling | 0.645 | 0.228 | 0.808 |
-| typhoon-pipeline | 0.597 | 0.230 | 0.791 |
-| qwen-pipeline | 0.588 | 0.207 | 0.762 |
-| gemini-audio | 0.495 | 0.267 | 0.727 |
+| format-control | 0.663 | 0.232 | 0.804 |
+| ceiling | 0.645 | 0.221 | 0.808 |
+| typhoon-pipeline | 0.597 | 0.223 | 0.791 |
+| qwen-pipeline | 0.588 | 0.209 | 0.762 |
+| gemini-audio | **0.482** | **0.252** | **0.693** |
+
+Gemini was published as 0.495 / 0.263 / 0.727. The old figures were computed by a scorer that
+rescued 8 of its parse-failed items from later replicates; the arms with no parse failures are
+byte-identical before and after, which is the check that the correction did what it claims.
 
 ### 4. E24, and why it is a new experiment id
 
@@ -122,22 +128,42 @@ question — and stopped discriminating between arms, which is correct for a def
 
 ### Two process findings
 
-**A scoring path that does not match the plan.** The plan says headline figures use replicate
-1 alone AND that a parse failure scores as incorrect, never dropped. `collapse` takes the
-first *parseable* replicate — neither of those. It rescues exactly 3 items, all Gemini's, the
-only arm with parse failures: call_result 0.564→0.570, product 0.798→0.807. The report
-quotes the strict column. **The scorer was not changed** — rewriting an estimator after seeing
-which arm it favours is the failure preregistration exists to prevent. Left for review.
+**A scoring path that did not match the plan — now fixed.** The plan says headline figures use
+replicate 1 alone AND that a parse failure scores as incorrect, never dropped. `collapse` took
+the first *parseable* replicate, which is neither. It rescued **8 Gemini items in E23 and 3 in
+E24** — only ever the incumbent, because it is the only arm that produces parse failures.
 
-**The incumbent fails its own parse gate.** Gemini 3/138 on E24 replicate 1, 20/408 on E23,
-against a preregistered `minimum_parse_valid_rate` of 0.99.
+Fixed on 2026-08-21. This is not rewriting an estimator after seeing which arm it favours: the
+preregistration already specified the strict behaviour and the code did not implement it, so
+making them agree honours the plan. `modal` is untouched.
+
+E24's published figures were already the strict ones and did not move. E23's did — Gemini
+only, shown in the table above. A regression test now pins it; its sibling asserted the same
+invariant and passed for weeks, because that fixture failed on *all three* replicates and never
+reached the branch where the bug lived.
+
+**CORRECTED — the incumbent PASSES its parse gate in E24.** I first wrote that Gemini fails
+it in both experiments. That was wrong for E24: the gate is `minimum_parse_valid_calls: 410`
+of **414 label calls**, and I compared a replicate-1 count (3 of 138) against a whole-run bar.
+Measured properly:
+
+| run | Gemini valid | rate | gate |
+|---|---:|---:|---|
+| E24 | 411 / 414 | 99.3% | **PASS** |
+| E23 | 388 / 408 | 95.1% | **FAIL** |
+
+So E23's incumbent genuinely missed the bar and E24's does not. Every other arm is at 100%.
 
 ### Qwen ASR, and then the whole gateway
 
 `qwen3-asr-1.7b` wedged on the long tail at 120/138. A probe on an item it had transcribed
-cleanly an hour earlier timed out, so it was the backend, not the audio. Two hours later
-`qwen3.8-27b-fp8` went the same way — the gateway host answers in 0.26 s, the model layer
-behind it does not. Recorded in `docs/qwen-asr-outage-2026-08-21.txt`. `qwen-pipeline` is
+cleanly an hour earlier timed out, so it was the backend, not the audio. Recorded in
+`docs/qwen-asr-outage-2026-08-21.txt`. **Corrected:** I wrote that "the whole gateway
+followed". Only `qwen3-asr-1.7b` is persistently down. `qwen3.8-27b-fp8` was unreachable at
+one 10:36Z probe and has since recovered and flaps; `gemma-4-12b-it` answers in 0.24 s. The
+conclusion that this says nothing about Qwen3-ASR's *quality* stands — it rests on Typhoon
+completing 138/138 on the same gateway in the same window — but the evidence I gave for it
+did not. `qwen-pipeline` is
 UNAVAILABLE rather than scored on 120/138, which is under the 90% coverage gate. **The label
 run had already completed**; ninety minutes earlier and it would have voided three arms.
 

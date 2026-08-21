@@ -13,18 +13,18 @@ PIPELINE SHAPE
   items this arm ran                                     138                       138                         0
 ----------------------------------------------------------------------------------------------------------------
 BUSINESS OUTCOME  (primary)                                                                                     
-  weighted f1 - call_result                            0.570                     0.730                        --
-  weighted f1 - reason                                 0.270                     0.272                        --
-  weighted f1 - product                                0.807                     0.864                        --
-  weighted precision - call_result                     0.734                     0.805                        --
-  weighted precision - reason                          0.237                     0.243                        --
-  weighted precision - product                         0.812                     0.835                        --
-  weighted recall - call_result                        0.543                     0.710                        --
-  weighted recall - reason                             0.478                     0.560                        --
-  weighted recall - product                            0.833                     0.899                        --
-  call accuracy - call_result                70/138  (50.7%)           95/138  (68.8%)                        --
-  call accuracy - reason                     58/138  (42.0%)           65/138  (47.1%)                        --
-  call accuracy - product                   109/138  (79.0%)          120/138  (87.0%)                        --
+  weighted f1 - call_result                            0.564                     0.730                        --
+  weighted f1 - reason                                 0.272                     0.272                        --
+  weighted f1 - product                                0.798                     0.864                        --
+  weighted precision - call_result                     0.742                     0.805                        --
+  weighted precision - reason                          0.244                     0.243                        --
+  weighted precision - product                         0.821                     0.835                        --
+  weighted recall - call_result                        0.529                     0.710                        --
+  weighted recall - reason                             0.470                     0.560                        --
+  weighted recall - product                            0.812                     0.899                        --
+  call accuracy - call_result                68/138  (49.3%)           95/138  (68.8%)                        --
+  call accuracy - reason                     57/138  (41.3%)           65/138  (47.1%)                        --
+  call accuracy - product                   107/138  (77.5%)          120/138  (87.0%)                        --
 ----------------------------------------------------------------------------------------------------------------
 TRANSCRIPTION STAGE                                                                                             
   CER (normalised)                              no ASR stage              not recorded              not recorded
@@ -35,12 +35,12 @@ TRANSCRIPTION STAGE
   scoreable after exclusion                     no ASR stage              not recorded              not recorded
 ----------------------------------------------------------------------------------------------------------------
 LATENCY  (seconds)                                                                                              
-  ASR stage, median                             no ASR stage                      41.3              not recorded
+  ASR stage, median                             no ASR stage                      57.3                      23.9
   label call, median                                     5.2                      18.3                        --
   label call, p95                                        7.4                      29.0                        --
   label call, max                                       10.2                      40.6                        --
-  END TO END, median                                     5.2                      59.6                        --
-  ASR real-time factor                          no ASR stage                     0.115              not recorded
+  END TO END, median                                     5.2                      75.6                        --
+  ASR real-time factor                          no ASR stage                     0.137                     0.065
 ----------------------------------------------------------------------------------------------------------------
 TOKENS  (label call)                                                                                            
   input, median                                       11,615                     3,660                        --

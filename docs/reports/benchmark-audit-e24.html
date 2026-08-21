@@ -344,9 +344,9 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
   </tr></thead>
   <tbody>
     <tr><td>Gemini 2.5 Flash</td>
-      <td class="n">+1.8%</td>
-      <td class="n up">55.2 &rarr; 100.0 &nbsp;<strong>+44.8</strong></td>
-      <td class="n dn">&minus;10.2</td></tr>
+      <td class="n">+2.0%</td>
+      <td class="n up">53.6 &rarr; 100.0 &nbsp;<strong>+46.4</strong></td>
+      <td class="n dn">&minus;6.5</td></tr>
     <tr><td>Typhoon &rarr; Qwen3.8</td>
       <td class="n">+0.0%</td>
       <td class="n up">53.3 &rarr; 100.0 &nbsp;<strong>+46.7</strong></td>
@@ -423,12 +423,20 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
 <div class="note warn">
   <h4>Qwen ASR is unavailable, and that is reported rather than patched</h4>
   <p>
-    <code>qwen3-asr-1.7b</code> stalled on the long tail of the corpus mid&#8209;run and stopped
-    answering entirely; a probe against a file it had already transcribed cleanly an hour
-    earlier timed out too, while the shared labeller answered in 0.34&nbsp;s. 120 of 138
-    transcripts exist. Scoring the arm on 120 calls would put it behind a denominator nobody
-    would notice had moved, so the coverage gate refuses and the arm is
-    <strong>UNAVAILABLE</strong> &mdash; one of the plan's preregistered verdicts.
+    <code>qwen3-asr-1.7b</code> stalled on the long tail of the corpus mid&#8209;run and
+    stopped answering; a probe against a file it had already transcribed cleanly an hour
+    earlier timed out too, which is what separates &#8220;struggling with hard audio&#8221;
+    from &#8220;not answering&#8221;. 120 of 138 transcripts exist. Scoring the arm on 120
+    calls would put it behind a denominator nobody would notice had moved, so the coverage
+    gate refuses and the arm is <strong>UNAVAILABLE</strong> &mdash; one of the plan's
+    preregistered verdicts.
+  </p>
+  <p>
+    This says nothing about Qwen3&#8209;ASR's quality. It is one gateway on one afternoon under
+    a load pattern this evaluation created by running two ASR models against it at once, and
+    Typhoon completed 138 of 138 in the same window. The reliability argument for Typhoon rests
+    on the completed E23 run instead: <strong>16 catastrophic runaway repetitions in 138 calls
+    against zero</strong>, and CER 0.1127 against 0.0452.
   </p>
 </div>
 
@@ -452,7 +460,8 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
       accuracy rose <strong>73.2% &rarr; 91.1%</strong>, which is more than replicate noise
       comfortably accounts for &mdash; and the old run
       <strong>recorded no model identity at all</strong>, so whether the served labeller
-      changed cannot be established after the fact.</li>
+      changed cannot be established after the fact. Ceiling has no parse failures, so the
+      scoring correction above does not touch it either.</li>
 </ul>
 <p>
   That last point is why the parity work matters more than its individual fixes did. Every
@@ -474,8 +483,8 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
   </p>
 </div>
 
-<div class="note warn">
-  <h4>A scoring path that does not match the preregistration</h4>
+<div class="note">
+  <h4>A scoring path that did not match the preregistration &mdash; now fixed</h4>
   <p>
     The plan says two things: every headline figure is computed on
     <strong>replicate 1 alone</strong>, and <strong>a parse failure is scored as incorrect,
@@ -499,10 +508,25 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
   </table>
   </div>
   <p>
-    The strict column is what this report quotes, because it is what was preregistered. The
-    scorer was <em>not</em> changed to produce it &mdash; rewriting an estimator after seeing
-    which arm it favours is the failure a preregistration exists to prevent. Both numbers are
-    reported and the discrepancy is left for a reviewed decision.
+    <strong>The scorer now does what the plan said.</strong> This is not rewriting an
+    estimator after seeing which arm it favours &mdash; the preregistration already specified
+    the strict behaviour and the code simply did not implement it. Making them agree honours
+    the plan rather than bending it.
+  </p>
+  <p>
+    Both runs were re-scored. E24's figures throughout this report are the strict ones and did
+    not move. <strong>E23's did</strong>, and only for Gemini, which is the only arm with parse
+    failures: <code>call_result</code> 0.495&nbsp;&rarr;&nbsp;<strong>0.482</strong>,
+    <code>product</code> 0.727&nbsp;&rarr;&nbsp;<strong>0.693</strong>,
+    <code>reason</code> 0.263&nbsp;&rarr;&nbsp;<strong>0.252</strong>. Typhoon's and Qwen's E23
+    figures are byte&#8209;identical before and after, which is the check that the change did
+    what it claims: an arm with no parse failures cannot be affected by how parse failures are
+    handled.
+  </p>
+  <p>
+    The regression test that now pins this had a sibling asserting the same invariant, passing,
+    for weeks. Its fixture failed on <em>all three</em> replicates, so it never reached the
+    branch where the bug lived.
   </p>
 </div>
 

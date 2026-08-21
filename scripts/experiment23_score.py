@@ -143,13 +143,17 @@ def collapse(run_dir: Path, policy: str = "first") -> tuple[dict, dict, dict]:
 
     `policy` decides WHICH collapse, and the default is not a matter of taste.
 
-      * ``first``  -- replicate 1 alone. This is what `experiments/retention-e23.plan.json`
-                      preregistered, in its own words: "Every headline figure is computed
-                      on replicate 1 alone. Replicates 2 and 3 feed ONLY the stability /
-                      noise-floor metric. Preregistered because Experiment 2 showed a
-                      metric crossing a decision band on a single draw from an arm that
-                      flips; choosing the replicate after seeing three of them is choosing
-                      the answer."
+      * ``first``  -- replicate 1 alone, INCLUDING when replicate 1 did not parse. This is
+                      what `experiments/retention-e23.plan.json` preregistered, in its own
+                      words: "Every headline figure is computed on replicate 1 alone.
+                      Replicates 2 and 3 feed ONLY the stability / noise-floor metric.
+                      Preregistered because Experiment 2 showed a metric crossing a decision
+                      band on a single draw from an arm that flips; choosing the replicate
+                      after seeing three of them is choosing the answer."
+
+                      Until 2026-08-21 this took the first PARSEABLE replicate, which is a
+                      third thing the plan does not describe and which forgave 8 incumbent
+                      items in E23 and 3 in E24. See the comment at the selection site.
       * ``modal``  -- majority vote across all three replicates.
 
     This module shipped computing `modal` while the plan said `first`, and nobody noticed
@@ -219,7 +223,29 @@ def collapse(run_dir: Path, policy: str = "first") -> tuple[dict, dict, dict]:
                 unstable[arm] += 1
                 break
 
-        ok = ok_all if policy == "modal" else ok_all[:1]
+        # `first` means REPLICATE 1, not "the first replicate that happened to parse".
+        #
+        # This used to be `ok_all[:1]`, which silently scored an item from replicate 2 when
+        # replicate 1 had not parsed. That is neither of the two things the plan says. It
+        # preregisters headline figures on "replicate 1 alone", AND that "a parse failure is
+        # scored as incorrect, never dropped" -- the second existing precisely so that an arm
+        # cannot improve its score by failing to answer.
+        #
+        # It was not neutral in practice either. On the two real runs it rescued 8 items in
+        # E23 and 3 in E24, and every one belonged to the incumbent, because the incumbent is
+        # the only arm that produces parse failures at all. A rule that quietly forgives the
+        # failures of whichever arm has them is the shape of bug this scorer exists to avoid.
+        #
+        # `modal` is untouched: a majority vote across three replicates is a different
+        # preregistered estimator and is entitled to use the replicates that answered.
+        if policy == "first":
+            first = recs[0]
+            if first.get("status") != "ok" or not first.get("fields"):
+                collapsed[arm][item] = {"__failed__": True, "statuses": statuses}
+                continue
+            ok = [first]
+        else:
+            ok = ok_all
         keys = set().union(*(set(r["fields"]) for r in ok))
         fields: dict = {}
         for key in keys:
