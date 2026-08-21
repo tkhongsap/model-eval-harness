@@ -35,17 +35,20 @@ TRANSCRIPTION STAGE
   scoreable after exclusion                     no ASR stage              not recorded              not recorded
 ----------------------------------------------------------------------------------------------------------------
 LATENCY  (seconds)                                                                                              
-  ASR stage, median                             no ASR stage                      57.3                      23.9
+  ASR stage, median                             no ASR stage              not recorded              not recorded
   label call, median                                     5.2                      18.3                        --
   label call, p95                                        7.4                      29.0                        --
   label call, max                                       10.2                      40.6                        --
-  END TO END, median                                     5.2                      75.6                        --
-  ASR real-time factor                          no ASR stage                     0.137                     0.065
+  END TO END, median                                     5.2       >18.3 (ASR untimed)                        --
+  ASR real-time factor                          no ASR stage              not recorded              not recorded
 ----------------------------------------------------------------------------------------------------------------
-TOKENS  (label call)                                                                                            
-  input, median                                       11,615                     3,660                        --
+TOKENS  (see note)                                                                                              
+  stage 1 in - audio                                   9,175         not token-metered         not token-metered
+  stage 2 in - text                           no second call                     3,660                        --
+  prompt+schema, in above                              2,440            included above            included above
+  billed input, median                                11,615                     3,660                        --
   output, median                                         233                       246                        --
-  input, total                                     4,733,890                 1,506,546                         0
+  billed input, total                              4,733,890                 1,506,546                         0
   output, total                                       96,019                   103,757                         0
 ----------------------------------------------------------------------------------------------------------------
 RELIABILITY                                                                                                     
@@ -74,6 +77,15 @@ COST
   and the labeller answers `save` on 7 of 8. It is right to. Fixing it needs a scenario
   whose BODY is out of scope -- a new generator branch, not another sentence.
 
+
+!! INPUT DRIFT -- files this run READ have changed on disk since
+   typhoon-pipeline: 23 item(s) -- ASR-048, ASR-060, ASR-062, ASR-080, ASR-084, ASR-086 ...
+   The BUSINESS figures above are unaffected: they are computed from
+   results.jsonl, the models' recorded answers, not from these files.
+   Anything derived from the inputs AFTER the run -- CER, the ASR-stage
+   record -- cannot be trusted for this run and is not reported.
+   Verify with: python scripts/experiment21_pipeline_delta.py --score out\runs\20260821-074057Z-e21
+
 READING THIS TABLE
   Gemini has no transcription stage -- audio goes in and JSON comes out of
   ONE call -- so every ASR row is blank for it rather than zero.
@@ -81,6 +93,14 @@ READING THIS TABLE
   transcriber, so the gap between those two columns IS the ASR stage.
   Cost is metered only on OpenRouter; the internal arms run on company GPU
   with no per-call price, which is not the same as being free.
+  TOKENS ARE NOT ONE NUMBER HERE. Both shapes are handed the SAME audio.
+  The one-call arm's prompt carries that audio as tokens and is billed for
+  it; the pipeline arms send it to a transcription endpoint that reports no
+  usage at all and bills GPU time, then send only TEXT to the labeller. So
+  a single input-token row would compare one arm's whole job against the
+  other's second half. The rows are split by stage for that reason, and
+  'billed input' is what each runtime actually charges for, not what each
+  pipeline consumed.
   Business figures follow the preregistered replicate-1 rule and are
   restricted to the calls EVERY column answered; latency and tokens pool
   every call actually made, which is why their denominators differ.

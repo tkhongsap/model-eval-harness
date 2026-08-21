@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import hashlib
 import importlib.util
 import json
 import statistics
@@ -90,6 +91,16 @@ def operational(run_dir: Path) -> dict:
         compl = [v for v in compl if v is not None]
         costs = [(r.get("usage") or {}).get("cost") for r in ok]
         costs = [c for c in costs if isinstance(c, (int, float))]
+        # Audio tokens, split out of prompt_tokens, because leaving them merged makes the
+        # token row compare two different things. The one-call audio arm's prompt CONTAINS
+        # the recording; the pipeline arms' label prompt contains a transcript, and their
+        # audio never becomes tokens at all -- it goes to an endpoint that bills GPU time
+        # and reports no usage. "11,466 against 3,664" then reads as the pipeline using a
+        # third of the tokens, when the truth is that its first stage is missing from the
+        # comparison entirely.
+        audio = [((r.get("usage") or {}).get("prompt_tokens_details") or {}).get(
+            "audio_tokens") or 0 for r in ok]
+        text_in = [p - a for p, a in zip(prompt, audio)] if len(audio) == len(prompt) else []
         statuses = collections.Counter(r.get("status", "unknown") for r in records)
         out[arm] = {
             "calls": len(records),
@@ -100,6 +111,9 @@ def operational(run_dir: Path) -> dict:
             "lat_max": lat[-1] if lat else None,
             "lat_mean": statistics.mean(lat) if lat else None,
             "prompt_med": statistics.median(prompt) if prompt else None,
+            "audio_med": statistics.median(audio) if any(audio) else None,
+            "audio_total": sum(audio) if any(audio) else None,
+            "text_in_med": statistics.median(text_in) if text_in else None,
             "compl_med": statistics.median(compl) if compl else None,
             "prompt_total": sum(prompt),
             "compl_total": sum(compl),
@@ -107,6 +121,53 @@ def operational(run_dir: Path) -> dict:
             "cost_total": sum(costs) if costs else None,
             "cost_calls": len(costs),
         }
+    return out
+
+
+def input_drift(run_dir: Path) -> dict[str, list[str]]:
+    """Which of the run's recorded inputs no longer match the bytes on disk.
+
+    WHY THE SCORECARD CHECKS THIS AND NOT ONLY THE RUNNER. The runner records the sha256 of
+    every input before its first model call, and `experiment21_pipeline_delta --score`
+    refuses outright when one has changed. This script never called that path, so it would
+    happily print a full table over a corpus that had moved underneath the run.
+
+    That is not hypothetical. On 2026-08-21 a `transcribe.py` orphaned by a stopped chain
+    kept running for four hours against a wedged backend and overwrote 23 of E24's Typhoon
+    transcripts -- hours AFTER the run had been scored. The runner's refusal caught it; this
+    script had already published from the same directory and said nothing.
+
+    It does NOT refuse, and the distinction matters. Business figures come from
+    `results.jsonl`, the models' recorded answers, so drift cannot reach them. What drift
+    reaches is anything derived from the inputs after the fact -- CER, the ASR-stage record,
+    a re-read transcript. So this reports precisely, loudly, and lets the honest rows through
+    rather than suppressing a valid table because a file changed beside it.
+    """
+    log_path = run_dir / "run.json"
+    if not log_path.is_file():
+        return {}
+    log = json.loads(log_path.read_text(encoding="utf-8"))
+    out: dict[str, list[str]] = {}
+    for arm, per_item in (log.get("input_sha256") or {}).items():
+        paths = (log.get("input_paths") or {}).get(arm) or {}
+        moved = []
+        for item, want in per_item.items():
+            src = paths.get(item)
+            if not src:
+                continue
+            f = Path(src)
+            if not f.is_file():
+                moved.append(item)
+                continue
+            if f.suffix == ".wav":
+                got = hashlib.sha256(f.read_bytes()).hexdigest()
+            else:
+                got = hashlib.sha256(
+                    f.read_text(encoding="utf-8").strip().encode("utf-8")).hexdigest()
+            if got != want:
+                moved.append(item)
+        if moved:
+            out[arm] = moved
     return out
 
 
@@ -322,14 +383,32 @@ def main() -> int:
          else "not recorded") for a, *_ in COLUMNS], indent=True)
     rule()
 
-    row("TOKENS  (label call)", ["" for _ in COLUMNS])
-    row("input, median", [
-        f"{ops.get(a, {}).get('prompt_med'):,.0f}" if ops.get(a, {}).get("prompt_med")
-        else NA for a, *_ in COLUMNS], indent=True)
+    # TOKENS, BY STAGE. A single "input tokens" row across these two shapes compares the
+    # audio arm's ONE call -- which carries the recording as tokens -- against the pipeline
+    # arms' SECOND call, which carries text. The pipeline's first stage, which ingests the
+    # same audio, is absent from that row because /v1/audio/transcriptions reports no usage.
+    # Both shapes are handed identical audio; only one denominates it in tokens.
+    row("TOKENS  (see note)", ["" for _ in COLUMNS])
+
+    def tok(key, arm):
+        value = ops.get(arm, {}).get(key)
+        return f"{value:,.0f}" if value else None
+
+    row("stage 1 in - audio", [
+        (tok("audio_med", a) or NA) if a == "gemini-audio"
+        else ("not token-metered" if asr.get(a, {}).get("chunk_seconds") else NA)
+        for a, *_ in COLUMNS], indent=True)
+    row("stage 2 in - text", [
+        "no second call" if a == "gemini-audio" else (tok("text_in_med", a) or NA)
+        for a, *_ in COLUMNS], indent=True)
+    row("prompt+schema, in above", [
+        tok("text_in_med", a) or NA if a == "gemini-audio" else "included above"
+        for a, *_ in COLUMNS], indent=True)
+    row("billed input, median", [
+        tok("prompt_med", a) or NA for a, *_ in COLUMNS], indent=True)
     row("output, median", [
-        f"{ops.get(a, {}).get('compl_med'):,.0f}" if ops.get(a, {}).get("compl_med")
-        else NA for a, *_ in COLUMNS], indent=True)
-    row("input, total", [
+        tok("compl_med", a) or NA for a, *_ in COLUMNS], indent=True)
+    row("billed input, total", [
         f"{ops.get(a, {}).get('prompt_total', 0):,}" for a, *_ in COLUMNS], indent=True)
     row("output, total", [
         f"{ops.get(a, {}).get('compl_total', 0):,}" for a, *_ in COLUMNS], indent=True)
@@ -423,6 +502,21 @@ def main() -> int:
                      "sentence.")
 
     lines.append("")
+    drift = input_drift(args.run)
+    if drift:
+        lines.append("")
+        lines.append("!! INPUT DRIFT -- files this run READ have changed on disk since")
+        for arm, items in sorted(drift.items()):
+            shown = ", ".join(items[:6]) + (" ..." if len(items) > 6 else "")
+            lines.append(f"   {arm}: {len(items)} item(s) -- {shown}")
+        lines.append("   The BUSINESS figures above are unaffected: they are computed from")
+        lines.append("   results.jsonl, the models' recorded answers, not from these files.")
+        lines.append("   Anything derived from the inputs AFTER the run -- CER, the ASR-stage")
+        lines.append("   record -- cannot be trusted for this run and is not reported.")
+        lines.append("   Verify with: python scripts/experiment21_pipeline_delta.py --score "
+                     f"{args.run}")
+        lines.append("")
+
     lines.append("READING THIS TABLE")
     lines.append("  Gemini has no transcription stage -- audio goes in and JSON comes out of")
     lines.append("  ONE call -- so every ASR row is blank for it rather than zero.")
@@ -430,6 +524,14 @@ def main() -> int:
     lines.append("  transcriber, so the gap between those two columns IS the ASR stage.")
     lines.append("  Cost is metered only on OpenRouter; the internal arms run on company GPU")
     lines.append("  with no per-call price, which is not the same as being free.")
+    lines.append("  TOKENS ARE NOT ONE NUMBER HERE. Both shapes are handed the SAME audio.")
+    lines.append("  The one-call arm's prompt carries that audio as tokens and is billed for")
+    lines.append("  it; the pipeline arms send it to a transcription endpoint that reports no")
+    lines.append("  usage at all and bills GPU time, then send only TEXT to the labeller. So")
+    lines.append("  a single input-token row would compare one arm's whole job against the")
+    lines.append("  other's second half. The rows are split by stage for that reason, and")
+    lines.append("  'billed input' is what each runtime actually charges for, not what each")
+    lines.append("  pipeline consumed.")
     lines.append("  Business figures follow the preregistered replicate-1 rule and are")
     lines.append("  restricted to the calls EVERY column answered; latency and tokens pool")
     lines.append("  every call actually made, which is why their denominators differ.")

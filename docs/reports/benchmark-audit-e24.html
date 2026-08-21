@@ -406,10 +406,24 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
       <td class="n">&mdash;</td><td class="n">0.277</td></tr>
     <tr><td>Label latency, median</td><td class="n">5.5 s</td><td class="n">17.9 s</td>
       <td class="n">&mdash;</td><td class="n">15.8 s</td></tr>
-    <tr><td>ASR latency, median</td><td class="n">no ASR stage</td><td class="n">41.3 s</td>
+    <tr><td>ASR latency, median</td><td class="n">no ASR stage</td>
+      <td class="n">not re&#8209;derivable*</td>
       <td class="n">&mdash;</td><td class="n">no ASR stage</td></tr>
-    <tr><td>Input tokens, median</td><td class="n">11,466</td><td class="n">3,664</td>
+    <tr><td><strong>stage 1 in</strong> &mdash; audio</td>
+      <td class="n">9,175 audio tokens<br><span style="color:var(--muted)">billed</span></td>
+      <td class="n">not token&#8209;metered<br><span style="color:var(--muted)">GPU time</span></td>
+      <td class="n">not token&#8209;metered</td>
+      <td class="n">no audio stage</td></tr>
+    <tr><td><strong>stage 2 in</strong> &mdash; text</td>
+      <td class="n">no second call</td><td class="n">3,660</td>
       <td class="n">&mdash;</td><td class="n">3,759</td></tr>
+    <tr><td>prompt + schema (inside the above)</td>
+      <td class="n">2,440</td><td class="n">included</td>
+      <td class="n">&mdash;</td><td class="n">included</td></tr>
+    <tr><td>billed input, median</td><td class="n">11,615</td><td class="n">3,660</td>
+      <td class="n">&mdash;</td><td class="n">3,759</td></tr>
+    <tr><td>output, median</td><td class="n">233</td><td class="n">246</td>
+      <td class="n">&mdash;</td><td class="n">246</td></tr>
     <tr><td>Parse failures (replicate 1)</td><td class="n">3 / 138</td><td class="n">0 / 138</td>
       <td class="n">&mdash;</td><td class="n">0 / 138</td></tr>
     <tr><td>Unstable items (3 replicates)</td><td class="n">17 / 138</td><td class="n">33 / 138</td>
@@ -418,6 +432,50 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
       <td class="n">internal GPU</td><td class="n">internal GPU</td></tr>
   </tbody>
 </table>
+</div>
+
+<div class="note">
+  <h4>Why there is no single &#8220;input tokens&#8221; row</h4>
+  <p>
+    An earlier version of this table printed <strong>11,466 against 3,664</strong> and invited
+    the reading that the pipeline uses a third of the tokens. That comparison was wrong, and
+    the reason is worth stating because it is easy to repeat.
+  </p>
+  <p>
+    <strong>Both shapes are handed the same audio.</strong> Gemini's single call carries that
+    recording <em>as tokens</em> &mdash; 9,175 of its 11,615 median input tokens are audio, and
+    it is billed for them. The pipeline sends the same audio to a transcription endpoint that
+    reports no usage at all and bills GPU time, then sends only <em>text</em> to the labeller.
+    So the 3,660 was the pipeline's <strong>second call only</strong>: its first stage was
+    missing from the comparison entirely.
+  </p>
+  <p>
+    Split by stage, the honest reading is that the pipeline's label call is cheaper in tokens
+    than the audio arm's single call (3,660 against 11,615) <em>and</em> that it additionally
+    consumes an ASR stage which is real work priced in GPU time rather than tokens &mdash; 13
+    requests over ~398&nbsp;s of audio per call, on hardware with no per&#8209;call price. The
+    two are not addable, and pretending otherwise favours whichever arm you already prefer.
+  </p>
+</div>
+
+<div class="note warn">
+  <h4>* One figure this run can no longer re-derive</h4>
+  <p>
+    E24's Typhoon ASR latency was measured at <strong>41.3&nbsp;s median, RTF 0.115</strong>.
+    That figure is no longer reproducible. At 11:27Z &mdash; two hours after E24 finished
+    scoring &mdash; a <code>transcribe.py</code> orphaned by a chain stopped at 07:36Z, which
+    had kept running against the wedged backend, overwrote the arm's run record and 23 of its
+    transcripts.
+  </p>
+  <p>
+    <strong>No business figure is affected.</strong> Every F1, accuracy and attribution number
+    here is computed from <code>results.jsonl</code> &mdash; the models' recorded answers,
+    written 07:40&ndash;09:38Z. The runner records the sha256 of every input before its first
+    call, which is exactly how this was caught: re-scoring the run refuses with
+    <code>input drift: typhoon-pipeline/ASR-048 hash changed</code>. The overwritten record is
+    preserved beside the reconstructed one, and the scorecard now prints a drift banner rather
+    than publishing over a corpus that has moved.
+  </p>
 </div>
 
 <div class="note warn">
