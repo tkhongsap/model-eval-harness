@@ -167,11 +167,35 @@ did not. `qwen-pipeline` is
 UNAVAILABLE rather than scored on 120/138, which is under the 90% coverage gate. **The label
 run had already completed**; ninety minutes earlier and it would have voided three arms.
 
-### Next action
+### Qwen never came back — E24 is closed at four arms
 
-A watcher polls both models every 10 minutes; on recovery it transcribes the 18 lost items,
-merges them under the provenance rules, runs `qwen-pipeline`'s three replicates into the
-existing run directory and re-scores. Nothing that completed needs re-running.
+The watcher polled from 10:40Z and gave up at its 6-hour deadline. `qwen3-asr-1.7b` was down
+**10 h 40 min**, 06:52Z to 17:31Z, without one successful response — while the labeller it
+shares with the Typhoon arm answered in under a second on every poll but one, and
+`gemma-4-12b-it` was never affected. That model, not the gateway.
+
+`qwen-pipeline` is **UNAVAILABLE**: 120 of 138 transcripts is 87.0%, under the 90% coverage
+gate. Full record in `docs/qwen-asr-outage-2026-08-21.txt`.
+
+**Adding it later is a new experiment id, not a late column.** The E24 run directory now has
+drifted inputs on the Typhoon arm (an orphaned `transcribe.py` overwrote 23 transcripts at
+11:27Z, hours after scoring — caught by the runner's input-hash refusal, recorded in
+`asr-eval-v3/hypotheses/typhoon-whisper-large-v3/DRIFT.md`). A scored five-arm comparison
+cannot be reconstructed from disk. None of that touches the four arms that completed: they
+were scored 07:40–09:38Z against a corpus frozen before the first model call, with model
+identity recorded per call.
+
+### Where the next experiment belongs
+
+Not on the transcriber. With a **perfect** transcript the labeller still scores 0.839 on call
+outcome and 0.277 on reason — so ~16% of calls are wrong with zero transcription error, and
+`reason` is barely measured at all. The binding constraint is the labelling step and the spec,
+which is also why halving CER bought so little end to end. The two open leads are the eight
+`undefined` rows (a generator branch, not another sentence) and the reason dimension.
+
+Beyond that, the audit's own limit: the reviewers were models. A human panel on the same 68
+blind cases is what would settle these labels, and it is now a cheap thing to run — the packet,
+the blindness test and the scorer all exist.
 
 Report: https://claude.ai/code/artifact/afcb6dbb-5e4e-4f9e-a77b-8fa7465b615a
 
