@@ -2,6 +2,98 @@
 
 ## 🔴 Active Task
 
+**2026-08-21 — the blind audit says the BENCHMARK is what needs fixing, and the fix
+reproduces the audit's own corrections independently. E24 is running.**
+
+The position this came from: *"let's not change models yet. Let's first validate the
+benchmark — lock the prompt and spec, run all models identically, and audit the ground truth
+by independently re-labelling the disagreement cases using only the written spec. If reviewers
+don't agree with the expected labels, then the benchmark needs fixing. Not the model."*
+
+All four steps are done. The audit crossed its preregistered threshold decisively.
+
+### 1. The audit: 62.9% of disputed labels went AGAINST the corpus
+
+68 blind cases — 26 product disagreements, 12 outcome, 30 undisputed controls, shuffled under
+a recorded seed — to **Claude Sonnet 4.5, GPT-4.1 and Llama 3.3 70B**. Each shown only the Thai
+transcript and the written spec: no expected label, no group name, no model answer
+(`tests/test_audit_packet_is_blind.py`). None of them is an arm in this evaluation. 204 calls,
+$3.06. Recorded in `docs/reports/audit-result.json`.
+
+| group | agree | against | no maj. | agreement |
+|---|---:|---:|---:|---:|
+| control | 28 | 2 | 0 | **93.3%** |
+| product_mismatch | 8 | 17 | 1 | **32.0%** |
+| outcome_error | 5 | 5 | 2 | 50.0% |
+
+**22 of 35 disputed = 62.9%, against a preregistered 20% threshold.** The control rate is what
+makes it readable: 93.3% on undisputed calls says the reviewers could do the task and the spec
+is followable, so 32% on product disputes is a finding about the corpus rather than reviewer
+noise. Had controls come back low the scorer halts the reading — that branch exists and did
+not fire.
+
+### 2. The mechanism, found afterwards and agreeing exactly
+
+`business_labels.py:152` drew the product from a global mix. `choose_call_result`, eight lines
+below, already took the scenario and constrained on it. So product and scenario were
+independent — and the product is **spoken** (`reason_lines.py:273` puts it in the customer's
+mouth). The corpus was generating a customer saying their **TV box** is slow while the agent
+talks them through restarting a **router**, and scoring every model against the TV box.
+
+**30 of 138 calls (21.7%) carried a label their own audio contradicts** — 53.6% of the 56 calls
+whose dialogue names the product. Re-derive with `python scripts/corpus_diff.py --before
+asr-eval-v2 --after asr-eval-v3`.
+
+| the scenario constraint says | | the blind reviewers said | |
+|---|---:|---|---:|
+| `tvs` → `postpaid` | 9 | `tvs` → `postpaid` | 9 |
+| `tvs` → `tol` | 3 | `tvs` → `tol` | 3 |
+
+Two derivations that never saw each other, landing on the same corrections.
+
+### 3. What E23's product numbers were measured against
+
+Every one of these was computed against ground truth in which 21.7% of product labels
+contradicted their audio, so the product column below is the one to expect to move:
+
+| arm | call_result F1 | reason | product |
+|---|---:|---:|---:|
+| format-control | 0.663 | 0.239 | 0.804 |
+| ceiling | 0.645 | 0.228 | 0.808 |
+| typhoon-pipeline | 0.597 | 0.230 | 0.791 |
+| qwen-pipeline | 0.588 | 0.207 | 0.762 |
+| gemini-audio | 0.495 | 0.267 | 0.727 |
+
+### 4. E24, and why it is a new experiment id
+
+`retention-e23.plan.json` states it: *"No hash in this file may be recomputed after the freeze
+— a changed hash is a new experiment id."* So the corrected corpus is `asr-eval-v3/` and
+`experiments/retention-e24.plan.json`, **derived from E23 field by field** so production's
+thresholds, the alpha, the workload and the failure taxonomy are verifiably unmoved.
+
+Found while doing it: **E23 stands at `status: draft` with every corpus sha256 still null**,
+while 1,002 model calls were made against it and its own gate 1 reads *"No model call in E23
+happens before this."* Nobody skipped it — there was no command that performed it. There is
+now: `scripts/freeze_corpus.py`. **E24's gate 1 is given**, stamped from the rendered bytes
+before its first model call.
+
+Audio provenance, `138/138 = 100%`: the 57 calls whose product did not move render to
+**identical bytes**, and all 81 that moved differ. Nothing changed that the fix did not ask to
+change, and those 57 calls are directly comparable between E23 and E24.
+
+### Next action
+
+E24 is executing: 138 calls transcribed by Qwen3-ASR and Typhoon Whisper, then five arms
+× 3 replicates against the corrected labels. Then the scorecard and the report.
+
+**What none of this settles.** The reviewers are models, not people. A human panel is still the
+thing that would settle these labels. And `RECONCILED: NO` — correcting a synthetic corpus
+against its own written spec does not move it one step closer to a production call.
+
+---
+
+## Earlier
+
 **CORRECTION (2026-08-20, later): the ceiling is a CORPUS defect, not a labeller limitation.
 The entry below states the opposite and is wrong.**
 
