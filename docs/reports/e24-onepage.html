@@ -1,0 +1,306 @@
+<title>Retention Eval Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1b2024; --ink-2:#4a555f; --muted:#7c8791;
+  --page:#ebeef0; --card:#ffffff; --rule:#e3e8ea; --rule-2:#cfd7db;
+  --band:#f4f6f7;
+  --pick:#fdeee8;            /* the candidate column, the one tint that carries meaning */
+  --pick-edge:#f0c9b8;
+  --pick-head:#fbe3da;
+  --gone:#f7f7f8;
+  --accent:#0b6a70;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+    --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b;
+    --band:#1c2429;
+    --pick:#33211a; --pick-edge:#6b4133; --pick-head:#3d2820;
+    --gone:#14191c;
+    --accent:#4fb3b7;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+  --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b;
+  --band:#1c2429;
+  --pick:#33211a; --pick-edge:#6b4133; --pick-head:#3d2820;
+  --gone:#14191c;
+  --accent:#4fb3b7;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--page); color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;
+}
+.sheet{max-width:1020px; margin:0 auto; padding:26px 20px 44px}
+
+.masthead{display:flex; justify-content:space-between; align-items:flex-end;
+  gap:18px; flex-wrap:wrap; margin-bottom:14px}
+h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+.sub{color:var(--muted); font-size:12.5px; margin:3px 0 0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted);
+  text-align:right; line-height:1.7}
+
+.card{background:var(--card); border:1px solid var(--rule-2); border-radius:4px;
+  overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:840px}
+
+thead th{padding:16px 14px 13px; vertical-align:bottom; text-align:right;
+  border-bottom:1px solid var(--rule-2)}
+thead th:first-child{text-align:left}
+.mname{font-size:14.5px; font-weight:700; letter-spacing:-.005em; white-space:nowrap}
+.mrole{font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); margin-top:5px; white-space:nowrap}
+
+tbody td{padding:11px 14px; text-align:right; border-bottom:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace; font-size:13.5px;
+  font-variant-numeric:tabular-nums; color:var(--ink-2)}
+tbody td:first-child{text-align:left; font-family:"Public Sans",sans-serif;
+  font-size:13.5px; color:var(--ink)}
+tbody tr:last-child td{border-bottom:none}
+.lab{font-weight:600}
+.hint{display:block; color:var(--muted); font-size:11.5px; font-weight:400;
+  font-family:"Public Sans",sans-serif; margin-top:1px}
+
+/* section bands */
+tr.band td{background:var(--band); border-bottom:1px solid var(--rule-2);
+  border-top:1px solid var(--rule-2); padding:9px 14px}
+tr.band .lab{font-size:12px; letter-spacing:.03em}
+tr.band .hint{margin-top:2px}
+
+/* the candidate column */
+.pick{background:var(--pick)}
+thead th.pick{background:var(--pick-head);
+  border-left:1px solid var(--pick-edge); border-right:1px solid var(--pick-edge)}
+tbody td.pick{border-left:1px solid var(--pick-edge); border-right:1px solid var(--pick-edge)}
+tr.band td.pick{background:var(--pick-head)}
+.best{font-weight:600; color:var(--ink)}
+.na{color:var(--muted)}
+td.gone{background:var(--gone); color:var(--muted)}
+thead th.gone{background:var(--gone)}
+thead th.gone .mname{color:var(--muted)}
+
+.notes{margin:16px 2px 0; font-size:12px; color:var(--ink-2); max-width:74ch}
+.notes p{margin:0 0 7px}
+.notes b{color:var(--ink)}
+.dag{font-family:"IBM Plex Mono",monospace; color:var(--accent); font-weight:600}
+.verdict{margin-top:16px; padding:13px 16px; background:var(--card);
+  border:1px solid var(--rule-2); border-left:3px solid var(--accent); border-radius:4px;
+  font-size:13px; max-width:none}
+.verdict b{color:var(--ink)}
+
+@media print{
+  @page{size:A4 portrait; margin:11mm}
+  body{background:#fff; font-size:9.4pt}
+  .sheet{padding:0; max-width:none}
+  .card{border-color:#bbb; overflow:visible}
+  table{min-width:0}
+  thead th{padding:8px 7px 7px}
+  tbody td{padding:5.4px 7px; font-size:9pt}
+  .mname{font-size:9.6pt} .mrole{font-size:6.4pt}
+  tbody td:first-child{font-size:9pt}
+  .hint{font-size:7.6pt}
+  .notes{font-size:7.8pt} .verdict{font-size:8.4pt; padding:8px 10px}
+  .pick{background:#fdeee8 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  thead th.pick, tr.band td.pick{background:#fbe3da !important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  tr.band td{background:#f2f4f5 !important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact}
+}
+</style>
+
+<div class="sheet">
+
+<div class="masthead">
+  <div>
+    <h1>Retention call labelling &mdash; can we move off Gemini?</h1>
+    <p class="sub">Experiment 24 &middot; audio in, business decision out &middot; every arm on identical inputs</p>
+  </div>
+  <div class="stamp">
+    138 synthetic Thai calls<br>
+    3 repeats &middot; scored on the 1st, as preregistered<br>
+    2026-08-21 &middot; RECONCILED: NO
+  </div>
+</div>
+
+<div class="card">
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th><div class="mname">Gemini 2.5 Flash</div><div class="mrole">production today</div></th>
+      <th class="pick"><div class="mname">Typhoon &rarr; Qwen3.8</div><div class="mrole">our GPU &middot; candidate</div></th>
+      <th class="gone"><div class="mname">Qwen ASR &rarr; Qwen3.8</div><div class="mrole">our GPU &middot; unavailable <span class="dag">&Dagger;</span></div></th>
+      <th><div class="mname">Perfect transcript</div><div class="mrole">upper bound</div></th>
+      <th><div class="mname">Format control</div><div class="mrole">zero mishearing</div></th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr class="band">
+      <td colspan="2"><span class="lab">The decision production acts on</span>
+        <span class="hint">weighted F1 &middot; ground truth corrected after a blind audit found 30 of 138 product labels contradicted their own audio</span></td>
+      <td class="pick"></td><td colspan="3"></td>
+    </tr>
+
+    <tr>
+      <td><span class="lab">Call outcome</span><span class="hint">save / churn / unknown / undefined</span></td>
+      <td>0.564</td>
+      <td class="pick best">0.730</td>
+      <td class="gone">&mdash;</td>
+      <td>0.839</td>
+      <td>0.836</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Product</span><span class="hint">which service the call is about</span></td>
+      <td>0.798</td>
+      <td class="pick best">0.864</td>
+      <td class="gone">&mdash;</td>
+      <td>0.881</td>
+      <td>0.836</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Reason</span><span class="hint">11 values, up to 3 per call</span></td>
+      <td>0.272</td>
+      <td class="pick">0.272</td>
+      <td class="gone">&mdash;</td>
+      <td>0.277</td>
+      <td>0.264</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Calls fully correct</span><span class="hint">outcome, of 138</span></td>
+      <td>68</td>
+      <td class="pick best">95</td>
+      <td class="gone">&mdash;</td>
+      <td>110</td>
+      <td>108</td>
+    </tr>
+
+    <tr class="band">
+      <td colspan="2"><span class="lab">What it costs to run</span>
+        <span class="hint">both shapes are handed the SAME audio &mdash; only one of them turns it into tokens <span class="dag">&dagger;</span></span></td>
+      <td class="pick"></td><td colspan="3"></td>
+    </tr>
+
+    <tr>
+      <td><span class="lab">Audio in</span><span class="hint">stage 1, per call</span></td>
+      <td>9,175</td>
+      <td class="pick na">not metered</td>
+      <td class="gone">not metered</td>
+      <td class="na">no audio</td>
+      <td class="na">no audio</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Text in</span><span class="hint">stage 2, per call</span></td>
+      <td class="na">no 2nd call</td>
+      <td class="pick">3,660</td>
+      <td class="gone">&mdash;</td>
+      <td>3,759</td>
+      <td>3,652</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Billed input</span><span class="hint">what the runtime charges for</span></td>
+      <td>11,615</td>
+      <td class="pick best">3,660</td>
+      <td class="gone">&mdash;</td>
+      <td>3,759</td>
+      <td>3,652</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Output</span><span class="hint">per call</span></td>
+      <td class="best">233</td>
+      <td class="pick">246</td>
+      <td class="gone">&mdash;</td>
+      <td>247</td>
+      <td>243</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Median label latency</span><span class="hint">not like-for-like <span class="dag">&dagger;</span></span></td>
+      <td class="best">5.2s</td>
+      <td class="pick">18.3s</td>
+      <td class="gone">&mdash;</td>
+      <td>15.6s</td>
+      <td>17.1s</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Metered spend</span><span class="hint">414 calls</span></td>
+      <td>$3.86</td>
+      <td class="pick best">$0.00</td>
+      <td class="gone">&mdash;</td>
+      <td class="na">company GPU</td>
+      <td class="na">company GPU</td>
+    </tr>
+
+    <tr class="band">
+      <td colspan="2"><span class="lab">Can we trust the same answer twice?</span>
+        <span class="hint">3 identical repeats of every call</span></td>
+      <td class="pick"></td><td colspan="3"></td>
+    </tr>
+
+    <tr>
+      <td><span class="lab">Answers that changed</span><span class="hint">of 138 calls</span></td>
+      <td class="best">17</td>
+      <td class="pick">33</td>
+      <td class="gone">&mdash;</td>
+      <td>21</td>
+      <td>31</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Malformed replies</span><span class="hint">of 414 calls &middot; gate is 4</span></td>
+      <td>3</td>
+      <td class="pick best">0</td>
+      <td class="gone">&mdash;</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td><span class="lab">Calls transcribed</span><span class="hint">audio stage</span></td>
+      <td class="na">no ASR stage</td>
+      <td class="pick best">138 / 138</td>
+      <td class="gone">120 / 138</td>
+      <td class="na">no ASR stage</td>
+      <td class="na">no ASR stage</td>
+    </tr>
+
+  </tbody>
+</table>
+</div>
+
+<div class="notes">
+  <p><span class="dag">&dagger;</span> <b>The two shapes are not comparable on one token or latency
+  number.</b> Gemini makes ONE call and its prompt carries the recording as tokens &mdash; 9,175 of
+  its 11,615. The pipeline makes TWO: the audio goes to a transcription endpoint that reports no
+  usage at all and bills GPU time, then only text goes to the labeller. So the pipeline's 18.3s is
+  its <i>second</i> call, and its first stage is real work sitting outside every column here.</p>
+
+  <p><span class="dag">&Dagger;</span> <b>Qwen ASR could not be scored.</b> The model stopped
+  answering mid-run at 120 of 138 transcripts and has been down since; the labeller it shares with
+  Typhoon stayed healthy, so this is that one model, not the gateway. 120/138 is under the 90%
+  coverage gate, so the arm is reported UNAVAILABLE rather than scored behind a shrunken
+  denominator.</p>
+
+  <p><b>Perfect transcript and Format control are not candidates</b> &mdash; they are the ruler.
+  The first shows what the labeller scores when transcription is flawless (0.839), which caps what
+  any ASR improvement can buy. The second contains every formatting difference and zero
+  mishearing, so any gap it does not explain is hearing rather than layout.</p>
+</div>
+
+<div class="verdict">
+  <b>Read it this way.</b> On corrected ground truth the candidate beats production on the two
+  dimensions that matter &mdash; outcome 0.730 against 0.564, product 0.864 against 0.798 &mdash;
+  at zero metered spend and a third of the billed tokens. It is also <b>slower and less
+  repeatable</b>: 18.3s against 5.2s, and 33 answers that changed against 17. And it sits close to
+  its own ceiling (0.730 against 0.839), so the binding constraint is the labelling step, not the
+  audio. <b>This is not yet a migration recommendation:</b> one arm could not be run, the reviewers
+  who corrected the labels were models rather than people, and no production call has been through
+  any of this.
+</div>
+
+</div>
