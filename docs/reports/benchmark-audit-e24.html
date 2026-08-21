@@ -1,0 +1,516 @@
+<title>Benchmark Audit E24</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#151a1f; --ink-2:#3d4854; --muted:#6b7683;
+  --bg:#f2f5f6; --panel:#ffffff; --rule:#d8dfe3;
+  --accent:#0b6a70;          /* signal teal - the one hue that carries meaning */
+  --accent-soft:#e2eff0;
+  --bad:#9d3520; --bad-soft:#f6e6e2;
+  --good:#2c6238; --good-soft:#e4efe6;
+  --warn:#8a5a11; --warn-soft:#f6ecda;
+  --shadow:0 1px 2px rgba(21,26,31,.06), 0 8px 24px -16px rgba(21,26,31,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e6ecef; --ink-2:#b3bfc8; --muted:#8b98a4;
+    --bg:#111619; --panel:#171e22; --rule:#2b353b;
+    --accent:#4fb3b7; --accent-soft:#12312f;
+    --bad:#e08a72; --bad-soft:#33201a;
+    --good:#7fbf8d; --good-soft:#172b1c;
+    --warn:#d3a75a; --warn-soft:#2e2415;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e6ecef; --ink-2:#b3bfc8; --muted:#8b98a4;
+  --bg:#111619; --panel:#171e22; --rule:#2b353b;
+  --accent:#4fb3b7; --accent-soft:#12312f;
+  --bad:#e08a72; --bad-soft:#33201a;
+  --good:#7fbf8d; --good-soft:#172b1c;
+  --warn:#d3a75a; --warn-soft:#2e2415;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16.5px; line-height:1.62; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px}
+.prose{max-width:68ch}
+
+/* ---------- masthead ---------- */
+header.top{padding:72px 0 40px; border-bottom:1px solid var(--rule); margin-bottom:48px}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); margin:0 0 20px;
+}
+h1{
+  font-family:"Newsreader",Georgia,"Times New Roman",serif; font-weight:600;
+  font-size:clamp(34px,5.2vw,58px); line-height:1.06; letter-spacing:-.018em;
+  margin:0 0 22px; text-wrap:balance;
+}
+.standfirst{font-size:clamp(17px,2vw,20px); color:var(--ink-2); max-width:60ch; margin:0}
+.meta{
+  margin-top:30px; display:flex; flex-wrap:wrap; gap:8px 28px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12.5px; color:var(--muted);
+}
+
+/* ---------- headline stat ---------- */
+.verdict{
+  margin:44px 0 8px; padding:30px 32px; background:var(--panel);
+  border:1px solid var(--rule); border-left:3px solid var(--bad);
+  border-radius:3px; box-shadow:var(--shadow);
+  display:grid; grid-template-columns:auto 1fr; gap:30px; align-items:center;
+}
+.verdict .big{
+  font-family:"Newsreader",Georgia,serif; font-size:clamp(50px,9vw,84px); line-height:.92;
+  font-weight:600; color:var(--bad); font-variant-numeric:tabular-nums;
+}
+.verdict .big small{display:block; font-size:13px; font-family:"IBM Plex Mono",monospace;
+  color:var(--muted); letter-spacing:.06em; margin-top:10px; font-weight:400}
+.verdict p{margin:0; font-size:17px}
+@media(max-width:640px){.verdict{grid-template-columns:1fr; gap:16px}}
+
+h2{
+  font-family:"Newsreader",Georgia,serif; font-weight:600;
+  font-size:clamp(25px,3.4vw,34px); line-height:1.18; letter-spacing:-.012em;
+  margin:64px 0 6px; text-wrap:balance;
+}
+h2 .num{
+  font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--accent);
+  display:block; margin-bottom:10px; letter-spacing:.1em; font-weight:500;
+}
+h3{font-family:"Public Sans",sans-serif; font-size:16px; font-weight:700; letter-spacing:.01em;
+  margin:36px 0 8px}
+p{margin:0 0 16px}
+a{color:var(--accent)}
+strong{font-weight:700}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.885em}
+code{background:var(--accent-soft); color:var(--ink); padding:.12em .38em; border-radius:3px}
+.lede{font-size:18px; color:var(--ink-2); max-width:62ch}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto; margin:26px 0; border:1px solid var(--rule); border-radius:3px;
+  background:var(--panel); box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:600px}
+caption{
+  caption-side:top; text-align:left; padding:16px 18px 4px; font-size:13px; color:var(--muted);
+  font-family:"IBM Plex Mono",monospace; letter-spacing:.03em;
+}
+th,td{padding:10px 16px; text-align:left; border-bottom:1px solid var(--rule)}
+thead th{
+  font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+  font-weight:600; vertical-align:bottom; background:var(--bg);
+}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums;
+  font-family:"IBM Plex Mono",monospace; font-size:13.5px}
+tr.hi td{background:var(--accent-soft)}
+td.up{color:var(--good); font-weight:500}
+td.dn{color:var(--bad)}
+.pill{
+  display:inline-block; padding:1px 8px; border-radius:100px; font-size:11.5px;
+  font-family:"IBM Plex Mono",monospace; letter-spacing:.04em; white-space:nowrap;
+}
+.pill.bad{background:var(--bad-soft); color:var(--bad)}
+.pill.good{background:var(--good-soft); color:var(--good)}
+.pill.warn{background:var(--warn-soft); color:var(--warn)}
+.pill.flat{background:var(--accent-soft); color:var(--accent)}
+
+/* ---------- callouts ---------- */
+.note{
+  margin:28px 0; padding:20px 24px; border-radius:3px; background:var(--panel);
+  border:1px solid var(--rule); border-left:3px solid var(--accent);
+}
+.note.warn{border-left-color:var(--warn)}
+.note.bad{border-left-color:var(--bad)}
+.note h4{
+  margin:0 0 8px; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  font-family:"IBM Plex Mono",monospace; color:var(--muted); font-weight:600;
+}
+.note p:last-child{margin-bottom:0}
+
+figure{margin:34px 0; padding:0}
+figure svg{display:block; width:100%; height:auto; max-width:100%}
+figcaption{font-size:13.5px; color:var(--muted); margin-top:12px; max-width:66ch}
+
+ul{margin:0 0 16px; padding-left:22px}
+li{margin-bottom:7px}
+hr{border:none; border-top:1px solid var(--rule); margin:56px 0}
+footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
+  font-size:13.5px; color:var(--muted)}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">True Corp &middot; Retention labelling &middot; Experiment 24</p>
+  <h1>The benchmark was wrong, not the models</h1>
+  <p class="standfirst">
+    We stopped to validate the eval before changing anything. Three frontier models,
+    reading blind, disagreed with our ground truth on 63% of disputed cases &mdash; and the
+    defect they found was in the corpus generator, eight lines from code that already had
+    it right.
+  </p>
+  <div class="meta">
+    <span>2026-08-21</span>
+    <span>138 synthetic Thai calls</span>
+    <span>retention-e24</span>
+    <span>RECONCILED: NO</span>
+  </div>
+</header>
+
+<div class="verdict">
+  <div class="big">62.9%<small>DISPUTED CASES AGAINST THE CORPUS</small></div>
+  <p>
+    Against a threshold of <strong>20%</strong>, written down before any reviewer saw a case.
+    The rule said that crossing it means the benchmark gets fixed, not the model. It was
+    crossed by a factor of three.
+  </p>
+</div>
+
+<p class="lede" style="margin-top:34px">
+  What follows is the audit, the defect it exposed, and a measured answer to the only
+  question that matters afterwards: did fixing the labels actually change the scores, or did
+  two runs just differ?
+</p>
+
+<!-- ============================================================ 1 -->
+<h2><span class="num">01 &middot; THE AUDIT</span>Reviewers who had never seen our answer</h2>
+
+<div class="prose">
+<p>
+  68 cases went to <strong>Claude Sonnet 4.5</strong>, <strong>GPT&#8209;4.1</strong> and
+  <strong>Llama&nbsp;3.3&nbsp;70B</strong>. Each was shown only the Thai transcript and the
+  written labelling spec &mdash; no expected label, no group name, no model answer, no sight
+  of each other. None of the three is an arm in this evaluation, so none was grading its own
+  homework. The packet's blindness is a test, not a promise.
+</p>
+<p>
+  The 30 undisputed controls are what make the result readable. If reviewers had scored badly
+  on those, the finding would be that they could not do the task.
+</p>
+</div>
+
+<div class="tw">
+<table>
+  <caption>68 cases &middot; 204 reviewer calls &middot; $3.06 &middot; majority of three</caption>
+  <thead><tr>
+    <th>Case group</th><th class="n">Agree</th><th class="n">Against</th>
+    <th class="n">No majority</th><th class="n">Agreement</th><th>Reading</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>Controls &mdash; undisputed calls</td><td class="n">28</td><td class="n">2</td>
+      <td class="n">0</td><td class="n"><strong>93.3%</strong></td>
+      <td><span class="pill good">reviewers understood the task</span></td></tr>
+    <tr class="hi"><td>Product disagreements</td><td class="n">8</td><td class="n">17</td>
+      <td class="n">1</td><td class="n"><strong>32.0%</strong></td>
+      <td><span class="pill bad">the corpus is the outlier</span></td></tr>
+    <tr><td>Outcome disagreements</td><td class="n">5</td><td class="n">5</td>
+      <td class="n">2</td><td class="n">50.0%</td>
+      <td><span class="pill warn">split</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="prose">
+<p>
+  <strong>93.3% on controls and 32.0% on product disputes cannot both be reviewer noise.</strong>
+  The same three readers, the same spec, the same session. The three cases with no majority
+  are dropped from the scored set rather than rounded to whichever side won.
+</p>
+</div>
+
+<!-- ============================================================ 2 -->
+<h2><span class="num">02 &middot; THE MECHANISM</span>The corpus contradicted itself</h2>
+
+<div class="prose">
+<p>
+  In <code>business_labels.py</code>, the product was drawn from a global mix. Eight lines
+  below, <code>choose_call_result</code> already took the scenario and constrained on it.
+  Product and scenario were independent &mdash; and the product is <em>spoken aloud</em> in the
+  dialogue.
+</p>
+<p>
+  So the generator produced calls where the agent walks the customer through rebooting a
+  router while the customer calls the service a TV box, and then graded every model against
+  the TV box.
+</p>
+</div>
+
+<figure>
+<svg viewBox="0 0 880 300" role="img" aria-label="One generated call. The scenario track says net_slow and the agent talks about a router; the product phrase track says TV box. The corpus key followed the TV box, while the models and the blind reviewers followed the router.">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9d3520"/>
+    </marker>
+  </defs>
+
+  <text x="0" y="16" font-family="IBM Plex Mono,monospace" font-size="12" fill="currentColor" opacity=".62">ONE GENERATED CALL &#8212; ASR-046, scenario net_slow</text>
+
+  <!-- scenario track -->
+  <rect x="0" y="34" width="470" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <text x="16" y="58" font-family="IBM Plex Mono,monospace" font-size="11.5" fill="currentColor" opacity=".62">DIALOGUE &#183; 5&#8211;10 turns</text>
+  <text x="16" y="80" font-family="Public Sans,sans-serif" font-size="14.5" fill="currentColor">&#8220;Have you restarted the router? LAN cable or WiFi?&#8221;</text>
+
+  <!-- product phrase track -->
+  <rect x="0" y="118" width="470" height="62" rx="3" fill="none" stroke="#9d3520" stroke-width="1.4"/>
+  <text x="16" y="142" font-family="IBM Plex Mono,monospace" font-size="11.5" fill="#9d3520" opacity=".85">PRODUCT_PHRASE &#183; 1 mention, drawn independently</text>
+  <text x="16" y="164" font-family="Public Sans,sans-serif" font-size="14.5" fill="#9d3520">&#8220;my TV box is slow&#8221;</text>
+
+  <!-- arrows out -->
+  <line x1="470" y1="65" x2="612" y2="65" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+  <text x="486" y="56" font-family="IBM Plex Mono,monospace" font-size="11" fill="currentColor" opacity=".62">read by</text>
+
+  <line x1="470" y1="149" x2="612" y2="149" stroke="#9d3520" stroke-width="1.4" marker-end="url(#arb)"/>
+  <text x="486" y="140" font-family="IBM Plex Mono,monospace" font-size="11" fill="#9d3520" opacity=".8">keyed by</text>
+
+  <!-- outcomes -->
+  <rect x="616" y="38" width="264" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <text x="632" y="60" font-family="Public Sans,sans-serif" font-size="14" font-weight="700" fill="currentColor">models + 3 blind reviewers</text>
+  <text x="632" y="80" font-family="IBM Plex Mono,monospace" font-size="13" fill="currentColor">answer &#8220;tol&#8221;</text>
+
+  <rect x="616" y="122" width="264" height="56" rx="3" fill="#9d3520" fill-opacity=".07" stroke="#9d3520" stroke-width="1.4"/>
+  <text x="632" y="144" font-family="Public Sans,sans-serif" font-size="14" font-weight="700" fill="#9d3520">the corpus answer key</text>
+  <text x="632" y="164" font-family="IBM Plex Mono,monospace" font-size="13" fill="#9d3520">says &#8220;tvs&#8221; &#8212; marks them wrong</text>
+
+  <!-- verdict bar -->
+  <line x1="0" y1="214" x2="880" y2="214" stroke="currentColor" stroke-width="1" opacity=".25"/>
+  <text x="0" y="242" font-family="Public Sans,sans-serif" font-size="14.5" fill="currentColor">
+    <tspan font-weight="700">30 of 138 calls</tspan> carried a product label their own audio contradicts
+  </text>
+  <text x="0" y="266" font-family="Public Sans,sans-serif" font-size="14.5" fill="currentColor" opacity=".78">
+    &#8212; that is 53.6% of the 56 calls whose dialogue names the product outright.
+  </text>
+  <text x="0" y="290" font-family="IBM Plex Mono,monospace" font-size="12" fill="currentColor" opacity=".55">
+    net_slow 12/14 &#183; mnp 7/14 &#183; coverage_issue 5/11 &#183; sim_replace 3/10 &#183; device_promo 3/7
+  </text>
+</svg>
+<figcaption>
+  The two tracks were generated independently. Nothing in the pipeline compared them, so a
+  call could describe one service and be keyed to another.
+</figcaption>
+</figure>
+
+<div class="note">
+  <h4>Two derivations, never introduced to each other</h4>
+  <p>
+    The generator's scenario constraint and the blind reviewers were worked out from opposite
+    ends &mdash; one from the code, one from the transcripts. They produce the same corrections,
+    down to the counts:
+  </p>
+  <div class="tw" style="box-shadow:none; margin:16px 0 0">
+  <table>
+    <thead><tr><th>Substitution</th><th class="n">Scenario constraint says</th><th class="n">Blind reviewers said</th></tr></thead>
+    <tbody>
+      <tr><td><code>tvs</code> &rarr; <code>postpaid</code></td><td class="n">9</td><td class="n">9</td></tr>
+      <tr><td><code>tvs</code> &rarr; <code>tol</code></td><td class="n">3</td><td class="n">3</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ============================================================ 3 -->
+<h2><span class="num">03 &middot; ATTRIBUTION</span>Is the improvement real, or did two runs differ?</h2>
+
+<div class="prose">
+<p>
+  Scores went up after the fix. That is not evidence by itself. The honest test uses a
+  property of the repair: it changed <strong>exactly one field</strong>. <code>call_result</code>,
+  <code>reason</code> and the phone number are byte&#8209;identical between the old and new
+  corpus, and the audio changed on precisely the rows whose label changed &mdash; verified by
+  per&#8209;item SHA&#8209;256, 138 of 138.
+</p>
+<p>That splits the corpus into three cells, and the analysis refuses to run if it doesn't hold.</p>
+</div>
+
+<div class="tw">
+<table>
+  <caption>product named correctly &middot; replicate 1 &middot; before = E23, after = E24</caption>
+  <thead><tr>
+    <th>Arm</th>
+    <th class="n">Control (57)<br><span style="font-weight:400;text-transform:none;letter-spacing:0">same audio, same label</span></th>
+    <th class="n">Contradicted (30)<br><span style="font-weight:400;text-transform:none;letter-spacing:0">the audit's finding</span></th>
+    <th class="n">Re&#8209;rolled (51)<br><span style="font-weight:400;text-transform:none;letter-spacing:0">different draw, no defect</span></th>
+  </tr></thead>
+  <tbody>
+    <tr><td>Gemini 2.5 Flash</td>
+      <td class="n">+1.8%</td>
+      <td class="n up">55.2 &rarr; 100.0 &nbsp;<strong>+44.8</strong></td>
+      <td class="n dn">&minus;10.2</td></tr>
+    <tr><td>Typhoon &rarr; Qwen3.8</td>
+      <td class="n">+0.0%</td>
+      <td class="n up">53.3 &rarr; 100.0 &nbsp;<strong>+46.7</strong></td>
+      <td class="n dn">&minus;7.8</td></tr>
+    <tr><td>Ceiling (perfect transcript)</td>
+      <td class="n">+0.0%</td>
+      <td class="n up">58.6 &rarr; 100.0 &nbsp;<strong>+41.4</strong></td>
+      <td class="n dn">&minus;3.9</td></tr>
+    <tr><td>Format control</td>
+      <td class="n">+0.0%</td>
+      <td class="n up">72.4 &rarr; 100.0 &nbsp;<strong>+27.6</strong></td>
+      <td class="n dn">&minus;7.8</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="prose">
+<p>
+  <strong>The control moves 0.0% on three arms of four.</strong> The entire gain sits in the
+  30 calls the blind audit identified. And the re&#8209;rolled calls move <em>down</em> &mdash;
+  which is the check that matters most, because a corpus that had simply become easier would
+  have lifted those too.
+</p>
+</div>
+
+<div class="note">
+  <h4>What the 100% means, precisely</h4>
+  <p>
+    It is not that the models got better. Those 30 calls previously had two defensible answers
+    and were graded against one of them. Now the dialogue is self&#8209;consistent and every arm
+    gets them right &mdash; which also means those calls no longer discriminate between arms at
+    all. That is the correct outcome for a defect, and worth saying plainly rather than
+    banking as a win.
+  </p>
+</div>
+
+<!-- ============================================================ 4 -->
+<h2><span class="num">04 &middot; THE COMPARISON</span>Three pipelines, corrected ground truth</h2>
+
+<div class="tw">
+<table>
+  <caption>retention-e24 &middot; 138 calls &middot; replicate 1 as preregistered &middot; weighted F1</caption>
+  <thead><tr>
+    <th>&nbsp;</th><th class="n">Gemini 2.5 Flash</th><th class="n">Typhoon &rarr; Qwen3.8</th>
+    <th class="n">Qwen ASR &rarr; Qwen3.8</th><th class="n">Ceiling</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>Shape</td><td class="n">audio &rarr; JSON<br>1 call</td>
+      <td class="n">audio &rarr; text &rarr; JSON<br>2 calls</td>
+      <td class="n">audio &rarr; text &rarr; JSON<br>2 calls</td>
+      <td class="n">reference text &rarr; JSON</td></tr>
+    <tr class="hi"><td><strong>product</strong></td><td class="n">0.798</td>
+      <td class="n"><strong>0.864</strong></td><td class="n">&mdash;</td><td class="n">0.881</td></tr>
+    <tr><td>call_result</td><td class="n">0.564</td><td class="n">0.730</td>
+      <td class="n">&mdash;</td><td class="n">0.839</td></tr>
+    <tr><td>reason</td><td class="n">0.272</td><td class="n">0.272</td>
+      <td class="n">&mdash;</td><td class="n">0.277</td></tr>
+    <tr><td>Label latency, median</td><td class="n">5.5 s</td><td class="n">17.9 s</td>
+      <td class="n">&mdash;</td><td class="n">15.8 s</td></tr>
+    <tr><td>ASR latency, median</td><td class="n">no ASR stage</td><td class="n">41.3 s</td>
+      <td class="n">&mdash;</td><td class="n">no ASR stage</td></tr>
+    <tr><td>Input tokens, median</td><td class="n">11,466</td><td class="n">3,664</td>
+      <td class="n">&mdash;</td><td class="n">3,759</td></tr>
+    <tr><td>Parse failures</td><td class="n">3 / 138</td><td class="n">0 / 138</td>
+      <td class="n">&mdash;</td><td class="n">0 / 138</td></tr>
+    <tr><td>Metered cost</td><td class="n">$0.0065 / call</td><td class="n">internal GPU</td>
+      <td class="n">internal GPU</td><td class="n">internal GPU</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <h4>Qwen ASR is unavailable, and that is reported rather than patched</h4>
+  <p>
+    <code>qwen3-asr-1.7b</code> stalled on the long tail of the corpus mid&#8209;run and stopped
+    answering entirely; a probe against a file it had already transcribed cleanly an hour
+    earlier timed out too, while the shared labeller answered in 0.34&nbsp;s. 120 of 138
+    transcripts exist. Scoring the arm on 120 calls would put it behind a denominator nobody
+    would notice had moved, so the coverage gate refuses and the arm is
+    <strong>UNAVAILABLE</strong> &mdash; one of the plan's preregistered verdicts.
+  </p>
+</div>
+
+<!-- ============================================================ 5 -->
+<h2><span class="num">05 &middot; WHAT THIS DOES NOT SHOW</span>The comparison that isn't safe to make</h2>
+
+<div class="prose">
+<p>
+  <code>call_result</code> rose sharply between the two runs &mdash; ceiling from 0.645 to 0.839.
+  <strong>None of that can be credited to the fix</strong>, because <code>call_result</code>
+  labels did not change. Something about the labeller's behaviour did:
+</p>
+<ul>
+  <li>the old run had <strong>30 of 138</strong> Typhoon items unstable across replicates;</li>
+  <li>on 57 calls with byte&#8209;identical audio and identical labels, the two runs disagree on
+      <strong>16&ndash;20%</strong> of <code>call_result</code> answers;</li>
+  <li>and the old run <strong>recorded no model identity at all</strong>, so whether the served
+      model changed cannot be established after the fact.</li>
+</ul>
+<p>
+  That last point is why the parity work matters more than its individual fixes did. Every
+  E24 call records who answered (<code>google/gemini-2.5-flash</code>, served by Google;
+  <code>qwen3.8-27b-fp8</code> internally). The next time this question comes up it will be
+  answerable.
+</p>
+</div>
+
+<div class="note bad">
+  <h4>Corrections to my own earlier claims</h4>
+  <p>
+    Two rationales I gave for the parity changes did not survive checking, and both flattered
+    the change. I said cost was never recorded &mdash; it was, $3.365 across the old run's
+    Gemini arm; I had queried a field that does not exist. And I implied Gemini was running
+    with reasoning enabled &mdash; reasoning tokens were already zero on all 408 calls. Of the
+    four parity findings, <strong>two were real</strong>: a stray text fragment sent only to
+    the audio arm, and the missing model identity.
+  </p>
+</div>
+
+<!-- ============================================================ 6 -->
+<h2><span class="num">06 &middot; PROCESS</span>Gates that were added, and one that had never fired</h2>
+
+<div class="prose">
+<p>
+  The old experiment's plan says every corpus hash is stamped at a freeze before the first
+  model call. It sits at <code>status: draft</code> with <strong>every hash still null</strong>,
+  after 1,002 model calls. Nobody decided to skip it &mdash; there was no command that performed
+  it. There is now, and E24's freeze is stamped from the rendered bytes before its first call.
+</p>
+<p>
+  Two audio files failed a speech&#8209;rate check. Rather than widen the threshold &mdash; which
+  would disable it for all 138 files so one run could pass &mdash; the check's own premise was
+  tested: against a 3,513&#8209;character reference, the two ASR systems returned 3,365 and 3,377
+  characters. The files carry speech. They are now an enumerated exception carrying that
+  evidence, and anything not on the list still aborts.
+</p>
+</div>
+
+<hr>
+
+<div class="prose">
+<h3>What none of this settles</h3>
+<p>
+  The reviewers are <strong>models, not people</strong>. A human panel remains the thing that
+  would settle these labels; this was worth running first because knowing the answer before
+  convening one beats knowing it after. And <code>RECONCILED: NO</code> &mdash; correcting a
+  synthetic corpus against its own written spec does not move it one step closer to a real
+  production call.
+</p>
+<h3>The recommendation stands where it started</h3>
+<p>
+  Do not change models on this evidence. The benchmark now measures what it claims to measure
+  on one dimension it previously did not, one arm could not be run, and the dimension that
+  moved most is the one whose movement is unexplained. Adopt Typhoon over Qwen&nbsp;ASR on
+  <em>reliability</em> grounds &mdash; it transcribed 138 of 138 where Qwen stalled outright
+  &mdash; and not because it wins a business&#8209;F1 argument.
+</p>
+</div>
+
+<footer>
+  retention-e24 &middot; corpus <span class="mono">asr-eval-v3</span> &middot; frozen 2026-08-21
+  before first model call &middot; audit record <span class="mono">docs/reports/audit-result.json</span>
+  &middot; re-derive with <span class="mono">scripts/corpus_diff.py</span> and
+  <span class="mono">scripts/corpus_fix_effect.py</span>
+</footer>
+
+</div>
