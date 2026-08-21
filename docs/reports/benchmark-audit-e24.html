@@ -227,6 +227,76 @@ footer{margin-top:72px; padding-top:26px; border-top:1px solid var(--rule);
 </p>
 </div>
 
+<h2><span class="num">01b &middot; THE FAIRNESS SAMPLE</span>The churn misses, which is where we were told to look</h2>
+
+<div class="prose">
+<p>
+  The audit sample was seeded from the churn misses on the suggestion that they would be
+  &#8220;high yield for checking fairness&#8221;. They were, and not in the way the name
+  suggests.
+</p>
+</div>
+
+<div class="tw">
+<table>
+  <caption>the 37 audited cases whose corpus <code>call_result</code> is churn</caption>
+  <thead><tr>
+    <th>Group</th><th class="n">n</th><th class="n">Agree</th>
+    <th class="n">Against</th><th class="n">No majority</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>Controls &mdash; undisputed churn calls</td><td class="n">17</td>
+      <td class="n">16</td><td class="n">1</td><td class="n">0</td></tr>
+    <tr class="hi"><td>Disputed &mdash; product</td><td class="n">16</td>
+      <td class="n">5</td><td class="n"><strong>10</strong></td><td class="n">1</td></tr>
+    <tr><td>Disputed &mdash; outcome</td><td class="n">4</td>
+      <td class="n">3</td><td class="n">0</td><td class="n">1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="prose">
+<p>
+  <strong>16 of 17 undisputed churn calls agree (94.1%), and 10 of 18 disputed ones go against
+  the corpus (55.6%).</strong> Same readers, same spec, same session &mdash; so churn calls are
+  not intrinsically hard to read.
+</p>
+<p>
+  What the reviewers actually changed on those cases is the finding:
+</p>
+</div>
+
+<div class="tw">
+<table>
+  <caption>corrections the reviewers made on the churn cases they went against</caption>
+  <thead><tr><th>Change</th><th class="n">Count</th></tr></thead>
+  <tbody>
+    <tr class="hi"><td><code>product</code> &nbsp;tvs &rarr; postpaid</td><td class="n">4</td></tr>
+    <tr class="hi"><td><code>product</code> &nbsp;unknown &rarr; postpaid</td><td class="n">3</td></tr>
+    <tr class="hi"><td><code>product</code> &nbsp;tvs &rarr; tol</td><td class="n">2</td></tr>
+    <tr class="hi"><td><code>product</code> &nbsp;postpaid &rarr; tol</td><td class="n">1</td></tr>
+    <tr class="hi"><td><code>product</code> &nbsp;postpaid &rarr; tvs</td><td class="n">1</td></tr>
+    <tr><td><code>call_result</code> &nbsp;churn &rarr; save</td><td class="n">2</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <h4>The churn misses were mostly not outcome errors</h4>
+  <p>
+    <strong>11 of the 13 corrections are to <code>product</code>, not to the outcome.</strong>
+    The models had generally worked out that the customer was leaving; what they were being
+    marked wrong about was <em>which service they were leaving</em> &mdash; and on those calls
+    three independent reviewers say the models were right and the corpus was wrong.
+  </p>
+  <p>
+    That is why the repair in the next section is to the product generator and not to anything
+    about churn. Pointing the audit at the churn misses found a product defect, which is a
+    better outcome than confirming a churn one: it means the sample was diagnostic rather than
+    merely confirmatory.
+  </p>
+</div>
+
 <!-- ============================================================ 2 -->
 <h2><span class="num">02 &middot; THE MECHANISM</span>The corpus contradicted itself</h2>
 
