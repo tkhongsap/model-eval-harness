@@ -319,7 +319,13 @@
     "transport_retries": 3,
     "retry_accounting": "Transport retries are permitted at the ASR stage only, and every retry is logged and counted in the failure-by-category table. A retried item is never reported as a clean item.",
     "transcript_freeze": "Each item is transcribed ONCE for the primary run, its transcript sha256 recorded, and that frozen artifact is fed to all three labeller replicates. This makes the label-stage comparison paired on identical inputs; ASR-stage variance is measured only by the asr_stability_probe and is a declared limitation, not a component of the primary.",
-    "control_token_note": "The serving layer emits a control token in Qwen3-ASR transcripts (asr-eval/scripts/transcribe.py:58); stripping it is part of the frozen config and is applied identically everywhere it is used."
+    "control_token_note": "The serving layer emits a control token in Qwen3-ASR transcripts (asr-eval/scripts/transcribe.py:58); stripping it is part of the frozen config and is applied identically everywhere it is used.",
+    "chunk_seconds_by_arm": {
+      "qwen-pipeline": 180,
+      "typhoon-pipeline": 30
+    },
+    "chunk_seconds_scope": "chunk_seconds: 180 above is the QWEN setting and is the frozen one -- frozen by docs/experiment22-asr-runaway.md for the reason recorded there. It was never a global constant; E23 had no Typhoon arm, so its plan had no reason to say which arm it described. E24 does, and states both rather than leaving a reader to assume 180 applied to an arm that ran at 30. Typhoon Whisper large-v3 runs at 30 s, its native window, which is also what it ran at in the 2026-08-20 E23 run these figures are compared against -- so the ASR stage is unchanged between the two experiments and the corpus is the only thing that moved.",
+    "chunk_seconds_is_not_a_tuned_parameter": "Neither value was chosen after seeing an E24 number. 180 was frozen on 2026-08-18 from the E22 runaway investigation; 30 is Whisper's own window and was used in E23."
   },
   "workload": {
     "replicates": 3,

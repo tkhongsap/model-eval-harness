@@ -116,8 +116,32 @@ def test_e24_did_not_move_productions_thresholds():
     assert E24["success_thresholds"] == E23["success_thresholds"]
     assert E24["quality_gates"]["alpha_per_side"] == E23["quality_gates"]["alpha_per_side"]
     assert E24["workload"] == E23["workload"]
-    assert E24["asr_config"] == E23["asr_config"]
     assert E24["failure_categories"] == E23["failure_categories"]
+
+
+def test_e24_may_add_to_asr_config_but_never_change_what_e23_pinned():
+    """Whole-block equality was the wrong assertion here, and it hid something true.
+
+    E23 had no Typhoon arm, so `asr_config.chunk_seconds: 180` needed no scope -- it was
+    simply the setting. E24 runs Typhoon, which ran at 30 s in E23's own 2026-08-20 run and
+    runs at 30 s here. A plan stating one frozen number beside a two-ASR arm set reads as
+    though both arms used it.
+
+    Demanding the block be byte-identical would have kept this test green by leaving that
+    unsaid, which is the wrong direction for a gate to push. So the pin is on the FIELDS E23
+    pinned, and new keys are allowed.
+    """
+    for field in ("chunk_seconds", "frozen", "frozen_by", "freeze_rationale", "language",
+                  "split_rule", "timeout_s", "transport_retries"):
+        assert E24["asr_config"][field] == E23["asr_config"][field], (
+            f"asr_config.{field} moved between E23 and E24"
+        )
+    assert E24["asr_config"]["chunk_seconds_by_arm"] == {
+        "qwen-pipeline": 180, "typhoon-pipeline": 30}
+    assert E24["asr_config"]["chunk_seconds"] == 180, (
+        "the frozen Qwen setting must stay the top-level value, so a reader who checks only "
+        "the field E22 froze still finds it"
+    )
 
 
 def test_e24_records_that_its_reviewers_were_models():
