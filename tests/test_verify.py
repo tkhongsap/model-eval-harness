@@ -91,17 +91,22 @@ def _result(name: str, status: str, seconds: float = 1.0) -> "verify.Result":
 
 def test_the_plan_is_every_gate_in_the_documented_order() -> None:
     names = [step.name for step in verify.plan(ROOT)]
-    assert names[:5] == [
+    assert names[:6] == [
         "root pytest suite",
         "asr-eval pytest suite",
         "score_asr self-test",
         "outcome leak probe",
         "audio contract checks",
+        # Added 2026-08-21. doc_claims covered one document and ran outside this runner,
+        # so every ASR-track figure was published unchecked -- and two went stale in a
+        # single day before anyone noticed. Last of the static gates: it checks what the
+        # others produced.
+        "published figures match their source",
     ]
-    # Step 6 fans out to one step per committed plan so each reports separately.
-    assert names[5:], "experiment-check contributed no steps"
-    assert all(name.startswith("experiment-check ") for name in names[5:])
-    assert len(names[5:]) == len(sorted((ROOT / "experiments").glob("*.plan.json")))
+    # Step 7 fans out to one step per committed plan so each reports separately.
+    assert names[6:], "experiment-check contributed no steps"
+    assert all(name.startswith("experiment-check ") for name in names[6:])
+    assert len(names[6:]) == len(sorted((ROOT / "experiments").glob("*.plan.json")))
 
 
 def test_each_gate_runs_on_the_interpreter_that_can_import_its_dependencies() -> None:

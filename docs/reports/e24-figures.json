@@ -1,0 +1,187 @@
+{
+  "run": "20260821-074057Z-e21",
+  "pack": "asr-eval-v3",
+  "replicate_policy": "first",
+  "calls": 138,
+  "arms": {
+    "ceiling": {
+      "call_result_f1": 0.839,
+      "call_result_correct": 110,
+      "reason_f1": 0.277,
+      "reason_correct": 65,
+      "product_f1": 0.881,
+      "product_correct": 122,
+      "label_calls": 414,
+      "parse_valid": 414,
+      "parse_failed": 0,
+      "unstable_items": 21,
+      "label_latency_med_s": 15.6,
+      "input_tokens_med": 3759,
+      "audio_tokens_med": null,
+      "text_tokens_med": 3759,
+      "output_tokens_med": 247,
+      "metered_cost_usd": null
+    },
+    "format_control": {
+      "call_result_f1": 0.836,
+      "call_result_correct": 108,
+      "reason_f1": 0.264,
+      "reason_correct": 64,
+      "product_f1": 0.836,
+      "product_correct": 117,
+      "label_calls": 414,
+      "parse_valid": 414,
+      "parse_failed": 0,
+      "unstable_items": 31,
+      "label_latency_med_s": 17.1,
+      "input_tokens_med": 3652,
+      "audio_tokens_med": null,
+      "text_tokens_med": 3652,
+      "output_tokens_med": 243,
+      "metered_cost_usd": null
+    },
+    "gemini_audio": {
+      "call_result_f1": 0.564,
+      "call_result_correct": 68,
+      "reason_f1": 0.272,
+      "reason_correct": 57,
+      "product_f1": 0.798,
+      "product_correct": 107,
+      "label_calls": 414,
+      "parse_valid": 411,
+      "parse_failed": 3,
+      "unstable_items": 17,
+      "label_latency_med_s": 5.2,
+      "input_tokens_med": 11615,
+      "audio_tokens_med": 9175,
+      "text_tokens_med": 2440,
+      "output_tokens_med": 233,
+      "metered_cost_usd": 3.8554
+    },
+    "typhoon_pipeline": {
+      "call_result_f1": 0.73,
+      "call_result_correct": 95,
+      "reason_f1": 0.272,
+      "reason_correct": 65,
+      "product_f1": 0.864,
+      "product_correct": 120,
+      "label_calls": 414,
+      "parse_valid": 414,
+      "parse_failed": 0,
+      "unstable_items": 33,
+      "label_latency_med_s": 18.3,
+      "input_tokens_med": 3660,
+      "audio_tokens_med": null,
+      "text_tokens_med": 3660,
+      "output_tokens_med": 246,
+      "metered_cost_usd": null
+    }
+  },
+  "audit": {
+    "cases": 68,
+    "reviewers": 3,
+    "threshold": 0.2,
+    "control_agreement": 0.933,
+    "disputed_against_rate": 0.629,
+    "no_majority": 3,
+    "control_agree": 28,
+    "control_against": 2,
+    "product_mismatch_agree": 8,
+    "product_mismatch_against": 17,
+    "outcome_error_agree": 5,
+    "outcome_error_against": 5
+  },
+  "churn_sample": {
+    "control_agree": 16,
+    "control_n": 17,
+    "disputed_against": 10,
+    "disputed_n": 18,
+    "disputed_against_rate": 0.556
+  },
+  "corpus_fix": {
+    "control": 57,
+    "contradicted": 30,
+    "rerolled": 51,
+    "total_calls": 138,
+    "ceiling": {
+      "control": {
+        "before": 0.946,
+        "after": 0.946,
+        "delta": 0.0,
+        "n": 56
+      },
+      "contradicted": {
+        "before": 0.586,
+        "after": 1.0,
+        "delta": 0.414,
+        "n": 29
+      },
+      "rerolled": {
+        "before": 0.843,
+        "after": 0.804,
+        "delta": -0.039,
+        "n": 51
+      }
+    },
+    "format_control": {
+      "control": {
+        "before": 0.946,
+        "after": 0.946,
+        "delta": 0.0,
+        "n": 56
+      },
+      "contradicted": {
+        "before": 0.724,
+        "after": 1.0,
+        "delta": 0.276,
+        "n": 29
+      },
+      "rerolled": {
+        "before": 0.804,
+        "after": 0.725,
+        "delta": -0.078,
+        "n": 51
+      }
+    },
+    "gemini_audio": {
+      "control": {
+        "before": 0.941,
+        "after": 0.961,
+        "delta": 0.02,
+        "n": 51
+      },
+      "contradicted": {
+        "before": 0.536,
+        "after": 1.0,
+        "delta": 0.464,
+        "n": 28
+      },
+      "rerolled": {
+        "before": 0.674,
+        "after": 0.609,
+        "delta": -0.065,
+        "n": 46
+      }
+    },
+    "typhoon_pipeline": {
+      "control": {
+        "before": 0.947,
+        "after": 0.947,
+        "delta": 0.0,
+        "n": 57
+      },
+      "contradicted": {
+        "before": 0.533,
+        "after": 1.0,
+        "delta": 0.467,
+        "n": 30
+      },
+      "rerolled": {
+        "before": 0.863,
+        "after": 0.784,
+        "delta": -0.078,
+        "n": 51
+      }
+    }
+  }
+}

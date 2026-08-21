@@ -300,6 +300,18 @@ def plan(repo: Path = REPO, *, quick: bool = False) -> list[Step]:
                 ),
             ),
         ),
+        Step(
+            # Published figures against their source. This lived outside the runner while
+            # it covered a single document; it now covers the ASR track too, and a gate
+            # nobody runs is a gate that does not exist. Last of the static steps because
+            # it checks what the others produced.
+            name="published figures match their source",
+            venv=root_venv,
+            args=("scripts/doc_claims.py", "--check"),
+            cwd=repo,
+            env=(("PYTHONPATH", str(repo / "src")),),
+            tooling=(repo / "scripts" / "doc_claims.py",),
+        ),
     ]
 
     if quick:
