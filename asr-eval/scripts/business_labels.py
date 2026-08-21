@@ -82,6 +82,31 @@ BRAND_INDICES_BY_PRODUCT = {
     "unknown": (1,),
 }
 
+# What the five product-neutral scenarios draw from. Every value here is forced by
+# arithmetic rather than taste: with the constrained scenarios below fixed, this is the mix
+# that makes the induced product distribution reproduce PRODUCT_MIX above. `postpaid` is
+# already 30% of the set from the forced scenarios alone, so the free ones -- 60% of calls --
+# must supply the remaining 24 points, and so on for the other three. Deriving it is what
+# keeps a fix aimed at mislabelling from quietly reshaping the corpus as a side effect.
+FREE_PRODUCT_MIX = (("postpaid", 40), ("tvs", 33), ("tol", 20), ("unknown", 7))
+
+# Which product each scenario can be about. See `choose_product` for why five of these are
+# single-valued and five are not.
+PRODUCT_BY_SCENARIO = {
+    # Forced -- the dialogue names the product, so any other label contradicts the audio.
+    "net_slow": (("tol", 1),),             # restart the router; LAN cable or WiFi
+    "coverage_issue": (("postpaid", 1),),  # cell tower, airplane mode, does it support 5G
+    "sim_replace": (("postpaid", 1),),     # a lost SIM, monthly-or-prepaid, a service centre
+    "mnp": (("postpaid", 1),),             # porting a mobile number to another carrier
+    "device_promo": (("postpaid", 1),),    # a handset upgrade bundled with a package
+    # Free -- nothing in these calls decides the product, so the mix does.
+    "retention": FREE_PRODUCT_MIX,
+    "downsell": FREE_PRODUCT_MIX,
+    "billing_dispute": FREE_PRODUCT_MIX,
+    "payment_arrange": FREE_PRODUCT_MIX,
+    "telesale_offer": FREE_PRODUCT_MIX,
+}
+
 # Scenario carries most of the reason signal, which is a real property of the task rather
 # than a shortcut: a coverage complaint IS a network reason. Each scenario gets a weighted
 # set rather than a single value, so `reason` is not a deterministic function of `scenario`
@@ -149,8 +174,53 @@ def _weighted(rng: random.Random, mix) -> str:
     return rng.choices(keys, weights=weights, k=1)[0]
 
 
-def choose_product(rng: random.Random) -> str:
-    return _weighted(rng, PRODUCT_MIX)
+def choose_product(rng: random.Random, scenario: str) -> str:
+    """Draw the product the call is about, constrained by what the dialogue actually says.
+
+    THIS TAKES `scenario` BECAUSE A BLIND AUDIT SAID IT MUST. Until 2026-08-21 it took only
+    the rng, so product and scenario were drawn independently -- while `choose_call_result`
+    directly below it already took the scenario and constrained on it. The result was calls
+    whose own transcript contradicted their label: `PROBE["net_slow"]` walks the customer
+    through restarting a router and asks LAN-or-WiFi, and 54% of those calls were labelled
+    `postpaid`. `PROBE["mnp"]` is a request to port a mobile number to another carrier, and
+    20% of those were labelled `tvs`.
+
+    That is not a subtle mislabel, because the product is SPOKEN. `PRODUCT_PHRASE`
+    (`reason_lines.py:273`) puts it in the customer's mouth -- TV box for `tvs`, home
+    internet for `tol`. So the corpus was generating a customer who says their TV box is slow
+    while the agent troubleshoots their router, and then scoring every model against the TV
+    box.
+
+    HOW WE KNOW, rather than how it looks. 68 cases went to three frontier models shown only
+    the Thai transcript and the written spec -- not the corpus answer, not each other's, and
+    none of them under test. They agreed with the corpus on 93.3% of undisputed control
+    cases, so they could do the task; they went AGAINST it on 68% of disputed product cases,
+    and their substitutions match the ones the models under test were being marked wrong for
+    (`tvs -> postpaid` 9 times against the models' 8). Recorded in
+    `docs/reports/audit-result.json`.
+
+    Note what the reviewers did NOT do: they did not read the spoken product phrase back.
+    They resolved a contradiction, and resolved it toward the scenario -- five to ten lines
+    of router talk outweigh one mention of a TV box. So the scenario is what product follows.
+
+    WHY FIVE SCENARIOS ARE FORCED AND FIVE ARE NOT. `REASON_BY_SCENARIO` above gives each
+    scenario a weighted SET, on the stated ground that a deterministic map would make the
+    reason dimension measure scenario recovery and nothing else. That argument holds here
+    too -- and for five scenarios it does not apply, because the dialogue names the product
+    outright. A router is not a mobile number. Weighting those would not preserve difficulty;
+    it would reintroduce the exact defect the audit found. The other five are genuinely
+    product-neutral -- everything has a bill, everything can be cancelled -- and they draw
+    from a mix. That is also where every `unknown` product now comes from, since the
+    non-committal phrase for it ("the service you're using") is only honest on a call where
+    nothing else decides the answer.
+
+    THE OVERALL MIX IS UNCHANGED. `FREE_PRODUCT_MIX` is not chosen by eye: it is the residual
+    that makes the induced distribution reproduce `PRODUCT_MIX`, which was measured off the
+    packs carrying hand-computed keys. `test_product_matches_scenario.py` recomputes it from
+    `SCENARIO_WEIGHTS` and fails if either table drifts, so this stays a derivation rather
+    than a comment claiming to be one.
+    """
+    return _weighted(rng, PRODUCT_BY_SCENARIO[scenario])
 
 
 def choose_call_result(rng: random.Random, scenario: str) -> str:

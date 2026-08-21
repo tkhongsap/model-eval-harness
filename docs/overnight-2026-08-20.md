@@ -4,6 +4,24 @@
 **Spend:** $3.74 OpenRouter (cap was $12). Token Factory calls are unmetered.
 **Runs:** `out/runs/20260820-e23-with-typhoon` (2,046 records, five arms).
 
+**CORRECTED 2026-08-21 — every `gemini-audio` figure below is superseded.** The scorer that
+produced them took the first PARSEABLE replicate, so 8 of Gemini's parse-failed items were
+scored from a later replicate. `retention-e24.plan.json` preregisters replicate 1 ALONE and
+that a parse failure scores as incorrect, never dropped. The scorer now does that. Re-derived:
+
+| gemini-audio | published here | corrected |
+|---|---:|---:|
+| call_result F1 | 0.495 | **0.482** |
+| reason F1 | 0.263 | **0.252** |
+| product F1 | 0.727 | **0.693** |
+| call_result accuracy | 60/136 | **56/136** |
+| product accuracy | 99/136 | **92/136** |
+
+Only Gemini moves — it is the only arm with parse failures, and every other arm's figures are
+byte-identical before and after, which is the check that the correction did what it claims.
+Gemini's E23 parse-valid rate, 388/408 = 95.1%, is also a genuine miss of the preregistered
+99% gate. (E24's Gemini passes it at 411/414 = 99.3%.)
+
 **SUPERSEDED IN PART — see section 9.** Sections 1–3 report the run on the corpus as it stood
 before the labelling defect in section 8 was found and fixed. Their arm ORDERING still holds,
 but every F1 level is understated by ~0.13 and the fragility figures are much worse than the

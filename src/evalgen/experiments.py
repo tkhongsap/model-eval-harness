@@ -116,13 +116,14 @@ def validate_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
     experiment_id = plan.get("experiment_id")
     if experiment_id in {"retention-e5", "retention-e7"}:
         return _validate_retention_text_plan(plan, root=root)
-    if experiment_id == "retention-e23":
-        return _validate_e23_audio_plan(plan, root=root)
+    if experiment_id in {"retention-e23", "retention-e24"}:
+        return _validate_audio_plan(plan, root=root, experiment_id=experiment_id)
     return [
         f"experiment_id: no contract validator is registered for {experiment_id!r}. "
-        "Registered: 'retention-e5', 'retention-e7', 'retention-e23'. Add a validator "
-        "for the new contract rather than relaxing an existing one -- an unvalidated "
-        "plan in experiments/ is a gate that reports success without checking anything."
+        "Registered: 'retention-e5', 'retention-e7', 'retention-e23', 'retention-e24'. "
+        "Add a validator for the new contract rather than relaxing an existing one -- an "
+        "unvalidated plan in experiments/ is a gate that reports success without checking "
+        "anything."
     ]
 
 
@@ -518,14 +519,34 @@ def _validate_retention_text_plan(plan: Mapping[str, Any], *, root: Path) -> lis
     return problems
 
 
-def _validate_e23_audio_plan(plan: Mapping[str, Any], *, root: Path) -> list[str]:
-    """The E23 END-TO-END AUDIO contract.
+# What each audio experiment's arm block must contain.  E24 runs three more arms than E23
+# and against a different corpus root, and those are the ONLY contract differences between
+# them -- so they share one validator rather than owning two copies that can drift apart.
+# The alternative was a second hundred-line function, and this file already carries a note
+# about what happens when one mapping is written out twice.
+_AUDIO_ARM_CONTRACT = {
+    "retention-e23": {
+        "count": 2,
+        "roles": ["candidate", "incumbent"],
+        "corpus_root": "asr-eval-v2/",
+    },
+    "retention-e24": {
+        "count": 5,
+        "roles": ["candidate", "candidate variant", "control", "incumbent",
+                  "reference bound"],
+        "corpus_root": "asr-eval-v3/",
+    },
+}
 
-    E23 asks a different question from the text experiments -- audio in, business label
-    out, two arms rather than three -- so it pins different things.  What it pins are the
-    decisions that would change the VERDICT if edited after a number existed: the primary
-    metric, the primary dimension, the alpha, the replicate the headline is computed on,
-    and the item set.
+
+def _validate_audio_plan(plan: Mapping[str, Any], *, root: Path,
+                         experiment_id: str) -> list[str]:
+    """The END-TO-END AUDIO contract, shared by E23 and E24.
+
+    These experiments ask a different question from the text ones -- audio in, business
+    label out -- so they pin different things.  What they pin are the decisions that would
+    change the VERDICT if edited after a number existed: the primary metric, the primary
+    dimension, the alpha, the replicate the headline is computed on, and the item set.
 
     Three checks here cross-reference CODE rather than restating a constant, which is the
     only kind that catches drift:
@@ -555,7 +576,8 @@ def _validate_e23_audio_plan(plan: Mapping[str, Any], *, root: Path) -> list[str
             problems.append(f"{path}: expected {expected!r}, found {actual!r}")
 
     expect("schema_version", plan.get("schema_version"), 1)
-    expect("experiment_id", plan.get("experiment_id"), "retention-e23")
+    contract = _AUDIO_ARM_CONTRACT[experiment_id]
+    expect("experiment_id", plan.get("experiment_id"), experiment_id)
     expect("app", plan.get("app"), "retention")
     if plan.get("status") not in {"draft", "qualified", "locked"}:
         problems.append("status: expected draft, qualified, or locked")
@@ -601,15 +623,34 @@ def _validate_e23_audio_plan(plan: Mapping[str, Any], *, root: Path) -> list[str
     )
 
     arms = plan.get("arms")
-    if not isinstance(arms, list) or len(arms) != 2:
+    if not isinstance(arms, list) or len(arms) != contract["count"]:
         count = len(arms) if isinstance(arms, list) else None
-        problems.append(f"arms: expected exactly 2, found {count!r}")
+        problems.append(
+            f"arms: expected exactly {contract['count']}, found {count!r}"
+        )
     else:
         roles = [arm.get("role") for arm in arms if isinstance(arm, Mapping)]
-        if sorted(roles) != ["candidate", "incumbent"]:
+        if sorted(roles) != contract["roles"]:
             problems.append(
-                f"arms: expected one 'incumbent' and one 'candidate', found {roles!r}"
+                f"arms: expected roles {contract['roles']!r}, found {sorted(roles)!r}"
             )
+
+    # The corpus root, cross-checked against the metric definition.  This is the one copy
+    # error in an audio plan that would produce a full set of internally consistent, wrong
+    # numbers: E24 scoring its corrected run against E23's uncorrected business.csv would
+    # run clean, report a complete table, and be wrong on every product row.
+    assets = plan.get("assets") or {}
+    assets = assets if isinstance(assets, Mapping) else {}
+    corpus_root = assets.get("corpus_root")
+    corpus_root = corpus_root if isinstance(corpus_root, Mapping) else {}
+    expect("assets.corpus_root.path", corpus_root.get("path"), contract["corpus_root"])
+    definition = str(primary.get("definition") or "")
+    if contract["corpus_root"].rstrip("/") not in definition:
+        problems.append(
+            f"metrics.primary.definition: must name {contract['corpus_root']} as the "
+            "ground truth it scores against. A definition naming another experiment's "
+            "corpus is how a run produces a consistent table of wrong numbers."
+        )
 
     slices = plan.get("slices") or {}
     slices = slices if isinstance(slices, Mapping) else {}
@@ -656,9 +697,31 @@ def _validate_e23_audio_plan(plan: Mapping[str, Any], *, root: Path) -> list[str
     reconciliation = str(decision_block.get("reconciliation") or "")
     if "RECONCILED remains NO" not in reconciliation:
         problems.append(
-            "decision.reconciliation: E23 uses synthetic audio and generator-authored "
-            "labels, so it must state that RECONCILED remains NO."
+            "decision.reconciliation: these experiments use synthetic audio and "
+            "generator-authored labels, so the plan must state RECONCILED remains NO."
         )
+
+    # An experiment that exists because an earlier one's corpus was wrong has to say so in
+    # the file, not only in a commit message. Otherwise E23 and E24 sit side by side in
+    # experiments/ as two runs with different numbers and no stated reason to prefer one.
+    if experiment_id == "retention-e24":
+        supersedes = plan.get("supersedes")
+        supersedes = supersedes if isinstance(supersedes, Mapping) else {}
+        expect("supersedes.experiment_id", supersedes.get("experiment_id"),
+               "retention-e23")
+        for field in ("relationship", "what_changed_in_the_corpus", "how_it_was_found",
+                      "what_this_does_not_establish"):
+            if not supersedes.get(field):
+                problems.append(
+                    f"supersedes.{field}: required. A corrected-corpus experiment must "
+                    "record what was corrected, how it was found, and what the correction "
+                    "does not establish."
+                )
+        if not isinstance(plan.get("run_conditions"), Mapping):
+            problems.append(
+                "run_conditions: required. E24 is the first run made after arm parity was "
+                "verified, and the conditions it ran under are part of its result."
+            )
 
     return problems
 

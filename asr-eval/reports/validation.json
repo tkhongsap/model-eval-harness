@@ -166,7 +166,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-001.txt"
+      "detail": "ground-truth\\ASR-001.txt"
     },
     {
       "item": "ASR-001",
@@ -187,7 +187,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-001.timeline.json"
+      "detail": "ground-truth\\ASR-001.timeline.json"
     },
     {
       "item": "ASR-001",
@@ -376,7 +376,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-002.txt"
+      "detail": "ground-truth\\ASR-002.txt"
     },
     {
       "item": "ASR-002",
@@ -397,7 +397,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-002.timeline.json"
+      "detail": "ground-truth\\ASR-002.timeline.json"
     },
     {
       "item": "ASR-002",
@@ -586,7 +586,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-003.txt"
+      "detail": "ground-truth\\ASR-003.txt"
     },
     {
       "item": "ASR-003",
@@ -607,7 +607,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-003.timeline.json"
+      "detail": "ground-truth\\ASR-003.timeline.json"
     },
     {
       "item": "ASR-003",
@@ -796,7 +796,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-004.txt"
+      "detail": "ground-truth\\ASR-004.txt"
     },
     {
       "item": "ASR-004",
@@ -817,7 +817,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-004.timeline.json"
+      "detail": "ground-truth\\ASR-004.timeline.json"
     },
     {
       "item": "ASR-004",
@@ -1006,7 +1006,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-005.txt"
+      "detail": "ground-truth\\ASR-005.txt"
     },
     {
       "item": "ASR-005",
@@ -1027,7 +1027,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-005.timeline.json"
+      "detail": "ground-truth\\ASR-005.timeline.json"
     },
     {
       "item": "ASR-005",
@@ -1216,7 +1216,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-006.txt"
+      "detail": "ground-truth\\ASR-006.txt"
     },
     {
       "item": "ASR-006",
@@ -1237,7 +1237,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-006.timeline.json"
+      "detail": "ground-truth\\ASR-006.timeline.json"
     },
     {
       "item": "ASR-006",
@@ -1426,7 +1426,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-007.txt"
+      "detail": "ground-truth\\ASR-007.txt"
     },
     {
       "item": "ASR-007",
@@ -1447,7 +1447,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-007.timeline.json"
+      "detail": "ground-truth\\ASR-007.timeline.json"
     },
     {
       "item": "ASR-007",
@@ -1636,7 +1636,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-008.txt"
+      "detail": "ground-truth\\ASR-008.txt"
     },
     {
       "item": "ASR-008",
@@ -1657,7 +1657,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-008.timeline.json"
+      "detail": "ground-truth\\ASR-008.timeline.json"
     },
     {
       "item": "ASR-008",
@@ -1846,7 +1846,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-009.txt"
+      "detail": "ground-truth\\ASR-009.txt"
     },
     {
       "item": "ASR-009",
@@ -1867,7 +1867,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-009.timeline.json"
+      "detail": "ground-truth\\ASR-009.timeline.json"
     },
     {
       "item": "ASR-009",
@@ -2056,7 +2056,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-010.txt"
+      "detail": "ground-truth\\ASR-010.txt"
     },
     {
       "item": "ASR-010",
@@ -2077,7 +2077,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-010.timeline.json"
+      "detail": "ground-truth\\ASR-010.timeline.json"
     },
     {
       "item": "ASR-010",
@@ -2266,7 +2266,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-011.txt"
+      "detail": "ground-truth\\ASR-011.txt"
     },
     {
       "item": "ASR-011",
@@ -2287,7 +2287,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-011.timeline.json"
+      "detail": "ground-truth\\ASR-011.timeline.json"
     },
     {
       "item": "ASR-011",
@@ -2476,7 +2476,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-012.txt"
+      "detail": "ground-truth\\ASR-012.txt"
     },
     {
       "item": "ASR-012",
@@ -2497,7 +2497,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-012.timeline.json"
+      "detail": "ground-truth\\ASR-012.timeline.json"
     },
     {
       "item": "ASR-012",
@@ -2686,7 +2686,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-013.txt"
+      "detail": "ground-truth\\ASR-013.txt"
     },
     {
       "item": "ASR-013",
@@ -2707,7 +2707,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-013.timeline.json"
+      "detail": "ground-truth\\ASR-013.timeline.json"
     },
     {
       "item": "ASR-013",
@@ -2896,7 +2896,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-014.txt"
+      "detail": "ground-truth\\ASR-014.txt"
     },
     {
       "item": "ASR-014",
@@ -2917,7 +2917,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-014.timeline.json"
+      "detail": "ground-truth\\ASR-014.timeline.json"
     },
     {
       "item": "ASR-014",
@@ -3106,7 +3106,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-015.txt"
+      "detail": "ground-truth\\ASR-015.txt"
     },
     {
       "item": "ASR-015",
@@ -3127,7 +3127,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-015.timeline.json"
+      "detail": "ground-truth\\ASR-015.timeline.json"
     },
     {
       "item": "ASR-015",
@@ -3316,7 +3316,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-016.txt"
+      "detail": "ground-truth\\ASR-016.txt"
     },
     {
       "item": "ASR-016",
@@ -3337,7 +3337,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-016.timeline.json"
+      "detail": "ground-truth\\ASR-016.timeline.json"
     },
     {
       "item": "ASR-016",
@@ -3526,7 +3526,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-017.txt"
+      "detail": "ground-truth\\ASR-017.txt"
     },
     {
       "item": "ASR-017",
@@ -3547,7 +3547,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-017.timeline.json"
+      "detail": "ground-truth\\ASR-017.timeline.json"
     },
     {
       "item": "ASR-017",
@@ -3736,7 +3736,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-018.txt"
+      "detail": "ground-truth\\ASR-018.txt"
     },
     {
       "item": "ASR-018",
@@ -3757,7 +3757,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-018.timeline.json"
+      "detail": "ground-truth\\ASR-018.timeline.json"
     },
     {
       "item": "ASR-018",
@@ -3946,7 +3946,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-019.txt"
+      "detail": "ground-truth\\ASR-019.txt"
     },
     {
       "item": "ASR-019",
@@ -3967,7 +3967,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-019.timeline.json"
+      "detail": "ground-truth\\ASR-019.timeline.json"
     },
     {
       "item": "ASR-019",
@@ -4156,7 +4156,7 @@
       "group": "CONTENT",
       "check": "reference transcript exists and is non-empty",
       "status": "PASS",
-      "detail": "ground-truth/ASR-020.txt"
+      "detail": "ground-truth\\ASR-020.txt"
     },
     {
       "item": "ASR-020",
@@ -4177,7 +4177,7 @@
       "group": "CONTENT",
       "check": "timeline exists",
       "status": "PASS",
-      "detail": "ground-truth/ASR-020.timeline.json"
+      "detail": "ground-truth\\ASR-020.timeline.json"
     },
     {
       "item": "ASR-020",
@@ -4217,6 +4217,13 @@
     {
       "item": "SET",
       "group": "SET",
+      "check": "families balanced to within one call",
+      "status": "PASS",
+      "detail": "{'clean_baseline': 2, 'telephony_noise': 2, 'code_switch': 2, 'numeric_dense': 2, 'proper_nouns': 2, 'disfluency': 2, 'overlap_crosstalk': 2, 'long_context': 2, 'far_field_low_gain': 2, 'hold_ivr': 2}"
+    },
+    {
+      "item": "SET",
+      "group": "SET",
       "check": "both call directions present",
       "status": "PASS",
       "detail": "{'IN': 17, 'OUT': 3} -- prep_payload_task.py branches the prompt on this, so a set with one direction exercises half of production's prompt surface"
@@ -4233,7 +4240,7 @@
       "group": "SET",
       "check": "all phones inside the reserved sub-range",
       "status": "PASS",
-      "detail": "reserved 301-320"
+      "detail": "reserved 301-438"
     },
     {
       "item": "SET",
@@ -4580,7 +4587,7 @@
     }
   ],
   "summary": {
-    "pass": 608,
+    "pass": 609,
     "fail": 0
   }
 }

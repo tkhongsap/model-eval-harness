@@ -2,6 +2,272 @@
 
 ## 🔴 Active Task
 
+**2026-08-21 — the blind audit says the BENCHMARK is what needs fixing, and the fix
+reproduces the audit's own corrections independently. E24 has run.**
+
+The position this came from: *"let's not change models yet. Let's first validate the
+benchmark — lock the prompt and spec, run all models identically, and audit the ground truth
+by independently re-labelling the disagreement cases using only the written spec. If reviewers
+don't agree with the expected labels, then the benchmark needs fixing. Not the model."*
+
+All four steps are done. The audit crossed its preregistered threshold decisively.
+
+### 1. The audit: 62.9% of disputed labels went AGAINST the corpus
+
+68 blind cases — 26 product disagreements, 12 outcome, 30 undisputed controls, shuffled under
+a recorded seed — to **Claude Sonnet 4.5, GPT-4.1 and Llama 3.3 70B**. Each shown only the Thai
+transcript and the written spec: no expected label, no group name, no model answer
+(`tests/test_audit_packet_is_blind.py`). None of them is an arm in this evaluation. 204 calls,
+$3.06. Recorded in `docs/reports/audit-result.json`.
+
+| group | agree | against | no maj. | agreement |
+|---|---:|---:|---:|---:|
+| control | 28 | 2 | 0 | **93.3%** |
+| product_mismatch | 8 | 17 | 1 | **32.0%** |
+| outcome_error | 5 | 5 | 2 | 50.0% |
+
+**22 of 35 disputed = 62.9%, against a preregistered 20% threshold.** The control rate is what
+makes it readable: 93.3% on undisputed calls says the reviewers could do the task and the spec
+is followable, so 32% on product disputes is a finding about the corpus rather than reviewer
+noise. Had controls come back low the scorer halts the reading — that branch exists and did
+not fire.
+
+### 2. The mechanism, found afterwards and agreeing exactly
+
+`business_labels.py:152` drew the product from a global mix. `choose_call_result`, eight lines
+below, already took the scenario and constrained on it. So product and scenario were
+independent — and the product is **spoken** (`reason_lines.py:273` puts it in the customer's
+mouth). The corpus was generating a customer saying their **TV box** is slow while the agent
+talks them through restarting a **router**, and scoring every model against the TV box.
+
+**30 of 138 calls (21.7%) carried a label their own audio contradicts** — 53.6% of the 56 calls
+whose dialogue names the product. Re-derive with `python scripts/corpus_diff.py --before
+asr-eval-v2 --after asr-eval-v3`.
+
+| the scenario constraint says | | the blind reviewers said | |
+|---|---:|---|---:|
+| `tvs` → `postpaid` | 9 | `tvs` → `postpaid` | 9 |
+| `tvs` → `tol` | 3 | `tvs` → `tol` | 3 |
+
+Two derivations that never saw each other, landing on the same corrections.
+
+### 3. What E23's product numbers were measured against
+
+Every one of these was computed against ground truth in which 21.7% of product labels
+contradicted their audio, so the product column below is the one to expect to move.
+**Re-derived 2026-08-21 under strict replicate-1 scoring** (see "Two process findings"), which
+moved Gemini and nothing else:
+
+| arm | call_result F1 | reason | product |
+|---|---:|---:|---:|
+| format-control | 0.663 | 0.232 | 0.804 |
+| ceiling | 0.645 | 0.221 | 0.808 |
+| typhoon-pipeline | 0.597 | 0.223 | 0.791 |
+| qwen-pipeline | 0.588 | 0.209 | 0.762 |
+| gemini-audio | **0.482** | **0.252** | **0.693** |
+
+Gemini was published as 0.495 / 0.263 / 0.727. The old figures were computed by a scorer that
+rescued 8 of its parse-failed items from later replicates; the arms with no parse failures are
+byte-identical before and after, which is the check that the correction did what it claims.
+
+### 4. E24, and why it is a new experiment id
+
+`retention-e23.plan.json` states it: *"No hash in this file may be recomputed after the freeze
+— a changed hash is a new experiment id."* So the corrected corpus is `asr-eval-v3/` and
+`experiments/retention-e24.plan.json`, **derived from E23 field by field** so production's
+thresholds, the alpha, the workload and the failure taxonomy are verifiably unmoved.
+
+Found while doing it: **E23 stands at `status: draft` with every corpus sha256 still null**,
+while 1,002 model calls were made against it and its own gate 1 reads *"No model call in E23
+happens before this."* Nobody skipped it — there was no command that performed it. There is
+now: `scripts/freeze_corpus.py`. **E24's gate 1 is given**, stamped from the rendered bytes
+before its first model call.
+
+Audio provenance, `138/138 = 100%`: the 57 calls whose product did not move render to
+**identical bytes**, and all 81 that moved differ. Nothing changed that the fix did not ask to
+change, and those 57 calls are directly comparable between E23 and E24.
+
+### The result
+
+E24 ran four of five arms against the corrected corpus: 138 calls, 3 replicates, 1,656
+records, corpus frozen before the first model call.
+
+| arm | call_result | reason | product |
+|---|---:|---:|---:|
+| ceiling (perfect transcript) | 0.839 | 0.277 | 0.881 |
+| format-control | 0.836 | 0.264 | 0.836 |
+| typhoon-pipeline | 0.730 | 0.272 | **0.864** |
+| gemini-audio (incumbent) | 0.564 | 0.272 | 0.798 |
+| qwen-pipeline | — | — | UNAVAILABLE |
+
+**The product gain is attributable; nothing else is.** `scripts/corpus_fix_effect.py` splits
+the corpus by what the fix touched. `product` is the ONLY ground-truth field that moved, and
+the audio moved on exactly the rows whose label moved, so a real control cell exists:
+
+| arm | CONTROL (57) | CONTRADICTED (30) | RE-ROLLED (51) |
+|---|---:|---:|---:|
+| gemini-audio | +1.8% | 55.2 → **100.0** | −10.2 |
+| typhoon-pipeline | +0.0% | 53.3 → **100.0** | −7.8 |
+| ceiling | +0.0% | 58.6 → **100.0** | −3.9 |
+
+Control moves ~0 and the re-rolled calls move DOWN, so this is neither two runs drifting nor
+a corpus that simply got easier. The 100% means those 30 calls stopped asking an unanswerable
+question — and stopped discriminating between arms, which is correct for a defect.
+
+### Do NOT read the call_result rise as the fix
+
+`call_result` labels are byte-identical between v2 and v3, so its rise (ceiling 0.645 →
+0.839) cannot be the correction. In order of what each fact rules out:
+
+- arms disagree with **themselves** across replicates on 17–33 of 138 items, and E23 was no
+  different (typhoon 30/138). Instability is standing, not a change between runs.
+- the two runs disagree on 16–20% of `call_result` answers over the 57 byte-identical calls.
+- but ceiling's accuracy on those same 57 went **73.2% → 91.1%**, which replicate noise does
+  not comfortably explain — and E23 recorded **no model identity**, so whether the served
+  labeller changed cannot be settled now. E24 records it on every call.
+
+### Two process findings
+
+**A scoring path that did not match the plan — now fixed.** The plan says headline figures use
+replicate 1 alone AND that a parse failure scores as incorrect, never dropped. `collapse` took
+the first *parseable* replicate, which is neither. It rescued **8 Gemini items in E23 and 3 in
+E24** — only ever the incumbent, because it is the only arm that produces parse failures.
+
+Fixed on 2026-08-21. This is not rewriting an estimator after seeing which arm it favours: the
+preregistration already specified the strict behaviour and the code did not implement it, so
+making them agree honours the plan. `modal` is untouched.
+
+E24's published figures were already the strict ones and did not move. E23's did — Gemini
+only, shown in the table above. A regression test now pins it; its sibling asserted the same
+invariant and passed for weeks, because that fixture failed on *all three* replicates and never
+reached the branch where the bug lived.
+
+**CORRECTED — the incumbent PASSES its parse gate in E24.** I first wrote that Gemini fails
+it in both experiments. That was wrong for E24: the gate is `minimum_parse_valid_calls: 410`
+of **414 label calls**, and I compared a replicate-1 count (3 of 138) against a whole-run bar.
+Measured properly:
+
+| run | Gemini valid | rate | gate |
+|---|---:|---:|---|
+| E24 | 411 / 414 | 99.3% | **PASS** |
+| E23 | 388 / 408 | 95.1% | **FAIL** |
+
+So E23's incumbent genuinely missed the bar and E24's does not. Every other arm is at 100%.
+
+### Qwen ASR, and then the whole gateway
+
+`qwen3-asr-1.7b` wedged on the long tail at 120/138. A probe on an item it had transcribed
+cleanly an hour earlier timed out, so it was the backend, not the audio. Recorded in
+`docs/qwen-asr-outage-2026-08-21.txt`. **Corrected:** I wrote that "the whole gateway
+followed". Only `qwen3-asr-1.7b` is persistently down. `qwen3.8-27b-fp8` was unreachable at
+one 10:36Z probe and has since recovered and flaps; `gemma-4-12b-it` answers in 0.24 s. The
+conclusion that this says nothing about Qwen3-ASR's *quality* stands — it rests on Typhoon
+completing 138/138 on the same gateway in the same window — but the evidence I gave for it
+did not. `qwen-pipeline` is
+UNAVAILABLE rather than scored on 120/138, which is under the 90% coverage gate. **The label
+run had already completed**; ninety minutes earlier and it would have voided three arms.
+
+### Next action
+
+A watcher polls both models every 10 minutes; on recovery it transcribes the 18 lost items,
+merges them under the provenance rules, runs `qwen-pipeline`'s three replicates into the
+existing run directory and re-scores. Nothing that completed needs re-running.
+
+Report: https://claude.ai/code/artifact/afcb6dbb-5e4e-4f9e-a77b-8fa7465b615a
+
+**What none of this settles.** The reviewers are models, not people — a human panel is still
+what would settle these labels. And `RECONCILED: NO`: correcting a synthetic corpus against
+its own written spec does not move it one step closer to a production call. The recommendation
+is unchanged: **do not change models on this evidence.** Adopt Typhoon over Qwen ASR on
+reliability grounds — 138/138 against a stall — not because it wins a business-F1 argument.
+
+---
+
+## Earlier
+
+
+**Latest (2026-08-20, overnight): Typhoon fixes the transcription stage and does NOT change
+the business outcome — and yesterday's headline needs two corrections.**
+Full write-up: `docs/overnight-2026-08-20.md`. Report:
+https://claude.ai/code/artifact/18def122-f7a7-436a-9d46-531b9056f3eb
+Run `out/runs/20260820-e23-with-typhoon`, five arms, 2,046 records. Spend $3.74.
+
+**1. `typhoon-whisper-large-v3` is a large, clean win on transcription.** Same 138-call
+corpus, same gateway:
+
+| | Qwen3-ASR 1.7B | Typhoon large-v3 |
+|---|---:|---:|
+| CER (normalised) | 0.1120 | **0.0438** |
+| WER (normalised) | 0.1691 | **0.0774** |
+| calls transcribed | 136/138 | **138/138** |
+| catastrophic runaways | **16 (11.8%)** | **0** |
+
+Qwen's 0.1120 already EXCLUDES its 16 runaways, so the true gap is wider than 2.6x. Qwen never
+produced ASR-082 or ASR-089 after 8 attempts each; Typhoon transcribed both.
+
+**2. And it buys nothing end-to-end.** `typhoon-pipeline` vs `qwen-pipeline` is
+INDISTINGUISHABLE on all three dimensions — net +1 on `call_result` over 13 discordant calls,
++5 reason, +1 product. Halving CER and deleting an 11.8% failure rate moved the business answer
+on ONE call in 138. The reason: `ceiling` (perfect transcript) scores 0.645 and typhoon scores
+0.597, so the pipeline is already within 0.05 of its own ceiling. **The binding constraint is
+the labelling step, not the audio.** Adopt Typhoon for reliability, not to win the migration
+argument, and say so when proposing it.
+
+| arm | call_result F1 | accuracy | reason | product |
+|---|---:|---:|---:|---:|
+| format-control | 0.663 | 85/136 | 0.239 | 0.804 |
+| ceiling | 0.645 | 84/136 | 0.228 | 0.808 |
+| **typhoon-pipeline** | **0.597** | 76/138 | 0.230 | **0.791** |
+| qwen-pipeline | 0.588 | 74/136 | 0.207 | 0.762 |
+| gemini-audio | 0.495 | 60/136 | 0.267 | 0.727 |
+
+**3. TWO CORRECTIONS to the 2026-08-19 entry below.** Neither reverses it; both change how much
+weight it carries.
+
+- *It was scored the wrong way.* The preregistration says every headline figure is computed on
+  **replicate 1 alone** — "choosing the replicate after seeing three of them is choosing the
+  answer" — and `experiment23_score.py` was collapsing all three by modal vote.
+  `--replicate-policy` now defaults to `first` and is stamped into the output JSON. Both
+  policies agree, so the conclusion survives; it is now verified rather than assumed.
+- *"AHEAD" is much weaker than it reads.* Both AHEAD verdicts clear their band by EXACTLY ZERO.
+  20,000-resample cluster bootstrap over calls: **qwen vs gemini 52.6%**, typhoon vs gemini
+  61.0%, and **25 single calls could each flip the qwen result alone**. The INDISTINGUISHABLE
+  findings are the robust ones (94–98%). **Do not present this as "the internal pipeline
+  wins."** Production's audio arm is clearly the weakest on `call_result`; the margin is too
+  thin to bank.
+
+**4. Tar's token issue is solved, and it is one lever.** Retention control, already on disk:
+245 median completion tokens, 0 reasoning. sentiment_qa measured on production's real prompt
+and the real 94k-char `user_config.xlsx`, 24 calls/arm: baseline 11,961 output of which
+**8,774 (73%) is thinking**; `reasoning` off gives **3,440 and still returns all 118 keys** —
+a 71% cut. `reasoning: low` does nothing, retention's decoding does nothing, and **deleting
+the prompt's "think 1…5" block does nothing**. The budget is the lever, at three call sites
+(highest-volume is the daily batch `qa_pipeline_tasks.yml:76`, not fact-check).
+NOT claimed: that capping thinking preserves accuracy — untestable here, no labelled
+sentiment_qa batch exists. `docs/sentiment-qa-token-ask.md` (EN+TH) asks production for the one
+Vertex field that settles the budget question.
+
+**Environment note for the next session:** the ASR tooling needs `.venv-asr`, not `.venv`. The
+root pins numpy 2.3.4; `requirements-asr.txt` pins 2.5.2 and says the two "must never merge".
+It now exists and the full asr-eval suite runs — 152 passed, 2 xfailed, including `test_dsp.py`
+and `test_tooling.py`, which had never been collectable here.
+
+**NEXT ACTION, in order:**
+
+1. **Fix the ceiling, not the microphone.** A perfect transcript scores 0.645 because no
+   labeller ever emits `unknown` or `undefined` — 21 of 136 calls are unwinnable for every arm,
+   production included. That is where the next experiment belongs, and no upstream work can
+   move the headline until it is done.
+2. **Send `docs/sentiment-qa-token-ask.md`** — one field converts a directional finding into a
+   settled one.
+3. **Send `docs/ask1-email-draft.md`** — still the only thing that retires `RECONCILED: NO`.
+4. Adopt Typhoon for the ASR stage on reliability grounds.
+
+Open PR: #35.
+
+
+
+
 **CORRECTION (2026-08-20, later): the ceiling is a CORPUS defect, not a labeller limitation.
 The entry below states the opposite and is wrong.**
 

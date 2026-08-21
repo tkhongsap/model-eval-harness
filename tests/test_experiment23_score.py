@@ -115,6 +115,78 @@ def run_dir(tmp_path):
     return d
 
 
+@pytest.fixture()
+def late_parse_run(tmp_path):
+    """One item whose REPLICATE 1 parse-failed and whose replicates 2 and 3 answered.
+
+    Deliberately a separate fixture rather than a seventh entry in `_ARMS`: the tests below
+    assert counts worked out by hand over exactly six calls, and quietly changing the
+    denominator under them would be the kind of edit this file exists to prevent.
+
+    Worked out by hand first, as the module docstring requires:
+
+      replicate 1  parse_failed          -> under `first` there is nothing to score
+      replicate 2  tol / churn           -> under `modal` these two agree
+      replicate 3  tol / churn
+
+    So `first` must report the item FAILED and `modal` must report tol/churn. The instability
+    counter must see only the two ok replicates, which agree, so the item is NOT unstable
+    under either policy -- an item cannot be "unstable" on the strength of a replicate that
+    produced no fields to disagree with.
+    """
+    d = tmp_path / "late-run"
+    d.mkdir()
+    rows = [{"arm": "gemini-audio", "item_id": "ASR-001", "replicate": 0,
+             "status": "parse_failed"}]
+    for rep in (1, 2):
+        rows.append({
+            "arm": "gemini-audio", "item_id": "ASR-001", "replicate": rep, "status": "ok",
+            "fields": {"products": ["tol"], "tol.outcome": "churn",
+                       "tol.reasons": ["network"]},
+        })
+    (d / "results.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
+    return d
+
+
+def test_a_replicate_1_parse_failure_is_not_rescued_by_a_later_replicate(late_parse_run):
+    """The preregistration says two things, and together they forbid this rescue.
+
+    `retention-e24.plan.json`: every headline figure is computed on REPLICATE 1 ALONE, and a
+    parse failure is scored as INCORRECT, never dropped -- the second existing precisely so
+    an arm cannot improve its score by failing to answer.
+
+    Taking the first *parseable* replicate is neither. It is also not neutral in practice:
+    on the real runs it rescues 8 items in E23 and 3 in E24, and every one of them belongs to
+    the incumbent, because the incumbent is the only arm that produces parse failures at all.
+
+    The sibling test `test_a_parse_failure_scores_wrong_and_is_never_dropped` asserts the
+    same invariant and passes today, because its fixture fails on ALL THREE replicates and so
+    never reaches the branch this covers.
+    """
+    collapsed, unstable, failures = e23.collapse(late_parse_run, "first")
+    assert failures["gemini-audio"]["parse_failed"] == 1
+    assert collapsed["gemini-audio"]["ASR-001"].get("__failed__") is True, (
+        "replicate 1 did not parse, and the item was scored from a later replicate anyway. "
+        "That is neither 'replicate 1 alone' nor 'a parse failure scores as incorrect'."
+    )
+    assert unstable.get("gemini-audio", 0) == 0
+
+
+def test_the_modal_policy_still_uses_every_parseable_replicate(late_parse_run):
+    """`modal` is a different preregistered estimator and must be left alone.
+
+    The strict rule above belongs to `first`. A majority vote across three replicates is
+    entitled to use the two that answered; that is what makes it the more robust estimator
+    and why the plan keeps it available.
+    """
+    collapsed, _, _ = e23.collapse(late_parse_run, "modal")
+    fields = collapsed["gemini-audio"]["ASR-001"]
+    assert not fields.get("__failed__")
+    assert fields["products"] == ["tol"]
+    assert fields["tol.outcome"] == "churn"
+
+
 def test_truth_loads_and_is_keyed_by_call_id(pack):
     truth, phones = e23.load_truth(pack)
     assert len(truth) == 6

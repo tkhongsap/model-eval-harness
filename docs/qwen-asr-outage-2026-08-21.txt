@@ -1,0 +1,130 @@
+QWEN3-ASR-1.7B OUTAGE, 2026-08-21
+generated   during retention-e24
+endpoint    https://token-fac-api.truecorp.co.th/v1  (connect via 10.94.154.102, pinned cert)
+auth        TOKEN_FACTORY_API_KEY  (value never printed)
+
+WHY THIS FILE IS COMMITTED. The E24 run reports `qwen-pipeline` as UNAVAILABLE. That is a
+claim about infrastructure rather than about a model's quality, and a reader six months from
+now has no way to check it unless the evidence is written down at the time. The 2026-08-16
+Token Factory log exists for the same reason and is the shape this follows.
+
+==============================================================================
+1. WHAT HAPPENED
+==============================================================================
+Two ASR passes ran concurrently against one gateway, Qwen3-ASR at chunk 180 s and Typhoon
+Whisper at chunk 30 s, 138 calls each.
+
+  ~06:52Z   Qwen had written 120 of 138 transcripts and stopped advancing.
+            Its high-water item was ASR-122; ASR-089 and ASR-091 had already failed with
+            transport errors earlier in the pass.
+  07:34Z    42 minutes with no new file. A single-item probe was issued against ASR-002 --
+            an item the SAME pass had transcribed cleanly about an hour earlier, at 15.1 s
+            and RTF 0.074 -- with --retries 1 --timeout 120.
+
+              ASR-002   FAILED: transcription failed after 1 attempts:
+                        TimeoutError: The read operation timed out
+
+            An item that worked failing on a quiet retry is what separates "the model is
+            struggling with hard audio" from "the backend is not answering". It is the
+            second.
+  07:36Z    The stalled pass was killed rather than left retrying. Hammering a wedged
+            backend is how it stays wedged.
+  07:38Z    Catalog probe, after a 90 s pause:
+
+              qwen3-asr-1.7b     FAILED   60.04s   ReadTimeout: The read operation timed out
+              qwen3.8-27b-fp8    READY     0.34s   READY
+
+            The labeller both pipeline arms share was healthy throughout. Only the ASR model
+            was down.
+  07:40Z    A poller began checking every 180 s with one cheap catalog call.
+  10:2xZ    Still down after 2 hours. The poller gave up, as instructed.
+
+==============================================================================
+2. WHAT THE SET LOOKS LIKE
+==============================================================================
+transcripts on disk   120 of 138
+missing               18
+                      ASR-089 ASR-091 ASR-123 ASR-124 ASR-125 ASR-126 ASR-127 ASR-128 ASR-129 ASR-130 ASR-131 ASR-132 ASR-133 ASR-134 ASR-135 ASR-136 ASR-137 ASR-138
+
+The missing set is not random. ASR-089 and ASR-091 failed early with `WinError 10065
+unreachable host`, the same contention error Typhoon hit three times. The other
+16 are a contiguous tail, ASR-123..ASR-138, which are the LONGEST files in
+the corpus -- the long_context family and the extended items, 450-580 s each. The model
+stopped on the heaviest work in the set.
+
+==============================================================================
+3. WHY THE ARM IS NOT SCORED ON 120 CALLS
+==============================================================================
+120/138 is 87.0%, below the coverage gate of 90% of the truth set.
+The gate is deliberately written against the TRUTH SET rather than against the run's own
+rows, because a run that lost items would otherwise shrink its own denominator and report a
+healthy-looking score over whatever survived. That is not hypothetical here: a VPN drop once
+left an arm scoring 0.358 over 130 of 414 calls.
+
+So the arm is reported UNAVAILABLE, which is one of the plan's preregistered permitted
+verdicts, and no partial number is published.
+
+==============================================================================
+4. WHAT THIS IS NOT EVIDENCE OF
+==============================================================================
+It is NOT evidence that Qwen3-ASR is unreliable in production. One gateway, one afternoon,
+under a load pattern this evaluation created by running two ASR models concurrently against
+it. Typhoon completed 135 of 138 on the same gateway in the same window
+and its 3 losses were the same transport error, all three succeeding on a quiet retry.
+
+What it IS evidence of, and this is separate and already recorded: on the E23 corpus
+Qwen3-ASR produced 16 catastrophic runaway repetitions in 138 calls (11.6%) against
+Typhoon's zero, and normalised CER 0.1127 against 0.0452. The reliability argument for
+Typhoon rests on THAT, measured over a completed run, and not on this outage.
+
+==============================================================================
+5. ADDENDUM, 10:36Z -- AND ITS CORRECTION AT 11:20Z
+==============================================================================
+Two hours after the ASR model stopped, the LABELLER stopped too:
+
+  qwen3-asr-1.7b     FAILED   60.16s   ReadTimeout: The read operation timed out
+  qwen3.8-27b-fp8    FAILED   60.50s   ReadTimeout: The read operation timed out
+
+The gateway HOST is fine. A direct request to /v1/models answers in 0.26 s (HTTP 401,
+because that probe sends no key -- reachable, just unauthenticated). So the network path,
+the DNS override to 10.94.154.102 and the pinned certificate are all working; it is the
+model-serving layer behind the gateway that is not answering.
+
+TWO THINGS FOLLOW.
+
+First, this is not about Qwen3-ASR specifically. Section 4 already said the outage is not
+evidence about that model, and the labeller going down the same way settles it: whatever is
+wrong is upstream of both.
+
+Second, and this is the luckier one: the E24 label run had ALREADY COMPLETED when this
+happened. All 1,656 records across four arms were written between 07:40Z and 09:38Z. Had
+the backend gone down ninety minutes earlier, the run would have died mid-flight and the
+coverage refusal would have voided three arms rather than one.
+
+Nothing in this file is a reason to re-run anything that completed. The four arms that
+finished are scored against a frozen corpus, with model identity recorded per call, and
+they do not become less true because the gateway fell over afterwards.
+
+==============================================================================
+6. CORRECTION, 11:20Z -- "THE WHOLE BACKEND" WAS TOO STRONG
+==============================================================================
+Section 5 above says the whole backend followed. That was written from a single probe at
+10:36Z at which both models timed out. Re-probed 44 minutes later:
+
+  gemma-4-12b-it       READY     0.24s
+  qwen3-asr-1.7b       FAILED   60.10s   ReadTimeout
+  qwen3.8-27b-fp8      READY     1.35s
+
+The labeller recovered and is flapping -- the 10:40Z watcher saw it ready, then not, then
+ready again. `gemma-4-12b-it` was never affected. Only qwen3-asr-1.7b is PERSISTENTLY down,
+and it has been since 06:52Z.
+
+WHAT SURVIVES AND WHAT DOES NOT. Section 5's conclusion stands: this outage says nothing about
+Qwen3-ASR's quality. But the ARGUMENT it gave for that conclusion -- "the labeller went down
+the same way, so whatever is wrong is upstream of both" -- does not, because the labeller came
+back and the ASR model did not. The conclusion now rests on the evidence in section 4 instead:
+Typhoon completed 135 of 138 on the same gateway in the same window, and all three of its
+losses succeeded on a quiet retry.
+
+Recording the difference because a reader who checks section 5 against a later probe would
+otherwise find it contradicted and have no way to know which reading was right.
