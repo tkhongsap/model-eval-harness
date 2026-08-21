@@ -331,8 +331,14 @@ def call_labeller(client: httpx.Client | None, env: dict, arm: str, system: str,
         headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
         if arm == "gemini-audio":
             b64 = base64.b64encode(Path(wav_path).read_bytes()).decode("ascii")
-            content = [{"type": "text", "text": "."},
-                       {"type": "input_audio", "input_audio": {"data": b64, "format": "wav"}}]
+            # NO FRAMING TEXT PART. This used to send `{"type": "text", "text": "."}` ahead
+            # of the audio -- a token no other arm sent and no document mentioned. It was
+            # the only content difference between the audio arm and the six text arms, which
+            # made "all models ran identically" untrue in a way nobody could see from the
+            # log. `prompts.build_messages` states the principle: any word added around the
+            # input is a word this harness invented and then scored a model on.
+            content = [{"type": "input_audio",
+                        "input_audio": {"data": b64, "format": "wav"}}]
             # The user turn in production carries the audio; the prompt is the system turn.
             messages = [{"role": "system", "content": system},
                         {"role": "user", "content": content}]
@@ -340,7 +346,23 @@ def call_labeller(client: httpx.Client | None, env: dict, arm: str, system: str,
             messages = [{"role": "system", "content": system},
                         {"role": "user", "content": user_text}]
         payload = {"model": model, "messages": messages,
-                   "response_format": response_format(), **DECODING}
+                   "response_format": response_format(), **DECODING,
+                   # THE THREE OPENROUTER GUARDS THE MAIN HARNESS TREATS AS MANDATORY, and
+                   # which this script omitted for both Gemini arms. `request.py:22-26` is
+                   # explicit about the cost of the middle one: "OpenRouter DROPS a parameter
+                   # an endpoint does not support rather than failing, so without it an arm
+                   # rerouted mid-run to an endpoint with no structured-output support falls
+                   # back to prompt-coaxing, and the run log looks identical."
+                   #
+                   # Measured before adding it: 414/414 Gemini calls parsed and not one
+                   # produced an out-of-enum value, so the guard was not silently rescuing a
+                   # broken run. It is here so that stays checkable rather than lucky.
+                   #
+                   # `reasoning.effort` matters for a second reason: without it Gemini ran at
+                   # provider default while retention-e23.plan.json:311 preregisters "none".
+                   "usage": {"include": True},
+                   "provider": {"require_parameters": True},
+                   "reasoning": {"effort": "none"}}
         # seed is unsupported on some OpenRouter providers; harmless if ignored.
         sender = lambda: httpx.post(url, headers=headers, json=payload, timeout=300.0)  # noqa: E731
     else:
@@ -367,6 +389,14 @@ def call_labeller(client: httpx.Client | None, env: dict, arm: str, system: str,
             body = r.json()
             content = body["choices"][0]["message"]["content"]
             rec["usage"] = body.get("usage")
+            # WHO ACTUALLY ANSWERED. The record stored the model we ASKED for and nothing
+            # about what replied, so model identity was never verified on any E21/E23 call.
+            # The main harness captures all four of these (client.py:291-310) because a
+            # 2026-08-04 run was silently served by two different backends under one model
+            # id, and nothing in the log could show it.
+            rec["observed_model"] = body.get("model")
+            rec["provider"] = body.get("provider")
+            rec["finish_reason"] = (body.get("choices") or [{}])[0].get("finish_reason")
             try:
                 parsed = json.loads(content)
                 missing = [k for k in ("product", "call_event_detection", "recommendation")

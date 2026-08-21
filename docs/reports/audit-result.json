@@ -1,0 +1,466 @@
+{
+  "reviewers": [
+    "claude-sonnet-4.5",
+    "gpt-4.1",
+    "llama-3.3-70b"
+  ],
+  "cases": 68,
+  "by_group": {
+    "control": {
+      "agree": 28,
+      "against": 2
+    },
+    "product_mismatch": {
+      "agree": 8,
+      "against": 17,
+      "no_majority": 1
+    },
+    "outcome_error": {
+      "agree": 5,
+      "against": 5,
+      "no_majority": 2
+    }
+  },
+  "control_agreement": 0.9333333333333333,
+  "disputed_against_rate": 0.6285714285714286,
+  "threshold": 0.2,
+  "no_majority": [
+    "ac_9932a00e4b",
+    "ac_f92e3db44b",
+    "ac_fcc671ce4a"
+  ],
+  "against": [
+    {
+      "case_id": "ac_07ac446d0c",
+      "item_id": "ASR-095",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ไม่สนใจครับ ยกเลิกอย่างเดียว ในส่วนของโปรเติมเงิน ทรูมูฟ เอชนะครับ",
+        "customer: ไม่สนใจครับ ยกเลิกอย่างเดียว ในส่วนของโปรเติมเงิน ทรูมูฟ เอชนะครับ",
+        "ไม่ป็นอย่มียปารับ อย่มียปารับ เป็น่อย่มียปารับ ไรมับระเป็น่อยม่ียปารับ สาต่างอย่มียปารับ"
+      ]
+    },
+    {
+      "case_id": "ac_0944690ab4",
+      "item_id": "ASR-133",
+      "group": "outcome_error",
+      "corpus_product": [
+        "postpaid"
+      ],
+      "corpus_call_result": [
+        "undefined"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "รบกวนสอบถามชื่อผู้ใช้บริการหน่อยคะ ตรงส่วนของโรมมิ่งนะคะ",
+        "agent: ขออนุญาตตรวจสอบว่าเบอร์นี้เป็นระบบรายเดือนหรือเติมเงินนะคะ ตรงส่วนของแพ็กเกจนะคะ",
+        "ตกลงผมต้องรออีกกี่วันครับ"
+      ]
+    },
+    {
+      "case_id": "ac_0a293cfa30",
+      "item_id": "ASR-046",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "TOL",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "อ่า ขอย้ายค่ายตามเดิมค่ะ",
+        "customer: อ่า ขอย้ายค่ายตามเดิมค่ะ",
+        "อ่ส ไม่ป็นป็นได้เป็นตั้ง"
+      ]
+    },
+    {
+      "case_id": "ac_0d46de51b2",
+      "item_id": "ASR-071",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "save"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "งั้นขอใช้ต่อครับ",
+        "customer: งั้นขอใช้ต่อครับ",
+        "อ็นผ็นอย่างอย่างเป็นตรับ"
+      ]
+    },
+    {
+      "case_id": "ac_13b608fee0",
+      "item_id": "ASR-005",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "undefined"
+      ],
+      "reviewer_product": "unknown",
+      "reviewer_call_result": "undefined",
+      "evidence": [
+        "ผมไม่ได้จะเปลี่ยนหรือยกเลิกอะไรอยู่แล้วครับ",
+        "customer: ผมไม่ได้จะเปลี่ยนหรือยกเลิกอะไรอยู่แล้วครับ",
+        "ขอเวลาปรึกษาที่บ้านก่อนได้ไหมครับ"
+      ]
+    },
+    {
+      "case_id": "ac_18f35f1b0b",
+      "item_id": "ASR-129",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "save"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ได้ครับ ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่",
+        "customer: ได้ครับ ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่",
+        "ได้ครับ ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่"
+      ]
+    },
+    {
+      "case_id": "ac_21a2f7a7ba",
+      "item_id": "ASR-111",
+      "group": "outcome_error",
+      "corpus_product": [
+        "postpaid"
+      ],
+      "corpus_call_result": [
+        "undefined"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "unknown",
+      "evidence": [
+        "ผมขอคิดดูก่อนได้ไหมครับ ยังไม่อยากตัดสินใจตอนนี้",
+        "customer: ผมขอคิดดูก่อนได้ไหมครับ ยังไม่อยากตัดสินใจตอนนี้",
+        "ผมขอคิดดูก่อนได้ไหมครับ ยังไม่อยากตัดสินใจตอนนี้"
+      ]
+    },
+    {
+      "case_id": "ac_412276853b",
+      "item_id": "ASR-090",
+      "group": "outcome_error",
+      "corpus_product": [
+        "tol"
+      ],
+      "corpus_call_result": [
+        "undefined"
+      ],
+      "reviewer_product": "TOL",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ไม่มีแล้วค่ะ เดี๋ยวถ้ามีปัญหาจะโทรมาใหม่",
+        "customer: แพ็กเกจเดิมดิฉันก็ใช้อยู่ปกติ ไม่มีปัญหาอะไรค่ะ",
+        "ได้ค่ะ"
+      ]
+    },
+    {
+      "case_id": "ac_4dc36ca0b6",
+      "item_id": "ASR-056",
+      "group": "control",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "unknown"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "unknown",
+      "evidence": [
+        "เอิ่ม ขอโทษค่ะ แบตเตอรี่จะหมดแล้ว เดี๋ยว...",
+        "agent: สายหลุดไปแล้ว เดี๋ยวผมโทรกลับนะครับ",
+        "ขอเวลาปรึกษาที่บ้านก่อนได้ไหมคะ"
+      ]
+    },
+    {
+      "case_id": "ac_56da30f8f5",
+      "item_id": "ASR-075",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ไม่ครับ ตัดสินใจแล้วว่าจะย้าย",
+        "customer: ไม่ครับ ตัดสินใจแล้วว่าจะย้าย",
+        "ผ่อย์ บันที่อย์เป็นอย"
+      ]
+    },
+    {
+      "case_id": "ac_5b545270c9",
+      "item_id": "ASR-082",
+      "group": "outcome_error",
+      "corpus_product": [
+        "tol"
+      ],
+      "corpus_call_result": [
+        "undefined"
+      ],
+      "reviewer_product": "TOL",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ไม่เอาค่ะ ดิฉันตัดสินใจแล้วจริง ๆ",
+        "agent: ช่างจะเข้าตรวจสอบในวันที่ หก สิงหาคม สองพันห้าร้อยหกสิบเก้า ช่วงสิบหกนาฬิกา ครับ รบกวนมีผู้ใหญ่อยู่บ้านด้วยนะครับ",
+        "แพ็กเกจเดิมดิฉันก็ใช้อยู่ปกติ ไม่มีปัญหาอะไรค่ะ"
+      ]
+    },
+    {
+      "case_id": "ac_5c204e56c3",
+      "item_id": "ASR-033",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ผมขอคิดดูก่อนได้ไหมครับ ยังไม่อยากตัดสินใจตอนนี้",
+        "customer: ยกเลิกเลยครับ แล้วโฟร์จีล่ะ",
+        "ป็นป็นเป็นอย่างหม่างเป็นป็น"
+      ]
+    },
+    {
+      "case_id": "ac_644dcc5ae9",
+      "item_id": "ASR-103",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "save"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ตกลงครับ ใช้ต่อตามนี้",
+        "customer: ตกลงครับ ใช้ต่อตามนี้ แล้วเคสไอดีล่ะ",
+        "ตกลงครับ ใช้ต่อตามนี้"
+      ]
+    },
+    {
+      "case_id": "ac_654a4d720c",
+      "item_id": "ASR-089",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "postpaid"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "TOL",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "พอแล้วครับ ขอปิดบริการ",
+        "customer: พอแล้วครับ ขอปิดบริการ",
+        "พอแล้วครับ ขอปิดบริการ"
+      ]
+    },
+    {
+      "case_id": "ac_6da5ffea53",
+      "item_id": "ASR-107",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "save"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "เอาครับ จัดให้เลย",
+        "customer: เอาครับ จัดให้เลย",
+        "อ่อป เป็น์่างอย่าง ป็นถาง หรับ ไหรับ ป็นอย่าง"
+      ]
+    },
+    {
+      "case_id": "ac_6f0d4c390f",
+      "item_id": "ASR-025",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "postpaid"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "TVS",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ผมขอคิดดูก่อนได้ไหมครับ ยังไม่อยากตัดสินใจตอนนี้",
+        "customer: ผมขอคิดดูก่อนได้ไหมครับ ยังไม่อยากตัดสินใจตอนนี้",
+        "อ่างเป็นอย่างป็นธิงเป็นต่าย่างหม่อย่าง"
+      ]
+    },
+    {
+      "case_id": "ac_775cd4cad1",
+      "item_id": "ASR-006",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "unknown"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ไม่สนใจค่ะ ยกเลิกอย่างเดียว",
+        "customer: ไม่สนใจค่ะ ยกเลิกอย่างเดียว",
+        "ไม่สนใจค่ะ ยกเลิกอย่างเดียว"
+      ]
+    },
+    {
+      "case_id": "ac_7cf4bd3dde",
+      "item_id": "ASR-096",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "TOL",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ยกเลิกเลยค่ะ",
+        "customer: ยกเลิกเลยค่ะ",
+        "ดิฉันขอคิดดูก่อนได้ไหมคะ ยังไม่อยากตัดสินใจตอนนี้"
+      ]
+    },
+    {
+      "case_id": "ac_a0466022c7",
+      "item_id": "ASR-073",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "save"
+      ],
+      "reviewer_product": "TOL",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ได้ครับ ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่",
+        "customer: ได้ครับ ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่",
+        "ได้ครับ ลองดูอีกสักเดือน ถ้ายังไม่ดีขึ้นค่อยว่ากันใหม่"
+      ]
+    },
+    {
+      "case_id": "ac_a763969cce",
+      "item_id": "ASR-015",
+      "group": "outcome_error",
+      "corpus_product": [
+        "postpaid"
+      ],
+      "corpus_call_result": [
+        "undefined"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "ไม่มีแล้วครับ ขอบคุณมากครับ",
+        "customer: แพ็กเกจเดิมผมก็ใช้อยู่ปกติ ไม่มีปัญหาอะไรครับ ในส่วนของโปรเสริมเน็ตเสริมนะครับ",
+        "อ่างเป็นตับถางหม่อย่มี้เป็นตับ"
+      ]
+    },
+    {
+      "case_id": "ac_aa502ef5e1",
+      "item_id": "ASR-105",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "tol"
+      ],
+      "corpus_call_result": [
+        "save"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "save",
+      "evidence": [
+        "โอเคครับ ไม่ยกเลิกแล้ว ในส่วนของโปรเน็ตไม่อั้นนะครับ",
+        "customer: โอเคครับ ไม่ยกเลิกแล้ว ในส่วนของโปรเน็ตไม่อั้นนะครับ",
+        "อ่างป็น์่า ป็นถางหม่บาย่ม่งอย่มียป"
+      ]
+    },
+    {
+      "case_id": "ac_b32fa2c01a",
+      "item_id": "ASR-013",
+      "group": "control",
+      "corpus_product": [
+        "tvs"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ไม่ครับ ตัดสินใจแล้วว่าจะย้าย",
+        "customer: ไม่ครับ ตัดสินใจแล้วว่าจะย้าย",
+        "อ่านป็นตรับระเป็น้เอย"
+      ]
+    },
+    {
+      "case_id": "ac_ced4bd665f",
+      "item_id": "ASR-084",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "unknown"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ขอย้ายค่ายตามเดิมค่ะ",
+        "customer: ขอย้ายค่ายตามเดิมค่ะ",
+        "ขอย้ายค่ายตามเดิมค่ะ"
+      ]
+    },
+    {
+      "case_id": "ac_d67f69f410",
+      "item_id": "ASR-136",
+      "group": "product_mismatch",
+      "corpus_product": [
+        "unknown"
+      ],
+      "corpus_call_result": [
+        "churn"
+      ],
+      "reviewer_product": "Postpaid",
+      "reviewer_call_result": "churn",
+      "evidence": [
+        "ขอยกเลิกตามที่แจ้งไว้ค่ะ",
+        "customer: ขอยกเลิกตามที่แจ้งไว้ค่ะ",
+        "ดิฉันขอคิดดูก่อนได้ไหมคะ ยังไม่อยากตัดสินใจตอนนี้"
+      ]
+    }
+  ]
+}
