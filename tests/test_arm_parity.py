@@ -169,40 +169,63 @@ def test_the_run_records_who_actually_answered():
 
 
 def test_the_audio_prompt_differs_only_by_the_six_documented_pairs():
-    """The one text difference between the audio arm and the text arms, verified end to end.
+    """The one text difference between the audio arm and the text arms, end to end.
 
-    Not "the reversal function exists" -- the actual assembled strings, differing in exactly
-    the six substitutions and nothing else.
+    Reimplemented here from `evalgen.prompts` rather than imported from the runner, for two
+    reasons. The runner imports `httpx` at module scope because it calls models, and
+    `requirements.txt` pins production's scoring dependencies and contains no HTTP client --
+    so importing it passes locally and fails collection on CI, which is exactly how
+    `test_arm_wiring.py` broke once already.
+
+    The better reason: a test that reproduces the reversal INDEPENDENTLY is checking the
+    substitution set, while a test that calls `audio_prompt_text()` is checking that a
+    function agrees with itself.
     """
-    spec = importlib.util.spec_from_file_location("e21", E21_PATH)
-    e21 = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(e21)
+    import hashlib
 
-    text = e21.text_prompt().system_text
-    audio = e21.audio_prompt_text()
-    assert text != audio
+    from evalgen import prompts as P
+
+    text = P.PROMPTS["v9_16_base"].system_text
+
+    audio = text
+    for before, after in P.AUDIO_TO_TRANSCRIPT:
+        assert audio.count(after) == 1, (
+            f"{after[:44]!r} appears {audio.count(after)} times in the text prompt; the "
+            "reversal would be partial and nobody would have reviewed the result"
+        )
+        audio = audio.replace(after, before, 1)
+
+    assert audio != text, "the six substitutions changed nothing"
 
     rebuilt = audio
-    for before, after in e21.P.AUDIO_TO_TRANSCRIPT:
-        assert rebuilt.count(before) == 1, (
-            f"the audio prompt does not contain {before[:40]!r} exactly once; the reversal "
-            "is partial and nobody reviewed the result"
-        )
+    for before, after in P.AUDIO_TO_TRANSCRIPT:
         rebuilt = rebuilt.replace(before, after, 1)
     assert rebuilt == text, (
-        "re-applying the six documented substitutions to the audio prompt does not recover "
-        "the text prompt, so they differ by something else as well"
+        "re-applying the six documented substitutions does not recover the text prompt, so "
+        "the two prompts differ by something beyond them"
     )
-
-
-def test_the_two_prompt_shas_are_what_the_plan_pins():
-    """Ties the parity claim to the preregistration rather than to this file."""
-    spec = importlib.util.spec_from_file_location("e21", E21_PATH)
-    e21 = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(e21)
 
     plan = json.loads(
         (REPO / "experiments" / "retention-e23.plan.json").read_text(encoding="utf-8"))
-    assets = plan.get("assets", {})
-    assert assets["prompt_text"]["sha256"] == e21.text_prompt().sha
-    assert assets["prompt_audio"]["sha256"] == e21.sha(e21.audio_prompt_text())
+    assets = plan["assets"]
+    assert assets["prompt_text"]["sha256"] == hashlib.sha256(
+        text.encode("utf-8")).hexdigest(), "the text prompt is not what the plan pins"
+    assert assets["prompt_audio"]["sha256"] == hashlib.sha256(
+        audio.encode("utf-8")).hexdigest(), (
+        "the audio prompt this test derives is not what the plan pins, so either the "
+        "substitution set or the plan has moved"
+    )
+
+
+def test_the_runner_derives_the_audio_prompt_the_same_way():
+    """The runner's own reversal, checked against the source rather than by importing it.
+
+    `audio_prompt_text` must apply each pair exactly once and refuse otherwise. Asserted on
+    the source because importing the runner needs httpx, which CI does not have.
+    """
+    assert "for before, after in P.AUDIO_TO_TRANSCRIPT:" in RAW
+    assert "text.count(after) != 1" in RAW, (
+        "the runner no longer refuses a substitution that does not fire exactly once; a "
+        "partially reversed prompt is a prompt nobody reviewed"
+    )
+    assert "text.replace(after, before, 1)" in RAW
