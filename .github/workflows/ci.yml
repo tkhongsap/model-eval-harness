@@ -107,3 +107,24 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -q -rs
+
+      # The corpus-versus-spec test, run here because CI is where it matters.
+      #
+      # `asr-eval/tests/` as a whole CANNOT run in this job: requirements-asr.txt pins
+      # numpy 2.5.2 against this environment's 2.3.4, and its own header says the two sets
+      # "must never merge" because the root pins are production's and change what the scorer
+      # computes. So the suite lives behind a separate .venv-asr and only `scripts/verify.py`
+      # runs it -- locally, on a machine that has one.
+      #
+      # That left the one test that reads the LABELLING SPEC and checks the corpus does not
+      # contradict it outside CI entirely. It is the test that would have caught the
+      # 2026-08-20 defect, where the audio corpus built its `unknown` calls out of the exact
+      # phrases the spec rules to be `save` and cost ~0.13 weighted F1 on every arm.
+      #
+      # It is runnable here because its whole dependency surface -- thai_corpus,
+      # business_labels, asr_common -- is pure stdlib, so it needs none of the ASR pins. Its
+      # last case skips cleanly when the generated pack is absent, which it always is here.
+      - name: Check the corpus does not contradict the labelling spec
+        env:
+          PYTHONPATH: src:asr-eval/scripts
+        run: pytest asr-eval/tests/test_outcome_pools_match_spec.py -q -rs
