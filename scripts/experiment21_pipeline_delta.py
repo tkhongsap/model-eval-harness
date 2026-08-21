@@ -358,8 +358,22 @@ def call_labeller(client: httpx.Client | None, env: dict, arm: str, system: str,
                    # produced an out-of-enum value, so the guard was not silently rescuing a
                    # broken run. It is here so that stays checkable rather than lucky.
                    #
-                   # `reasoning.effort` matters for a second reason: without it Gemini ran at
-                   # provider default while retention-e23.plan.json:311 preregisters "none".
+                   # The other two guards are worth less than I first claimed, and the
+                   # measurements are recorded here so nobody re-derives the wrong reason.
+                   #
+                   # `reasoning.effort`: E23 did not send it, so Gemini ran at provider
+                   # default against a plan preregistering "none". The process gap is real.
+                   # The harm is not evidenced: `completion_tokens_details.reasoning_tokens`
+                   # is 0 on all 408 E23 Gemini calls, so the default was already no
+                   # reasoning. Sending it makes that a stated condition rather than a
+                   # provider default that can change under us without a diff.
+                   #
+                   # `usage.include`: my first note said "without it the record carries no
+                   # cost". That was wrong -- I had queried a `cost_usd` field that does not
+                   # exist on these records. OpenRouter returns `usage.cost` regardless, and
+                   # E23's 408 Gemini calls all carry it, summing to $3.365. It stays because
+                   # asking explicitly beats depending on a provider default for a number
+                   # that goes in a cost table, but it fixed nothing.
                    "usage": {"include": True},
                    "provider": {"require_parameters": True},
                    "reasoning": {"effort": "none"}}

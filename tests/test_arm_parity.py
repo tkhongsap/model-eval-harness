@@ -11,14 +11,23 @@ rests on, and until now it was an assertion nobody could check. Auditing it by h
      failing, so without it an arm rerouted mid-run to an endpoint with no structured-output
      support falls back to prompt-coaxing, and the run log looks identical."
   3. Neither sent `reasoning.effort`, so Gemini ran at provider default while
-     `retention-e23.plan.json:311` preregisters `"none"`.
+     `retention-e23.plan.json:311` preregisters `"none"`. Process gap, no measured harm:
+     reasoning_tokens is 0 on all 408 E23 Gemini calls.
   4. No arm recorded who actually answered -- only the model we ASKED for. The main harness
      captures `observed_model` / `provider` / `finish_reason` (`client.py:291-310`) because a
      2026-08-04 run was silently served by two backends under one model id.
 
-Worth stating plainly: (2) was checked against the data before being called a bug, and 414 of
-414 Gemini calls parsed with zero out-of-enum values. The guard was not rescuing a broken run.
-It is here so that stays a checked fact rather than a lucky one.
+Worth stating plainly: NONE of these four was distorting a published number, and each was
+checked rather than assumed. 414 of 414 Gemini calls parsed with zero out-of-enum values, so
+(2) was not rescuing a broken run. reasoning_tokens is 0 on all 408 E23 Gemini calls, so (3)
+changed nothing observable. A fourth guard, `usage.include`, was added on a rationale that
+turned out to be false -- I had queried a `cost_usd` field that does not exist, concluded cost
+was unrecorded, and it was there in `usage.cost` all along, $3.365 across E23's Gemini arm.
+
+What the four DO buy is that "all models ran identically" stops being an assertion. Only (1),
+the stray text part, was ever a real difference in what a model received, and only (4), the
+missing model identity, was a real gap in what the run recorded -- observed_model is absent on
+all 408 E23 Gemini calls and present on every E24 one.
 
 These tests read the payload the runner would actually build, so they fail when the requests
 diverge -- not when someone forgets to update a comment.
@@ -96,9 +105,13 @@ def test_the_audio_arm_sends_no_framing_text_part():
     ('"provider" : { "require_parameters" : True }',
      "without it OpenRouter silently drops response_format and the log looks identical"),
     ('"reasoning" : { "effort" : "none" }',
-     "without it Gemini runs at provider default, contradicting the preregistered plan"),
+     "without it Gemini runs at provider default, contradicting the preregistered plan. "
+     "Measured: reasoning_tokens was already 0 on all 408 E23 calls, so this states a "
+     "condition rather than fixing a distortion"),
     ('"usage" : { "include" : True }',
-     "without it the record carries no cost for the OpenRouter arms"),
+     "asks explicitly for the cost rather than depending on a provider default. NOT "
+     "because the cost was missing -- E23 recorded usage.cost on all 408 Gemini calls, "
+     "totalling $3.365; my first rationale for this guard was simply wrong"),
 ])
 def test_the_openrouter_guards_are_sent(guard, why):
     assert guard in SOURCE, f"missing OpenRouter guard {guard}: {why}"
