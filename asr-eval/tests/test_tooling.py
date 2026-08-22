@@ -311,14 +311,19 @@ def test_control_tokens_are_removed_from_every_chunk_not_just_the_first(monkeypa
 
     monkeypatch.setattr(T, "_send", fake_send)
     counter: dict[str, int] = {}
-    out = [
+    returned = [
         T.post_audio("https://x/v1", "m", "k", "f.wav", b"", "th", 10, 1,
                      prefix_counter=counter)
         for _ in range(3)
     ]
+    out = [text for text, _ in returned]
     assert out == ["ส่วนที่1", "ส่วนที่2", "ส่วนที่3"]
     assert counter == {"responses": 3, "responses_with_tokens": 3, "tokens": 3}
     assert "<asr_text>" not in " ".join(out)
+    # These fixture bodies carry no usage block, so the billed figure must be None rather
+    # than 0.0 -- "the server did not say" and "the server said nothing was billed" are
+    # different facts, and a cost table that adds them is wrong without looking wrong.
+    assert [billed for _, billed in returned] == [None, None, None]
 
 
 def test_a_response_that_is_only_control_tokens_raises() -> None:
