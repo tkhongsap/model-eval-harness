@@ -1,0 +1,195 @@
+{
+  "generated_from": "scripts/eval_inventory.py",
+  "test_sets": [
+    {
+      "name": "retention_v1",
+      "role": "seed",
+      "kind": "text",
+      "calls": 20,
+      "gt_rows": 22
+    },
+    {
+      "name": "retention_v2",
+      "role": "scale",
+      "kind": "text",
+      "calls": 100,
+      "gt_rows": 108
+    },
+    {
+      "name": "retention_v3",
+      "role": "primary text pack",
+      "kind": "text",
+      "calls": 138,
+      "gt_rows": 150
+    },
+    {
+      "name": "retention_challenge_v1",
+      "role": "adversarial",
+      "kind": "text",
+      "calls": 50,
+      "gt_rows": 64
+    },
+    {
+      "name": "block_a..d",
+      "role": "unit fixtures",
+      "kind": "text",
+      "calls": 20,
+      "gt_rows": null,
+      "files": 4
+    },
+    {
+      "name": "asr-eval",
+      "role": "committed audio seed",
+      "kind": "audio",
+      "calls": 20,
+      "gt_rows": null
+    },
+    {
+      "name": "asr-eval-v2",
+      "role": "E23 corpus",
+      "kind": "audio",
+      "calls": 138,
+      "gt_rows": 138
+    },
+    {
+      "name": "asr-eval-v3",
+      "role": "E24 corpus, product labels corrected",
+      "kind": "audio",
+      "calls": 138,
+      "gt_rows": 138
+    }
+  ],
+  "totals": {
+    "text_sets": 5,
+    "audio_sets": 3,
+    "audio_calls": 296,
+    "labelled_text_rows": 344
+  },
+  "experiments": [
+    {
+      "id": "retention-e23",
+      "status": "draft",
+      "app": "retention",
+      "arms": 2,
+      "corpus_frozen": false,
+      "title": "Experiment 23: end-to-end business F1 on 138 synthetic Thai calls -- production's one-call audio arm against t"
+    },
+    {
+      "id": "retention-e24",
+      "status": "qualified",
+      "app": "retention",
+      "arms": 5,
+      "corpus_frozen": true,
+      "title": "Experiment 24: end-to-end business F1 on 138 synthetic Thai calls, against ground truth whose product labels n"
+    },
+    {
+      "id": "retention-e5",
+      "status": "locked",
+      "app": "retention",
+      "arms": 3,
+      "corpus_frozen": false,
+      "title": "Enterprise evaluation framework reference experiment: Retention phase one and phase two"
+    },
+    {
+      "id": "retention-e7",
+      "status": "draft",
+      "app": "retention",
+      "arms": 3,
+      "corpus_frozen": false,
+      "title": "Experiment 7: decision-grade Retention three-model repeat"
+    }
+  ],
+  "spend": {
+    "metered_usd_total": 18.1996,
+    "runs_with_cost": 8,
+    "e24_incumbent_usd": 3.8554,
+    "e24_incumbent_calls": 414,
+    "e24_usd_per_call": 0.00931
+  },
+  "sentiment_qa_token_ab": {
+    "items": 24,
+    "baseline_completion_med": 9231.5,
+    "reasoning_off_completion_med": 3461.0,
+    "completion_cut": 0.625,
+    "baseline_json_ok": 14,
+    "reasoning_off_json_ok": 22,
+    "baseline_cost_usd": 0.4722,
+    "reasoning_off_cost_usd": 0.3678,
+    "accuracy_eval_exists": false
+  },
+  "app_bindings": {
+    "registered": 1,
+    "adapters": [
+      "retention"
+    ],
+    "schemas": [
+      "retention"
+    ],
+    "label_spaces": [
+      "MNP",
+      "RETENTION"
+    ],
+    "note": "The harness is parameterised by app -- --app, binding(application_id), and adapters/registry.py resolving a loader from the hashed contract string -- but exactly one binding is registered, so that extensibility has never been exercised by a second application."
+  },
+  "production": {
+    "app_directories": [
+      "rtr-fraud-validation-main",
+      "sentiment-batch-mnp-develop",
+      "sentiment-batch-retention-main",
+      "sentiment-voice-analysis-develop"
+    ],
+    "tasks": [
+      {
+        "key": "retention",
+        "app_dir": "sentiment-batch-retention-main",
+        "task": "Retention call labelling",
+        "modality": "Thai audio -> JSON",
+        "covered": "full",
+        "evidence": "8 test sets, 4 preregistered experiments, blind-audited ground truth"
+      },
+      {
+        "key": "mnp",
+        "app_dir": "sentiment-batch-mnp-develop",
+        "task": "MNP retention labelling",
+        "modality": "Thai audio -> JSON",
+        "covered": "none",
+        "evidence": "MNP LabelSpace declared at src/evalharness/labelspaces.py:56 and commented 'Not yet in scope'. No adapter, schema, prompt or test set."
+      },
+      {
+        "key": "sentiment_qa",
+        "app_dir": "sentiment-voice-analysis-develop",
+        "task": "QA pipeline fact-check",
+        "modality": "audio/text -> ~118 keys",
+        "covered": "cost only",
+        "evidence": "Token A/B measured (docs/reports/token-ab.json). NO accuracy eval: no labelled batch exists. docs/sentiment-qa-token-ask.md is the ask."
+      },
+      {
+        "key": "telesale",
+        "app_dir": "sentiment-voice-analysis-develop",
+        "task": "Telesale rubric scoring",
+        "modality": "audio -> weighted rubric",
+        "covered": "none",
+        "evidence": "Additive negative points with per-section caps (telesale_scoring.yml). Not classification; needs new metric code."
+      },
+      {
+        "key": "tax_invoice",
+        "app_dir": "sentiment-voice-analysis-develop",
+        "task": "Tax invoice extraction",
+        "modality": "document image -> fields",
+        "covered": "none",
+        "evidence": "Per-field thresholds already specified in fact_check_uat_baseline.yml. Exact-match scoring, no new statistics."
+      },
+      {
+        "key": "rtr_fraud",
+        "app_dir": "rtr-fraud-validation-main",
+        "task": "Shop image classification",
+        "modality": "images -> 3 detections",
+        "covered": "none",
+        "evidence": "Vision. Prompt also requires the model to COUNT its inputs and end every result with /N, which is a known weak spot."
+      }
+    ],
+    "tasks_total": 6,
+    "tasks_covered": 1,
+    "tasks_uncovered": 4
+  }
+}

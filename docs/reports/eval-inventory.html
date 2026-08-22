@@ -1,0 +1,253 @@
+<title>Eval Coverage Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1b2024; --ink-2:#4a555f; --muted:#7c8791;
+  --page:#ebeef0; --card:#ffffff; --rule:#e3e8ea; --rule-2:#cfd7db;
+  --band:#f4f6f7;
+  --have:#e7f1ec; --have-edge:#b8d4c5; --have-ink:#1f6b47;
+  --part:#fbf1dd; --part-edge:#e6cf9c; --part-ink:#8a5a11;
+  --none:#fbeae6; --none-edge:#eec4b8; --none-ink:#9d3520;
+  --accent:#0b6a70;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+    --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b;
+    --band:#1c2429;
+    --have:#163024; --have-edge:#2f5c44; --have-ink:#79c79c;
+    --part:#302713; --part-edge:#5d4a20; --part-ink:#d3a75a;
+    --none:#331f1a; --none-edge:#6b3d31; --none-ink:#e08a72;
+    --accent:#4fb3b7;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+  --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b;
+  --band:#1c2429;
+  --have:#163024; --have-edge:#2f5c44; --have-ink:#79c79c;
+  --part:#302713; --part-edge:#5d4a20; --part-ink:#d3a75a;
+  --none:#331f1a; --none-edge:#6b3d31; --none-ink:#e08a72;
+  --accent:#4fb3b7;
+}
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--page); color:var(--ink); font-size:13.5px; line-height:1.45;
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.sheet{max-width:960px; margin:0 auto; padding:24px 20px 40px}
+
+.masthead{display:flex; justify-content:space-between; align-items:flex-end; gap:18px;
+  flex-wrap:wrap; margin-bottom:16px}
+h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+.sub{color:var(--muted); font-size:12px; margin:3px 0 0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted);
+  text-align:right; line-height:1.7}
+
+h2{font-size:13.5px; font-weight:700; margin:18px 0 8px; letter-spacing:-.005em}
+h2 .n{font-family:"IBM Plex Mono",monospace; color:var(--accent); font-weight:600; margin-right:6px}
+
+.strip{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:6px}
+.tile{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; padding:11px 13px}
+.tile .big{font-family:"IBM Plex Mono",monospace; font-size:21px; font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tile .cap{font-size:10.5px; color:var(--muted); margin-top:3px; line-height:1.35}
+.tile.warn .big{color:var(--none-ink)}
+
+.card{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px}
+thead th{padding:9px 13px; text-align:left; border-bottom:1px solid var(--rule-2);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  font-weight:600; background:var(--band)}
+thead th.n, tbody td.n{text-align:right}
+tbody td{padding:8px 13px; border-bottom:1px solid var(--rule); font-size:12.5px; color:var(--ink-2)}
+tbody td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+tbody td:first-child{color:var(--ink); font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+.hint{display:block; color:var(--muted); font-size:11px; font-weight:400; margin-top:1px}
+
+.pill{display:inline-block; padding:1px 8px; border-radius:100px; font-size:10.5px;
+  font-family:"IBM Plex Mono",monospace; letter-spacing:.04em; white-space:nowrap; font-weight:500}
+.pill.have{background:var(--have); color:var(--have-ink); border:1px solid var(--have-edge)}
+.pill.part{background:var(--part); color:var(--part-ink); border:1px solid var(--part-edge)}
+.pill.none{background:var(--none); color:var(--none-ink); border:1px solid var(--none-edge)}
+
+.note{margin:12px 0 0; padding:11px 14px; background:var(--card); border:1px solid var(--rule-2);
+  border-left:3px solid var(--none-ink); border-radius:4px; font-size:12px}
+.note.acc{border-left-color:var(--accent)}
+.note b{color:var(--ink)}
+.note p{margin:0 0 6px} .note p:last-child{margin-bottom:0}
+
+ol.rec{margin:8px 0 0; padding-left:20px; font-size:12.5px}
+ol.rec li{margin-bottom:6px}
+ol.rec b{color:var(--ink)}
+.foot{margin-top:14px; font-size:11px; color:var(--muted)}
+
+@media print{
+  @page{size:A4 portrait; margin:9mm}
+  body{background:#fff; font-size:8.6pt}
+  .sheet{padding:0; max-width:none}
+  .card,.tile,.note{border-color:#bbb; overflow:visible}
+  table{min-width:0}
+  h1{font-size:12.6pt} h2{font-size:9.4pt; margin:11px 0 5px}
+  .tile .big{font-size:14pt} .tile .cap{font-size:6.6pt}
+  thead th{padding:5px 7px; font-size:6.4pt}
+  tbody td{padding:3.6px 7px; font-size:7.7pt}
+  .hint{font-size:6.6pt} .pill{font-size:6.6pt}
+  .note{font-size:7.2pt; padding:7px 9px} ol.rec{font-size:7.6pt} .foot{font-size:6.6pt}
+  .strip{gap:6px}
+  .pill.have{background:#e7f1ec !important} .pill.part{background:#fbf1dd !important}
+  .pill.none{background:#fbeae6 !important}
+  thead th{background:#f2f4f5 !important}
+  .pill,thead th{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}
+</style>
+
+<div class="sheet">
+
+<div class="masthead">
+  <div>
+    <h1>What we can evaluate, and what we cannot</h1>
+    <p class="sub">Model-eval harness &middot; coverage inventory and where to build next</p>
+  </div>
+  <div class="stamp">
+    2026-08-22<br>
+    counted from the repo, not written by hand<br>
+    RECONCILED: NO
+  </div>
+</div>
+
+<div class="strip">
+  <div class="tile">
+    <div class="big">8</div>
+    <div class="cap">eval sets &mdash; 5 text, 3 audio<br>296 audio calls, 344 labelled rows</div>
+  </div>
+  <div class="tile">
+    <div class="big">4</div>
+    <div class="cap">preregistered experiments<br>one of them corpus-frozen</div>
+  </div>
+  <div class="tile warn">
+    <div class="big">1 / 6</div>
+    <div class="cap">production model tasks<br>we can actually score</div>
+  </div>
+  <div class="tile warn">
+    <div class="big">1</div>
+    <div class="cap">app binding registered<br>multi-app support is untested</div>
+  </div>
+</div>
+
+<h2><span class="n">1</span>Everything we have is one application</h2>
+
+<div class="card">
+<table>
+  <thead><tr>
+    <th>Eval set</th><th>Kind</th><th class="n">Calls</th><th class="n">GT rows</th><th>Role</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>retention_v1 / v2 / v3</td><td>text</td><td class="n">258</td><td class="n">280</td>
+      <td>seed, scale, primary pack</td></tr>
+    <tr><td>retention_challenge_v1</td><td>text</td><td class="n">50</td><td class="n">64</td>
+      <td>adversarial</td></tr>
+    <tr><td>block_a&hellip;d</td><td>text</td><td class="n">20</td><td class="n">&mdash;</td>
+      <td>unit fixtures &mdash; clear, Thai, tiebreak, escape</td></tr>
+    <tr><td>asr-eval</td><td>audio</td><td class="n">20</td><td class="n">&mdash;</td>
+      <td>committed seed</td></tr>
+    <tr><td>asr-eval-v2</td><td>audio</td><td class="n">138</td><td class="n">138</td>
+      <td>E23 corpus</td></tr>
+    <tr><td>asr-eval-v3</td><td>audio</td><td class="n">138</td><td class="n">138</td>
+      <td>E24 corpus &mdash; product labels corrected after a blind audit</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">2</span>Cost &mdash; yes, measured, on two fronts</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>What</th><th class="n">Measured</th><th>Where</th></tr></thead>
+  <tbody>
+    <tr><td>Retention, per call<span class="hint">production incumbent, Gemini 2.5 Flash</span></td>
+      <td class="n">$0.00931</td><td>E24 &mdash; $3.86 over 414 calls</td></tr>
+    <tr><td>Retention, internal arms<span class="hint">company GPU &mdash; not the same as free</span></td>
+      <td class="n">$0.00</td><td>no per-call price</td></tr>
+    <tr><td>All evaluation spend to date</td><td class="n">$18.20</td><td>8 runs with recorded cost</td></tr>
+    <tr><td>sentiment_qa token blow-up<span class="hint">reasoning off vs baseline, 24 items</span></td>
+      <td class="n">&minus;62.5%</td><td>completion tokens 9,232 &rarr; 3,461</td></tr>
+    <tr><td>&hellip; and JSON validity <em>improved</em></td><td class="n">14 &rarr; 22 / 24</td>
+      <td>cost $0.472 &rarr; $0.368</td></tr>
+    <tr><td>The reported 30&ndash;40k tokens</td><td class="n">input</td>
+      <td>94,174-char config ≈ 31,400 tokens, <code>cached_tokens: 0</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p><b>The one thing to take away from the cost work.</b> We have told production that turning
+  reasoning off is a win, and <b>there is no accuracy eval behind that advice</b>. No labelled
+  sentiment_qa batch exists. The recommendation currently rests on token count and JSON validity
+  alone &mdash; both real, neither sufficient. That gap should close before the change ships.</p>
+</div>
+
+<h2><span class="n">3</span>The gap &mdash; five production tasks we cannot score</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Production task</th><th>Modality</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Retention call labelling</td><td>Thai audio &rarr; JSON</td>
+      <td><span class="pill have">COVERED</span></td></tr>
+    <tr><td>QA pipeline fact-check<span class="hint">sentiment_qa</span></td><td>audio/text &rarr; ~118 keys</td>
+      <td><span class="pill part">COST ONLY</span></td></tr>
+    <tr><td>MNP retention labelling<span class="hint">label space declared, nothing else</span></td>
+      <td>Thai audio &rarr; JSON</td><td><span class="pill none">NONE</span></td></tr>
+    <tr><td>Tax invoice extraction<span class="hint">thresholds already written, 0.97&ndash;1.00</span></td>
+      <td>document image &rarr; fields</td><td><span class="pill none">NONE</span></td></tr>
+    <tr><td>Shop image classification<span class="hint">rtr-fraud &mdash; also requires counting</span></td>
+      <td>images &rarr; 3 detections</td><td><span class="pill none">NONE</span></td></tr>
+    <tr><td>Telesale rubric scoring<span class="hint">additive negative points, per-section caps</span></td>
+      <td>audio &rarr; weighted score</td><td><span class="pill none">NONE</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note acc">
+  <p><b>The architectural fact underneath the gap.</b> The harness <i>is</i> built to take more
+  than one application &mdash; there is an <code>--app</code> flag, a binding lookup, and an
+  adapter resolved from the hashed contract string rather than a second table that could
+  disagree with it. Its own error message even lists what a new app needs.</p>
+  <p><b>But exactly one binding is registered, with one adapter and one schema.</b> That
+  extensibility has never been exercised by a second application, and reading the code cannot
+  settle whether it holds. That is the strongest argument for which eval to build next.</p>
+</div>
+
+<h2><span class="n">4</span>Recommendation</h2>
+
+<ol class="rec">
+  <li><b>MNP first</b> &mdash; the cheapest possible test of a claim we have not tested. Same
+  modality, same scorer, label space differs by one reason class. If the harness really is
+  multi-app this is short work; if it is not, this is where we find out cheaply rather than
+  three applications later.</li>
+  <li><b>sentiment_qa accuracy second</b> &mdash; the only place we have advised production
+  without evidence. Blocked on labelled data that does not exist; unblock it before the
+  reasoning-off change ships anywhere.</li>
+  <li><b>Tax invoice third</b> &mdash; different modality but the easiest eval shape here:
+  per-field exact match, thresholds already specified, no new statistics needed.</li>
+  <li><b>RTR fraud fourth</b> &mdash; highest build cost, most interesting failure surface. The
+  prompt requires the model to count its own inputs, which is a known weak spot.</li>
+  <li><b>Telesale last</b> &mdash; needs genuinely new metric code. Additive negative points with
+  per-section caps is not classification, so none of the existing scoring applies.</li>
+</ol>
+
+<div class="foot">
+  Every figure counted from the repository by <code>scripts/eval_inventory.py</code> and checked
+  by <code>scripts/doc_claims.py</code> &mdash; 193 published figures across 3 documents. Full
+  detail, including the reusable-versus-needs-building split per candidate and the files a
+  builder would touch, in <code>docs/reports/eval-inventory-reference.md</code>.
+  <b>RECONCILED: NO</b> &mdash; every number here comes from synthetic corpora; no production
+  call has been through this harness.
+</div>
+
+</div>
