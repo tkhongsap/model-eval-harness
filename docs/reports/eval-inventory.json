@@ -191,5 +191,71 @@
     "tasks_total": 6,
     "tasks_covered": 1,
     "tasks_uncovered": 4
+  },
+  "parallel_eval": {
+    "path": "production-reference/ai-local-eval-sentiment_project_v2",
+    "internal_name": "model_migration",
+    "task_areas": [
+      "documents",
+      "sentiment",
+      "sentiment_mnp",
+      "sentiment_retention",
+      "sentiment_telesale"
+    ],
+    "task_area_count": 5,
+    "model_families": [
+      "google_model",
+      "local_model"
+    ],
+    "source_files": 70,
+    "source_lines": 53670,
+    "test_files": 30,
+    "test_lines": 13846,
+    "by_area": {
+      "google_model/sentiment": {
+        "files": 8,
+        "lines": 5345
+      },
+      "google_model/sentiment_mnp": {
+        "files": 7,
+        "lines": 3888
+      },
+      "google_model/sentiment_retention": {
+        "files": 7,
+        "lines": 4221
+      },
+      "google_model/sentiment_telesale": {
+        "files": 8,
+        "lines": 4919
+      },
+      "google_model/documents": {
+        "files": 9,
+        "lines": 4933
+      },
+      "local_model/sentiment": {
+        "files": 11,
+        "lines": 11325
+      },
+      "local_model/sentiment_mnp": {
+        "files": 5,
+        "lines": 4610
+      },
+      "local_model/sentiment_retention": {
+        "files": 5,
+        "lines": 4921
+      },
+      "local_model/sentiment_telesale": {
+        "files": 6,
+        "lines": 5400
+      },
+      "local_model/documents": {
+        "files": 4,
+        "lines": 4108
+      }
+    },
+    "what_it_has_that_we_do_not": "Gemini's NATIVE usageMetadata, carrying a per-modality token split (AUDIO vs TEXT), cached_tokens and thoughts_tokens. Reading Gemini through OpenRouter, as this repository does, returns a flatter shape, and we measured cached_tokens: 0 where theirs records substantial caching.",
+    "where_it_agrees_with_us": "Its metrics schema carries label_* and analysis_* token fields plus a separate float `Audio Seconds` column, with NO transcription-stage token fields -- 'Whisper reports duration, hence float Audio Seconds'. It also records that 'Blank token cells mean not reported, never 0'. Both conclusions were reached independently here on 2026-08-22.",
+    "correspondence_is_by_name_only": "Area names suggest sentiment -> sentiment_qa and documents -> tax invoice extraction. Neither has been verified against the other's schema.",
+    "its_own_claude_md_is_stale": "It describes the project as 'currently a platform scaffold'. What is on disk is not a scaffold; every figure here is counted from the filesystem."
   }
 }

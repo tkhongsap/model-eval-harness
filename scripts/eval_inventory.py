@@ -85,6 +85,24 @@ PRODUCTION_TASKS = [
     },
 ]
 
+# A SECOND EVALUATION EFFORT EXISTS IN THE ORGANISATION, and it is not a production task.
+# `production-reference/ai-local-eval-sentiment_project_v2` (internally `model_migration`)
+# evaluates several of the same tasks this repository does, from a different direction.
+#
+# Declared separately rather than folded into PRODUCTION_TASKS, because counting it as either
+# "covered" or "uncovered" would be wrong. Its existence does not mean THIS harness can score
+# those tasks; it means the ORGANISATION already has numbers for them, produced by other code
+# with other properties. A coverage table that silently absorbed it would overstate what this
+# repository can do, and one that ignored it would understate what the business already knows
+# and invite duplicated work.
+#
+# The area -> production-task correspondence is BY NAME and has NOT been verified field by
+# field. `sentiment` most likely corresponds to sentiment_qa and `documents` to tax invoice
+# extraction, but neither has been checked against the other's schema.
+PARALLEL_EVAL_PATH = "ai-local-eval-sentiment_project_v2"
+PARALLEL_EVAL_AREAS = ("sentiment", "sentiment_mnp", "sentiment_retention",
+                       "sentiment_telesale", "documents")
+
 TEXT_SETS = [
     ("retention_v1", "seed"),
     ("retention_v2", "scale"),
@@ -220,6 +238,9 @@ def main(argv: list[str] | None = None) -> int:
     # ---- production coverage ----------------------------------------------------------
     prod = REPO / "production-reference"
     app_dirs = sorted(d.name for d in prod.iterdir() if d.is_dir()) if prod.is_dir() else []
+    # The parallel eval effort lives under the same tree but is not a production app, so it
+    # must not inflate the app count or the coverage denominator.
+    app_dirs = [d for d in app_dirs if d != PARALLEL_EVAL_PATH]
     inv["production"] = {
         "app_directories": app_dirs,
         "tasks": PRODUCTION_TASKS,
@@ -233,6 +254,53 @@ def main(argv: list[str] | None = None) -> int:
                 f"INVENTORY REFUSING: {t['app_dir']!r} is named in PRODUCTION_TASKS but is "
                 f"not under production-reference/. Found: {app_dirs}. The coverage table "
                 "would describe an app that is not there.")
+
+    # ---- the parallel effort, measured rather than described --------------------------
+    par = prod / PARALLEL_EVAL_PATH
+    if par.is_dir():
+        areas = {}
+        for family in ("google_model", "local_model"):
+            for area in PARALLEL_EVAL_AREAS:
+                d = par / "src" / family / area
+                if not d.is_dir():
+                    continue
+                files = sorted(d.rglob("*.py"))
+                areas[f"{family}/{area}"] = {
+                    "files": len(files),
+                    "lines": sum(len(f.read_text(encoding="utf-8", errors="replace")
+                                     .splitlines()) for f in files),
+                }
+        tests = sorted((par / "tests").glob("test_*.py"))
+        inv["parallel_eval"] = {
+            "path": f"production-reference/{PARALLEL_EVAL_PATH}",
+            "internal_name": "model_migration",
+            "task_areas": sorted({a.split("/")[1] for a in areas}),
+            "task_area_count": len({a.split("/")[1] for a in areas}),
+            "model_families": sorted({a.split("/")[0] for a in areas}),
+            "source_files": sum(v["files"] for v in areas.values()),
+            "source_lines": sum(v["lines"] for v in areas.values()),
+            "test_files": len(tests),
+            "test_lines": sum(len(t.read_text(encoding="utf-8", errors="replace")
+                                  .splitlines()) for t in tests),
+            "by_area": areas,
+            "what_it_has_that_we_do_not":
+                "Gemini's NATIVE usageMetadata, carrying a per-modality token split (AUDIO vs "
+                "TEXT), cached_tokens and thoughts_tokens. Reading Gemini through OpenRouter, "
+                "as this repository does, returns a flatter shape, and we measured "
+                "cached_tokens: 0 where theirs records substantial caching.",
+            "where_it_agrees_with_us":
+                "Its metrics schema carries label_* and analysis_* token fields plus a separate "
+                "float `Audio Seconds` column, with NO transcription-stage token fields -- "
+                "'Whisper reports duration, hence float Audio Seconds'. It also records that "
+                "'Blank token cells mean not reported, never 0'. Both conclusions were reached "
+                "independently here on 2026-08-22.",
+            "correspondence_is_by_name_only":
+                "Area names suggest sentiment -> sentiment_qa and documents -> tax invoice "
+                "extraction. Neither has been verified against the other's schema.",
+            "its_own_claude_md_is_stale":
+                "It describes the project as 'currently a platform scaffold'. What is on disk "
+                "is not a scaffold; every figure here is counted from the filesystem.",
+        }
 
     text = json.dumps(inv, ensure_ascii=False, indent=2) + "\n"
     if args.check:
@@ -249,6 +317,10 @@ def main(argv: list[str] | None = None) -> int:
           f"{inv['production']['tasks_covered']} covered / {inv['production']['tasks_total']}")
     print(f"  metered spend ${inv['spend']['metered_usd_total']}")
     print(f"  app bindings registered: {inv['app_bindings']['registered']}")
+    par_inv = inv.get("parallel_eval")
+    if par_inv:
+        print(f"  parallel eval effort: {par_inv['task_area_count']} task areas, "
+              f"{par_inv['source_lines']:,} source lines, {par_inv['test_files']} test files")
     return 0
 
 
