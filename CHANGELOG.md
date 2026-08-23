@@ -7,19 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-**Bookkeeping note, 2026-08-24:** entries below this point predate 2026-08-16 and were
-recorded close to when they landed. Substantial harness work has shipped since —
-`asr-eval/` (below, recorded late, same as `retention_challenge_v1` was), and separately
-Experiments 20-24: a replicate-1 scoring-path fix, `scripts/freeze_corpus.py`,
-`scripts/corpus_fix_effect.py`, `scripts/corpus_diff.py`, and the blind-audit tooling
-(`tests/test_audit_packet_is_blind.py`). That second group is **not** backfilled here —
-this pass verified and wrote up only what it built first-hand (`asr-eval/`); writing
-CHANGELOG entries for code not personally read would be exactly the unverified-assertion
-failure this repository's own history has caught and corrected before. Flagged so the
-gap is a known one, not a silent one; DEVLOG.md's entries for that window are the
-authoritative record until this is closed properly.
+**Bookkeeping note, 2026-08-24, updated:** the gap flagged earlier today is now
+**partly closed**. Experiments 23-24 are written up below, by the author who built that
+code and against the files themselves rather than from the DEVLOG.
+
+**Experiments 20-22 remain unwritten, deliberately.** Their write-ups exist in `docs/`
+(`experiment20-results.md`, `experiment21-results.md`, `experiment22-asr-runaway.md`) but
+the code was not read first-hand for this pass, and summarising it from a results document
+would be the same unverified-assertion failure the original note refused to commit. The
+scope of what is claimed here is therefore narrower than the original note's list, and
+says so. DEVLOG.md remains authoritative for that window.
 
 ### Added
+
+- **A blind audit of the ground truth, and the finding that the benchmark was wrong.** 68
+  cases — product disagreements, outcome disagreements and undisputed controls, shuffled
+  under a recorded seed — sent to three frontier models shown only the Thai transcript and
+  the written spec: no expected label, no group name, no model answer, enforced by
+  `tests/test_audit_packet_is_blind.py`. Reviewers agreed with the corpus on 93.3% of
+  controls and went against it on 62.9% of disputed cases, against a threshold of 20%
+  written down beforehand. `scripts/audit_review_models.py` runs the panel;
+  `scripts/audit_score.py` reports control and disputed agreement separately and halts the
+  reading if the control rate collapses. Record in `docs/reports/audit-result.json`.
+
+- **`scripts/corpus_diff.py` and `scripts/corpus_fix_effect.py` — attributing a score
+  change to a cause.** The audit implied a defect in `asr-eval/scripts/business_labels.py`:
+  `choose_product` drew from a global mix while `choose_call_result`, eight lines below,
+  already took the scenario. The product is spoken aloud in the dialogue, so the corpus was
+  generating a customer describing one service while the agent worked on another — 30 of 138
+  calls. `corpus_diff` separates that defect (30) from calls that merely re-drew when the mix
+  changed (51), refusing outright if the two corpora do not share a scenario plan.
+  `corpus_fix_effect` then splits the corpus into control / contradicted / re-rolled cells
+  and refuses if audio and label did not move together, which is what makes the control cell
+  a noise floor rather than a hope.
+
+- **`scripts/freeze_corpus.py` — approval gate 1 as a command rather than a sentence.** The
+  E23 plan required every corpus hash to be stamped before the first model call. It was
+  still `status: draft` with every hash null after 1,002 calls, because nothing performed the
+  step. This refuses a plan naming a different corpus, a corpus whose manifest and audio
+  directory disagree, a per-item hash that no longer matches the bytes, a second stamp, and
+  a corpus that already has transcripts — the last because that would mean a model call
+  preceded the freeze.
+
+- **`scripts/check_audio_validation.py` — an evidence-carrying allowlist instead of a
+  widened threshold.** Two files fail `validate_audio`'s speech-rate check. Rather than
+  lower the band for all 138, the check's own premise was tested: two independent ASR systems
+  transcribed ~96% of the reference length on both. The threshold is untouched; the failure
+  *set* is compared against a list carrying that evidence, and anything not on it aborts.
+
+- **`scripts/merge_asr_backfill.py` — re-transcribing lost items without destroying the
+  record.** `transcribe.py` writes `_run.json` at the end of every pass, so a two-item retry
+  against the main arm directory replaces "135 ok, 3 failed" with "3 ok, 0 failed". It
+  refuses a backfill whose model, base URL, language or chunk size differ from the main pass,
+  an item the main pass never recorded as failed, and any write that would clobber an
+  existing transcript.
+
+- **`scripts/e24_figures.py`, `scripts/eval_inventory.py`, `scripts/gpu_figures.py` — figures
+  that recount themselves.** Each derives its numbers from runs, corpora and plan files and
+  supports `--check` for staleness. `doc_claims` coverage grew from 77 figures over one
+  document to 207 over four; `scripts/verify.py` now runs it as a gate, because a gate nobody
+  runs is not a gate. The inventory's staleness check earned this on 2026-08-24, catching a
+  stale count minutes after a `git pull` changed `production-reference/`.
+
+- **Arm parity, and model identity per call.** `tests/test_arm_parity.py` asserts that every
+  arm sends the same decoding literal, one schema call per runtime branch, an identical system
+  turn, and user content differing only where audio makes it unavoidable — and that the audio
+  prompt differs from the text prompt by exactly the six documented substitutions, checked
+  against the sha256 the plan pins. Runs now record `observed_model`, `provider` and
+  `finish_reason`: who answered, not only who was asked.
+
+### Fixed
+
+- **`experiment23_score.collapse` scored replicate 1 by taking the first *parseable*
+  replicate.** The plan says headline figures use replicate 1 alone *and* that a parse failure
+  scores as incorrect, never dropped — the second existing so an arm cannot improve its score
+  by failing to answer. The old behaviour was neither, and it was not neutral: it rescued
+  items only ever for the incumbent, the only arm producing parse failures. Fixed, both runs
+  re-scored, and the change recorded as a dated amendment in the plan. A sibling test had
+  asserted the same invariant and passed for weeks, because its fixture failed on all three
+  replicates and never reached the branch where the bug lived.
+
+- **`asr-eval/scripts/transcribe.py` discarded the transcription endpoint's usage block.**
+  `post_audio` was typed `-> str`, so `{"usage": {"type": "duration", "seconds": N}}` was
+  dropped by the signature. It now returns `(text, billed_seconds)`. Measured: the server
+  bills ~2% more than the file duration at 30-second chunks, so chunk size carries a billing
+  cost and not only a latency and accuracy one.
+
 
 - **`asr-eval/`: an audio eval set for the ASR half of the pipeline, scored on the
   transcript rather than on production JSON.** 20 synthetic Thai call-centre
