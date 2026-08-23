@@ -34,13 +34,37 @@ git diff --check
 ```
 
 **Both modes.** A green standalone run does not prove the differential still agrees,
-because standalone skips it. The 2026-08-12 standalone reference is 840 passed and
-12 skipped (851 / 1 with production source); report your observed count and each skip
+because standalone skips it. The 2026-08-24 standalone reference is 1071 passed and
+50 skipped (1082 / 39 with production source); report your observed count and each skip
 reason instead of editing a test to match that number. If production source is unavailable, say so explicitly in the PR.
+Run both in a venv built to `requirements.txt`, not a bare system interpreter — a newer
+pandas than the pin passes silently while changing what the scorer computes.
 
 Use `.github/PULL_REQUEST_TEMPLATE.md`. Identify the decision grain, privacy class,
 runtime/network behavior, tests actually run and whether `RECONCILED` remains `NO`.
 Raw model outputs, transcripts, credentials and private judge records never belong in Git.
+
+## Git workflow
+
+Canon's `guides/git-workflow.md` (`/home/tkhongsap/my-github/s42/canon/guides/git-workflow.md`)
+governs the parts of the process this repo does not deviate from: branch from `main`,
+never commit to it directly, CI must pass before merge, PR description states what
+changed and how it was verified. Read it for that.
+
+**Two points where this repo's actual history differs from canon's stated default,
+recorded here so nobody "corrects" established practice by accident:**
+
+| | canon default | this repo, 51 merged PRs |
+|---|---|---|
+| Branch prefix | `feature/` | **`feat/`** (27), plus `docs/` (14), `fix/` (8), `refactor/` (1) |
+| Merge strategy | Squash and merge | **Regular merge commit** (`gh pr merge --merge`), preserving `Merge pull request #NN from ...` |
+
+The merge-commit choice is not incidental: DEVLOG.md and CHANGELOG.md entries cite PR
+numbers and commit messages as provenance for specific findings, and squashing would
+collapse that trail. Keep using `feat/`, `fix/`, `docs/`, `refactor/`, `chore/` and a
+regular (non-squash) merge unless a future decision changes this table — and if it
+does, update the table, do not let it go silently stale like the pointers this pass
+corrected.
 
 ## Commits
 

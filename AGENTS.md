@@ -1,6 +1,6 @@
 # Project Context for AI Agents
 
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-24
 
 ## Mission
 
@@ -128,8 +128,17 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
 - `scripts/openrouter-smoketest/`: exploratory model-calling tooling. See "Service
   layers do not apply" below for why it lives outside `src/`.
 - `docs/experiment7-results.md` and `experiments/evidence/retention-e7/summary.json`:
-  the current synthetic result and safe aggregate handoff. Raw/private runtime evidence
-  remains ignored under `out/`.
+  the original synthetic three-model result and safe aggregate handoff, still the
+  reference write-up for the decision-grade OpenRouter repeat. Superseded as *the*
+  current decision by `docs/migration-decision.md` (2026-08-18) — see
+  Project-Specific Notes below. Raw/private runtime evidence remains ignored under `out/`.
+- `asr-eval/`: the audio half of the eval — a self-contained package (own
+  `requirements-asr.txt`, own `README.md`, own `tests/`) that scores an ASR arm's
+  transcript against Thai call-centre audio, not against production JSON. Ground truth
+  is authored then synthesised to speech, so the reference has no transcription error by
+  construction; `scripts/score_asr.py` reports CER, WER, per-entity recovery and an
+  insertion proxy, each documented with what it is **not** evidence of. Deliberately kept
+  outside `src/` and out of `requirements.txt`'s pins — see its own README for why.
 
 ## Conventions
 
@@ -206,6 +215,15 @@ is what defends it.
 | **Development process** | `/home/tkhongsap/my-github/s42/canon/development/development-process.md` | Session workflow |
 | **Infrastructure service layers** | `/home/tkhongsap/my-github/s42/canon/guides/infrastructure-service-layers.md` | Before adding any AI, auth or integration |
 
+**`guides/model-reference.md` deliberately does not govern which models get evaluated
+here**, for the same reason OpenRouter/WorkOS/Composio partly do not apply (see above):
+this repository's job is to compare specific, frozen model identities — the exact
+production incumbent against a named candidate — not to route calls to "whichever model
+canon currently recommends." A model becoming canon's recommended default is not a
+reason to swap it into a running comparison; that would silently change what a report is
+evidence for. `guides/model-reference.md` still governs pricing and API shape when
+`src/evalgen/` adds a new provider.
+
 ## Review Guidelines
 
 - Automated PR review uses CodeRabbit plus Codex where enabled; humans remain merge authority.
@@ -264,11 +282,21 @@ the test suite only; see the comment block in `.github/workflows/ci.yml`.
 
 ## Project-Specific Notes
 
-**Latest synthetic decision (Experiment 7, 2026-08-08): retain Gemini as the reference.**
-All three arms completed 414/414 parse-valid calls. Qwen3.6 27B failed stability; Qwen3.6
-35B-A3B failed quality and stability. The independent judge returned 360 advisory
-opinions and flagged 38 possible ground-truth errors for human review. See
-`docs/experiment7-results.md`. This does not change `RECONCILED: NO`.
+**Current decision (2026-08-18): split the migration.** `docs/migration-decision.md` —
+keep the audio→transcript stage external (Gemini), move transcript→label internally
+(Qwen3.8-27B), on pooled business accuracy across `retention_v3` and
+`retention_challenge_v1`. Explicitly "screening decision," `RECONCILED: NO`. This
+supersedes Experiment 7 (2026-08-08, `docs/experiment7-results.md`) as *the* decision
+write-up; E7 remains the reference for the original OpenRouter three-model repeat that
+later work is measured against.
+
+**DEVLOG.md carries every experiment since**, including a 2026-08-21 finding that a
+scorer bug and a mislabelled portion of the synthetic corpus both needed fixing before
+E7's numbers could be trusted at all — read it there rather than here, since this file
+holds durable architecture, not a running experiment log. **Known gap, flagged rather
+than silently left:** `EXPERIMENTS.md` has no section for Experiments 18, 23 or 24 —
+each exists only inside a generated report or DEVLOG.md, the same bookkeeping gap
+recorded for E18 since 2026-08-16 and not yet closed for the two behind it.
 
 **No number this harness produces is a migration verdict yet.** Every report prints
 `RECONCILED: NO` until a run has been checked against the app's own live Gemini
