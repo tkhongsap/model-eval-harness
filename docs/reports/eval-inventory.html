@@ -214,6 +214,20 @@ ol.rec b{color:var(--ink)}
 </div>
 
 <div class="note acc">
+  <p><b>A second eval effort exists.</b> <code>ai-local-eval-sentiment_project_v2</code>
+  (<i>model_migration</i>) arrived 2026-08-24 and covers <b>5 task areas</b> &mdash; sentiment,
+  MNP, retention, telesale, documents &mdash; across two model families, in <b>53,670 source
+  lines</b> with 30 test files. It is not counted above, because that table measures what
+  <i>this</i> harness can score.</p>
+  <p>It independently reached two of our conclusions (no transcription-stage token fields;
+  blank token cells mean &#8220;not reported&#8221;, never zero), and it has one thing we lack:
+  Gemini&#8217;s native <code>usageMetadata</code> with a per-modality token split and
+  <code>cached_tokens</code>. <b>The question is no longer which eval to build next, but what
+  this harness is for now that a second one exists</b> &mdash; the two differ in method, not
+  just coverage.</p>
+</div>
+
+<div class="note acc">
   <p><b>The architectural fact underneath the gap.</b> The harness <i>is</i> built to take more
   than one application &mdash; there is an <code>--app</code> flag, a binding lookup, and an
   adapter resolved from the hashed contract string rather than a second table that could

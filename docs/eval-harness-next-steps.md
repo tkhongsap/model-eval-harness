@@ -1,7 +1,9 @@
 # Next steps: making the harness and the eval sets ready for future work
 
-**Written:** 2026-08-22
+**Written:** 2026-08-22 · **Revised:** 2026-08-24
 **Status:** Tier 0 blocked on data. Tiers 1–3 executable, in the order below.
+**Revision:** a second evaluation effort arrived in `production-reference/` on 2026-08-24 and
+changes Tier 1 item 1. See "A second eval effort exists" below.
 **Supersedes:** the priority ranking in `docs/reports/eval-inventory-reference.md` §6 — see
 "the finding that reframes everything" below for why.
 
@@ -17,6 +19,65 @@ registered, so multi-app support is designed and unexercised.
 While planning this, `DEVLOG.md`'s roadmap and `docs/eval-improvement-plan.md` (2026-08-05)
 were re-read, and **two claims in production's own code were verified**. Both hold, and one is
 worse than the roadmap recorded.
+
+---
+
+## A second eval effort exists, and it already covers MNP
+
+`production-reference/ai-local-eval-sentiment_project_v2` (internally `model_migration`)
+arrived on 2026-08-24. Measured from the filesystem rather than from its README:
+
+| | |
+|---|---:|
+| task areas | <!--claim:eval-inventory.json:parallel_eval.task_area_count:int-->5<!--/--> — sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale, documents |
+| model families | google_model and local_model |
+| source | <!--claim:eval-inventory.json:parallel_eval.source_files:int-->70<!--/--> files, <!--claim:eval-inventory.json:parallel_eval.source_lines:int-->53670<!--/--> lines |
+| tests | <!--claim:eval-inventory.json:parallel_eval.test_files:int-->30<!--/--> files |
+
+Its own `CLAUDE.md` calls the project "currently a platform scaffold". **It is not** — that
+description is stale, and every figure above is counted from disk.
+
+### It agrees with us where we both looked
+
+Its metrics schema carries `label_*` and `analysis_*` token fields plus a separate float
+`Audio Seconds` column and **no transcription-stage token fields** — *"Whisper reports
+duration, hence float `Audio Seconds`"*. It also records that *"Blank token cells mean not
+reported, never 0"*. Both conclusions were reached independently in this repository on
+2026-08-22. Two teams, two codebases, the same two answers is the strongest evidence either
+of us has that the answers are right.
+
+### It has one thing we do not
+
+Gemini's **native `usageMetadata`**, which carries a per-modality token split (`AUDIO` vs
+`TEXT`), `cached_tokens` and `thoughts_tokens`. This repository reads Gemini through
+OpenRouter, gets a flatter shape, and measured `cached_tokens: 0` where theirs records
+substantial caching. That gap is worth closing regardless of what else is decided — it bears
+directly on the sentiment_qa input-token question.
+
+### What it does NOT change
+
+The coverage count stays **<!--claim:eval-inventory.json:production.tasks_covered:int-->1<!--/-->
+of <!--claim:eval-inventory.json:production.tasks_total:int-->6<!--/-->**, because that
+measures what *this harness* can score. Their existence does not give this repository the
+ability to score MNP. What it changes is whether building that ability is the best use of the
+next week.
+
+### The question this actually raises
+
+Not "which eval do we build next" but **what is this harness for, now that a second one
+exists**. The two are not substitutes:
+
+| | this repository | the parallel effort |
+|---|---|---|
+| breadth | 1 task area | 5 task areas |
+| method | preregistration, corpus freeze, blind audit, paired sign test with UNDERPOWERED, input-drift refusal, figure gating | confusion matrices, exact match, aggregation |
+| model access | OpenRouter + internal GPU | native Gemini API, SharePoint hook |
+
+**That is a decision for you and whoever owns that project, and it is not one to make from the
+filesystem.** The honest options are absorb, coordinate on a division of labour, or
+deliberately duplicate MNP as a methodology comparison — and the third is a real option, not a
+consolation: running the same task through both would show what preregistration and a blind
+audit buy over a confusion matrix, which is a question nobody here has answered.
 
 ---
 
@@ -74,7 +135,12 @@ this repository has produced. Blocked on data this repo does not hold;
 
 ### Tier 1 — cheap, no new data, executable now
 
-**1. MNP adapter.** The cheapest possible test of whether the harness is really multi-app.
+**1. MNP adapter — but settle the question above first.** Written on 2026-08-22 as the
+cheapest possible test of whether the harness is really multi-app. That reasoning still holds
+*as a test of this harness*, and MNP is now also covered by the parallel effort, so building it
+here is a deliberate choice rather than an obvious gap. If the answer is "coordinate", the
+cheapest extensibility test becomes whichever app the other project does **not** cover — on
+current evidence that is RTR fraud, which is Tier 3 for other reasons.
 `src/evalgen/apps.py` registers exactly one binding, and `binding()`'s own refusal enumerates
 what a new app needs: adapter, prompt, schema, testset reference, decision units. Concretely:
 

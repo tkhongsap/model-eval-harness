@@ -120,6 +120,24 @@ one has cost-only coverage.
 | Tax invoice extraction | document image → fields | none |
 | Shop image classification | images → 3 detections | none |
 
+### A second eval effort, added 2026-08-24
+
+`production-reference/ai-local-eval-sentiment_project_v2` (`model_migration`) covers
+<!--claim:eval-inventory.json:parallel_eval.task_area_count:int-->5<!--/--> task areas across
+two model families in
+<!--claim:eval-inventory.json:parallel_eval.source_lines:int-->53670<!--/--> source lines with
+<!--claim:eval-inventory.json:parallel_eval.test_files:int-->30<!--/--> test files. It is
+**not** counted in the coverage table above, because that table measures what *this harness*
+can score; their code existing does not give this repository the ability to score MNP.
+
+It independently reached two of our conclusions — no transcription-stage token fields, and
+blank token cells meaning "not reported" rather than zero — and it has one thing we lack:
+Gemini's native `usageMetadata` with a per-modality token split, `cached_tokens` and
+`thoughts_tokens`.
+
+Area-to-task correspondence is by name and unverified. See
+[`../eval-harness-next-steps.md`](../eval-harness-next-steps.md) for what it changes.
+
 ### The architectural fact underneath it
 
 `src/evalgen/apps.py` registers
