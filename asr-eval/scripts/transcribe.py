@@ -10,7 +10,9 @@ Deliberately stdlib-only for HTTP (urllib; no requests, no openai package). Two 
      boundary.
 
 Endpoint shape assumed: POST {base}/audio/transcriptions, multipart/form-data with `file`
-and `model`, returning {"text": ...}. That is what vLLM and the Token Factory gateway
+and `model`, returning {"text": ..., "usage": {"type": "duration", "seconds": N}}. The
+usage block is the stage's BILLING UNIT -- audio seconds, not tokens; this endpoint has no
+prompt/completion split. That is what vLLM and the Token Factory gateway
 serve, and what .env.example anticipates for a self-hosted Qwen3-ASR (".env.example:44-51":
 the Thai ASR track cannot be tested through OpenRouter, so self-host it on the internal GPU
 "which is the plan anyway").
@@ -197,7 +199,32 @@ def _send(url: str, body: bytes, headers: dict[str, str], timeout: int,
 def post_audio(base_url: str, model: str, api_key: str, filename: str, blob: bytes,
                language: str, timeout: int, retries: int,
                prefix_counter: dict[str, int] | None = None,
-               cacert: str | None = None, connect_host: str | None = None) -> str:
+               cacert: str | None = None, connect_host: str | None = None
+               ) -> tuple[str, float | None]:
+    """(transcript, billed_seconds). The second value is what the SERVER says it charged for.
+
+    WHY IT IS NOT TOKENS, AND CANNOT BE. This endpoint has no prompt/completion split. A
+    Whisper-family transcription is metered by how much AUDIO went in, and the response says
+    so in its own words:
+
+        {"text": "...", "usage": {"type": "duration", "seconds": 30.0}}
+
+    Probed 2026-08-22 against typhoon-whisper-large-v3. Asking this stage for an input-token
+    count is asking for a number that does not exist -- and `POST /v1/chat/completions` with
+    this model returns 404, so there is no other route that would produce one either.
+
+    This used to return a bare `str`, so the usage block was discarded by the type signature
+    before anyone could decide whether to keep it. That made the pipeline's first stage look
+    unmetered in every report, when in fact it is metered, just in a different unit.
+
+    `None` rather than 0.0 when the server sends no usage: a missing measurement and a
+    measured zero are different facts, and summing them as if they were the same is how a
+    cost table ends up confidently wrong.
+
+    NOTE `response_format` stays "json". The `verbose_json` shape DROPS the usage block --
+    it returns `duration`/`words`/`segments` instead -- so switching for richer output would
+    silently cost the billing figure.
+    """
     url = base_url.rstrip("/") + "/audio/transcriptions"
     fields = {"model": model, "response_format": "json"}
     if language:
@@ -217,12 +244,15 @@ def post_audio(base_url: str, model: str, api_key: str, filename: str, blob: byt
             # Accept the two shapes servers actually return. Every path goes through
             # strip_control_tokens, which is what makes the strip chunk-count-invariant.
             if isinstance(payload, dict):
+                usage = payload.get("usage") or {}
+                billed = usage.get("seconds") if isinstance(usage, dict) else None
+                billed = float(billed) if isinstance(billed, (int, float)) else None
                 for key in ("text", "transcription"):
                     if key in payload:
-                        return strip_control_tokens(str(payload[key]), counter)
+                        return strip_control_tokens(str(payload[key]), counter), billed
                 if "results" in payload:
                     joined = " ".join(r.get("text", "") for r in payload["results"])
-                    return strip_control_tokens(joined, counter)
+                    return strip_control_tokens(joined, counter), billed
             raise RuntimeError(f"unrecognised response shape: {list(payload)[:6]}")
         except Exception as exc:                                  # noqa: BLE001
             last = exc
@@ -393,13 +423,20 @@ def main() -> int:
 
         t0 = time.time()
         try:
-            texts = [
+            returned = [
                 post_audio(args.base_url, args.model, api_key, wav.name,
                            to_wav_bytes(p, sr), args.language, args.timeout, args.retries,
                            prefix_counter=prefix_counter, cacert=args.cacert,
                            connect_host=args.connect_host)
                 for p in parts
             ]
+            texts = [t for t, _ in returned]
+            # Summed across chunks, because at --chunk-seconds N one logical call is N POSTs
+            # and the server bills each. None if ANY chunk reported nothing: a partial sum
+            # would understate the bill and look like a measurement.
+            billed = [b for _, b in returned]
+            billed_total = round(sum(billed), 1) if all(
+                b is not None for b in billed) else None
         except Exception as exc:                                  # noqa: BLE001
             # A failed call is recorded as a failure, never written as an empty transcript.
             # An empty file would score as a total deletion and read as a terrible model
@@ -414,9 +451,13 @@ def main() -> int:
         elapsed = time.time() - t0
         text = " ".join(t.strip() for t in texts if t.strip())
         (out_dir / f"{item}.txt").write_text(text + "\n", encoding="utf-8")
+        # `seconds` here is WALL CLOCK and has always been. `billed_audio_s` is what the
+        # server charged for. Two different quantities that both want the name "seconds";
+        # keeping them apart matters because one is latency and the other is cost.
         runlog.append({"item_id": item, "status": "ok", "chunks": len(parts),
                        "chars": len(text), "seconds": round(elapsed, 1),
                        "audio_s": round(x.size / sr, 1),
+                       "billed_audio_s": billed_total,
                        "rtf": round(elapsed / (x.size / sr), 3)})
         print(f"{item:9s} ok  chunks={len(parts):2d}  {len(text):6d} chars  "
               f"{elapsed:6.1f}s  RTF={runlog[-1]['rtf']:.3f}")
