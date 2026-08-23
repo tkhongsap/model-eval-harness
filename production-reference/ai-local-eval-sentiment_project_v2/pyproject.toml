@@ -1,0 +1,67 @@
+[project]
+name = "model_migration"
+version = "0.1.0"
+description = ""
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "google-auth>=2.56.0",
+    "google-cloud-storage>=3.0",
+    "google-genai>=2.11.0",
+    "jiwer>=4.0.0",
+    "numpy>=2.2,<2.4",
+    "openai>=2.46.0",
+    "openpyxl>=3.1.5",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "pythainlp>=5.3.5",
+    "silero-vad>=6.2.1",
+    "torch>=2.13",
+    "torchaudio>=2.11",
+    "requests>=2.31",
+    "structlog>=25.5.0",
+    "msal>=1.37.0",
+    "pandas>=2.2",
+    "pandera>=0.30.1",
+    "pypdfium2>=4.30.0",
+    "pillow>=12.3.0",
+
+    # Observability / OTel
+    "opentelemetry-api>=1.44.0",
+    "opentelemetry-sdk>=1.44.0",
+    "opentelemetry-exporter-otlp>=1.44.0",
+    "opentelemetry-instrumentation-requests>=0.65b0",
+    "opentelemetry-instrumentation-urllib3>=0.65b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.65b0",
+    "opentelemetry-instrumentation-logging>=0.65b0",
+    "opentelemetry-instrumentation-grpc>=0.65b0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+# CPU-only torch on Linux (the GCE VM has no GPU; the default PyPI Linux wheel
+# drags the multi-GB CUDA/nvidia/triton tree). Windows/macOS keep resolving
+# from PyPI because the marker does not match.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchaudio = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.15.1",
+    "ruff>=0.15.22",
+]

@@ -15,6 +15,29 @@ These are **batch AI pipelines** that run on Google Cloud (Cloud Run Jobs + Clou
 | [`sentiment-batch-retention-main/`](sentiment-batch-retention-main/) | Thai call-churn analysis for retention campaigns | Sentiment retention | 10k | 0 |
 | [`sentiment-batch-mnp-develop/`](sentiment-batch-mnp-develop/) | Same pattern as retention, for MNP (number porting) | Sentiment MNP | 5.5k | 0 |
 
+## A separate artifact: `ai-local-eval-sentiment_project_v2/`
+
+Not one of the four production apps above — it is a **comparison harness**, scoring
+**Gemini output** (`src/google_model/`) against **an on-prem/local model's output**
+(`src/local_model/`) on the same ground truth, across the same four app types this folder
+documents (sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale) plus a
+documents pipeline. `src/google_model/metrics.py` covers single- and multi-label
+classification, row agreement, embedding cosine similarity, and CER. `src/hook/` holds GCS,
+GenAI and SharePoint clients plus a TLS-pinning `requests` adapter; `src/logger/` is a
+structured-logging library. ~150 files, 40+ test files, no `README.md` of its own.
+
+Added 2026-08-17 at the repo owner's request, after the tree was checked for credentials,
+private keys, and absolute paths/OS account names — none found. Its own `.gitignore` already
+excludes `.venv`, `__pycache__` and `.env*`, and none of those existed on disk when it was
+added.
+
+**Its own `CLAUDE.md` does not describe the tree it ships with, and should not be trusted
+over the code.** That file calls the tracked code "a platform scaffold" with "only the
+logger bootstrap live" and `main.py` as "mostly commented-out experiments" — true of some
+earlier state, not of what is here: `main.py` is 548 lines, 13 of them comment lines, and
+`src/google_model/` + `src/local_model/` together are a complete scoring and reporting
+pipeline for four app types.
+
 ## Common architecture pattern
 
 Every repo follows the same high-level flow:
