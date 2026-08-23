@@ -6,6 +6,7 @@ All business logic lives in ``app/pipeline/fraud_pipeline.py``.
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 from datetime import datetime
@@ -38,8 +39,48 @@ logger = get_logger(__name__)
 
 load_dotenv(override=True)
 
-async def main() -> None:
+# Accepted forms for the run-date override, tried in order.
+_DATE_FORMATS = ("%Y-%m-%d", "%Y%m%d", "%d/%m/%Y")
+
+
+def parse_run_date(raw: str | None) -> datetime:
+    """Parse a run-date override string; fall back to *now* when empty."""
+    if raw is None or not raw.strip():
+        return datetime.now()
+    text = raw.strip()
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    raise ValueError(
+        f"Invalid run date {raw!r}; expected one of {', '.join(_DATE_FORMATS)}"
+    )
+
+
+def resolve_run_date(argv: list[str] | None = None) -> datetime:
+    """Resolve the run date from ``--run-date``, then ``RUN_DATE``, then today."""
+    parser = argparse.ArgumentParser(
+        prog="app.main", description="RTR Fraud Validation pipeline"
+    )
+    parser.add_argument(
+        "--run-date",
+        dest="run_date",
+        default=None,
+        help="Run date override (YYYY-MM-DD, YYYYMMDD or DD/MM/YYYY). "
+             "Defaults to the RUN_DATE env var, otherwise today.",
+    )
+    # Strict parsing on purpose: a mistyped date flag must fail loudly rather
+    # than be swallowed and silently run the pipeline for the wrong date.
+    args = parser.parse_args(argv)
+    return parse_run_date(args.run_date or os.getenv("RUN_DATE"))
+
+
+async def main(run_date: datetime | None = None) -> None:
     secrets = SecretService()
+
+    today = run_date or datetime.now()
+    logger.info(f"Run date: {today.strftime('%Y-%m-%d')}")
 
     _, project_id = google.auth.default()
 
@@ -50,8 +91,7 @@ async def main() -> None:
         batch_size=int(secrets.get("BATCH_SIZE")),
         s3_bucket=secrets.get("S3_BUCKET_NAME"),
         gcs_bucket=secrets.get("GCS_BUCKET_NAME"),
-        today=datetime.now(),
-        # today=datetime(year=2026, month=7, day=1),
+        today=today,
         project_id=project_id,
         project_name=secrets.get("PROJECT_NAME"),
         # Fraud site
@@ -179,4 +219,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main(resolve_run_date()))

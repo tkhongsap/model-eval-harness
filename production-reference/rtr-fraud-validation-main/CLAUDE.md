@@ -12,8 +12,12 @@ RTR (Retailer) Fraud Validation system that uses Google Gemini 2.5 Flash to anal
 # Install dependencies
 uv sync
 
-# Run the main fraud validation pipeline
+# Run the main fraud validation pipeline (defaults to today)
 uv run -m app.main
+
+# Run for a specific date (YYYY-MM-DD, YYYYMMDD or DD/MM/YYYY)
+uv run -m app.main --run-date 2026-07-01
+RUN_DATE=2026-07-01 uv run -m app.main
 
 # Run the fact-checker evaluation module
 uv run -m app.modules.fact_checker --config_path config/fact_checker/rtr.yml
@@ -44,7 +48,6 @@ The codebase uses an OOP design with dependency injection. All business logic is
 
 ### Core Layer (`app/core/`)
 - **`app/core/models.py`** — Typed dataclasses: `ShopRecord`, `ShopResult`, `DetectionResult`, `TokenUsage`, `GpsMetadata`, `PipelineConfig`, `ProcessStatus`. `ShopResult.to_output_list()` is the single source of truth for column ordering. Factory classmethods: `ShopResult.no_photo()`, `.insufficient_photos()`, `.s3_error()`, `.unhandled_error()`.
-- **`app/core/interfaces.py`** — `Protocol` definitions: `StorageReader`, `AIValidator`, `SecretProvider`, `Notifier` — enables mocking without subclassing.
 
 ### Services (`app/services/`)
 - **`app/services/secret_service.py`** — `SecretService`: GCP Secret Manager + env fallback + in-memory cache. `get(key)` / `get_optional(key, default)`.
@@ -69,11 +72,6 @@ The codebase uses an OOP design with dependency injection. All business logic is
 
 ### Compatibility Shim
 - **`app/modules/sharepoint.py`** — Thin shim that delegates to `SharePointService`; keeps `FactCheckerModule` imports working without modification.
-
-### Legacy Files (superseded, kept for reference)
-- **`app/utility.py`** — Original business logic (superseded by services/processors).
-- **`app/sharepoint.py`** — Original procedural SharePoint (superseded by `SharePointService`).
-- **`app/mail.py`** — Original email dispatch (superseded by `EmailService` + `EmailComposer`).
 
 ### Configuration System
 YAML-based configs in `config/`:
@@ -119,6 +117,23 @@ Shared fixtures in `tests/conftest.py`: `make_jpeg_bytes()`, `make_b64_jpeg()`, 
 Deployed as GCP Cloud Run Jobs via Cloud Build (`cloud_build/workflows/np_deployment.yaml`):
 - Main job: 4 CPU, 8Gi memory, 24h timeout, scheduled 1st & 16th at 16:00 (Asia/Jakarta)
 - Fact-checker job: 2 CPU, 4Gi memory, scheduled 1st of month at 21:00
+
+### Run date
+
+The pipeline's business date is `PipelineConfig.today`, resolved once in `app/main.py` from
+`--run-date` → `RUN_DATE` env var → current date, and threaded everywhere as `cfg.today`.
+Never call `datetime.now()` for a *business* date in new code — use `cfg.today`, so backfills
+stay consistent. Wall-clock timestamps (start/end time, `run_date`, `process_date`) are exempt.
+
+One-off backfill on Cloud Run — override at execution time, no redeploy:
+
+```bash
+gcloud run jobs execute rtr-fraud-validation-app \
+  --region asia-southeast1 --update-env-vars RUN_DATE=2026-07-01
+```
+
+To bake a date into the job at deploy time, pass the `_RUN_DATE` substitution to Cloud Build.
+When it is empty (the default) the deploy removes `RUN_DATE`, so scheduled runs always use today.
 
 ## Code Style
 
