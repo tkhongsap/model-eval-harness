@@ -1,6 +1,6 @@
 # Claude Code - model-eval-harness
 
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-24
 
 **Read [AGENTS.md](./AGENTS.md) first.** It holds the durable, tool-agnostic project
 context: mission, architecture, key files, conventions, and the open items. This file
@@ -11,10 +11,12 @@ The workspace source is `/home/tkhongsap/my-github/s42/canon`.
 
 At session start, read `DEVLOG.md` for the active decision and next action, then
 `AGENTS.md` for durable architecture and `TESTING.md` for the verification contract.
-The latest result handoff is `docs/experiment17-results.md` (2026-08-14, the internal-GPU
-arms). `docs/experiment7-results.md` remains the reference write-up for the decision-grade
-OpenRouter three-model repeat that everything since is measured against — but note that E17
-found Gemini's determinism, which E7's decision leaned on, no longer holds.
+The current decision write-up is `docs/migration-decision.md` (2026-08-18, screening
+decision, `RECONCILED: NO`): keep audio→transcript external, move transcript→label
+internally. `docs/experiment7-results.md` (2026-08-08) remains the reference write-up
+for the original OpenRouter three-model repeat everything since is measured against.
+DEVLOG.md's top entry (2026-08-21) is the most current experimental finding — a
+corpus/scorer correction, not a change to the decision above.
 
 ## Before you change anything
 
@@ -72,11 +74,14 @@ to the scoring path "just for a moment" breaks a build rather than a rule.
 PYTHONPATH=src python -m pytest tests/ -q -rs
 ```
 
-Current measured reference (2026-08-12): **840 passed, 12 skipped** in the pinned
-standalone environment. Treat this as evidence, not a hardcoded expectation: report
-your observed count and every skip reason. Validate the Experiment 7 reproduction plan
-with `PYTHONPATH=src python scripts/evalgen.py experiment-check --plan
-experiments/retention-e7.plan.json`; that command makes zero model calls.
+Current measured reference (2026-08-24): **1071 passed, 50 skipped** standalone,
+**1082 passed, 39 skipped** with `TRUE_SOURCE_ROOT` set — run in a venv built to
+`requirements.txt` exactly, since a bare system interpreter can silently carry a newer
+pandas than the pin (see the comment block in `requirements.txt` for what that breaks).
+Treat this as evidence, not a hardcoded expectation: report your observed count and
+every skip reason. Validate the Experiment 7 reproduction plan with `PYTHONPATH=src
+python scripts/evalgen.py experiment-check --plan experiments/retention-e7.plan.json`;
+that command makes zero model calls.
 
 Full detail, including how to make the differential test actually run, is in
 [TESTING.md](./TESTING.md).

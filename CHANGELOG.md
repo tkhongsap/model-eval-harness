@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+**Bookkeeping note, 2026-08-24:** entries below this point predate 2026-08-16 and were
+recorded close to when they landed. Substantial harness work has shipped since —
+`asr-eval/` (below, recorded late, same as `retention_challenge_v1` was), and separately
+Experiments 20-24: a replicate-1 scoring-path fix, `scripts/freeze_corpus.py`,
+`scripts/corpus_fix_effect.py`, `scripts/corpus_diff.py`, and the blind-audit tooling
+(`tests/test_audit_packet_is_blind.py`). That second group is **not** backfilled here —
+this pass verified and wrote up only what it built first-hand (`asr-eval/`); writing
+CHANGELOG entries for code not personally read would be exactly the unverified-assertion
+failure this repository's own history has caught and corrected before. Flagged so the
+gap is a known one, not a silent one; DEVLOG.md's entries for that window are the
+authoritative record until this is closed properly.
+
+### Added
+
+- **`asr-eval/`: an audio eval set for the ASR half of the pipeline, scored on the
+  transcript rather than on production JSON.** 20 synthetic Thai call-centre
+  recordings (~124 min, 3.6-9.5 min each, 8 kHz mono), ten mechanism families, entity
+  annotations, and `scripts/score_asr.py` reporting CER, WER, per-entity recovery and
+  an insertion proxy — each documented with what it does and does not prove. Ground
+  truth is authored first and synthesised to speech second, so the reference carries
+  no transcription error by construction; the cost of that choice (synthetic audio, two
+  TTS voices, no real-recording anchor) is stated in `asr-eval/README.md` rather than
+  left implicit. Self-contained: its own `requirements-asr.txt`, kept out of the root
+  pins deliberately. *Landed 2026-08-16 (audio set) and 2026-08-16/17 (first scored
+  arm, Gemini transcription-only); recorded here 2026-08-24, having been absent from
+  this file the same way `retention_challenge_v1` once was.*
+
 ### Changed
 
 - **`scoring_code_sha` moved twice: `cefd4ae9…` → `d33f1d44…` → `9b4afc95…`.** Both hops
