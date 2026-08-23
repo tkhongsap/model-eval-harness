@@ -1,0 +1,102 @@
+{
+  "generated_from": "scripts/gpu_figures.py",
+  "labeller_source_run": "20260821-074057Z-e21",
+  "labeller_source_pack": "asr-eval-v3",
+  "asr_source_run": "20260820-e23-with-typhoon",
+  "asr_source_pack": "asr-eval-v2",
+  "why_two_runs": "E24 is the current business-outcome run and is where the labeller figures come from. Its ASR reports do not exist -- Qwen never finished and Typhoon's timing record was overwritten by an orphaned process -- so transcription quality is quoted from E23, the last run in which both transcribers completed.",
+  "calls": 138,
+  "labeller": {
+    "model": "qwen3.8-27b-fp8",
+    "runtime": "Token Factory (internal GPU)",
+    "arms": {
+      "ceiling": {
+        "fed": "a flawless transcript — the upper bound on the labeller",
+        "call_result_f1": 0.839,
+        "product_f1": 0.881,
+        "reason_f1": 0.277,
+        "call_result_correct": 110,
+        "latency_med_s": 15.6,
+        "input_tokens_med": 3759,
+        "output_tokens_med": 247,
+        "parse_valid": 414,
+        "label_calls": 414,
+        "unstable_items": 21
+      },
+      "format_control": {
+        "fed": "ASR-shaped text with zero mishearing — separates layout from hearing",
+        "call_result_f1": 0.836,
+        "product_f1": 0.836,
+        "reason_f1": 0.264,
+        "call_result_correct": 108,
+        "latency_med_s": 17.1,
+        "input_tokens_med": 3652,
+        "output_tokens_med": 243,
+        "parse_valid": 414,
+        "label_calls": 414,
+        "unstable_items": 31
+      },
+      "typhoon_pipeline": {
+        "fed": "a real Typhoon transcript — the deployable configuration",
+        "call_result_f1": 0.73,
+        "product_f1": 0.864,
+        "reason_f1": 0.272,
+        "call_result_correct": 95,
+        "latency_med_s": 18.3,
+        "input_tokens_med": 3660,
+        "output_tokens_med": 246,
+        "parse_valid": 414,
+        "label_calls": 414,
+        "unstable_items": 33
+      }
+    }
+  },
+  "external_incumbent": {
+    "model": "google/gemini-2.5-flash",
+    "runtime": "OpenRouter",
+    "call_result_f1": 0.564,
+    "product_f1": 0.798,
+    "reason_f1": 0.272,
+    "latency_med_s": 5.2,
+    "parse_valid": 411,
+    "label_calls": 414,
+    "unstable_items": 17,
+    "metered_cost_usd": 3.8554,
+    "usd_per_call": 0.00931
+  },
+  "transcribers": {
+    "typhoon_whisper_large_v3": {
+      "model": "typhoon-whisper-large-v3",
+      "cer_norm": 0.0452,
+      "wer_norm": 0.0784,
+      "runaway_items": 0,
+      "runaway_rate": 0.0,
+      "scoreable_items": 138,
+      "entity_accuracy": 0.9459
+    },
+    "qwen3_asr_17b": {
+      "model": "qwen3-asr-1.7b",
+      "cer_norm": 0.1127,
+      "wer_norm": 0.1699,
+      "runaway_items": 16,
+      "runaway_rate": 0.1159,
+      "scoreable_items": 122,
+      "entity_accuracy": 0.9597
+    }
+  },
+  "qwen_asr_status": {
+    "state": "UNAVAILABLE",
+    "since_utc": "2026-08-21T06:52:00Z",
+    "transcripts_completed": 120,
+    "transcripts_required": 138,
+    "coverage_gate": 0.9,
+    "record": "docs/qwen-asr-outage-2026-08-21.txt",
+    "note": "Down for 10 h 40 min on 2026-08-21 without one successful response, and it has not been re-run since. The labeller it shares a gateway with answered throughout, so this is that model rather than the platform."
+  },
+  "caveats": {
+    "reconciled": "NO",
+    "upper_bound": "Every label in this corpus is spoken aloud, so the set measures fact extraction under transcription noise, not inferential labelling. Real calls state their outcome far less often; these are upper bounds.",
+    "instability": "Arms disagree with themselves across three identical replicates on 17 to 33 of 138 items. That is a standing property of the task, measured in both runs.",
+    "audit": "The ground truth was corrected after a blind audit whose reviewers were models, not people."
+  }
+}

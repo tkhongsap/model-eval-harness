@@ -1,0 +1,236 @@
+<title>Internal GPU Model Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1b2024; --ink-2:#4a555f; --muted:#7c8791;
+  --page:#ebeef0; --card:#ffffff; --rule:#e3e8ea; --rule-2:#cfd7db; --band:#f4f6f7;
+  --ours:#e8f0ee; --ours-edge:#b6d0c8; --ours-ink:#12645a;
+  --good:#1f6b47; --bad:#9d3520; --warn:#8a5a11;
+  --accent:#0b6a70;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+    --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+    --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+    --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+  --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+  --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+  --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+}
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--page); color:var(--ink); font-size:13.5px; line-height:1.45;
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.sheet{max-width:960px; margin:0 auto; padding:24px 20px 40px}
+
+.masthead{display:flex; justify-content:space-between; align-items:flex-end; gap:18px;
+  flex-wrap:wrap; margin-bottom:16px}
+h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+.sub{color:var(--muted); font-size:12px; margin:3px 0 0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted);
+  text-align:right; line-height:1.7}
+
+h2{font-size:13.5px; font-weight:700; margin:18px 0 8px; letter-spacing:-.005em}
+h2 .n{font-family:"IBM Plex Mono",monospace; color:var(--accent); font-weight:600; margin-right:6px}
+
+.strip{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px}
+.tile{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; padding:11px 13px}
+.tile .big{font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tile .cap{font-size:10.5px; color:var(--muted); margin-top:3px; line-height:1.35}
+.tile.win .big{color:var(--good)} .tile.risk .big{color:var(--bad)}
+
+.card{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px}
+thead th{padding:9px 13px; text-align:left; border-bottom:1px solid var(--rule-2);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  font-weight:600; background:var(--band)}
+thead th.n, tbody td.n{text-align:right}
+tbody td{padding:8px 13px; border-bottom:1px solid var(--rule); font-size:12.5px; color:var(--ink-2)}
+tbody td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+tbody td:first-child{color:var(--ink); font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+tr.ours td{background:var(--ours)}
+tr.ours td:first-child{border-left:2px solid var(--ours-edge)}
+.hint{display:block; color:var(--muted); font-size:11px; font-weight:400; margin-top:1px}
+.up{color:var(--good); font-weight:600} .dn{color:var(--bad); font-weight:600}
+.pill{display:inline-block; padding:1px 7px; border-radius:100px; font-size:10.5px;
+  font-family:"IBM Plex Mono",monospace; font-weight:500; white-space:nowrap}
+.pill.down{background:#fbeae6; color:#9d3520; border:1px solid #eec4b8}
+
+.note{margin:12px 0 0; padding:11px 14px; background:var(--card); border:1px solid var(--rule-2);
+  border-left:3px solid var(--accent); border-radius:4px; font-size:12px}
+.note.risk{border-left-color:var(--bad)}
+.note b{color:var(--ink)} .note p{margin:0 0 6px} .note p:last-child{margin-bottom:0}
+ul{margin:6px 0 0; padding-left:19px; font-size:12px} li{margin-bottom:4px}
+.foot{margin-top:14px; font-size:11px; color:var(--muted)}
+
+@media print{
+  @page{size:A4 portrait; margin:9mm}
+  body{background:#fff; font-size:8.6pt}
+  .sheet{padding:0; max-width:none}
+  .card,.tile,.note{border-color:#bbb; overflow:visible}
+  table{min-width:0}
+  h1{font-size:12.6pt} h2{font-size:9.4pt; margin:11px 0 5px}
+  .tile .big{font-size:13pt} .tile .cap{font-size:6.6pt}
+  thead th{padding:5px 7px; font-size:6.4pt}
+  tbody td{padding:3.6px 7px; font-size:7.7pt}
+  .hint{font-size:6.6pt} .note{font-size:7.2pt; padding:7px 9px} ul{font-size:7.4pt}
+  .foot{font-size:6.6pt} .strip{gap:6px}
+  tr.ours td{background:#e8f0ee !important}
+  thead th{background:#f2f4f5 !important}
+  .pill.down{background:#fbeae6 !important}
+  tr.ours td,thead th,.pill{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}
+</style>
+
+<div class="sheet">
+
+<div class="masthead">
+  <div>
+    <h1>How our own GPU models performed</h1>
+    <p class="sub">Thai retention call labelling &middot; 138 calls &middot; internally hosted models against the external incumbent</p>
+  </div>
+  <div class="stamp">
+    2026-08-24<br>
+    labeller from E24 &middot; transcribers from E23<br>
+    RECONCILED: NO
+  </div>
+</div>
+
+<div class="strip">
+  <div class="tile win">
+    <div class="big">0.730</div>
+    <div class="cap">our labeller on the call outcome<br>against <b>0.564</b> for the incumbent</div>
+  </div>
+  <div class="tile win">
+    <div class="big">$0.00</div>
+    <div class="cap">metered cost per call<br>incumbent: $0.0093 &times; 414 calls</div>
+  </div>
+  <div class="tile risk">
+    <div class="big">33 / 138</div>
+    <div class="cap">answers that changed across<br>3 identical repeats &mdash; incumbent 17</div>
+  </div>
+  <div class="tile risk">
+    <div class="big">3.5&times;</div>
+    <div class="cap">slower end to end<br>18.3 s label call vs 5.2 s</div>
+  </div>
+</div>
+
+<h2><span class="n">1</span>The labeller &mdash; <code>qwen3.8-27b-fp8</code>, on our GPU</h2>
+
+<p style="margin:0 0 8px; font-size:12.5px; color:var(--ink-2); max-width:80ch">
+  The same model in all three rows. What changes is what it was fed, which is how we separate
+  "the model cannot read the call" from "the transcript was bad".
+</p>
+
+<div class="card">
+<table>
+  <thead><tr>
+    <th>What it was given</th><th class="n">Outcome F1</th><th class="n">Product F1</th>
+    <th class="n">Reason F1</th><th class="n">Latency</th><th class="n">Valid JSON</th>
+  </tr></thead>
+  <tbody>
+    <tr class="ours"><td>A flawless transcript<span class="hint">the ceiling &mdash; what the labeller can do at best</span></td>
+      <td class="n">0.839</td><td class="n">0.881</td><td class="n">0.277</td>
+      <td class="n">15.6s</td><td class="n">414/414</td></tr>
+    <tr class="ours"><td>Zero mishearing, ASR layout<span class="hint">separates formatting from hearing</span></td>
+      <td class="n">0.836</td><td class="n">0.836</td><td class="n">0.264</td>
+      <td class="n">17.1s</td><td class="n">414/414</td></tr>
+    <tr class="ours"><td><b>A real Typhoon transcript</b><span class="hint">the deployable configuration</span></td>
+      <td class="n up">0.730</td><td class="n up">0.864</td><td class="n">0.272</td>
+      <td class="n">18.3s</td><td class="n">414/414</td></tr>
+    <tr><td>Gemini 2.5 Flash <span class="hint">external, audio direct &mdash; production today</span></td>
+      <td class="n">0.564</td><td class="n">0.798</td><td class="n">0.272</td>
+      <td class="n">5.2s</td><td class="n">411/414</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p><b>Read the first row before the third.</b> Given a <i>perfect</i> transcript our labeller
+  reaches 0.839, and with a real one it reaches 0.730. So roughly <b>0.11 of the gap is the
+  transcription stage and the rest is the labelling step</b> &mdash; which is why better ASR
+  has bought us so little, and where the next round of work belongs.</p>
+  <p><b>`reason` is not being measured.</b> Every row sits at 0.264&ndash;0.277, the ceiling
+  included. A dimension where a flawless transcript scores 0.277 is telling us something about
+  the metric or the labels, not about the models. Do not quote it as a model result.</p>
+</div>
+
+<h2><span class="n">2</span>The transcribers &mdash; both on our GPU</h2>
+
+<div class="card">
+<table>
+  <thead><tr>
+    <th>Model</th><th class="n">CER</th><th class="n">WER</th>
+    <th class="n">Runaway failures</th><th class="n">Usable calls</th><th class="n">Entity accuracy</th>
+  </tr></thead>
+  <tbody>
+    <tr class="ours"><td><b>Typhoon Whisper large-v3</b></td>
+      <td class="n up">0.0452</td><td class="n up">0.0784</td>
+      <td class="n up">0</td><td class="n">138 / 138</td><td class="n">94.6%</td></tr>
+    <tr class="ours"><td>Qwen3-ASR 1.7B <span class="pill down">DOWN SINCE 21 AUG</span></td>
+      <td class="n dn">0.1127</td><td class="n dn">0.1699</td>
+      <td class="n dn">16 &nbsp;(11.6%)</td><td class="n">122 / 138</td><td class="n">96.0%</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note risk">
+  <p><b>Typhoon is the clear choice, and not on error rate alone.</b> 2.5&times; better
+  character error rate, and more importantly <b>zero catastrophic runaways against 16</b> —
+  a runaway is a transcript that repeats a fragment hundreds of times and is unusable, not
+  merely wrong. Qwen also lost 16 calls from the scoreable set entirely.</p>
+  <p><b>Qwen3-ASR has been unavailable since 21 August</b> — 10 h 40 min with no successful
+  response on the day, and not re-run since. It stopped at 120 of 138 transcripts, below our
+  90% coverage gate, so it is reported unavailable rather than scored on what survived. The
+  labeller sharing the same gateway answered throughout, so this is that model rather than the
+  platform. <b>One caveat in Qwen's favour:</b> its entity accuracy is marginally
+  <i>higher</i> (96.0% vs 94.6%), so it is not worse at everything.</p>
+</div>
+
+<h2><span class="n">3</span>What this says, and what it does not</h2>
+
+<div class="note">
+  <p><b>The case for our own GPU is real on quality and cost.</b> On corrected ground truth the
+  internal pipeline beats production on both dimensions that matter — outcome 0.730 against
+  0.564, product 0.864 against 0.798 — at no metered cost and with cleaner JSON (414/414
+  against 411/414).</p>
+  <p><b>The case against is speed and repeatability.</b> 18.3 s against 5.2 s on the label call
+  alone, and <b>33 of 138 answers change across three identical repeats</b> against the
+  incumbent's 17. If a caller-facing flow needs a stable answer within seconds, this is not yet
+  that.</p>
+</div>
+
+<div class="note risk">
+  <p><b>Four things that must travel with these numbers.</b></p>
+  <ul>
+    <li><b>RECONCILED: NO.</b> Not one real production call has been through this pipeline.
+    Everything here is synthetic Thai audio.</li>
+    <li><b>These are upper bounds.</b> Every label in the corpus is spoken aloud, so the set
+    measures fact extraction under noise, not inferential labelling. Real calls state their
+    outcome far less often; both arms will do worse in production.</li>
+    <li><b>The ground truth was corrected after a blind audit whose reviewers were models</b>,
+    not people. A human panel is still what would settle those labels.</li>
+    <li><b>One arm could not be run</b>, so this is a four-arm result, not five.</li>
+  </ul>
+</div>
+
+<div class="foot">
+  Figures generated by <code>scripts/gpu_figures.py</code> from the E24 run
+  (labeller, 138 calls &times; 3 replicates, scored on replicate 1 as preregistered) and the
+  E23 run (transcription, the last run in which both transcribers completed) &mdash; not typed
+  by hand. Full detail in <code>docs/reports/e24-summary.md</code>; the outage record is
+  <code>docs/qwen-asr-outage-2026-08-21.txt</code>.
+</div>
+
+</div>
