@@ -175,11 +175,13 @@ class FraudValidationPipeline:
         # Download from SharePoint → upload to GCS (idempotent)
         input_bytes = self._fraud_sp.download_with_backup(
             input_folder_path, input_file_name,
-            f"{self._cfg.backup_folder}/{today.strftime('%Y%m')}"
+            f"{self._cfg.backup_folder}/{today.strftime('%Y%m')}",
+            run_date=today,
         )
         lookup_bytes = self._fraud_sp.download_with_backup(
             lookup_folder_path, lookup_file_name,
-            f"{self._cfg.backup_folder}/{today.strftime('%Y%m')}"
+            f"{self._cfg.backup_folder}/{today.strftime('%Y%m')}",
+            run_date=today,
         )
 
         self._input_gcs_path = f"{self._cfg.input_folder}/{input_file_name}"

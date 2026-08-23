@@ -317,11 +317,18 @@ class SharePointService:
         return resp.json()["id"]
 
     def move_to_archive(
-        self, file_name: str, file_folder_path: str, archive_parent_path: str
+        self,
+        file_name: str,
+        file_folder_path: str,
+        archive_parent_path: str,
+        run_date: datetime | None = None,
     ) -> bool:
-        """Move *file_name* from *file_folder_path* into a monthly archive subfolder."""
+        """Move *file_name* from *file_folder_path* into a monthly archive subfolder.
+
+        *run_date* names the monthly subfolder; defaults to now.
+        """
         try:
-            monthly_name = datetime.now().strftime("%Y%m")
+            monthly_name = (run_date or datetime.now()).strftime("%Y%m")
             archive_folder_id = self.ensure_folder(archive_parent_path, monthly_name)
             file_id = self.get_item_id(f"{file_folder_path}/{file_name}")
             if not file_id:
@@ -341,8 +348,12 @@ class SharePointService:
         file_folder_path: str,
         file_name: str,
         backup_folder_path: str,
+        run_date: datetime | None = None,
     ) -> bytes:
-        """Download *file_name*, create a timestamped backup copy, and return the bytes."""
+        """Download *file_name*, create a timestamped backup copy, and return the bytes.
+
+        *run_date* datestamps the backup copy; defaults to now.
+        """
         site_id = self._get_site_id()
         # Build the full path including base_root
         full_path = f"{self.base_root}/{file_folder_path}/{file_name}" if self.base_root else f"{file_folder_path}/{file_name}"
@@ -355,7 +366,8 @@ class SharePointService:
         logger.info(f"Downloaded from SharePoint: {file_name}")
 
         # Backup copy with datestamp
-        bk_name = f"{file_name.rsplit('.', 1)[0]}_bk_{datetime.now().strftime('%m%d')}.{file_name.rsplit('.', 1)[-1]}"
+        bk_stamp = (run_date or datetime.now()).strftime("%m%d")
+        bk_name = f"{file_name.rsplit('.', 1)[0]}_bk_{bk_stamp}.{file_name.rsplit('.', 1)[-1]}"
         bk_full = f"{self.base_root}/{backup_folder_path}/{bk_name}" if self.base_root else f"{backup_folder_path}/{bk_name}"
         bk_url = f"{_GRAPH_BASE}/sites/{site_id}/drive/root:/{bk_full}:/content"
         bk_resp = requests.put(bk_url, data=item_bytes, headers=self._auth_headers)

@@ -10,6 +10,9 @@ substitutions:
   _FACT_CHECKER_NM: fact-checker-rtr-fraud-validation
   _FACT_CHECKER_SCHEDULER_JOB_NAME: fact-checker-rtr-fraud-validation-scheduler-trigger
   _FACT_CHECKER_SCHEDULE: "0 21 1 * *"
+  # Optional run-date override baked into the job (YYYY-MM-DD, YYYYMMDD or DD/MM/YYYY).
+  # Leave empty so scheduled runs use the current date.
+  _RUN_DATE: ""
 
 steps:
 # Step 1: Build the Docker image
@@ -40,6 +43,13 @@ steps:
   args:
   - '-c'
   - |
+    # Bake RUN_DATE only when _RUN_DATE is supplied; otherwise clear any stale
+    # value so scheduled runs always fall back to the current date.
+    RUN_DATE_FLAG="--remove-env-vars=RUN_DATE"
+    if [ -n "${_RUN_DATE}" ]; then
+      RUN_DATE_FLAG="--update-env-vars=RUN_DATE=${_RUN_DATE}"
+    fi
+
     gcloud run jobs deploy ${_IMAGE_NAME} \
       --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE_NAME}:${COMMIT_SHA:-latest} \
       --region ${_REGION} \
@@ -47,6 +57,7 @@ steps:
       --max-retries=0 \
       --cpu=4 \
       --memory=8Gi \
+      "$${RUN_DATE_FLAG}" \
       --set-secrets=FRAUD_SITE_CLIENT_ID=FRAUD_SITE_CLIENT_ID:latest,\
     FRAUD_SITE_CLIENT_SECRET=FRAUD_SITE_CLIENT_SECRET:latest,\
     FRAUD_SITE_TENANT_ID=FRAUD_SITE_TENANT_ID:latest,\

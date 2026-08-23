@@ -36,7 +36,6 @@ app/
 ├── share_log.py               # JSON-structured logging (use get_logger(__name__))
 ├── core/
 │   ├── models.py              # Typed dataclasses: ShopRecord, ShopResult, PipelineConfig, etc.
-│   └── interfaces.py          # Protocol definitions: StorageReader, AIValidator, Notifier, etc.
 ├── services/
 │   ├── secret_service.py      # GCP Secret Manager + env fallback + in-memory cache
 │   ├── s3_service.py          # boto3 wrapper for source image reads
