@@ -1,0 +1,492 @@
+{
+  "generated": "2026-08-24",
+  "generated_from": "scripts/summary_figures.py",
+  "source": "usecase-matrix.json",
+  "internal_arm_rule": "The best-scoring internal arm on each task. Recorded with its exposure: on three of six tasks only one internal arm ran, so no selection happened; on two the candidates are one model under different prompts; only RTR-Fraud is a genuine two-model pick and its margin is 0.000855.",
+  "internal_arms": {
+    "RTR-Fraud": "QWEN3.8-27B-FP8",
+    "Tax-Invoice": "QWEN3.8-27B-FP8 (NEW PROMPT)",
+    "Sentiment QA": "QWEN3.8-27B-FP8 (FULL PROMPT)",
+    "Sentiment MNP": "QWEN3.8-27B-FP8",
+    "Sentiment Telesale": "QWEN3.8-27B-FP8",
+    "Sentiment Retention": "QWEN3.8-27B-FP8"
+  },
+  "per_use_case": [
+    {
+      "use_case": "RTR-Fraud",
+      "incumbent_arm": "GEMINI",
+      "incumbent_f1": 0.987735,
+      "internal_arm": "QWEN3.8-27B-FP8",
+      "internal_f1": 0.99228,
+      "pct_of_incumbent": 100.46,
+      "delta": 0.0045,
+      "leader": "internal",
+      "internal_arms_available": 2,
+      "margin_over_runner_up": 0.000855,
+      "has_asr_stage": false,
+      "latency_incumbent_s": 28.5,
+      "latency_internal_s": 119.9,
+      "accuracy_incumbent": 0.9882,
+      "accuracy_internal": 0.9928,
+      "accuracy_pct_of_incumbent": 100.46,
+      "input_tokens_incumbent": 620730,
+      "input_tokens_internal": 1983182,
+      "output_tokens_incumbent": 23958,
+      "output_tokens_internal": 65340,
+      "cost_incumbent_usd": 0.2461,
+      "cost_internal_usd": null,
+      "cost_per_item_incumbent_usd": 0.001242929292929293,
+      "cost_per_item_internal_usd": null,
+      "cost_denominator": 198,
+      "cost_unit": "submission",
+      "cost_model_assumed": true,
+      "cost_is_upper_bound": false,
+      "cost_floor_usd": null,
+      "cost_per_item_floor_usd": null
+    },
+    {
+      "use_case": "Tax-Invoice",
+      "incumbent_arm": "GEMINI-3.1-PRO-PREVIEW",
+      "incumbent_f1": 0.99925,
+      "internal_arm": "QWEN3.8-27B-FP8 (NEW PROMPT)",
+      "internal_f1": 0.97915,
+      "pct_of_incumbent": 97.99,
+      "delta": -0.0201,
+      "leader": "incumbent",
+      "internal_arms_available": 3,
+      "margin_over_runner_up": 0.0012,
+      "has_asr_stage": false,
+      "latency_incumbent_s": 2.6,
+      "latency_internal_s": 79.7,
+      "accuracy_incumbent": 0.9986,
+      "accuracy_internal": 0.9723,
+      "accuracy_pct_of_incumbent": 97.37,
+      "input_tokens_incumbent": 2757155,
+      "input_tokens_internal": 3095731,
+      "output_tokens_incumbent": 611447,
+      "output_tokens_internal": 580430,
+      "cost_incumbent_usd": 12.8517,
+      "cost_internal_usd": null,
+      "cost_per_item_incumbent_usd": 0.0874265306122449,
+      "cost_per_item_internal_usd": null,
+      "cost_denominator": 147,
+      "cost_unit": "page",
+      "cost_model_assumed": false,
+      "cost_is_upper_bound": false,
+      "cost_floor_usd": null,
+      "cost_per_item_floor_usd": null
+    },
+    {
+      "use_case": "Sentiment QA",
+      "incumbent_arm": "GEMINI-2.5-FLASH",
+      "incumbent_f1": 0.8591333333333333,
+      "internal_arm": "QWEN3.8-27B-FP8 (FULL PROMPT)",
+      "internal_f1": 0.8304,
+      "pct_of_incumbent": 96.66,
+      "delta": -0.0287,
+      "leader": "incumbent",
+      "internal_arms_available": 2,
+      "margin_over_runner_up": 0.024733,
+      "has_asr_stage": true,
+      "latency_incumbent_s": 2.5,
+      "latency_internal_s": null,
+      "accuracy_incumbent": 0.6899,
+      "accuracy_internal": 0.6583,
+      "accuracy_pct_of_incumbent": 95.42,
+      "input_tokens_incumbent": 7791855,
+      "input_tokens_internal": 6136076,
+      "output_tokens_incumbent": 721081,
+      "output_tokens_internal": 622643,
+      "cost_incumbent_usd": 9.5946,
+      "cost_internal_usd": null,
+      "cost_per_item_incumbent_usd": 0.053303333333333335,
+      "cost_per_item_internal_usd": null,
+      "cost_denominator": 180,
+      "cost_unit": "call",
+      "cost_model_assumed": false,
+      "cost_is_upper_bound": true,
+      "cost_floor_usd": 4.1403,
+      "cost_per_item_floor_usd": 0.023001666666666667
+    },
+    {
+      "use_case": "Sentiment MNP",
+      "incumbent_arm": "GEMINI-2.5-FLASH",
+      "incumbent_f1": 0.8564499999999999,
+      "internal_arm": "QWEN3.8-27B-FP8",
+      "internal_f1": 0.8237,
+      "pct_of_incumbent": 96.18,
+      "delta": -0.0327,
+      "leader": "incumbent",
+      "internal_arms_available": 1,
+      "margin_over_runner_up": null,
+      "has_asr_stage": true,
+      "latency_incumbent_s": 2.47,
+      "latency_internal_s": 103.1,
+      "accuracy_incumbent": 0.9266,
+      "accuracy_internal": 0.9005,
+      "accuracy_pct_of_incumbent": 97.18,
+      "input_tokens_incumbent": 1519525,
+      "input_tokens_internal": 911818,
+      "output_tokens_incumbent": 404600,
+      "output_tokens_internal": 129889,
+      "cost_incumbent_usd": 2.531,
+      "cost_internal_usd": null,
+      "cost_per_item_incumbent_usd": 0.025310000000000003,
+      "cost_per_item_internal_usd": null,
+      "cost_denominator": 100,
+      "cost_unit": "call",
+      "cost_model_assumed": false,
+      "cost_is_upper_bound": true,
+      "cost_floor_usd": 1.4674,
+      "cost_per_item_floor_usd": 0.014674
+    },
+    {
+      "use_case": "Sentiment Telesale",
+      "incumbent_arm": "GEMINI-2.5-FLASH",
+      "incumbent_f1": 0.9272250000000001,
+      "internal_arm": "QWEN3.8-27B-FP8",
+      "internal_f1": 0.9351750000000001,
+      "pct_of_incumbent": 100.86,
+      "delta": 0.008,
+      "leader": "internal",
+      "internal_arms_available": 1,
+      "margin_over_runner_up": null,
+      "has_asr_stage": true,
+      "latency_incumbent_s": 9.72,
+      "latency_internal_s": 72.1,
+      "accuracy_incumbent": 0.9126,
+      "accuracy_internal": 0.9282,
+      "accuracy_pct_of_incumbent": 101.7,
+      "input_tokens_incumbent": 1140018,
+      "input_tokens_internal": 857349,
+      "output_tokens_incumbent": 87509,
+      "output_tokens_internal": 35797,
+      "cost_incumbent_usd": 1.3588,
+      "cost_internal_usd": null,
+      "cost_per_item_incumbent_usd": 0.05226153846153846,
+      "cost_per_item_internal_usd": null,
+      "cost_denominator": 26,
+      "cost_unit": "call",
+      "cost_model_assumed": false,
+      "cost_is_upper_bound": true,
+      "cost_floor_usd": 0.5608,
+      "cost_per_item_floor_usd": 0.021569230769230768
+    },
+    {
+      "use_case": "Sentiment Retention",
+      "incumbent_arm": "GEMINI-2.5-FLASH",
+      "incumbent_f1": 0.8831000000000001,
+      "internal_arm": "QWEN3.8-27B-FP8",
+      "internal_f1": 0.8082333333333334,
+      "pct_of_incumbent": 91.52,
+      "delta": -0.0749,
+      "leader": "incumbent",
+      "internal_arms_available": 1,
+      "margin_over_runner_up": null,
+      "has_asr_stage": true,
+      "latency_incumbent_s": 6.78,
+      "latency_internal_s": 77.9,
+      "accuracy_incumbent": 0.9183,
+      "accuracy_internal": 0.8864,
+      "accuracy_pct_of_incumbent": 96.53,
+      "input_tokens_incumbent": 1536808,
+      "input_tokens_internal": 832509,
+      "output_tokens_incumbent": 178804,
+      "output_tokens_internal": 176508,
+      "cost_incumbent_usd": 1.9838,
+      "cost_internal_usd": null,
+      "cost_per_item_incumbent_usd": 0.020451546391752576,
+      "cost_per_item_internal_usd": null,
+      "cost_denominator": 97,
+      "cost_unit": "call",
+      "cost_model_assumed": false,
+      "cost_is_upper_bound": true,
+      "cost_floor_usd": 0.9081,
+      "cost_per_item_floor_usd": 0.009361855670103093
+    }
+  ],
+  "quality": {
+    "incumbent": 0.9188,
+    "internal": 0.8948,
+    "delta": -0.024,
+    "pct_ratio_of_means": 97.4,
+    "pct_mean_of_ratios": 97.3,
+    "aggregation": "unweighted mean of the six published headlines; one task, one vote",
+    "why_unweighted": "Each task is one migration decision, so each gets one vote. Weighting by evaluation-set size would let whoever assembled the eval decide the headline, and neither source states production volumes."
+  },
+  "accuracy": {
+    "incumbent": 0.9057,
+    "internal": 0.8897,
+    "pct_ratio_of_means": 98.2,
+    "pct_mean_of_ratios": 98.1,
+    "aggregation": "same dimensions, same weights as the F1 headline on each tab, applied to the Accuracy row instead of F1-score"
+  },
+  "accuracy_disclosure": {
+    "per_task": {
+      "RTR-Fraud": {
+        "dimensions": [
+          {
+            "dimension": "Closed_Business",
+            "equals_precision": true,
+            "equals_recall": true
+          },
+          {
+            "dimension": "From_Other_Device",
+            "equals_precision": true,
+            "equals_recall": true
+          },
+          {
+            "dimension": "Same_Photo",
+            "equals_precision": true,
+            "equals_recall": true
+          }
+        ],
+        "summary": "identical to Precision and Recall on every dimension",
+        "independent": false
+      },
+      "Tax-Invoice": {
+        "dimensions": [
+          {
+            "dimension": "Field extraction  -  29 fields per line",
+            "equals_precision": true,
+            "equals_recall": false
+          },
+          {
+            "dimension": "Document type  -  1 field per line",
+            "equals_precision": true,
+            "equals_recall": false
+          },
+          {
+            "dimension": "Field extraction  - 21 require fields (Breakdown)",
+            "equals_precision": true,
+            "equals_recall": false
+          },
+          {
+            "dimension": "Field extraction  -  9 optional fields (Breakdown)",
+            "equals_precision": true,
+            "equals_recall": false
+          }
+        ],
+        "summary": "identical to Precision on every dimension",
+        "independent": false
+      },
+      "Sentiment QA": {
+        "dimensions": [
+          {
+            "dimension": "Service quality  -  22 criteria",
+            "equals_precision": true,
+            "equals_recall": false
+          },
+          {
+            "dimension": "How the customer felt  -  3 questions",
+            "equals_precision": true,
+            "equals_recall": false
+          },
+          {
+            "dimension": "What the call was about  -  here all four differ",
+            "equals_precision": false,
+            "equals_recall": false
+          }
+        ],
+        "summary": "1 of 3 dimensions independent (What the call was about  -  here all four differ); the rest equal Precision or Recall",
+        "independent": false
+      },
+      "Sentiment MNP": {
+        "dimensions": [
+          {
+            "dimension": "Did the customer stay or churn  -  3 outcomes",
+            "equals_precision": false,
+            "equals_recall": false
+          },
+          {
+            "dimension": "Why they wanted to cancel  -  13 reasons",
+            "equals_precision": false,
+            "equals_recall": false
+          }
+        ],
+        "summary": "an independent measurement, not derivable from Precision or Recall",
+        "independent": true
+      },
+      "Sentiment Telesale": {
+        "dimensions": [
+          {
+            "dimension": "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+            "equals_precision": false,
+            "equals_recall": true
+          },
+          {
+            "dimension": "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+            "equals_precision": false,
+            "equals_recall": true
+          },
+          {
+            "dimension": "Customer experience  -  9 criteria, 8 hold one label on every call",
+            "equals_precision": false,
+            "equals_recall": true
+          },
+          {
+            "dimension": "Compliance  -  3 criteria, 2 hold one label on every call",
+            "equals_precision": false,
+            "equals_recall": true
+          }
+        ],
+        "summary": "identical to Recall on every dimension",
+        "independent": false
+      },
+      "Sentiment Retention": {
+        "dimensions": [
+          {
+            "dimension": "Did the customer stay or churn  -  4 outcomes",
+            "equals_precision": false,
+            "equals_recall": false
+          },
+          {
+            "dimension": "Why they wanted to cancel  -  11 reasons",
+            "equals_precision": false,
+            "equals_recall": false
+          },
+          {
+            "dimension": "What product the call was about  -  4 products",
+            "equals_precision": false,
+            "equals_recall": false
+          }
+        ],
+        "summary": "an independent measurement, not derivable from Precision or Recall",
+        "independent": true
+      }
+    },
+    "note": "RTR-Fraud, Tax-Invoice and Sentiment Telesale each score it identical to Precision or Recall on every dimension -- a consequence of those tabs' confusion matrices being built with FN=0 or TN=0, the same construction already documented for this workbook. Only Sentiment MNP, Sentiment Retention and one dimension of Sentiment QA carry an accuracy that could not already be read off a column shown elsewhere. It is published here because it is a real number the workbook prints, not because it corroborates the F1 column with a second, independent look."
+  },
+  "error_basis": {
+    "incumbent_mean_error": 0.0812,
+    "internal_mean_error": 0.1052,
+    "internal_errors_relative": 1.296,
+    "why": "A ratio of F1 compresses near the ceiling. On an error basis the same six results read as roughly 30% more errors. Both are true; publish both, because the second is the first thing a finance reviewer asks for."
+  },
+  "where_the_gap_is": {
+    "without_asr": {
+      "use_cases": [
+        "RTR-Fraud",
+        "Tax-Invoice"
+      ],
+      "incumbent": 0.9935,
+      "internal": 0.9857,
+      "pct_of_incumbent": 99.2
+    },
+    "with_asr": {
+      "use_cases": [
+        "Sentiment QA",
+        "Sentiment MNP",
+        "Sentiment Telesale",
+        "Sentiment Retention"
+      ],
+      "incumbent": 0.8815,
+      "internal": 0.8494,
+      "pct_of_incumbent": 96.4
+    },
+    "reading": "The tasks whose internal pipeline reads the source directly are close; the four that put a speech-to-text stage in front carry the gap. Corroborated inside the workbook: Retention's internal transcript scores a mean CER above 1.0, and Sentiment QA's transcript quality tracks which ASR model ran rather than which prompt.",
+    "caveat": "Two cautions. The two direct tasks are also the two where the incumbent scores 0.9877 and 0.9993, so part of that closeness is a ceiling with little headroom to lose, and it is only two data points. And neither source publishes a single token, second or dollar for the speech stage, so this identifies where the gap is without establishing what closing it would cost."
+  },
+  "sensitivity_excluding_retention": {
+    "incumbent": 0.926,
+    "internal": 0.9121,
+    "pct_of_incumbent": 98.5,
+    "why_it_is_not_the_headline": "Sentiment Retention was rescored between two workbook revisions this week -- outcome F1 moved 0.4537 to 0.9147 on identical calls, tokens and latency -- which makes it arguably provisional. It is NOT excluded from the headline, because the rescore moved both arms: the incumbent led before it (93.4%) and leads by more after it (91.5%). Dropping the task improves the figure by 1.1 points without a reason that survives the question 'did it change who leads?'"
+  },
+  "selection_exposure": {
+    "mean_of_all_internal_arms": 0.8764,
+    "mean_of_worst_arm_per_task": 0.8308,
+    "best_per_task_flatters_by": 0.0184,
+    "tasks_with_only_one_internal_arm": [
+      "Sentiment MNP",
+      "Sentiment Telesale",
+      "Sentiment Retention"
+    ],
+    "only_genuine_two_model_pick": "RTR-Fraud, margin 0.000855 over Gemma-4-12B"
+  },
+  "speed": {
+    "per_use_case": [
+      {
+        "use_case": "RTR-Fraud",
+        "ratio": 4.2
+      },
+      {
+        "use_case": "Tax-Invoice",
+        "ratio": 30.7
+      },
+      {
+        "use_case": "Sentiment MNP",
+        "ratio": 41.7
+      },
+      {
+        "use_case": "Sentiment Telesale",
+        "ratio": 7.4
+      },
+      {
+        "use_case": "Sentiment Retention",
+        "ratio": 11.5
+      }
+    ],
+    "range": [
+      4.2,
+      41.7
+    ],
+    "median_ratio": 11.5,
+    "tasks_measured": 5,
+    "tasks_unmeasured": [
+      {
+        "use_case": "Sentiment QA",
+        "arm": "QWEN3.8-27B-FP8 (FULL PROMPT)",
+        "workbook_says": "cannot meansure",
+        "other_arm": "QWEN3.8-27B-FP8 (TRIM PROMPT)",
+        "other_arm_latency_s": 216.2,
+        "other_arm_ratio": 86.5
+      }
+    ],
+    "widest_known_ratio": 86.5,
+    "note": "Per-item latency on the 5 tasks that publish it for the selected arm. Sentiment QA does not: its cell reads 'cannot meansure' and the round was 'resumed over several days', so that run cannot be timed. The absence flatters the internal side, so the figure that does exist for that task is published beside it -- its other configuration ran at 86.5x, the slowest of the whole set."
+  },
+  "cost": {
+    "incumbent_usd": 28.57,
+    "incumbent_note": "OpenRouter list rates for the whole evaluation, six tasks. Not an invoice, not annualised, not divided per item.",
+    "internal_note": "Not metered. Neither source publishes a cost, price, GPU-hour or utilisation figure for the internal endpoint in any of its six tabs. That is a measurement never taken -- it is not $0, not free and not n/a.",
+    "per_item_units": [
+      "call",
+      "page",
+      "submission"
+    ],
+    "per_item_range": {
+      "min": 0.001242929292929293,
+      "min_task": "RTR-Fraud",
+      "max": 0.0874265306122449,
+      "max_task": "Tax-Invoice"
+    },
+    "why_per_item_cannot_be_aggregated": "The six per-item figures are denominated in three different units -- per submission on RTR-Fraud, per page on Tax-Invoice, per call on the four Sentiment tasks. A mean of them divides dollars by submissions-plus-pages-plus-calls, which is not a quantity; a sum of the run totals answers a different question and rescales with how many items each run happened to cover. The table therefore shows no aggregate cost, and each run's own total is stated in the note below instead.",
+    "break_even_is_not_computable": "This evaluation cannot say what migrating would save. Three inputs are missing: production volume per task, the internal endpoint's cost per hour and its throughput, and the cost of the speech-to-text stage. Asking for those three is a firmer position than a saving that cannot be evidenced."
+  },
+  "tokens": {
+    "incumbent": {
+      "input": 15366091,
+      "output": 2027399
+    },
+    "internal": {
+      "input": 13816665,
+      "output": 1610607
+    },
+    "caveat": "Not like-for-like and not an efficiency claim. The incumbent's input includes the call audio charged as tokens; the internal side's is a text transcript produced by a stage whose own tokens appear nowhere in the workbook."
+  },
+  "parity_not_wins": {
+    "tasks": [
+      "RTR-Fraud",
+      "Sentiment Telesale"
+    ],
+    "why": "Both leads are inside their own measurement noise. RTR-Fraud's +0.0045 was bought with 594 internal model calls against the incumbent's 198 over the same 198 submissions. Telesale's +0.0080 is over 25 calls scored against 26, and turns on one dimension of four -- the incumbent leads the other three, and the one internal wins carries 3 criteria against the others' 15, 12 and 9. Present these as parity, not as wins."
+  },
+  "must_not_claim": [
+    "That the internal models match the incumbent, or that the gap is within noise. They are behind under every defensible aggregation, and neither source publishes any dispersion or interval that could support a noise claim.",
+    "That the internal side uses fewer tokens, or that this is efficiency. It is an artefact of an unmeasured speech stage and a different tokeniser.",
+    "That migrating saves money. No internal cost figure exists in either source.",
+    "That 'weighted Average F1' is a weighted average. Only RTR-Fraud is; Tax-Invoice covers 2 of its 4 dimensions and the rest are plain means.",
+    "That Accuracy is an independent check on the F1 column. On RTR-Fraud, Tax-Invoice and Sentiment Telesale it is arithmetically identical to Precision or Recall; only MNP, Retention and one dimension of QA carry a genuinely independent figure."
+  ]
+}

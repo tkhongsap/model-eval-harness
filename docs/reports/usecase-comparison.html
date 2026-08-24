@@ -1,0 +1,379 @@
+<meta charset="utf-8">
+<title>Six Use Cases, Side by Side</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1b2024; --ink-2:#4a555f; --muted:#7c8791;
+  --page:#ebeef0; --card:#ffffff; --rule:#e3e8ea; --rule-2:#cfd7db; --band:#f4f6f7;
+  --ours:#e8f0ee; --ours-edge:#b6d0c8; --ours-ink:#12645a;
+  --good:#1f6b47; --bad:#9d3520; --warn:#8a5a11;
+  --accent:#0b6a70;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+    --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+    --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+    --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+  --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+  --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+  --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+}
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--page); color:var(--ink); font-size:13.5px; line-height:1.45;
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.sheet{max-width:960px; margin:0 auto; padding:24px 20px 40px}
+
+.masthead{display:flex; justify-content:space-between; align-items:flex-end; gap:18px;
+  flex-wrap:wrap; margin-bottom:16px}
+h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+.sub{color:var(--muted); font-size:12px; margin:3px 0 0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted);
+  text-align:right; line-height:1.7}
+
+h2{font-size:13.5px; font-weight:700; margin:18px 0 8px; letter-spacing:-.005em}
+h2 .n{font-family:"IBM Plex Mono",monospace; color:var(--accent); font-weight:600; margin-right:6px}
+
+.strip{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px}
+.tile{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; padding:11px 13px}
+.tile .big{font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tile .cap{font-size:10.5px; color:var(--muted); margin-top:3px; line-height:1.35}
+.tile.win .big{color:var(--good)} .tile.risk .big{color:var(--bad)}
+
+.card{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px}
+thead th{padding:9px 13px; text-align:left; border-bottom:1px solid var(--rule-2);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  font-weight:600; background:var(--band)}
+thead th.n, tbody td.n{text-align:right}
+tbody td{padding:8px 13px; border-bottom:1px solid var(--rule); font-size:12.5px; color:var(--ink-2)}
+tbody td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+tbody td:first-child{color:var(--ink); font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+tr.ours td{background:var(--ours)}
+tr.ours td:first-child{border-left:2px solid var(--ours-edge)}
+.hint{display:block; color:var(--muted); font-size:11px; font-weight:400; margin-top:1px}
+.up{color:var(--good); font-weight:600} .dn{color:var(--bad); font-weight:600}
+.pill{display:inline-block; padding:1px 7px; border-radius:100px; font-size:10.5px;
+  font-family:"IBM Plex Mono",monospace; font-weight:500; white-space:nowrap}
+.pill.down{background:#fbeae6; color:#9d3520; border:1px solid #eec4b8}
+
+/* The one-matrix page: wide and short, so it scrolls sideways with the measure column pinned
+   to the left edge. Without the pin a reader loses which row they are on by column six. */
+.sheet.wide{max-width:1320px}
+table.mx{min-width:1100px; border-collapse:separate; border-spacing:0}
+table.mx th, table.mx td{border-bottom:1px solid var(--rule)}
+table.mx th.ml, table.mx td.ml{position:sticky; left:0; z-index:2; background:var(--card);
+  min-width:196px; box-shadow:1px 0 0 var(--rule-2)}
+table.mx thead th.ml{background:var(--band)}
+table.mx thead th.grp{text-align:center; border-left:2px solid var(--rule-2);
+  letter-spacing:.06em; color:var(--ink); background:var(--band)}
+table.mx thead th{position:sticky; top:0; z-index:1; background:var(--band)}
+table.mx thead tr:first-child th.ml{z-index:3}
+table.mx td.cand{background:var(--ours)}
+table.mx th.cand{background:var(--ours); color:var(--ours-ink)}
+table.mx th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.mx tr.emph td{font-weight:600; background:var(--band)}
+table.mx tr.emph td.cand{background:var(--ours)}
+table.mx tr.emph td.ml{background:var(--band)}
+table.mx .muted{color:var(--muted); font-family:"Public Sans",sans-serif; font-size:11px}
+table.mx td, table.mx th{padding:7px 11px; white-space:nowrap}
+/* ...except the pinned measure column, which carries sentences. Left nowrap it grows to the
+   width of its longest sublabel and shoves the data columns off the card. */
+table.mx td.ml, table.mx th.ml{white-space:normal; max-width:250px}
+table.mx td.ml .hint{white-space:normal}
+/* The unit noun under each cost figure is a second line inside a nowrap cell. */
+table.mx td.n .hint{white-space:nowrap; font-size:10px}
+
+/* The two-column summary that opens the page. */
+table.sum{min-width:0; table-layout:fixed}
+table.sum td:first-child, table.sum th:first-child{width:38%}
+table.sum td.cand, table.sum th.cand{background:var(--ours)}
+table.sum th.cand{color:var(--ours-ink)}
+table.sum th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.sum tr.emph td{background:var(--band); font-weight:600}
+table.sum tr.emph td.cand{background:var(--ours)}
+table.sum td.n{vertical-align:top}
+table.sum td.muted, table.sum .muted{color:var(--muted); font-family:"Public Sans",sans-serif}
+
+/* Use-case tables: a banded group row, and a tint down the candidate columns so the eye can
+   follow "ours" without re-reading the header on every row. */
+p.lede{margin:-4px 0 8px; color:var(--muted); font-size:11.5px}
+table.uc tbody tr.group td{background:var(--band); border-bottom:1px solid var(--rule-2)}
+table.uc tbody tr.group td:first-child{color:var(--ink); font-weight:700; font-size:11.5px}
+table.uc tbody tr.group td.cand{background:var(--ours)}
+table.uc td.cand{background:var(--ours)}
+table.uc thead th.cand{background:var(--ours); color:var(--ours-ink)}
+table.uc thead th.cand .hint{color:var(--ours-ink); opacity:.75}
+table.uc td:first-child{width:34%}
+table.uc tbody td{vertical-align:top}
+
+/* Fixed-layout tables: without this a cell holding a long file path blows the column model up
+   and pushes the right-hand columns off the card, where a reader never scrolls to find them. */
+table.fixed{table-layout:fixed; min-width:0}
+table.fixed td,table.fixed th{overflow-wrap:anywhere; word-break:normal}
+table.fixed td .hint{overflow-wrap:anywhere}
+
+.note{margin:12px 0 0; padding:11px 14px; background:var(--card); border:1px solid var(--rule-2);
+  border-left:3px solid var(--accent); border-radius:4px; font-size:12px}
+.note.risk{border-left-color:var(--bad)}
+.note b{color:var(--ink)} .note p{margin:0 0 6px} .note p:last-child{margin-bottom:0}
+ul{margin:6px 0 0; padding-left:19px; font-size:12px} li{margin-bottom:4px}
+.foot{margin-top:14px; font-size:11px; color:var(--muted)}
+
+@media print{
+  @page{size:A4 portrait; margin:9mm}
+  body{background:#fff; font-size:8.6pt}
+  .sheet{padding:0; max-width:none}
+  .card,.tile,.note{border-color:#bbb; overflow:visible}
+  table{min-width:0}
+  h1{font-size:12.6pt} h2{font-size:9.4pt; margin:11px 0 5px}
+  .tile .big{font-size:13pt} .tile .cap{font-size:6.6pt}
+  thead th{padding:5px 7px; font-size:6.4pt}
+  tbody td{padding:3.6px 7px; font-size:7.7pt}
+  .hint{font-size:6.6pt} .note{font-size:7.2pt; padding:7px 9px} ul{font-size:7.4pt}
+  .foot{font-size:6.6pt} .strip{gap:6px}
+  tr.ours td{background:#e8f0ee !important}
+  thead th{background:#f2f4f5 !important}
+  .pill.down{background:#fbeae6 !important}
+  tr.ours td,thead th,.pill{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}
+</style>
+
+<div class="sheet">
+
+<div class="masthead">
+  <div>
+    <h1>Six use cases, side by side</h1>
+    <p class="sub">The incumbent against our internally hosted models &middot; every figure as
+    published in <code>OverallEvaluationReport (1).xlsx</code></p>
+  </div>
+  <div class="stamp">
+    2026-08-24<br>
+    6 use cases<br>
+    figures parsed, not typed
+  </div>
+</div>
+
+<div class="note">
+  <p><b>How to read these tables.</b> The incumbent column is production as it runs today; the
+  tinted columns are what we host. Within a row the larger number is bolded on the score rows
+  only &mdash; <b>no winner is named per use case</b>, because several of these benchmarks
+  cannot separate the arms and the two sides are not fed the same input (the incumbent hears
+  the audio; ours reads a transcript of it).</p>
+</div>
+
+<h2><span class="n">1</span>RTR-Fraud</h2>
+<p class="lede">fraud checks on retail transaction images</p>
+
+<div class="card">
+<table class="uc">
+  <thead><tr><th>Metric</th><th class='n'>GEMINI<span class='hint'>production today</span></th><th class='n cand'>QWEN3.8-27B-FP8<span class='hint'>our GPU &middot; candidate</span></th><th class='n cand'>GEMMA-4-12B-IT<span class='hint'>our GPU &middot; candidate</span></th></tr></thead>
+  <tbody>
+    <tr class='group'><td>The decision production acts on<span class='hint'>the headline and the dimensions under it</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Weighted average F1<span class='hint'>genuine weighted average</span></td><td class='n'>0.9877</td><td class='n cand'><b>0.9923</b></td><td class='n cand'>0.9914</td></tr>
+    <tr><td>Closed_Business<span class='hint'>F1</span></td><td class='n'>0.9834</td><td class='n cand'>0.9834</td><td class='n cand'><b>0.9874</b></td></tr>
+    <tr><td>From_Other_Device<span class='hint'>F1</span></td><td class='n'>0.9899</td><td class='n cand'><b>1.0000</b></td><td class='n cand'>0.9941</td></tr>
+    <tr><td>Same_Photo<span class='hint'>F1</span></td><td class='n'>0.9975</td><td class='n cand'>0.9975</td><td class='n cand'>0.9975</td></tr>
+    <tr class='group'><td>What ran<span class='hint'>the two pipelines side by side</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Prompt version<span class='hint'>which prompt version</span></td><td class='n'>new (tuned)</td><td class='n cand'>new (tuned)</td><td class='n cand'>new (tuned)</td></tr>
+    <tr><td>Runtime<span class='hint'>runtime</span></td><td class='n'>Vertex AI (asia-southeast1)</td><td class='n cand'>internal GPU endpoint</td><td class='n cand'>internal GPU endpoint</td></tr>
+    <tr><td>Model calls<span class='hint'>requests made</span></td><td class='n'>198</td><td class='n cand'>594</td><td class='n cand'>594</td></tr>
+    <tr class='group'><td>What it costs to run<span class='hint'>tokens and wall clock for the whole round</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Per call<span class='hint'>median, seconds</span></td><td class='n'>28.5</td><td class='n cand'>119.9</td><td class='n cand'>71</td></tr>
+    <tr><td>Time for the whole round<span class='hint'>whole round, seconds</span></td><td class='n'>121.95</td><td class='n cand'>1013.16</td><td class='n cand'>473.17</td></tr>
+    <tr><td>Total Input<span class='hint'>input tokens, whole round</span></td><td class='n'>620,730</td><td class='n cand'>1,983,182</td><td class='n cand'>1,592,363</td></tr>
+    <tr><td>Total Output<span class='hint'>output tokens, whole round</span></td><td class='n'>23,958</td><td class='n cand'>65,340</td><td class='n cand'>74,604</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">2</span>Tax-Invoice</h2>
+<p class="lede">field extraction from tax invoice documents</p>
+
+<div class="card">
+<table class="uc">
+  <thead><tr><th>Metric</th><th class='n'>GEMINI-3.1-PRO-PREVIEW<span class='hint'>production today</span></th><th class='n cand'>QWEN3.8-27B-FP8 (OLD PROMPT)<span class='hint'>our GPU &middot; candidate</span></th><th class='n cand'>QWEN3.8-27B-FP8 (NEW PROMPT)<span class='hint'>our GPU &middot; candidate</span></th><th class='n cand'>GEMMA-4-12B-IT (OLD PROMPT)<span class='hint'>our GPU &middot; candidate</span></th></tr></thead>
+  <tbody>
+    <tr class='group'><td>The decision production acts on<span class='hint'>the headline and the dimensions under it</span></td><td class=''></td><td class='cand'></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Weighted average F1<span class='hint'>mean of the FIRST 2 of 4 dimension F1 scores -- the remaining 2 are breakdowns and do not enter the headline</span></td><td class='n'><b>0.9992</b></td><td class='n cand'>0.9779</td><td class='n cand'>0.9791</td><td class='n cand'>0.6205</td></tr>
+    <tr><td>Field extraction - 29 fields per line<span class='hint'>F1</span></td><td class='n'><b>0.9985</b></td><td class='n cand'>0.9559</td><td class='n cand'>0.9583</td><td class='n cand'>0.6284</td></tr>
+    <tr><td>Document type<span class='hint'>1 field per line &#183; F1</span></td><td class='n'>1.0000</td><td class='n cand'>1.0000</td><td class='n cand'>1.0000</td><td class='n cand'>0.6126</td></tr>
+    <tr><td>Field extraction - 21 require fields (Breakdown)<span class='hint'>F1</span></td><td class='n'><b>0.9981</b></td><td class='n cand'>0.9690</td><td class='n cand'>0.9752</td><td class='n cand'>0.6183</td></tr>
+    <tr><td>Field extraction - 9 optional fields (Breakdown)<span class='hint'>F1</span></td><td class='n'><b>0.9997</b></td><td class='n cand'>0.9751</td><td class='n cand'>0.9661</td><td class='n cand'>0.8966</td></tr>
+    <tr class='group'><td>What ran<span class='hint'>the two pipelines side by side</span></td><td class=''></td><td class='cand'></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Model<span class='hint'>which model answered</span></td><td class='n'>gemini-3.1-pro-preview</td><td class='n cand'>qwen3.8-27b-fp8</td><td class='n cand'>qwen3.8-27b-fp8</td><td class='n cand'>gemma-4-12b-it</td></tr>
+    <tr><td>Prompt version<span class='hint'>which prompt version</span></td><td class='n'>production</td><td class='n cand'>old</td><td class='n cand'>new (tuned)</td><td class='n cand'>old</td></tr>
+    <tr><td>Where it ran<span class='hint'>runtime</span></td><td class='n'>Vertex AI batch</td><td class='n cand'>internal GPU endpoint</td><td class='n cand'>internal GPU endpoint</td><td class='n cand'>internal GPU endpoint</td></tr>
+    <tr><td>Documents fed in<span class='hint'>corpus size</span></td><td class='n'>32 files, 147 pages</td><td class='n cand'>32 files, 147 pages</td><td class='n cand'>32 files, 147 pages</td><td class='n cand'>32 files, 147 pages</td></tr>
+    <tr class='group'><td>What it costs to run<span class='hint'>tokens and wall clock for the whole round</span></td><td class=''></td><td class='cand'></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Per page<span class='hint'>median, seconds</span></td><td class='n'>2.6</td><td class='n cand'>57.0</td><td class='n cand'>79.7</td><td class='n cand'>306.7</td></tr>
+    <tr><td>Time for the whole round<span class='hint'>whole round, seconds</span></td><td class='n'>389.3</td><td class='n cand'>8,377.7</td><td class='n cand'>11,715.9</td><td class='n cand'>resumed over several days</td></tr>
+    <tr><td>Total Input<span class='hint'>input tokens, whole round</span></td><td class='n'>2,757,155</td><td class='n cand'>2,866,558</td><td class='n cand'>3,095,731</td><td class='n cand'>2,163,462</td></tr>
+    <tr><td>Total Output<span class='hint'>output tokens, whole round</span></td><td class='n'>611,447</td><td class='n cand'>578,807</td><td class='n cand'>580,430</td><td class='n cand'>470,365</td></tr>
+    <tr class='group'><td>The text it produced<span class='hint'>not part of the headline score</span></td><td class=''></td><td class='cand'></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Characters right in names and addresses</td><td class='n'>0.9830</td><td class='n cand'>0.9695</td><td class='n cand'>0.9821</td><td class='n cand'>0.5562</td></tr>
+    <tr><td>Values in the format the prompt asked for</td><td class='n'>0.9997</td><td class='n cand'>0.9282</td><td class='n cand'>0.9319</td><td class='n cand'>0.8477</td></tr>
+    <tr><td>Field accuracy<span class='hint'>29 fields per line</span></td><td class='n'>0.9971</td><td class='n cand'>0.9414</td><td class='n cand'>0.9444</td><td class='n cand'>0.3972</td></tr>
+    <tr><td>Document type named correctly</td><td class='n'>1.0000</td><td class='n cand'>1.0000</td><td class='n cand'>0.9997</td><td class='n cand'>0.3126</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">3</span>Sentiment QA</h2>
+<p class="lede">call-centre QA against a 22-criterion rubric</p>
+
+<div class="card">
+<table class="uc">
+  <thead><tr><th>Metric</th><th class='n'>GEMINI-2.5-FLASH<span class='hint'>production today</span></th><th class='n cand'>QWEN3.8-27B-FP8 (FULL PROMPT)<span class='hint'>our GPU &middot; candidate</span></th><th class='n cand'>QWEN3.8-27B-FP8 (TRIM PROMPT)<span class='hint'>our GPU &middot; candidate</span></th></tr></thead>
+  <tbody>
+    <tr class='group'><td>The decision production acts on<span class='hint'>the headline and the dimensions under it</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Weighted average F1<span class='hint'>mean of all 3 dimension F1 scores</span></td><td class='n'><b>0.8591</b></td><td class='n cand'>0.8304</td><td class='n cand'>0.8057</td></tr>
+    <tr><td>Service quality<span class='hint'>22 criteria &#183; F1</span></td><td class='n'><b>0.9198</b></td><td class='n cand'>0.9087</td><td class='n cand'>0.9064</td></tr>
+    <tr><td>How the customer felt<span class='hint'>3 questions &#183; F1</span></td><td class='n'>0.8782</td><td class='n cand'><b>0.8829</b></td><td class='n cand'>0.8515</td></tr>
+    <tr><td>What the call was about<span class='hint'>here all four differ &#183; F1</span></td><td class='n'><b>0.7794</b></td><td class='n cand'>0.6996</td><td class='n cand'>0.6591</td></tr>
+    <tr class='group'><td>What ran<span class='hint'>the two pipelines side by side</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Model<span class='hint'>which model answered</span></td><td class='n'>gemini-2.5-flash</td><td class='n cand'>qwen3.8-27b-fp8</td><td class='n cand'>qwen3.8-27b-fp8</td></tr>
+    <tr><td>Speech to text<span class='hint'>stage 1, where there is one</span></td><td class='n'>none - audio into the model</td><td class='n cand'>qwen3-asr-1.7b</td><td class='n cand'>typhoon-whisper-large-v3</td></tr>
+    <tr><td>Prompt<span class='hint'>which prompt version</span></td><td class='n'>production</td><td class='n cand'>full - verdict and written reason</td><td class='n cand'>trim - verdict only</td></tr>
+    <tr><td>Where it ran<span class='hint'>runtime</span></td><td class='n'>Vertex AI batch</td><td class='n cand'>internal GPU endpoint</td><td class='n cand'>internal GPU endpoint</td></tr>
+    <tr><td>Calls scored<span class='hint'>how many items entered the score</span></td><td class='n'>180</td><td class='n cand'>180</td><td class='n cand'>180</td></tr>
+    <tr class='group'><td>What it costs to run<span class='hint'>tokens and wall clock for the whole round</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>Per call<span class='hint'>median, seconds</span></td><td class='n'>2.5 s</td><td class='n cand'>cannot meansure</td><td class='n cand'>216.2 s</td></tr>
+    <tr><td>Time for the whole round<span class='hint'>whole round, seconds</span></td><td class='n'>443.7 s</td><td class='n cand'>resumed over several days</td><td class='n cand'>38,922.0 s</td></tr>
+    <tr><td>Total Input<span class='hint'>input tokens, whole round</span></td><td class='n'>7791855</td><td class='n cand'>6,136,076</td><td class='n cand'>3,492,899</td></tr>
+    <tr><td>Total Output<span class='hint'>output tokens, whole round</span></td><td class='n'>721081</td><td class='n cand'>622,643</td><td class='n cand'>347,735</td></tr>
+    <tr class='group'><td>The text it produced<span class='hint'>not part of the headline score</span></td><td class=''></td><td class='cand'></td><td class='cand'></td></tr>
+    <tr><td>The written summary<span class='hint'>meaning match</span></td><td class='n'>0.964</td><td class='n cand'>0.9598</td><td class='n cand'>0.9572</td></tr>
+    <tr><td>The transcript<span class='hint'>meaning match</span></td><td class='n'>0.987</td><td class='n cand'>0.9782</td><td class='n cand'>0.9726</td></tr>
+    <tr><td>The transcript<span class='hint'>characters right (mean)</span></td><td class='n'>0.6959</td><td class='n cand'>0.6113</td><td class='n cand'>0.1652</td></tr>
+    <tr><td>The transcript<span class='hint'>characters right (median)</span></td><td class='n'>0.7715</td><td class='n cand'>0.6717</td><td class='n cand'>0.6741</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">4</span>Sentiment MNP</h2>
+<p class="lede">number-portability calls: outcome and reason</p>
+
+<div class="card">
+<table class="uc">
+  <thead><tr><th>Metric</th><th class='n'>GEMINI-2.5-FLASH<span class='hint'>production today</span></th><th class='n cand'>QWEN3.8-27B-FP8<span class='hint'>our GPU &middot; candidate</span></th></tr></thead>
+  <tbody>
+    <tr class='group'><td>The decision production acts on<span class='hint'>the headline and the dimensions under it</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Weighted average F1<span class='hint'>mean of all 2 dimension F1 scores</span></td><td class='n'><b>0.8564</b></td><td class='n cand'>0.8237</td></tr>
+    <tr><td>Did the customer stay or churn<span class='hint'>3 outcomes &#183; F1</span></td><td class='n'><b>0.9489</b></td><td class='n cand'>0.8830</td></tr>
+    <tr><td>Why they wanted to cancel<span class='hint'>13 reasons &#183; F1</span></td><td class='n'>0.7640</td><td class='n cand'><b>0.7644</b></td></tr>
+    <tr class='group'><td>What ran<span class='hint'>the two pipelines side by side</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Model<span class='hint'>which model answered</span></td><td class='n'>gemini-2.5-flash</td><td class='n cand'>qwen3.8-27b-fp8</td></tr>
+    <tr><td>Speech to text<span class='hint'>stage 1, where there is one</span></td><td class='n'>none - audio into the model</td><td class='n cand'>typhoon-whisper-large-v3</td></tr>
+    <tr><td>Where it ran<span class='hint'>runtime</span></td><td class='n'>Vertex AI batch</td><td class='n cand'>internal GPU endpoint</td></tr>
+    <tr><td>Calls scored<span class='hint'>how many items entered the score</span></td><td class='n'>100</td><td class='n cand'>100</td></tr>
+    <tr class='group'><td>What it costs to run<span class='hint'>tokens and wall clock for the whole round</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Per call<span class='hint'>median, seconds</span></td><td class='n'>2.47 s</td><td class='n cand'>103.1 s</td></tr>
+    <tr><td>Time for the whole round<span class='hint'>whole round, seconds</span></td><td class='n'>324.0 s</td><td class='n cand'>10,312.9 s</td></tr>
+    <tr><td>Total Input<span class='hint'>input tokens, whole round</span></td><td class='n'>1,519,525</td><td class='n cand'>440,269 label + 471,549 analysis</td></tr>
+    <tr><td>Total Output<span class='hint'>output tokens, whole round</span></td><td class='n'>176,626 (+ 227,974 thinking)</td><td class='n cand'>125,233 label + 4,656 analysis</td></tr>
+    <tr><td>Total tokens<span class='hint'>input + output</span></td><td class='n'>1,924,125</td><td class='n cand'>1,041,707</td></tr>
+    <tr class='group'><td>The text it produced<span class='hint'>not part of the headline score</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Meaning match<span class='hint'>cosine similarity</span></td><td class='n'>0.9897</td><td class='n cand'>0.9806</td></tr>
+    <tr><td>Characters right<span class='hint'>1 - mean CER</span></td><td class='n'>0.8187</td><td class='n cand'>0.3898</td></tr>
+    <tr><td>Characters right<span class='hint'>1 - median CER</span></td><td class='n'>0.8354</td><td class='n cand'>0.7942</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">5</span>Sentiment Telesale</h2>
+<p class="lede">telesales calls against a 39-criterion rubric</p>
+
+<div class="card">
+<table class="uc">
+  <thead><tr><th>Metric</th><th class='n'>GEMINI-2.5-FLASH<span class='hint'>production today</span></th><th class='n cand'>QWEN3.8-27B-FP8<span class='hint'>our GPU &middot; candidate</span></th></tr></thead>
+  <tbody>
+    <tr class='group'><td>The decision production acts on<span class='hint'>the headline and the dimensions under it</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Weighted average F1<span class='hint'>mean of all 4 dimension F1 scores</span></td><td class='n'>0.9272</td><td class='n cand'><b>0.9352</b></td></tr>
+    <tr><td>Operations &amp; professionalism<span class='hint'>15 criteria, 8 hold one label on every call &#183; F1</span></td><td class='n'><b>0.9577</b></td><td class='n cand'>0.9451</td></tr>
+    <tr><td>Sales effectiveness<span class='hint'>12 criteria, 7 hold one label on every call &#183; F1</span></td><td class='n'><b>0.9053</b></td><td class='n cand'>0.8970</td></tr>
+    <tr><td>Customer experience<span class='hint'>9 criteria, 8 hold one label on every call &#183; F1</span></td><td class='n'><b>0.9258</b></td><td class='n cand'>0.9185</td></tr>
+    <tr><td>Compliance<span class='hint'>3 criteria, 2 hold one label on every call &#183; F1</span></td><td class='n'>0.9201</td><td class='n cand'><b>0.9801</b></td></tr>
+    <tr class='group'><td>What ran<span class='hint'>the two pipelines side by side</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Model<span class='hint'>which model answered</span></td><td class='n'>gemini-2.5-flash</td><td class='n cand'>qwen3.8-27b-fp8</td></tr>
+    <tr><td>Speech to text<span class='hint'>stage 1, where there is one</span></td><td class='n'>none - audio into the model</td><td class='n cand'>typhoon-whisper-large-v3</td></tr>
+    <tr><td>Where it ran<span class='hint'>runtime</span></td><td class='n'>Vertex AI batch</td><td class='n cand'>internal GPU endpoint</td></tr>
+    <tr><td>Calls scored<span class='hint'>how many items entered the score</span></td><td class='n'>26</td><td class='n cand'>25 - 1 call failed (stream exceeded 900s &#215;1)</td></tr>
+    <tr class='group'><td>What it costs to run<span class='hint'>tokens and wall clock for the whole round</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Per call<span class='hint'>median, seconds</span></td><td class='n'>9.72 s</td><td class='n cand'>72.1 s</td></tr>
+    <tr><td>Time for the whole round<span class='hint'>whole round, seconds</span></td><td class='n'>359.4 s</td><td class='n cand'>1,803.7 s</td></tr>
+    <tr><td>Total Input<span class='hint'>input tokens, whole round</span></td><td class='n'>1,140,018</td><td class='n cand'>107,694 label + 749,655 analysis</td></tr>
+    <tr><td>Total Output<span class='hint'>output tokens, whole round</span></td><td class='n'>87,509</td><td class='n cand'>20,758 label + 15,039 analysis</td></tr>
+    <tr><td>Total tokens<span class='hint'>input + output</span></td><td class='n'>1,227,527</td><td class='n cand'>893,146</td></tr>
+    <tr class='group'><td>The text it produced<span class='hint'>not part of the headline score</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Meaning match<span class='hint'>cosine similarity</span></td><td class='n'>0.9853</td><td class='n cand'>0.9903</td></tr>
+    <tr><td>Characters right<span class='hint'>1 - mean CER</span></td><td class='n'>0.4188</td><td class='n cand'>0.821</td></tr>
+    <tr><td>Characters right<span class='hint'>1 - median CER</span></td><td class='n'>0.8921</td><td class='n cand'>0.8368</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2><span class="n">6</span>Sentiment Retention</h2>
+<p class="lede">retention calls: outcome, reason and product</p>
+
+<div class="card">
+<table class="uc">
+  <thead><tr><th>Metric</th><th class='n'>GEMINI-2.5-FLASH<span class='hint'>production today</span></th><th class='n cand'>QWEN3.8-27B-FP8<span class='hint'>our GPU &middot; candidate</span></th></tr></thead>
+  <tbody>
+    <tr class='group'><td>The decision production acts on<span class='hint'>the headline and the dimensions under it</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Weighted average F1<span class='hint'>mean of all 3 dimension F1 scores</span></td><td class='n'><b>0.8831</b></td><td class='n cand'>0.8082</td></tr>
+    <tr><td>Did the customer stay or churn<span class='hint'>4 outcomes &#183; F1</span></td><td class='n'><b>0.9147</b></td><td class='n cand'>0.8279</td></tr>
+    <tr><td>Why they wanted to cancel<span class='hint'>11 reasons &#183; F1</span></td><td class='n'><b>0.7758</b></td><td class='n cand'>0.6264</td></tr>
+    <tr><td>What product the call was about<span class='hint'>4 products &#183; F1</span></td><td class='n'>0.9588</td><td class='n cand'><b>0.9704</b></td></tr>
+    <tr class='group'><td>What ran<span class='hint'>the two pipelines side by side</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Model<span class='hint'>which model answered</span></td><td class='n'>gemini-2.5-flash</td><td class='n cand'>qwen3.8-27b-fp8</td></tr>
+    <tr><td>Speech to text<span class='hint'>stage 1, where there is one</span></td><td class='n'>none - audio into the model</td><td class='n cand'>typhoon-whisper-large-v3</td></tr>
+    <tr><td>Where it ran<span class='hint'>runtime</span></td><td class='n'>Vertex AI batch</td><td class='n cand'>internal GPU endpoint</td></tr>
+    <tr><td>Calls scored<span class='hint'>how many items entered the score</span></td><td class='n'>97</td><td class='n cand'>96 - 1 call failed (stream exceeded 900s &#215;1)</td></tr>
+    <tr class='group'><td>What it costs to run<span class='hint'>tokens and wall clock for the whole round</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Per call<span class='hint'>median, seconds</span></td><td class='n'>6.78 s</td><td class='n cand'>77.9 s</td></tr>
+    <tr><td>Time for the whole round<span class='hint'>whole round, seconds</span></td><td class='n'>765.0 s</td><td class='n cand'>7,478.3 s</td></tr>
+    <tr><td>Total Input<span class='hint'>input tokens, whole round</span></td><td class='n'>1,536,808</td><td class='n cand'>450,334 label + 382,175 analysis</td></tr>
+    <tr><td>Total Output<span class='hint'>output tokens, whole round</span></td><td class='n'>178,804</td><td class='n cand'>168,624 label + 7,884 analysis</td></tr>
+    <tr><td>Total tokens<span class='hint'>input + output</span></td><td class='n'>1,715,612</td><td class='n cand'>1,009,017</td></tr>
+    <tr class='group'><td>The text it produced<span class='hint'>not part of the headline score</span></td><td class=''></td><td class='cand'></td></tr>
+    <tr><td>Meaning match<span class='hint'>cosine similarity</span></td><td class='n'>0.9927</td><td class='n cand'>0.9752</td></tr>
+    <tr><td>Characters right<span class='hint'>1 - mean CER</span></td><td class='n'>0.8297</td><td class='n cand'>-0.2930</td></tr>
+    <tr><td>Characters right<span class='hint'>1 - median CER</span></td><td class='n'>0.8577</td><td class='n cand'>0.7961</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note risk">
+  <p><b>Two things that are not visible in the numbers above.</b></p>
+  <ul>
+    <li><b>Recall and accuracy are not independent measurements on
+    RTR-Fraud, Tax-Invoice, Sentiment QA.</b> Those confusion matrices are built with FN&nbsp;=&nbsp;0,
+    which pins recall at exactly 1.0000 and makes accuracy identical to precision. Only the F1
+    and precision columns carry information, which is why this page prints F1 alone.</li>
+    <li><b>The two sides are not fed the same thing.</b> The incumbent receives raw audio, or a
+    PDF with its text layer; ours receives an ASR transcript, or a 200-DPI image. Every gap in
+    these tables is a whole-pipeline gap, not a model-quality gap.</li>
+  </ul>
+</div>
+
+<p class="foot">
+  Figures parsed from <code>OverallEvaluationReport (1).xlsx</code> by
+  <code>scripts/parallel_eval_workbook.py</code> and rendered by
+  <code>scripts/usecase_tables.py</code>; no number on this page is typed by hand. The results
+  are the parallel evaluation project's and are <b>not reproduced here</b>. For what the
+  benchmarks can and cannot measure, see <code>eval-comparison.html</code>.
+</p>
+
+</div>

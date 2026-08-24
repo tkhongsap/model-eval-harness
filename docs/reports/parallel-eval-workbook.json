@@ -1,0 +1,2689 @@
+{
+  "generated_from": "scripts/parallel_eval_workbook.py",
+  "source_file": "OverallEvaluationReport (1).xlsx",
+  "what_it_is": "The parallel evaluation project's measurement of internally hosted models against the incumbent, across six production tasks, on REAL data with human ground truth. Not our run and not reproduced here -- parsed from their published workbook so our reports cannot drift from it.",
+  "tabs": {
+    "RTR-Fraud": {
+      "arms": [
+        "QWEN3.8-27B-FP8",
+        "GEMMA-4-12B-IT",
+        "GEMINI"
+      ],
+      "columns": [
+        "GROUND TRUTH",
+        "QWEN3.8-27B-FP8",
+        "GEMMA-4-12B-IT",
+        "GEMINI"
+      ],
+      "derived": {
+        "dimensions": [
+          "Closed_Business",
+          "From_Other_Device",
+          "Same_Photo"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline": {
+          "QWEN3.8-27B-FP8": 0.99228,
+          "GEMMA-4-12B-IT": 0.991425,
+          "GEMINI": 0.987735
+        },
+        "headline_check": {
+          "QWEN3.8-27B-FP8": {
+            "reported": 0.99228,
+            "sum": 2.9809,
+            "mean": 0.993633,
+            "is_mean": false,
+            "is_sum_over_2": false
+          },
+          "GEMMA-4-12B-IT": {
+            "reported": 0.991425,
+            "sum": 2.979,
+            "mean": 0.993,
+            "is_mean": false,
+            "is_sum_over_2": false
+          },
+          "GEMINI": {
+            "reported": 0.987735,
+            "sum": 2.9708,
+            "mean": 0.990267,
+            "is_mean": false,
+            "is_sum_over_2": false
+          }
+        },
+        "weighted_average_formula": "genuine weighted average",
+        "recovered_weights": {
+          "Closed_Business": 0.45,
+          "From_Other_Device": 0.45,
+          "Same_Photo": 0.1
+        },
+        "recovered_weights_max_error": 0.0,
+        "recall_exactly_one": {
+          "cells": 4,
+          "of": 12
+        },
+        "max_f1_vs_harmonic_gap": 0.0026,
+        "model_calls": {
+          "GROUND TRUTH": "198",
+          "QWEN3.8-27B-FP8": "594",
+          "GEMMA-4-12B-IT": "594",
+          "GEMINI": "198"
+        },
+        "per_call": {
+          "GROUND TRUTH": "the label set",
+          "QWEN3.8-27B-FP8": "119.9",
+          "GEMMA-4-12B-IT": "71",
+          "GEMINI": "28.5"
+        },
+        "runtime": {
+          "GROUND TRUTH": "Vertex AI",
+          "QWEN3.8-27B-FP8": "internal GPU endpoint",
+          "GEMMA-4-12B-IT": "internal GPU endpoint",
+          "GEMINI": "Vertex AI (asia-southeast1)"
+        },
+        "total_input": {
+          "GROUND TRUTH": "the label set",
+          "QWEN3.8-27B-FP8": "1,983,182",
+          "GEMMA-4-12B-IT": "1,592,363",
+          "GEMINI": "620,730"
+        },
+        "total_output": {
+          "GROUND TRUTH": "the label set",
+          "QWEN3.8-27B-FP8": "65,340",
+          "GEMMA-4-12B-IT": "74,604",
+          "GEMINI": "23,958"
+        }
+      },
+      "rows": [
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Prompt version",
+          "values": {
+            "GROUND TRUTH": "production",
+            "QWEN3.8-27B-FP8": "new (tuned)",
+            "GEMMA-4-12B-IT": "new (tuned)",
+            "GEMINI": "new (tuned)"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": null,
+            "GEMMA-4-12B-IT": null,
+            "GEMINI": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Runtime",
+          "values": {
+            "GROUND TRUTH": "Vertex AI",
+            "QWEN3.8-27B-FP8": "internal GPU endpoint",
+            "GEMMA-4-12B-IT": "internal GPU endpoint",
+            "GEMINI": "Vertex AI (asia-southeast1)"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": null,
+            "GEMMA-4-12B-IT": null,
+            "GEMINI": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Model calls",
+          "values": {
+            "GROUND TRUTH": "198",
+            "QWEN3.8-27B-FP8": "594",
+            "GEMMA-4-12B-IT": "594",
+            "GEMINI": "198"
+          },
+          "numeric": {
+            "GROUND TRUTH": 198.0,
+            "QWEN3.8-27B-FP8": 594.0,
+            "GEMMA-4-12B-IT": 594.0,
+            "GEMINI": 198.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": null,
+          "label": "weighted Average F1 Score",
+          "values": {
+            "GROUND TRUTH": "",
+            "QWEN3.8-27B-FP8": "0.99228",
+            "GEMMA-4-12B-IT": "0.991425",
+            "GEMINI": "0.987735"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": 0.99228,
+            "GEMMA-4-12B-IT": 0.991425,
+            "GEMINI": 0.987735
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Closed_Business",
+          "label": "F1-score",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "0.9834",
+            "GEMMA-4-12B-IT": "0.9874",
+            "GEMINI": "0.9834"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 0.9834,
+            "GEMMA-4-12B-IT": 0.9874,
+            "GEMINI": 0.9834
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Closed_Business",
+          "label": "Precision",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "0.9848   (195/198)",
+            "GEMMA-4-12B-IT": "0.9899   (196/198)",
+            "GEMINI": "0.9848   (195/198)"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 0.9848,
+            "GEMMA-4-12B-IT": 0.9899,
+            "GEMINI": 0.9848
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Closed_Business",
+          "label": "Recall",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "0.9848   (195/198)",
+            "GEMMA-4-12B-IT": "0.9899   (196/198)",
+            "GEMINI": "0.9848   (195/198)"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 0.9848,
+            "GEMMA-4-12B-IT": 0.9899,
+            "GEMINI": 0.9848
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Closed_Business",
+          "label": "Accuracy",
+          "values": {
+            "GROUND TRUTH": "198/198  100.0%",
+            "QWEN3.8-27B-FP8": "195/198  98.5%",
+            "GEMMA-4-12B-IT": "196/198  99.0%",
+            "GEMINI": "195/198  98.5%"
+          },
+          "numeric": {
+            "GROUND TRUTH": 198.0,
+            "QWEN3.8-27B-FP8": 195.0,
+            "GEMMA-4-12B-IT": 196.0,
+            "GEMINI": 195.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "From_Other_Device",
+          "label": "F1-score",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "1.0000",
+            "GEMMA-4-12B-IT": "0.9941",
+            "GEMINI": "0.9899"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 1.0,
+            "GEMMA-4-12B-IT": 0.9941,
+            "GEMINI": 0.9899
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "From_Other_Device",
+          "label": "Precision",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "1.0000   (198/198)",
+            "GEMMA-4-12B-IT": "0.9949   (197/198)",
+            "GEMINI": "0.9899   (196/198)"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 1.0,
+            "GEMMA-4-12B-IT": 0.9949,
+            "GEMINI": 0.9899
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "From_Other_Device",
+          "label": "Recall",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "1.0000   (198/198)",
+            "GEMMA-4-12B-IT": "0.9949   (197/198)",
+            "GEMINI": "0.9899   (196/198)"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 1.0,
+            "GEMMA-4-12B-IT": 0.9949,
+            "GEMINI": 0.9899
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "From_Other_Device",
+          "label": "Accuracy",
+          "values": {
+            "GROUND TRUTH": "198/198  100.0%",
+            "QWEN3.8-27B-FP8": "198/198  100.0%",
+            "GEMMA-4-12B-IT": "197/198  99.5%",
+            "GEMINI": "196/198  99.0%"
+          },
+          "numeric": {
+            "GROUND TRUTH": 198.0,
+            "QWEN3.8-27B-FP8": 198.0,
+            "GEMMA-4-12B-IT": 197.0,
+            "GEMINI": 196.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Same_Photo",
+          "label": "F1-score",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "0.9975",
+            "GEMMA-4-12B-IT": "0.9975",
+            "GEMINI": "0.9975"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 0.9975,
+            "GEMMA-4-12B-IT": 0.9975,
+            "GEMINI": 0.9975
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Same_Photo",
+          "label": "Precision",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "0.9949   (197/198)",
+            "GEMMA-4-12B-IT": "0.9949   (197/198)",
+            "GEMINI": "0.9949   (197/198)"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 0.9949,
+            "GEMMA-4-12B-IT": 0.9949,
+            "GEMINI": 0.9949
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Same_Photo",
+          "label": "Recall",
+          "values": {
+            "GROUND TRUTH": "1.0000",
+            "QWEN3.8-27B-FP8": "0.9949   (197/198)",
+            "GEMMA-4-12B-IT": "0.9949   (197/198)",
+            "GEMINI": "0.9949   (197/198)"
+          },
+          "numeric": {
+            "GROUND TRUTH": 1.0,
+            "QWEN3.8-27B-FP8": 0.9949,
+            "GEMMA-4-12B-IT": 0.9949,
+            "GEMINI": 0.9949
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Same_Photo",
+          "label": "Accuracy",
+          "values": {
+            "GROUND TRUTH": "198/198  100.0%",
+            "QWEN3.8-27B-FP8": "197/198  99.5%",
+            "GEMMA-4-12B-IT": "197/198  99.5%",
+            "GEMINI": "197/198  99.5%"
+          },
+          "numeric": {
+            "GROUND TRUTH": 198.0,
+            "QWEN3.8-27B-FP8": 197.0,
+            "GEMMA-4-12B-IT": 197.0,
+            "GEMINI": 197.0
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Per call",
+          "values": {
+            "GROUND TRUTH": "the label set",
+            "QWEN3.8-27B-FP8": "119.9",
+            "GEMMA-4-12B-IT": "71",
+            "GEMINI": "28.5"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": 119.9,
+            "GEMMA-4-12B-IT": 71.0,
+            "GEMINI": 28.5
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Time for the whole round  -  seconds",
+          "values": {
+            "GROUND TRUTH": "the label set",
+            "QWEN3.8-27B-FP8": "1013.16",
+            "GEMMA-4-12B-IT": "473.17",
+            "GEMINI": "121.95"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": 1013.16,
+            "GEMMA-4-12B-IT": 473.17,
+            "GEMINI": 121.95
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Input",
+          "values": {
+            "GROUND TRUTH": "the label set",
+            "QWEN3.8-27B-FP8": "1,983,182",
+            "GEMMA-4-12B-IT": "1,592,363",
+            "GEMINI": "620,730"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": 1983182.0,
+            "GEMMA-4-12B-IT": 1592363.0,
+            "GEMINI": 620730.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Output",
+          "values": {
+            "GROUND TRUTH": "the label set",
+            "QWEN3.8-27B-FP8": "65,340",
+            "GEMMA-4-12B-IT": "74,604",
+            "GEMINI": "23,958"
+          },
+          "numeric": {
+            "GROUND TRUTH": null,
+            "QWEN3.8-27B-FP8": 65340.0,
+            "GEMMA-4-12B-IT": 74604.0,
+            "GEMINI": 23958.0
+          }
+        }
+      ]
+    },
+    "Tax-Invoice": {
+      "arms": [
+        "GEMINI-3.1-PRO-PREVIEW",
+        "QWEN3.8-27B-FP8  (OLD PROMPT)",
+        "QWEN3.8-27B-FP8  (NEW PROMPT)",
+        "GEMMA-4-12B-IT  (OLD PROMPT)"
+      ],
+      "columns": [
+        "GEMINI-3.1-PRO-PREVIEW",
+        "QWEN3.8-27B-FP8  (OLD PROMPT)",
+        "QWEN3.8-27B-FP8  (NEW PROMPT)",
+        "GEMMA-4-12B-IT  (OLD PROMPT)"
+      ],
+      "derived": {
+        "dimensions": [
+          "Field extraction  -  29 fields per line",
+          "Document type  -  1 field per line",
+          "Field extraction  - 21 require fields (Breakdown)",
+          "Field extraction  -  9 optional fields (Breakdown)"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline": {
+          "GEMINI-3.1-PRO-PREVIEW": 0.99925,
+          "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.97795,
+          "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.97915,
+          "GEMMA-4-12B-IT  (OLD PROMPT)": 0.6205
+        },
+        "headline_check": {
+          "GEMINI-3.1-PRO-PREVIEW": {
+            "reported": 0.99925,
+            "sum": 3.9963,
+            "mean": 0.999075,
+            "is_mean": false,
+            "is_sum_over_2": false
+          },
+          "QWEN3.8-27B-FP8  (OLD PROMPT)": {
+            "reported": 0.97795,
+            "sum": 3.9,
+            "mean": 0.975,
+            "is_mean": false,
+            "is_sum_over_2": false
+          },
+          "QWEN3.8-27B-FP8  (NEW PROMPT)": {
+            "reported": 0.97915,
+            "sum": 3.8996,
+            "mean": 0.9749,
+            "is_mean": false,
+            "is_sum_over_2": false
+          },
+          "GEMMA-4-12B-IT  (OLD PROMPT)": {
+            "reported": 0.6205,
+            "sum": 2.7559,
+            "mean": 0.688975,
+            "is_mean": false,
+            "is_sum_over_2": false
+          }
+        },
+        "weighted_average_formula": "mean of the FIRST 2 of 4 dimension F1 scores -- the remaining 2 are breakdowns and do not enter the headline",
+        "headline_covers_dimensions": [
+          "Field extraction  -  29 fields per line",
+          "Document type  -  1 field per line"
+        ],
+        "recall_exactly_one": {
+          "cells": 15,
+          "of": 15
+        },
+        "max_f1_vs_harmonic_gap": 0.0905,
+        "per_page": {
+          "GEMINI-3.1-PRO-PREVIEW": "2.6",
+          "QWEN3.8-27B-FP8  (OLD PROMPT)": "57.0",
+          "QWEN3.8-27B-FP8  (NEW PROMPT)": "79.7",
+          "GEMMA-4-12B-IT  (OLD PROMPT)": "306.7"
+        },
+        "where": {
+          "GEMINI-3.1-PRO-PREVIEW": "Vertex AI batch",
+          "QWEN3.8-27B-FP8  (OLD PROMPT)": "internal GPU endpoint",
+          "QWEN3.8-27B-FP8  (NEW PROMPT)": "internal GPU endpoint",
+          "GEMMA-4-12B-IT  (OLD PROMPT)": "internal GPU endpoint"
+        },
+        "total_input": {
+          "GEMINI-3.1-PRO-PREVIEW": "2,757,155",
+          "QWEN3.8-27B-FP8  (OLD PROMPT)": "2,866,558",
+          "QWEN3.8-27B-FP8  (NEW PROMPT)": "3,095,731",
+          "GEMMA-4-12B-IT  (OLD PROMPT)": "2,163,462"
+        },
+        "total_output": {
+          "GEMINI-3.1-PRO-PREVIEW": "611,447",
+          "QWEN3.8-27B-FP8  (OLD PROMPT)": "578,807",
+          "QWEN3.8-27B-FP8  (NEW PROMPT)": "580,430",
+          "GEMMA-4-12B-IT  (OLD PROMPT)": "470,365"
+        }
+      },
+      "rows": [
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Model",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "gemini-3.1-pro-preview",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "qwen3.8-27b-fp8",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "qwen3.8-27b-fp8",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "gemma-4-12b-it"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": null,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": null,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": null,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Prompt version",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "production",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "old",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "new (tuned)",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "old"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": null,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": null,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": null,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Where it ran",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "Vertex AI batch",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "internal GPU endpoint",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "internal GPU endpoint",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "internal GPU endpoint"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": null,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": null,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": null,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Documents fed in",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "32 files, 147 pages",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "32 files, 147 pages",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "32 files, 147 pages",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "32 files, 147 pages"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 32.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 32.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 32.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 32.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Overview",
+          "label": "weighted Average F1 Score",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.99925",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.97795",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.97915",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.6205"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.99925,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.97795,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.97915,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.6205
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  29 fields per line",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9985",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9559",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9583",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.6284"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9985,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9559,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9583,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.6284
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  29 fields per line",
+          "label": "Precision",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9971",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9414",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9446",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.5611"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9971,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9414,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9446,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.5611
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  29 fields per line",
+          "label": "Recall",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "1"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 1.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  29 fields per line",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9971",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9414",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9446",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.5611"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9971,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9414,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9446,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.5611
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Document type  -  1 field per line",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.6126"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.6126
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Document type  -  1 field per line",
+          "label": "Precision",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.4415"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.4415
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Document type  -  1 field per line",
+          "label": "Recall",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "1"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 1.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Document type  -  1 field per line",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.4415"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.4415
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  - 21 require fields (Breakdown)",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9981",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.969",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9752",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.6183"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9981,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.969,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9752,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.6183
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  - 21 require fields (Breakdown)",
+          "label": "Precision",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9962",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9398",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9517",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.4475"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9962,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9398,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9517,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.4475
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  - 21 require fields (Breakdown)",
+          "label": "Recall",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": ""
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": null
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  - 21 require fields (Breakdown)",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9962",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9398",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9517",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.4475"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9962,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9398,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9517,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.4475
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  9 optional fields (Breakdown)",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9997",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9751",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9661",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.8966"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9997,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9751,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9661,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.8966
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  9 optional fields (Breakdown)",
+          "label": "Precision",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9995",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9515",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9343",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.8126"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9995,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9515,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9343,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.8126
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  9 optional fields (Breakdown)",
+          "label": "Recall",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "1",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "1"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 1.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 1.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Field extraction  -  9 optional fields (Breakdown)",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9995",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9515",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9343",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.8126"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9995,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9515,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9343,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.8126
+          }
+        },
+        {
+          "section": "TEXT AND FORMAT   -   NOT SCORED ON THE FOUR METRICS ABOVE",
+          "dimension": null,
+          "label": "Characters right in names and addresses",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9830",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9695",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9821",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.5562"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.983,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9695,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9821,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.5562
+          }
+        },
+        {
+          "section": "TEXT AND FORMAT   -   NOT SCORED ON THE FOUR METRICS ABOVE",
+          "dimension": null,
+          "label": "Values in the format the prompt asked for",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9997",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9282",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9319",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.8477"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9997,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9282,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9319,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.8477
+          }
+        },
+        {
+          "section": "COUNTED STRICTLY   -   A LINE THE MODEL NEVER READ COUNTS AS WRONG",
+          "dimension": null,
+          "label": "Field accuracy  -  29 fields per line",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "0.9971",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "0.9414",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9444",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.3972"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 0.9971,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 0.9414,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9444,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.3972
+          }
+        },
+        {
+          "section": "COUNTED STRICTLY   -   A LINE THE MODEL NEVER READ COUNTS AS WRONG",
+          "dimension": null,
+          "label": "Document type named correctly",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "1.0000",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "1.0000",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "0.9997",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "0.3126"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 1.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 0.9997,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 0.3126
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Per page",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "2.6",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "57.0",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "79.7",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "306.7"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 2.6,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 57.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 79.7,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 306.7
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Time for the whole round  -  seconds",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "389.3",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "8,377.7",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "11,715.9",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "resumed over several days"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 389.3,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 8377.7,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 11715.9,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": null
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Input",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "2,757,155",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "2,866,558",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "3,095,731",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "2,163,462"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 2757155.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 2866558.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 3095731.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 2163462.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Output",
+          "values": {
+            "GEMINI-3.1-PRO-PREVIEW": "611,447",
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": "578,807",
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": "580,430",
+            "GEMMA-4-12B-IT  (OLD PROMPT)": "470,365"
+          },
+          "numeric": {
+            "GEMINI-3.1-PRO-PREVIEW": 611447.0,
+            "QWEN3.8-27B-FP8  (OLD PROMPT)": 578807.0,
+            "QWEN3.8-27B-FP8  (NEW PROMPT)": 580430.0,
+            "GEMMA-4-12B-IT  (OLD PROMPT)": 470365.0
+          }
+        }
+      ]
+    },
+    "Sentiment QA": {
+      "arms": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8  (FULL PROMPT)",
+        "QWEN3.8-27B-FP8  (TRIM PROMPT)"
+      ],
+      "columns": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8  (FULL PROMPT)",
+        "QWEN3.8-27B-FP8  (TRIM PROMPT)"
+      ],
+      "derived": {
+        "dimensions": [
+          "Service quality  -  22 criteria",
+          "How the customer felt  -  3 questions",
+          "What the call was about  -  here all four differ"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline": {
+          "GEMINI-2.5-FLASH": 0.8591333333333333,
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.8304,
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.8056666666666666
+        },
+        "headline_check": {
+          "GEMINI-2.5-FLASH": {
+            "reported": 0.8591333333333333,
+            "sum": 2.5774,
+            "mean": 0.859133,
+            "is_mean": true,
+            "is_sum_over_2": false
+          },
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": {
+            "reported": 0.8304,
+            "sum": 2.4912,
+            "mean": 0.8304,
+            "is_mean": true,
+            "is_sum_over_2": false
+          },
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": {
+            "reported": 0.8056666666666666,
+            "sum": 2.417,
+            "mean": 0.805667,
+            "is_mean": true,
+            "is_sum_over_2": false
+          }
+        },
+        "weighted_average_formula": "mean of all 3 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 6,
+          "of": 9
+        },
+        "max_f1_vs_harmonic_gap": 0.0086,
+        "calls_scored": {
+          "GEMINI-2.5-FLASH": "180",
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": "180",
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": "180"
+        },
+        "per_call": {
+          "GEMINI-2.5-FLASH": "2.5 s",
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": "cannot meansure",
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": "216.2 s"
+        },
+        "speech_to_text": {
+          "GEMINI-2.5-FLASH": "none - audio into the model",
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": "qwen3-asr-1.7b",
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": "typhoon-whisper-large-v3"
+        },
+        "where": {
+          "GEMINI-2.5-FLASH": "Vertex AI batch",
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": "internal GPU endpoint",
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": "internal GPU endpoint"
+        },
+        "total_input": {
+          "GEMINI-2.5-FLASH": "7791855",
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": "6,136,076",
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": "3,492,899"
+        },
+        "total_output": {
+          "GEMINI-2.5-FLASH": "721081",
+          "QWEN3.8-27B-FP8  (FULL PROMPT)": "622,643",
+          "QWEN3.8-27B-FP8  (TRIM PROMPT)": "347,735"
+        }
+      },
+      "rows": [
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Model",
+          "values": {
+            "GEMINI-2.5-FLASH": "gemini-2.5-flash",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "qwen3.8-27b-fp8",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "qwen3.8-27b-fp8"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": null,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Speech to text",
+          "values": {
+            "GEMINI-2.5-FLASH": "none - audio into the model",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "qwen3-asr-1.7b",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "typhoon-whisper-large-v3"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": null,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Prompt",
+          "values": {
+            "GEMINI-2.5-FLASH": "production",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "full - verdict and written reason",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "trim - verdict only"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": null,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Where it ran",
+          "values": {
+            "GEMINI-2.5-FLASH": "Vertex AI batch",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "internal GPU endpoint",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "internal GPU endpoint"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": null,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Calls scored",
+          "values": {
+            "GEMINI-2.5-FLASH": "180",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "180",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "180"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 180.0,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 180.0,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 180.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": null,
+          "label": "weighted Average F1 Score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8591333333333333",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.8304",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.8056666666666666"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8591333333333333,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.8304,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.8056666666666666
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Service quality  -  22 criteria",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9198",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.9087",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.9064"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9198,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.9087,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.9064
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Service quality  -  22 criteria",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8566",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.8472",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.8424"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8566,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.8472,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.8424
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Service quality  -  22 criteria",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "1",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "1"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1.0,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 1.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Service quality  -  22 criteria",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8566",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.8472",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.8424"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8566,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.8472,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.8424
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "How the customer felt  -  3 questions",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8782",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.8829",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.8515"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8782,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.8829,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.8515
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "How the customer felt  -  3 questions",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7852",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.7944",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.7481"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7852,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.7944,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.7481
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "How the customer felt  -  3 questions",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "1",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "1",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "1"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1.0,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 1.0,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 1.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "How the customer felt  -  3 questions",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7852",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.7944",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.7481"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7852,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.7944,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.7481
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What the call was about  -  here all four differ",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7794",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.6996",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.6591"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7794,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.6996,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.6591
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What the call was about  -  here all four differ",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7934",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.8304",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.8208"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7934,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.8304,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.8208
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What the call was about  -  here all four differ",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7658",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.6044",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.5506"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7658,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.6044,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.5506
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What the call was about  -  here all four differ",
+          "label": "Accuracy  -  whole list matched",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.4278",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.3333",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.2833"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.4278,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.3333,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.2833
+          }
+        },
+        {
+          "section": "THE FREE TEXT   -   SCORED BY MEANING AND BY WORDING - SEE SCORECARD FOR BOTH",
+          "dimension": null,
+          "label": "The written summary  -  meaning match",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.964",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.9598",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.9572"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.964,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.9598,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.9572
+          }
+        },
+        {
+          "section": "THE FREE TEXT   -   SCORED BY MEANING AND BY WORDING - SEE SCORECARD FOR BOTH",
+          "dimension": null,
+          "label": "The transcript  -  meaning match",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.987",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.9782",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.9726"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.987,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.9782,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.9726
+          }
+        },
+        {
+          "section": "THE FREE TEXT   -   SCORED BY MEANING AND BY WORDING - SEE SCORECARD FOR BOTH",
+          "dimension": null,
+          "label": "The transcript  -  characters right (mean)",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.6959",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.6113",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.1652"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.6959,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.6113,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.1652
+          }
+        },
+        {
+          "section": "THE FREE TEXT   -   SCORED BY MEANING AND BY WORDING - SEE SCORECARD FOR BOTH",
+          "dimension": null,
+          "label": "The transcript  -  characters right (median)",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7715",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "0.6717",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "0.6741"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7715,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 0.6717,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 0.6741
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Per call",
+          "values": {
+            "GEMINI-2.5-FLASH": "2.5 s",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "cannot meansure",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "216.2 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 2.5,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": null,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 216.2
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Time for the whole round  -  seconds",
+          "values": {
+            "GEMINI-2.5-FLASH": "443.7 s",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "resumed over several days",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "38,922.0 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 443.7,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": null,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 38922.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Input",
+          "values": {
+            "GEMINI-2.5-FLASH": "7791855",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "6,136,076",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "3,492,899"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 7791855.0,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 6136076.0,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 3492899.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Output",
+          "values": {
+            "GEMINI-2.5-FLASH": "721081",
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": "622,643",
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": "347,735"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 721081.0,
+            "QWEN3.8-27B-FP8  (FULL PROMPT)": 622643.0,
+            "QWEN3.8-27B-FP8  (TRIM PROMPT)": 347735.0
+          }
+        }
+      ]
+    },
+    "Sentiment MNP": {
+      "arms": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8"
+      ],
+      "columns": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8"
+      ],
+      "derived": {
+        "dimensions": [
+          "Did the customer stay or churn  -  3 outcomes",
+          "Why they wanted to cancel  -  13 reasons"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline": {
+          "GEMINI-2.5-FLASH": 0.8564499999999999,
+          "QWEN3.8-27B-FP8": 0.8237
+        },
+        "headline_check": {
+          "GEMINI-2.5-FLASH": {
+            "reported": 0.8564499999999999,
+            "sum": 1.7129,
+            "mean": 0.85645,
+            "is_mean": true,
+            "is_sum_over_2": true
+          },
+          "QWEN3.8-27B-FP8": {
+            "reported": 0.8237,
+            "sum": 1.6474,
+            "mean": 0.8237,
+            "is_mean": true,
+            "is_sum_over_2": true
+          }
+        },
+        "weighted_average_formula": "mean of all 2 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 0,
+          "of": 4
+        },
+        "max_f1_vs_harmonic_gap": 0.0222,
+        "calls_scored": {
+          "GEMINI-2.5-FLASH": "100",
+          "QWEN3.8-27B-FP8": "100"
+        },
+        "per_call": {
+          "GEMINI-2.5-FLASH": "2.47 s",
+          "QWEN3.8-27B-FP8": "103.1 s"
+        },
+        "speech_to_text": {
+          "GEMINI-2.5-FLASH": "none - audio into the model",
+          "QWEN3.8-27B-FP8": "typhoon-whisper-large-v3"
+        },
+        "where": {
+          "GEMINI-2.5-FLASH": "Vertex AI batch",
+          "QWEN3.8-27B-FP8": "internal GPU endpoint"
+        },
+        "total_input": {
+          "GEMINI-2.5-FLASH": "1,519,525",
+          "QWEN3.8-27B-FP8": "440,269 label  +  471,549 analysis"
+        },
+        "total_output": {
+          "GEMINI-2.5-FLASH": "176,626  (+ 227,974 thinking)",
+          "QWEN3.8-27B-FP8": "125,233 label  +  4,656 analysis"
+        }
+      },
+      "rows": [
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Model",
+          "values": {
+            "GEMINI-2.5-FLASH": "gemini-2.5-flash",
+            "QWEN3.8-27B-FP8": "qwen3.8-27b-fp8"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Speech to text",
+          "values": {
+            "GEMINI-2.5-FLASH": "none - audio into the model",
+            "QWEN3.8-27B-FP8": "typhoon-whisper-large-v3"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Where it ran",
+          "values": {
+            "GEMINI-2.5-FLASH": "Vertex AI batch",
+            "QWEN3.8-27B-FP8": "internal GPU endpoint"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Calls scored",
+          "values": {
+            "GEMINI-2.5-FLASH": "100",
+            "QWEN3.8-27B-FP8": "100"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 100.0,
+            "QWEN3.8-27B-FP8": 100.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": null,
+          "label": "weighted Average F1 Score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8564499999999999",
+            "QWEN3.8-27B-FP8": "0.8237"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8564499999999999,
+            "QWEN3.8-27B-FP8": 0.8237
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  3 outcomes",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9489",
+            "QWEN3.8-27B-FP8": "0.8830"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9489,
+            "QWEN3.8-27B-FP8": 0.883
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  3 outcomes",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9686",
+            "QWEN3.8-27B-FP8": "0.9237"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9686,
+            "QWEN3.8-27B-FP8": 0.9237
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  3 outcomes",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.93",
+            "QWEN3.8-27B-FP8": "0.86"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.93,
+            "QWEN3.8-27B-FP8": 0.86
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  3 outcomes",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9522",
+            "QWEN3.8-27B-FP8": "0.8839"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9522,
+            "QWEN3.8-27B-FP8": 0.8839
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  13 reasons",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7640",
+            "QWEN3.8-27B-FP8": "0.7644"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.764,
+            "QWEN3.8-27B-FP8": 0.7644
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  13 reasons",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7016",
+            "QWEN3.8-27B-FP8": "0.7850"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7016,
+            "QWEN3.8-27B-FP8": 0.785
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  13 reasons",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.894",
+            "QWEN3.8-27B-FP8": "0.7748"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.894,
+            "QWEN3.8-27B-FP8": 0.7748
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  13 reasons",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9011",
+            "QWEN3.8-27B-FP8": "0.9172"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9011,
+            "QWEN3.8-27B-FP8": 0.9172
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Meaning match  -  cosine similarity",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9897",
+            "QWEN3.8-27B-FP8": "0.9806"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9897,
+            "QWEN3.8-27B-FP8": 0.9806
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Characters right  -  1 - mean CER",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8187",
+            "QWEN3.8-27B-FP8": "0.3898"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8187,
+            "QWEN3.8-27B-FP8": 0.3898
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Characters right  -  1 - median CER",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8354",
+            "QWEN3.8-27B-FP8": "0.7942"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8354,
+            "QWEN3.8-27B-FP8": 0.7942
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Per call",
+          "values": {
+            "GEMINI-2.5-FLASH": "2.47 s",
+            "QWEN3.8-27B-FP8": "103.1 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 2.47,
+            "QWEN3.8-27B-FP8": 103.1
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Time for the whole round  -  seconds",
+          "values": {
+            "GEMINI-2.5-FLASH": "324.0 s",
+            "QWEN3.8-27B-FP8": "10,312.9 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 324.0,
+            "QWEN3.8-27B-FP8": 10312.9
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Input",
+          "values": {
+            "GEMINI-2.5-FLASH": "1,519,525",
+            "QWEN3.8-27B-FP8": "440,269 label  +  471,549 analysis"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1519525.0,
+            "QWEN3.8-27B-FP8": 440269.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Output",
+          "values": {
+            "GEMINI-2.5-FLASH": "176,626  (+ 227,974 thinking)",
+            "QWEN3.8-27B-FP8": "125,233 label  +  4,656 analysis"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 176626.0,
+            "QWEN3.8-27B-FP8": 125233.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total tokens",
+          "values": {
+            "GEMINI-2.5-FLASH": "1,924,125",
+            "QWEN3.8-27B-FP8": "1,041,707"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1924125.0,
+            "QWEN3.8-27B-FP8": 1041707.0
+          }
+        }
+      ]
+    },
+    "Sentiment Telesale": {
+      "arms": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8"
+      ],
+      "columns": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8"
+      ],
+      "derived": {
+        "dimensions": [
+          "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+          "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+          "Customer experience  -  9 criteria, 8 hold one label on every call",
+          "Compliance  -  3 criteria, 2 hold one label on every call"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline": {
+          "GEMINI-2.5-FLASH": 0.9272250000000001,
+          "QWEN3.8-27B-FP8": 0.9351750000000001
+        },
+        "headline_check": {
+          "GEMINI-2.5-FLASH": {
+            "reported": 0.9272250000000001,
+            "sum": 3.7089,
+            "mean": 0.927225,
+            "is_mean": true,
+            "is_sum_over_2": false
+          },
+          "QWEN3.8-27B-FP8": {
+            "reported": 0.9351750000000001,
+            "sum": 3.7407,
+            "mean": 0.935175,
+            "is_mean": true,
+            "is_sum_over_2": false
+          }
+        },
+        "weighted_average_formula": "mean of all 4 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 0,
+          "of": 8
+        },
+        "max_f1_vs_harmonic_gap": 0.0204,
+        "calls_scored": {
+          "GEMINI-2.5-FLASH": "26",
+          "QWEN3.8-27B-FP8": "25  -  1 call failed (stream exceeded 900s ×1)"
+        },
+        "per_call": {
+          "GEMINI-2.5-FLASH": "9.72 s",
+          "QWEN3.8-27B-FP8": "72.1 s"
+        },
+        "speech_to_text": {
+          "GEMINI-2.5-FLASH": "none - audio into the model",
+          "QWEN3.8-27B-FP8": "typhoon-whisper-large-v3"
+        },
+        "where": {
+          "GEMINI-2.5-FLASH": "Vertex AI batch",
+          "QWEN3.8-27B-FP8": "internal GPU endpoint"
+        },
+        "total_input": {
+          "GEMINI-2.5-FLASH": "1,140,018",
+          "QWEN3.8-27B-FP8": "107,694 label  +  749,655 analysis"
+        },
+        "total_output": {
+          "GEMINI-2.5-FLASH": "87,509",
+          "QWEN3.8-27B-FP8": "20,758 label  +  15,039 analysis"
+        }
+      },
+      "rows": [
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Model",
+          "values": {
+            "GEMINI-2.5-FLASH": "gemini-2.5-flash",
+            "QWEN3.8-27B-FP8": "qwen3.8-27b-fp8"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Speech to text",
+          "values": {
+            "GEMINI-2.5-FLASH": "none - audio into the model",
+            "QWEN3.8-27B-FP8": "typhoon-whisper-large-v3"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Where it ran",
+          "values": {
+            "GEMINI-2.5-FLASH": "Vertex AI batch",
+            "QWEN3.8-27B-FP8": "internal GPU endpoint"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Calls scored",
+          "values": {
+            "GEMINI-2.5-FLASH": "26",
+            "QWEN3.8-27B-FP8": "25  -  1 call failed (stream exceeded 900s ×1)"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 26.0,
+            "QWEN3.8-27B-FP8": 25.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": null,
+          "label": "weighted Average F1 Score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9272250000000001",
+            "QWEN3.8-27B-FP8": "0.9351750000000001"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9272250000000001,
+            "QWEN3.8-27B-FP8": 0.9351750000000001
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9577",
+            "QWEN3.8-27B-FP8": "0.9451"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9577,
+            "QWEN3.8-27B-FP8": 0.9451
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9732",
+            "QWEN3.8-27B-FP8": "0.9616"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9732,
+            "QWEN3.8-27B-FP8": 0.9616
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9487",
+            "QWEN3.8-27B-FP8": "0.9360"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9487,
+            "QWEN3.8-27B-FP8": 0.936
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9487",
+            "QWEN3.8-27B-FP8": "0.9360"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9487,
+            "QWEN3.8-27B-FP8": 0.936
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9053",
+            "QWEN3.8-27B-FP8": "0.8970"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9053,
+            "QWEN3.8-27B-FP8": 0.897
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9437",
+            "QWEN3.8-27B-FP8": "0.9558"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9437,
+            "QWEN3.8-27B-FP8": 0.9558
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8942",
+            "QWEN3.8-27B-FP8": "0.8700"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8942,
+            "QWEN3.8-27B-FP8": 0.87
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8942",
+            "QWEN3.8-27B-FP8": "0.8700"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8942,
+            "QWEN3.8-27B-FP8": 0.87
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Customer experience  -  9 criteria, 8 hold one label on every call",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9258",
+            "QWEN3.8-27B-FP8": "0.9185"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9258,
+            "QWEN3.8-27B-FP8": 0.9185
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Customer experience  -  9 criteria, 8 hold one label on every call",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9466",
+            "QWEN3.8-27B-FP8": "0.9586"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9466,
+            "QWEN3.8-27B-FP8": 0.9586
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Customer experience  -  9 criteria, 8 hold one label on every call",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9231",
+            "QWEN3.8-27B-FP8": "0.9200"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9231,
+            "QWEN3.8-27B-FP8": 0.92
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Customer experience  -  9 criteria, 8 hold one label on every call",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9231",
+            "QWEN3.8-27B-FP8": "0.9200"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9231,
+            "QWEN3.8-27B-FP8": 0.92
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Compliance  -  3 criteria, 2 hold one label on every call",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9201",
+            "QWEN3.8-27B-FP8": "0.9801"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9201,
+            "QWEN3.8-27B-FP8": 0.9801
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Compliance  -  3 criteria, 2 hold one label on every call",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9694",
+            "QWEN3.8-27B-FP8": "0.9739"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9694,
+            "QWEN3.8-27B-FP8": 0.9739
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Compliance  -  3 criteria, 2 hold one label on every call",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8846",
+            "QWEN3.8-27B-FP8": "0.9867"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8846,
+            "QWEN3.8-27B-FP8": 0.9867
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Compliance  -  3 criteria, 2 hold one label on every call",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8846",
+            "QWEN3.8-27B-FP8": "0.9867"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8846,
+            "QWEN3.8-27B-FP8": 0.9867
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Meaning match  -  cosine similarity",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9853",
+            "QWEN3.8-27B-FP8": "0.9903"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9853,
+            "QWEN3.8-27B-FP8": 0.9903
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Characters right  -  1 - mean CER",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.4188",
+            "QWEN3.8-27B-FP8": "0.821"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.4188,
+            "QWEN3.8-27B-FP8": 0.821
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Characters right  -  1 - median CER",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8921",
+            "QWEN3.8-27B-FP8": "0.8368"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8921,
+            "QWEN3.8-27B-FP8": 0.8368
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Per call",
+          "values": {
+            "GEMINI-2.5-FLASH": "9.72 s",
+            "QWEN3.8-27B-FP8": "72.1 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 9.72,
+            "QWEN3.8-27B-FP8": 72.1
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Time for the whole round  -  seconds",
+          "values": {
+            "GEMINI-2.5-FLASH": "359.4 s",
+            "QWEN3.8-27B-FP8": "1,803.7 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 359.4,
+            "QWEN3.8-27B-FP8": 1803.7
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Input",
+          "values": {
+            "GEMINI-2.5-FLASH": "1,140,018",
+            "QWEN3.8-27B-FP8": "107,694 label  +  749,655 analysis"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1140018.0,
+            "QWEN3.8-27B-FP8": 107694.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Output",
+          "values": {
+            "GEMINI-2.5-FLASH": "87,509",
+            "QWEN3.8-27B-FP8": "20,758 label  +  15,039 analysis"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 87509.0,
+            "QWEN3.8-27B-FP8": 20758.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total tokens",
+          "values": {
+            "GEMINI-2.5-FLASH": "1,227,527",
+            "QWEN3.8-27B-FP8": "893,146"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1227527.0,
+            "QWEN3.8-27B-FP8": 893146.0
+          }
+        }
+      ]
+    },
+    "Sentiment Retention": {
+      "arms": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8"
+      ],
+      "columns": [
+        "GEMINI-2.5-FLASH",
+        "QWEN3.8-27B-FP8"
+      ],
+      "derived": {
+        "dimensions": [
+          "Did the customer stay or churn  -  4 outcomes",
+          "Why they wanted to cancel  -  11 reasons",
+          "What product the call was about  -  4 products"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline": {
+          "GEMINI-2.5-FLASH": 0.8831000000000001,
+          "QWEN3.8-27B-FP8": 0.8082333333333334
+        },
+        "headline_check": {
+          "GEMINI-2.5-FLASH": {
+            "reported": 0.8831000000000001,
+            "sum": 2.6493,
+            "mean": 0.8831,
+            "is_mean": true,
+            "is_sum_over_2": false
+          },
+          "QWEN3.8-27B-FP8": {
+            "reported": 0.8082333333333334,
+            "sum": 2.4247,
+            "mean": 0.808233,
+            "is_mean": true,
+            "is_sum_over_2": false
+          }
+        },
+        "weighted_average_formula": "mean of all 3 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 0,
+          "of": 6
+        },
+        "max_f1_vs_harmonic_gap": 0.0293,
+        "calls_scored": {
+          "GEMINI-2.5-FLASH": "97",
+          "QWEN3.8-27B-FP8": "96  -  1 call failed (stream exceeded 900s ×1)"
+        },
+        "per_call": {
+          "GEMINI-2.5-FLASH": "6.78 s",
+          "QWEN3.8-27B-FP8": "77.9 s"
+        },
+        "speech_to_text": {
+          "GEMINI-2.5-FLASH": "none - audio into the model",
+          "QWEN3.8-27B-FP8": "typhoon-whisper-large-v3"
+        },
+        "where": {
+          "GEMINI-2.5-FLASH": "Vertex AI batch",
+          "QWEN3.8-27B-FP8": "internal GPU endpoint"
+        },
+        "total_input": {
+          "GEMINI-2.5-FLASH": "1,536,808",
+          "QWEN3.8-27B-FP8": "450,334 label  +  382,175 analysis"
+        },
+        "total_output": {
+          "GEMINI-2.5-FLASH": "178,804",
+          "QWEN3.8-27B-FP8": "168,624 label  +  7,884 analysis"
+        }
+      },
+      "rows": [
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Model",
+          "values": {
+            "GEMINI-2.5-FLASH": "gemini-2.5-flash",
+            "QWEN3.8-27B-FP8": "qwen3.8-27b-fp8"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Speech to text",
+          "values": {
+            "GEMINI-2.5-FLASH": "none - audio into the model",
+            "QWEN3.8-27B-FP8": "typhoon-whisper-large-v3"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Where it ran",
+          "values": {
+            "GEMINI-2.5-FLASH": "Vertex AI batch",
+            "QWEN3.8-27B-FP8": "internal GPU endpoint"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": null,
+            "QWEN3.8-27B-FP8": null
+          }
+        },
+        {
+          "section": "WHAT RAN",
+          "dimension": null,
+          "label": "Calls scored",
+          "values": {
+            "GEMINI-2.5-FLASH": "97",
+            "QWEN3.8-27B-FP8": "96  -  1 call failed (stream exceeded 900s ×1)"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 97.0,
+            "QWEN3.8-27B-FP8": 96.0
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": null,
+          "label": "weighted Average F1 Score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8831000000000001",
+            "QWEN3.8-27B-FP8": "0.8082333333333334"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8831000000000001,
+            "QWEN3.8-27B-FP8": 0.8082333333333334
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  4 outcomes",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9147",
+            "QWEN3.8-27B-FP8": "0.8279"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9147,
+            "QWEN3.8-27B-FP8": 0.8279
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  4 outcomes",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9324",
+            "QWEN3.8-27B-FP8": "0.8758"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9324,
+            "QWEN3.8-27B-FP8": 0.8758
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  4 outcomes",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9038",
+            "QWEN3.8-27B-FP8": "0.7981"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9038,
+            "QWEN3.8-27B-FP8": 0.7981
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Did the customer stay or churn  -  4 outcomes",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9161",
+            "QWEN3.8-27B-FP8": "0.8307"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9161,
+            "QWEN3.8-27B-FP8": 0.8307
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  11 reasons",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7758",
+            "QWEN3.8-27B-FP8": "0.6264"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7758,
+            "QWEN3.8-27B-FP8": 0.6264
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  11 reasons",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.7491",
+            "QWEN3.8-27B-FP8": "0.7023"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.7491,
+            "QWEN3.8-27B-FP8": 0.7023
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  11 reasons",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8391",
+            "QWEN3.8-27B-FP8": "0.6149"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8391,
+            "QWEN3.8-27B-FP8": 0.6149
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "Why they wanted to cancel  -  11 reasons",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8788",
+            "QWEN3.8-27B-FP8": "0.8564"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8788,
+            "QWEN3.8-27B-FP8": 0.8564
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What product the call was about  -  4 products",
+          "label": "F1-score",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9588",
+            "QWEN3.8-27B-FP8": "0.9704"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9588,
+            "QWEN3.8-27B-FP8": 0.9704
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What product the call was about  -  4 products",
+          "label": "Precision",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9484",
+            "QWEN3.8-27B-FP8": "0.9904"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9484,
+            "QWEN3.8-27B-FP8": 0.9904
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What product the call was about  -  4 products",
+          "label": "Recall",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9712",
+            "QWEN3.8-27B-FP8": "0.9519"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9712,
+            "QWEN3.8-27B-FP8": 0.9519
+          }
+        },
+        {
+          "section": "BUSINESS OUTCOME",
+          "dimension": "What product the call was about  -  4 products",
+          "label": "Accuracy",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.96",
+            "QWEN3.8-27B-FP8": "0.9721"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.96,
+            "QWEN3.8-27B-FP8": 0.9721
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Meaning match  -  cosine similarity",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.9927",
+            "QWEN3.8-27B-FP8": "0.9752"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.9927,
+            "QWEN3.8-27B-FP8": 0.9752
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Characters right  -  1 - mean CER",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8297",
+            "QWEN3.8-27B-FP8": "-0.2930"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8297,
+            "QWEN3.8-27B-FP8": -0.293
+          }
+        },
+        {
+          "section": "THE TRANSCRIPT   -   SCORED BY MEANING AND BY WORDING",
+          "dimension": null,
+          "label": "Characters right  -  1 - median CER",
+          "values": {
+            "GEMINI-2.5-FLASH": "0.8577",
+            "QWEN3.8-27B-FP8": "0.7961"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 0.8577,
+            "QWEN3.8-27B-FP8": 0.7961
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Per call",
+          "values": {
+            "GEMINI-2.5-FLASH": "6.78 s",
+            "QWEN3.8-27B-FP8": "77.9 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 6.78,
+            "QWEN3.8-27B-FP8": 77.9
+          }
+        },
+        {
+          "section": "LATENCY",
+          "dimension": null,
+          "label": "Time for the whole round  -  seconds",
+          "values": {
+            "GEMINI-2.5-FLASH": "765.0 s",
+            "QWEN3.8-27B-FP8": "7,478.3 s"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 765.0,
+            "QWEN3.8-27B-FP8": 7478.3
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Input",
+          "values": {
+            "GEMINI-2.5-FLASH": "1,536,808",
+            "QWEN3.8-27B-FP8": "450,334 label  +  382,175 analysis"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1536808.0,
+            "QWEN3.8-27B-FP8": 450334.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total Output",
+          "values": {
+            "GEMINI-2.5-FLASH": "178,804",
+            "QWEN3.8-27B-FP8": "168,624 label  +  7,884 analysis"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 178804.0,
+            "QWEN3.8-27B-FP8": 168624.0
+          }
+        },
+        {
+          "section": "TOKENS",
+          "dimension": null,
+          "label": "Total tokens",
+          "values": {
+            "GEMINI-2.5-FLASH": "1,715,612",
+            "QWEN3.8-27B-FP8": "1,009,017"
+          },
+          "numeric": {
+            "GEMINI-2.5-FLASH": 1715612.0,
+            "QWEN3.8-27B-FP8": 1009017.0
+          }
+        }
+      ]
+    }
+  }
+}

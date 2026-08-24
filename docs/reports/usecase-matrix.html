@@ -1,0 +1,377 @@
+<meta charset="utf-8">
+<title>All Use Cases, One Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1b2024; --ink-2:#4a555f; --muted:#7c8791;
+  --page:#ebeef0; --card:#ffffff; --rule:#e3e8ea; --rule-2:#cfd7db; --band:#f4f6f7;
+  --ours:#e8f0ee; --ours-edge:#b6d0c8; --ours-ink:#12645a;
+  --good:#1f6b47; --bad:#9d3520; --warn:#8a5a11;
+  --accent:#0b6a70;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+    --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+    --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+    --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+  --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+  --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+  --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+}
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--page); color:var(--ink); font-size:13.5px; line-height:1.45;
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.sheet{max-width:960px; margin:0 auto; padding:24px 20px 40px}
+
+.masthead{display:flex; justify-content:space-between; align-items:flex-end; gap:18px;
+  flex-wrap:wrap; margin-bottom:16px}
+h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+.sub{color:var(--muted); font-size:12px; margin:3px 0 0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted);
+  text-align:right; line-height:1.7}
+
+h2{font-size:13.5px; font-weight:700; margin:18px 0 8px; letter-spacing:-.005em}
+h2 .n{font-family:"IBM Plex Mono",monospace; color:var(--accent); font-weight:600; margin-right:6px}
+
+.strip{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px}
+.tile{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; padding:11px 13px}
+.tile .big{font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tile .cap{font-size:10.5px; color:var(--muted); margin-top:3px; line-height:1.35}
+.tile.win .big{color:var(--good)} .tile.risk .big{color:var(--bad)}
+
+.card{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px}
+thead th{padding:9px 13px; text-align:left; border-bottom:1px solid var(--rule-2);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  font-weight:600; background:var(--band)}
+thead th.n, tbody td.n{text-align:right}
+tbody td{padding:8px 13px; border-bottom:1px solid var(--rule); font-size:12.5px; color:var(--ink-2)}
+tbody td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+tbody td:first-child{color:var(--ink); font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+tr.ours td{background:var(--ours)}
+tr.ours td:first-child{border-left:2px solid var(--ours-edge)}
+.hint{display:block; color:var(--muted); font-size:11px; font-weight:400; margin-top:1px}
+.up{color:var(--good); font-weight:600} .dn{color:var(--bad); font-weight:600}
+.pill{display:inline-block; padding:1px 7px; border-radius:100px; font-size:10.5px;
+  font-family:"IBM Plex Mono",monospace; font-weight:500; white-space:nowrap}
+.pill.down{background:#fbeae6; color:#9d3520; border:1px solid #eec4b8}
+
+/* The one-matrix page: wide and short, so it scrolls sideways with the measure column pinned
+   to the left edge. Without the pin a reader loses which row they are on by column six. */
+.sheet.wide{max-width:1320px}
+table.mx{min-width:1100px; border-collapse:separate; border-spacing:0}
+table.mx th, table.mx td{border-bottom:1px solid var(--rule)}
+table.mx th.ml, table.mx td.ml{position:sticky; left:0; z-index:2; background:var(--card);
+  min-width:196px; box-shadow:1px 0 0 var(--rule-2)}
+table.mx thead th.ml{background:var(--band)}
+table.mx thead th.grp{text-align:center; border-left:2px solid var(--rule-2);
+  letter-spacing:.06em; color:var(--ink); background:var(--band)}
+table.mx thead th{position:sticky; top:0; z-index:1; background:var(--band)}
+table.mx thead tr:first-child th.ml{z-index:3}
+table.mx td.cand{background:var(--ours)}
+table.mx th.cand{background:var(--ours); color:var(--ours-ink)}
+table.mx th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.mx tr.emph td{font-weight:600; background:var(--band)}
+table.mx tr.emph td.cand{background:var(--ours)}
+table.mx tr.emph td.ml{background:var(--band)}
+table.mx .muted{color:var(--muted); font-family:"Public Sans",sans-serif; font-size:11px}
+table.mx td, table.mx th{padding:7px 11px; white-space:nowrap}
+/* ...except the pinned measure column, which carries sentences. Left nowrap it grows to the
+   width of its longest sublabel and shoves the data columns off the card. */
+table.mx td.ml, table.mx th.ml{white-space:normal; max-width:250px}
+table.mx td.ml .hint{white-space:normal}
+/* The unit noun under each cost figure is a second line inside a nowrap cell. */
+table.mx td.n .hint{white-space:nowrap; font-size:10px}
+
+/* The two-column summary that opens the page. */
+table.sum{min-width:0; table-layout:fixed}
+table.sum td:first-child, table.sum th:first-child{width:38%}
+table.sum td.cand, table.sum th.cand{background:var(--ours)}
+table.sum th.cand{color:var(--ours-ink)}
+table.sum th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.sum tr.emph td{background:var(--band); font-weight:600}
+table.sum tr.emph td.cand{background:var(--ours)}
+table.sum td.n{vertical-align:top}
+table.sum td.muted, table.sum .muted{color:var(--muted); font-family:"Public Sans",sans-serif}
+
+/* Use-case tables: a banded group row, and a tint down the candidate columns so the eye can
+   follow "ours" without re-reading the header on every row. */
+p.lede{margin:-4px 0 8px; color:var(--muted); font-size:11.5px}
+table.uc tbody tr.group td{background:var(--band); border-bottom:1px solid var(--rule-2)}
+table.uc tbody tr.group td:first-child{color:var(--ink); font-weight:700; font-size:11.5px}
+table.uc tbody tr.group td.cand{background:var(--ours)}
+table.uc td.cand{background:var(--ours)}
+table.uc thead th.cand{background:var(--ours); color:var(--ours-ink)}
+table.uc thead th.cand .hint{color:var(--ours-ink); opacity:.75}
+table.uc td:first-child{width:34%}
+table.uc tbody td{vertical-align:top}
+
+/* Fixed-layout tables: without this a cell holding a long file path blows the column model up
+   and pushes the right-hand columns off the card, where a reader never scrolls to find them. */
+table.fixed{table-layout:fixed; min-width:0}
+table.fixed td,table.fixed th{overflow-wrap:anywhere; word-break:normal}
+table.fixed td .hint{overflow-wrap:anywhere}
+
+.note{margin:12px 0 0; padding:11px 14px; background:var(--card); border:1px solid var(--rule-2);
+  border-left:3px solid var(--accent); border-radius:4px; font-size:12px}
+.note.risk{border-left-color:var(--bad)}
+.note b{color:var(--ink)} .note p{margin:0 0 6px} .note p:last-child{margin-bottom:0}
+ul{margin:6px 0 0; padding-left:19px; font-size:12px} li{margin-bottom:4px}
+.foot{margin-top:14px; font-size:11px; color:var(--muted)}
+
+@media print{
+  @page{size:A4 portrait; margin:9mm}
+  body{background:#fff; font-size:8.6pt}
+  .sheet{padding:0; max-width:none}
+  .card,.tile,.note{border-color:#bbb; overflow:visible}
+  table{min-width:0}
+  h1{font-size:12.6pt} h2{font-size:9.4pt; margin:11px 0 5px}
+  .tile .big{font-size:13pt} .tile .cap{font-size:6.6pt}
+  thead th{padding:5px 7px; font-size:6.4pt}
+  tbody td{padding:3.6px 7px; font-size:7.7pt}
+  .hint{font-size:6.6pt} .note{font-size:7.2pt; padding:7px 9px} ul{font-size:7.4pt}
+  .foot{font-size:6.6pt} .strip{gap:6px}
+  tr.ours td{background:#e8f0ee !important}
+  thead th{background:#f2f4f5 !important}
+  .pill.down{background:#fbeae6 !important}
+  tr.ours td,thead th,.pill{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}
+</style>
+
+<div class="sheet wide">
+
+<div class="masthead">
+  <div>
+    <h1>All use cases, one matrix</h1>
+    <p class="sub">Every measure that means the same thing across all six &middot; columns are
+    use case &times; model &middot; figures parsed from
+    <code>OverallEvaluationReport (1).xlsx</code></p>
+  </div>
+  <div class="stamp">
+    2026-08-24<br>
+    12 columns<br>
+    tokens reconciled 6/6
+  </div>
+</div>
+
+
+<h2><span class="n">1</span>Internal models against production, six tasks</h2>
+
+<div class="strip">
+  <div class="tile win">
+    <div class="big">97.4%</div>
+    <div class="cap">of production quality<br>across all six tasks</div>
+  </div>
+  <div class="tile win">
+    <div class="big">99.2%</div>
+    <div class="cap">on the 2 tasks with <b>no speech stage</b><br>
+    where the model reads the source directly</div>
+  </div>
+  <div class="tile">
+    <div class="big">2 of 6</div>
+    <div class="cap">tasks at parity or ahead<br>RTR-Fraud, Telesale</div>
+  </div>
+  <div class="tile risk">
+    <div class="big">4.2&ndash;86.5&times;</div>
+    <div class="cap">slower per item<br>the number to be ready for</div>
+  </div>
+</div>
+
+<div class="card">
+<table class="mx">
+  <thead>
+    <tr><th class='ml' rowspan='2'>Task<span class='hint'>best internal configuration</span></th><th class='grp' colspan='2'>F1</th><th class='grp' colspan='2'>Accuracy</th><th class='grp' colspan='2'>Input tokens</th><th class='grp' colspan='2'>Output tokens</th><th class='grp' colspan='2'>Cost per item</th></tr>
+    <tr><th class='n inc'>Gemini</th><th class='n cand'>Internal</th><th class='n inc'>Gemini</th><th class='n cand'>Internal</th><th class='n inc'>Gemini</th><th class='n cand'>Internal</th><th class='n inc'>Gemini</th><th class='n cand'>Internal</th><th class='n inc'>Gemini</th><th class='n cand'>Internal</th></tr>
+  </thead>
+  <tbody>
+    <tr class='emph'><td class='ml'>Sentiment Telesale<span class='hint'>QWEN3.8-27B-FP8</span></td><td class='n inc'>0.9272</td><td class='n cand'>0.9352</td><td class='n inc'>0.9126</td><td class='n cand'>0.9282</td><td class='n inc'>1,140,018</td><td class='n cand'>857,349</td><td class='n inc'>87,509</td><td class='n cand'>35,797</td><td class='n inc'><b>$0.0523</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+    <tr class='emph'><td class='ml'>RTR-Fraud<span class='hint'>QWEN3.8-27B-FP8</span></td><td class='n inc'>0.9877</td><td class='n cand'>0.9923</td><td class='n inc'>0.9882</td><td class='n cand'>0.9928</td><td class='n inc'>620,730</td><td class='n cand'>1,983,182</td><td class='n inc'>23,958</td><td class='n cand'>65,340</td><td class='n inc'><b>$0.0012</b><sup>*</sup><span class='hint'>per submission</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+    <tr><td class='ml'>Tax-Invoice<span class='hint'>QWEN3.8-27B-FP8 (NEW PROMPT)</span></td><td class='n inc'>0.9992</td><td class='n cand'>0.9791</td><td class='n inc'>0.9986</td><td class='n cand'>0.9723</td><td class='n inc'>2,757,155</td><td class='n cand'>3,095,731</td><td class='n inc'>611,447</td><td class='n cand'>580,430</td><td class='n inc'><b>$0.0874</b><span class='hint'>per page</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+    <tr><td class='ml'>Sentiment QA<span class='hint'>QWEN3.8-27B-FP8 (FULL PROMPT)</span></td><td class='n inc'>0.8591</td><td class='n cand'>0.8304</td><td class='n inc'>0.6899</td><td class='n cand'>0.6583</td><td class='n inc'>7,791,855</td><td class='n cand'>6,136,076</td><td class='n inc'>721,081</td><td class='n cand'>622,643</td><td class='n inc'><b>$0.0533</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+    <tr><td class='ml'>Sentiment MNP<span class='hint'>QWEN3.8-27B-FP8</span></td><td class='n inc'>0.8564</td><td class='n cand'>0.8237</td><td class='n inc'>0.9266</td><td class='n cand'>0.9005</td><td class='n inc'>1,519,525</td><td class='n cand'>911,818</td><td class='n inc'>404,600</td><td class='n cand'>129,889</td><td class='n inc'><b>$0.0253</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+    <tr><td class='ml'>Sentiment Retention<span class='hint'>QWEN3.8-27B-FP8</span></td><td class='n inc'>0.8831</td><td class='n cand'>0.8082</td><td class='n inc'>0.9183</td><td class='n cand'>0.8864</td><td class='n inc'>1,536,808</td><td class='n cand'>832,509</td><td class='n inc'>178,804</td><td class='n cand'>176,508</td><td class='n inc'><b>$0.0205</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+    <tr class='emph'><td class='ml'>All six<span class='hint'>one task, one vote for F1 and Accuracy; sum for tokens</span></td><td class='n inc'><b>0.9188</b></td><td class='n cand'><b>0.8948</b><span class='hint'>97.4% of production<br>97.3% as mean of ratios</span></td><td class='n inc'><b>0.9057</b></td><td class='n cand'><b>0.8897</b><span class='hint'>98.2% of production<br>98.1% as mean of ratios</span></td><td class='n inc'><b>15,366,091</b></td><td class='n cand'><b>13,816,665</b></td><td class='n inc'><b>2,027,399</b></td><td class='n cand'><b>1,610,607</b></td><td class='n inc'><span class='muted'>not aggregated<br>range $0.0012&ndash;$0.0874</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="lede">Tokens are whole-round totals, including thinking tokens on the output side.
+Cost is the average for <b>one item</b> &mdash; one submission, one page or one call, named in
+each cell &mdash; not the run total, and the six are not addable because those units differ.</p>
+
+<div class="note">
+  <p><b>Accuracy is not independent information on most tasks.</b> RTR-Fraud, Tax-Invoice and Sentiment Telesale each score it identical to Precision or Recall on every dimension -- a consequence of those tabs' confusion matrices being built with FN=0 or TN=0, the same construction already documented for this workbook. Only Sentiment MNP, Sentiment Retention and one dimension of Sentiment QA carry an accuracy that could not already be read off a column shown elsewhere. It is published here because it is a real number the workbook prints, not because it corroborates the F1 column with a second, independent look.</p>
+  <ul>
+    <li><b>RTR-Fraud</b> &mdash; identical to Precision and Recall on every dimension</li>
+    <li><b>Tax-Invoice</b> &mdash; identical to Precision on every dimension</li>
+    <li><b>Sentiment QA</b> &mdash; 1 of 3 dimensions independent (What the call was about  -  here all four differ); the rest equal Precision or Recall</li>
+    <li><b>Sentiment MNP</b> &mdash; an independent measurement, not derivable from Precision or Recall</li>
+    <li><b>Sentiment Telesale</b> &mdash; identical to Recall on every dimension</li>
+    <li><b>Sentiment Retention</b> &mdash; an independent measurement, not derivable from Precision or Recall</li>
+  </ul>
+</div>
+
+<div class="note">
+  <p><b>The gap is concentrated in one stage, and it is not the labelling model.</b> On the
+  2 tasks where the internal model reads the source directly
+  &mdash; RTR-Fraud and Tax-Invoice &mdash; it reaches
+  <b>99.2%</b> of production. On the 4 that
+  put a <b>speech-to-text stage in front of it</b>, 96.4%. The
+  workbook corroborates the mechanism from the inside: the internal transcript on Retention
+  scores a mean character error rate <i>above 1.0</i>, and Sentiment QA's transcript quality
+  tracks which speech model ran rather than which prompt.</p>
+  <p><b>Two cautions. The two direct tasks are also the two where the incumbent scores 0.9877 and 0.9993, so part of that closeness is a ceiling with little headroom to lose, and it is only two data points. And neither source publishes a single token, second or dollar for the speech stage, so this identifies where the gap is without establishing what closing it would cost.</b></p>
+</div>
+
+<div class="note risk">
+  <p><b>The four questions this page has to survive.</b></p>
+  <ul>
+    <li><b>&ldquo;97% of an F1 is not 97% as good.&rdquo;</b> Correct. On an error basis the
+    same six results read as <b>1.296&times; the errors</b>
+    (0.0812 against 0.1052 mean 1&minus;F1).
+    Both figures are true and both belong in the room.</li>
+    <li><b>&ldquo;You picked the best model per task.&rdquo;</b> Partly &mdash; and the exposure
+    is small. On 3 of the six tasks only one
+    internal arm ran, so nothing was selected. On two more the candidates are the same model
+    under different prompts. Only RTR-Fraud, margin 0.000855 over Gemma-4-12B. Against the mean of
+    every internal arm (0.8764) this selection flatters by
+    0.0184.</li>
+    <li><b>&ldquo;How much slower?&rdquo;</b> 4.2&times; to
+    <b>86.5&times;</b> per item. Per-item latency on the 5 tasks that publish it for the selected arm. Sentiment QA does not: its cell reads 'cannot meansure' and the round was 'resumed over several days', so that run cannot be timed. The absence flatters the internal side, so the figure that does exist for that task is published beside it -- its other configuration ran at 86.5x, the slowest of the whole set.</li>
+    <li><b>&ldquo;What do we save?&rdquo;</b> This evaluation cannot say what migrating would save. Three inputs are missing: production volume per task, the internal endpoint's cost per hour and its throughput, and the cost of the speech-to-text stage. Asking for those three is a firmer position than a saving that cannot be evidenced.</li>
+  </ul>
+</div>
+
+<div class="note">
+  <p><b>Two tasks are shown as parity rather than as wins</b>
+  (RTR-Fraud, Sentiment Telesale). Both leads are inside their own measurement noise. RTR-Fraud's +0.0045 was bought with 594 internal model calls against the incumbent's 198 over the same 198 submissions. Telesale's +0.0080 is over 25 calls scored against 26, and turns on one dimension of four -- the incumbent leads the other three, and the one internal wins carries 3 criteria against the others' 15, 12 and 9. Present these as parity, not as wins.</p>
+  <p><b>Sentiment Retention is the widest gap at
+  91.5%
+  and it stays in the headline.</b> Excluding it would read
+  98.5%. Sentiment Retention was rescored between two workbook revisions this week -- outcome F1 moved 0.4537 to 0.9147 on identical calls, tokens and latency -- which makes it arguably provisional. It is NOT excluded from the headline, because the rescore moved both arms: the incumbent led before it (93.4%) and leads by more after it (91.5%). Dropping the task improves the figure by 1.1 points without a reason that survives the question 'did it change who leads?'</p>
+  <p><b>Cost.</b> The incumbent's side of this evaluation cost
+  <b>$28.57</b> at list rates. Not metered. Neither source publishes a cost, price, GPU-hour or utilisation figure for the internal endpoint in any of its six tabs. That is a measurement never taken -- it is not $0, not free and not n/a.</p>
+</div>
+
+<div class="note risk">
+  <p><b>What this page must not be read as saying.</b></p>
+  <ul>
+    <li>That the internal models match the incumbent, or that the gap is within noise. They are behind under every defensible aggregation, and neither source publishes any dispersion or interval that could support a noise claim.</li>
+    <li>That the internal side uses fewer tokens, or that this is efficiency. It is an artefact of an unmeasured speech stage and a different tokeniser.</li>
+    <li>That migrating saves money. No internal cost figure exists in either source.</li>
+    <li>That 'weighted Average F1' is a weighted average. Only RTR-Fraud is; Tax-Invoice covers 2 of its 4 dimensions and the rest are plain means.</li>
+    <li>That Accuracy is an independent check on the F1 column. On RTR-Fraud, Tax-Invoice and Sentiment Telesale it is arithmetically identical to Precision or Recall; only MNP, Retention and one dimension of QA carry a genuinely independent figure.</li>
+  </ul>
+  <p class="hint">Internal column is the best-scoring internal configuration per task, named in
+  each row. The models are Qwen3.8-27B-FP8 throughout, with Gemma-4-12B as a second candidate
+  on two tasks; the four speech tasks run a separate transcription model in front. Figures are
+  the parallel evaluation project's, parsed from their workbook, not reproduced here.</p>
+</div>
+
+<h2><span class="n">2</span>The same measures, use case by use case</h2>
+<p class="lede">Where the summary above comes from &mdash; the same arms, two columns per task.
+Other internal configurations ran and are not shown here: RTR-Fraud: GEMMA-4-12B-IT (0.9914); Tax-Invoice: QWEN3.8-27B-FP8 (OLD PROMPT) (0.9779); Tax-Invoice: GEMMA-4-12B-IT (OLD PROMPT) (0.6205); Sentiment QA: QWEN3.8-27B-FP8 (TRIM PROMPT) (0.8057). All of them appear in the six-table report.</p>
+
+<div class="card">
+<table class="mx">
+  <thead>
+    <tr><th class="ml" rowspan="2">Measure</th><th class='grp' colspan='2'>RTR-Fraud</th><th class='grp' colspan='2'>Tax-Invoice</th><th class='grp' colspan='2'>Sentiment QA</th><th class='grp' colspan='2'>Sentiment MNP</th><th class='grp' colspan='2'>Sentiment Telesale</th><th class='grp' colspan='2'>Sentiment Retention</th></tr>
+    <tr><th class='n inc'>Gemini<span class='hint'>incumbent</span></th><th class='n cand'>Qwen3.8-27B<span class='hint'>ours</span></th><th class='n inc'>Gemini 3.1 Pro<span class='hint'>incumbent</span></th><th class='n cand'>Qwen3.8-27B (NEW PROMPT)<span class='hint'>ours</span></th><th class='n inc'>Gemini 2.5 Flash<span class='hint'>incumbent</span></th><th class='n cand'>Qwen3.8-27B (FULL PROMPT)<span class='hint'>ours</span></th><th class='n inc'>Gemini 2.5 Flash<span class='hint'>incumbent</span></th><th class='n cand'>Qwen3.8-27B<span class='hint'>ours</span></th><th class='n inc'>Gemini 2.5 Flash<span class='hint'>incumbent</span></th><th class='n cand'>Qwen3.8-27B<span class='hint'>ours</span></th><th class='n inc'>Gemini 2.5 Flash<span class='hint'>incumbent</span></th><th class='n cand'>Qwen3.8-27B<span class='hint'>ours</span></th></tr>
+  </thead>
+  <tbody>
+    <tr class="emph"><td class='ml'>Weighted average F1<span class='hint'>the published headline</span></td><td class='n inc'>0.9877</td><td class='n cand'>0.9923</td><td class='n inc'>0.9992</td><td class='n cand'>0.9791</td><td class='n inc'>0.8591</td><td class='n cand'>0.8304</td><td class='n inc'>0.8564</td><td class='n cand'>0.8237</td><td class='n inc'>0.9272</td><td class='n cand'>0.9352</td><td class='n inc'>0.8831</td><td class='n cand'>0.8082</td></tr>
+    <tr><td class='ml'>Items scored<span class='hint'>calls, model calls or pages</span></td><td class='n inc'>198</td><td class='n cand'>594</td><td class='n inc'>147</td><td class='n cand'>147</td><td class='n inc'>180</td><td class='n cand'>180</td><td class='n inc'>100</td><td class='n cand'>100</td><td class='n inc'>26</td><td class='n cand'>25</td><td class='n inc'>97</td><td class='n cand'>96</td></tr>
+    <tr><td class='ml'>Input tokens<span class='hint'>whole round</span></td><td class='n inc'>620,730</td><td class='n cand'>1,983,182</td><td class='n inc'>2,757,155</td><td class='n cand'>3,095,731</td><td class='n inc'>7,791,855</td><td class='n cand'>6,136,076</td><td class='n inc'>1,519,525</td><td class='n cand'>911,818</td><td class='n inc'>1,140,018</td><td class='n cand'>857,349</td><td class='n inc'>1,536,808</td><td class='n cand'>832,509</td></tr>
+    <tr><td class='ml'>Output tokens<span class='hint'>including thinking tokens where reported</span></td><td class='n inc'>23,958</td><td class='n cand'>65,340</td><td class='n inc'>611,447</td><td class='n cand'>580,430</td><td class='n inc'>721,081</td><td class='n cand'>622,643</td><td class='n inc'>404,600</td><td class='n cand'>129,889</td><td class='n inc'>87,509</td><td class='n cand'>35,797</td><td class='n inc'>178,804</td><td class='n cand'>176,508</td></tr>
+    <tr><td class='ml'>Total tokens<span class='hint'>input + output</span></td><td class='n inc'>644,688</td><td class='n cand'>2,048,522</td><td class='n inc'>3,368,602</td><td class='n cand'>3,676,161</td><td class='n inc'>8,512,936</td><td class='n cand'>6,758,719</td><td class='n inc'>1,924,125</td><td class='n cand'>1,041,707</td><td class='n inc'>1,227,527</td><td class='n cand'>893,146</td><td class='n inc'>1,715,612</td><td class='n cand'>1,009,017</td></tr>
+    <tr><td class='ml'>Latency<span class='hint'>seconds per item</span></td><td class='n inc'>28.5</td><td class='n cand'>119.9</td><td class='n inc'>2.6</td><td class='n cand'>79.7</td><td class='n inc'>2.5</td><td class='n cand'><span class='muted'>cannot meansure</span></td><td class='n inc'>2.5</td><td class='n cand'>103.1</td><td class='n inc'>9.7</td><td class='n cand'>72.1</td><td class='n inc'>6.8</td><td class='n cand'>77.9</td></tr>
+    <tr><td class='ml'>Whole round<span class='hint'>seconds</span></td><td class='n inc'>122.0</td><td class='n cand'>1,013</td><td class='n inc'>389.3</td><td class='n cand'>11,716</td><td class='n inc'>443.7</td><td class='n cand'><span class='muted'>resumed over several days</span></td><td class='n inc'>324.0</td><td class='n cand'>10,313</td><td class='n inc'>359.4</td><td class='n cand'>1,804</td><td class='n inc'>765.0</td><td class='n cand'>7,478</td></tr>
+    <tr class="emph"><td class='ml'>Cost per item scored<span class='hint'>USD - each column divided by its own unit, which is not the same unit. Not comparable across columns.</span></td><td class='n inc'><b>$0.0012</b><sup>*</sup><span class='hint'>per submission</span></td><td class='n cand'><span class='muted'>not metered</span></td><td class='n inc'><b>$0.0874</b><span class='hint'>per page</span></td><td class='n cand'><span class='muted'>not metered</span></td><td class='n inc'><b>$0.0533</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td><td class='n inc'><b>$0.0253</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td><td class='n inc'><b>$0.0523</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td><td class='n inc'><b>$0.0205</b><sup>&dagger;</sup><span class='hint'>per call</span></td><td class='n cand'><span class='muted'>not metered</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p><b>What the incumbent's runs cost: $28.57 across all
+  6 of them.</b> Each is
+  <code>input&nbsp;&times;&nbsp;input_rate&nbsp;+&nbsp;(output&nbsp;+&nbsp;thinking)&nbsp;&times;&nbsp;output_rate</code>,
+  at <b>OpenRouter standard-tier rates</b> read from
+  <code>openrouter.ai/api/v1/models</code> on 2026-08-24:</p>
+  <ul>
+    <li><code>google/gemini-2.5-flash</code> &mdash; $0.30 per 1M text input, <b>$1.00 per 1M audio input</b>, $2.50 per 1M output (standard tier)</li>
+    <li><code>google/gemini-3.1-pro-preview</code> &mdash; $2.00 per 1M text input, $12.00 per 1M output (standard tier)</li>
+  </ul>
+  <p><b>These runs went through Vertex AI batch, not OpenRouter</b>, so this answers what they
+  would cost on OpenRouter at the standard tier rather than what was invoiced. OpenRouter also
+  carries <code>:batch</code> slugs at roughly half, which would put the same six runs near
+  <b>$14.28</b>; its own documentation hedges batch as &ldquo;typically billed at
+  50%&rdquo; and routes it through a separate endpoint, so the standard tier is the figure
+  quoted here.</p>
+  <p><b>What each run cost in total</b>, since the table now shows only the per-item average:
+  RTR-Fraud <b>$0.25</b> over 198 submissions, Tax-Invoice <b>$12.85</b> over 147 pages, Sentiment QA <b>$9.59</b> over 180 calls, Sentiment MNP <b>$2.53</b> over 100 calls, Sentiment Telesale <b>$1.36</b> over 26 calls, Sentiment Retention <b>$1.98</b> over 97 calls.</p>
+  <p><sup>&dagger;</sup><b>The 4 audio use cases are priced at the audio input
+  rate</b>, which OpenRouter charges at $1.00 per 1M against $0.30 for text &mdash; 3.3&times;.
+  Those runs send the call recording straight into the model, so the audio is what their input
+  total is mostly made of. The system prompt inside that total is text and cheaper, and the
+  workbook publishes one input figure that cannot be split &mdash; so <b>those four per-item
+  figures are upper bounds</b>. Pricing every input token as text instead gives
+  QA $0.0230, MNP $0.0147, Telesale $0.0216, Retention $0.0094
+  per call &mdash; roughly half. The truth sits between, nearer the printed figure.</p>
+  <p><b>Thinking tokens are inside the billable output, not the printed one.</b> On Sentiment
+  MNP the incumbent prints 176,626 output tokens and 227,974 thinking tokens separately;
+  costing the printed line alone would understate that run's billable output by 129%.
+  OpenRouter's <code>internal_reasoning</code> rate equals its completion rate on both models
+  here, so those tokens cost exactly what ordinary output costs.</p>
+  <p><b>This is a rate-card estimate, not a bill.</b> OpenRouter discounts cached input heavily
+  &mdash; $0.03 per 1M against $0.30 on 2.5&nbsp;Flash &mdash; and cached tokens sit inside the
+  reported input total where a run aggregate cannot separate them, so the input side is an
+  upper bound on that count too. Tax invoice extraction is priced on the cheaper &le;200K-token
+  band, which its mean of
+  18,756
+  tokens per request supports &mdash; that is a mean, so a few long requests could still have
+  repriced at double. That override is in OpenRouter's JSON only; its model page does not show
+  it.</p>
+  <p><sup>*</sup><b>RTR-Fraud rests on an assumption.</b> That tab names no model for its incumbent column &mdash; it has a runtime row but no model row, unlike every other tab. It is costed as <code>google/gemini-2.5-flash</code> because that is the model named in four of the five other tabs. If it actually ran a Pro-tier model the same tokens cost 6.2&times; more &mdash; $0.0077 per submission rather than $0.0012, and $1.53 for the run rather than $0.25.</p>
+</div>
+<div class="note risk">
+  <p><b>Three things that would mislead if read straight off this table.</b></p>
+  <ul>
+    <li><b>Token counts are not comparable between the two sides.</b> The incumbent's input
+    includes the audio itself, charged as tokens; ours is a transcript, so its input is text
+    for a second model. Fewer tokens on our side is a different pipeline shape, not efficiency.</li>
+    <li><b>&ldquo;Not metered&rdquo; is not free.</b> Self-hosted runs produce no invoice, but
+    the GPU hours behind them are real and are not in this table.</li>
+    <li><b>The weighted average F1 is comparable within a column pair, not across use cases.</b>
+    Each use case scores different dimensions against different label spaces, and several of
+    these benchmarks cannot separate the arms at all.</li>
+    <li><b>Neither is the cost row, and for a blunter reason: the units differ.</b> RTR-Fraud's
+    figure is per <b>submission</b> &mdash; one RTR_Code folder holding up to three photos, so
+    it is <i>not</i> a cost per image and no per-image figure can be derived, because the
+    corpus never publishes how many photos each folder holds. Tax-Invoice's is per <b>page</b>,
+    and its 147 pages sit inside 32 files, so a cost per document is 4.6&times; higher. The
+    four sentiment figures are per call.</li>
+  </ul>
+</div>
+
+<p class="foot">
+  Figures parsed from <code>OverallEvaluationReport (1).xlsx</code> by
+  <code>scripts/parallel_eval_workbook.py</code>, costed by
+  <code>scripts/usecase_matrix_figures.py</code> and rendered by
+  <code>scripts/usecase_matrix.py</code>; no number on this page is typed by hand. Token totals
+  are reconciled against the workbook's own &ldquo;Total tokens&rdquo; row where it publishes
+  one &mdash; 6 of 6 exact. Results are the parallel evaluation
+  project's and are <b>not reproduced here</b>.
+</p>
+
+</div>

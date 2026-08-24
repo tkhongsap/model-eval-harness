@@ -1,0 +1,61 @@
+{
+  "status": "established",
+  "fetched": "2026-08-24",
+  "primary_source": "https://openrouter.ai/api/v1/models",
+  "tier": "standard, base band",
+  "established_by": "Workflow wf_2075a52a-dc8 -- three researchers reading OpenRouter's machine-readable model catalogue, three adversaries instructed to recompute every per-1M figure from the raw per-token decimal string, and one synthesis in which the adversary's verdict wins. Rates are read from the JSON endpoint rather than the HTML model pages, because the endpoint carries keys the pages do not show at all -- the long-context override on the Pro models is JSON-only.",
+  "why_standard_tier": "OpenRouter prices each model at three service tiers (flex, standard, priority) and the model page a reader lands on shows STANDARD. That is the rate quoted here. OpenRouter also carries ':batch' slugs at roughly half, but its own documentation hedges batch as 'typically billed at 50%' and describes a separate endpoint rather than a slug suffix, so the batch figure is recorded as an alternative rather than as the headline.",
+  "runs_actually_ran_on": "Vertex AI batch, per the workbook's own 'Where it ran' row. These figures therefore answer 'what would these runs have cost through OpenRouter at the standard tier', not 'what was invoiced'.",
+  "rates": {
+    "gemini-2.5-flash": {
+      "openrouter_slug": "google/gemini-2.5-flash",
+      "input_usd_per_1m": 0.30,
+      "input_audio_usd_per_1m": 1.00,
+      "output_usd_per_1m": 2.50,
+      "internal_reasoning_usd_per_1m": 2.50,
+      "mode": "standard",
+      "batch_input_usd_per_1m": 0.15,
+      "batch_input_audio_usd_per_1m": 0.50,
+      "batch_output_usd_per_1m": 1.25,
+      "source_url": "https://openrouter.ai/api/v1/models",
+      "confidence": "high",
+      "note": "Raw: prompt 0.0000003, completion 0.0000025, audio 0.000001, internal_reasoning 0.0000025. Audio input is 3.33x the text prompt rate. internal_reasoning equals the completion rate, so reasoning tokens cost the same as ordinary output."
+    },
+    "gemini-3.1-pro-preview": {
+      "openrouter_slug": "google/gemini-3.1-pro-preview",
+      "input_usd_per_1m": 2.00,
+      "input_audio_usd_per_1m": 2.00,
+      "output_usd_per_1m": 12.00,
+      "internal_reasoning_usd_per_1m": 12.00,
+      "mode": "standard",
+      "batch_input_usd_per_1m": 1.00,
+      "batch_output_usd_per_1m": 6.00,
+      "long_context_threshold_tokens": 200000,
+      "long_context_input_usd_per_1m": 4.00,
+      "long_context_output_usd_per_1m": 18.00,
+      "source_url": "https://openrouter.ai/api/v1/models",
+      "confidence": "high",
+      "note": "IT EXISTS ON OPENROUTER -- no substitution was needed for the tax-invoice run. Bare slug aliases canonical google/gemini-3.1-pro-preview-20260219. Raw: prompt 0.000002, completion 0.000012, internal_reasoning 0.000012. The >=200K long-context override is present in the JSON only and is invisible on the HTML model page."
+    }
+  },
+  "arithmetic": "billable_output = output_tokens + reasoning_tokens;  cost = input_tokens/1e6*applicable_input_rate + billable_output/1e6*output_rate",
+  "input_rate_convention": {
+    "rule": "A run whose 'Speech to text' row reads 'none - audio into the model' is priced with the AUDIO input rate; every other run uses the text prompt rate.",
+    "why": "Those runs send the call recording itself, so the audio is what their input total is mostly made of. OpenRouter charges audio at $1.00/1M against $0.30/1M for text on 2.5 Flash. The system prompt inside that same total is text and cheaper, so the figure is an upper bound and `cost_usd_floor` carries the all-text lower bound beside it.",
+    "cannot_be_split": "Splitting the two exactly needs a per-request audio-vs-text token breakdown. The workbook publishes one input total per run."
+  },
+  "assumed_models": {
+    "RTR-Fraud": {
+      "model": "gemini-2.5-flash",
+      "stated_by_the_workbook": false,
+      "why": "The RTR-Fraud tab names no model for its incumbent column -- it has a Runtime row but no Model row, unlike every other tab. gemini-2.5-flash is assumed because it is the model the workbook names in four of its five other tabs. THE COST FOR THIS RUN IS AN ASSUMPTION, not a reading. If it actually ran a Pro-tier model the figure is roughly 6x too low."
+    }
+  },
+  "do_not_claim": [
+    "That this is what was invoiced. The runs went through Vertex AI batch, not OpenRouter; this is what they would have cost at OpenRouter's standard tier.",
+    "That the rate is the only one available. OpenRouter prices each model at flex, standard and priority, a spread of up to 5.4x on the Pro models, and carries ':batch' slugs at roughly half the standard rate.",
+    "That the input side is exact. OpenRouter discounts cached input heavily ($0.03/1M against $0.30/1M on 2.5 Flash); cached tokens sit inside the reported input total and cannot be separated from a run aggregate, so the input figure is an upper bound.",
+    "That token counts carry across providers. OpenRouter bills on each model's native token count and does not re-tokenize to a common scheme, so the same audio or transcript sent to two models generally yields different prompt token counts.",
+    "That gemini-3.1-pro-preview pricing is stable. It is a preview model and its pricing can change without notice."
+  ]
+}
