@@ -93,6 +93,31 @@
     "record": "docs/qwen-asr-outage-2026-08-21.txt",
     "note": "Down for 10 h 40 min on 2026-08-21 without one successful response, and it has not been re-run since. The labeller it shares a gateway with answered throughout, so this is that model rather than the platform."
   },
+  "real_data_run": {
+    "source_file": "OverallEvaluationReport(Sentiment Retention).csv",
+    "calls_scored_gemini": "97",
+    "calls_scored_internal": "96  -  1 call failed (stream exceeded 900s �1)",
+    "gemini_runtime": "Vertex AI batch",
+    "internal_runtime": "internal GPU endpoint",
+    "internal_asr": "typhoon-whisper-large-v3",
+    "ground_truth": "human sheet 'Voice_retention - Groundtruth' (AI Benchmark Report.xlsx, SharePoint); audio from GCS",
+    "gemini": {
+      "call_result_f1": 0.4537,
+      "reason_f1": 0.3015,
+      "product_f1": 0.5675
+    },
+    "internal": {
+      "call_result_f1": 0.4269,
+      "reason_f1": 0.2568,
+      "product_f1": 0.5513
+    },
+    "latency_per_call_gemini": "6.78 s",
+    "latency_per_call_internal": "77.9 s",
+    "transcript_mean_1_minus_cer_internal": "-0.2930",
+    "transcript_median_1_minus_cer_internal": "0.7961",
+    "ranking": "GEMINI WINS ALL THREE DIMENSIONS on this data. Our synthetic run has the internal pipeline winning all three. The reversal, not the level, is the finding.",
+    "why_it_outranks_ours": "Real audio, human ground truth, and the incumbent on its production runtime. Ours is synthetic audio whose labels are SPOKEN ALOUD, which removes the need for the inferential step the direct-audio arm is plausibly better at -- so the corpus may not merely inflate scores but change which arm wins. That mechanism is a hypothesis; the reversal is a measurement."
+  },
   "caveats": {
     "reconciled": "NO",
     "upper_bound": "Every label in this corpus is spoken aloud, so the set measures fact extraction under transcription noise, not inferential labelling. Real calls state their outcome far less often; these are upper bounds.",
