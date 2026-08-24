@@ -1,0 +1,33 @@
+METRIC,GEMINI-2.5-FLASH,QWEN3.8-27B-FP8
+WHAT RAN,,
+Model,gemini-2.5-flash,qwen3.8-27b-fp8
+Speech to text,none - audio into the model,typhoon-whisper-large-v3
+Where it ran,Vertex AI batch,internal GPU endpoint
+Calls scored,97,96  -  1 call failed (stream exceeded 900s ×1)
+BUSINESS OUTCOME,,
+Did the customer stay or churn  -  4 outcomes,,
+F1-score,0.4537,0.4269
+Precision,0.5656,0.5529
+Recall,0.3814   (37/97),0.3505   (34/97)
+Accuracy,0.5421,0.5349
+Why they wanted to cancel  -  11 reasons,,
+F1-score,0.3015,0.2568
+Precision,0.3879,0.3529
+Recall,0.2680   (41/153),0.2157   (33/153)
+Accuracy,0.6496,0.6674
+What product the call was about  -  4 products,,
+F1-score,0.5675,0.5513
+Precision,0.5300,0.5292
+Recall,0.6289   (61/97),0.5979   (58/97)
+Accuracy,0.6502,0.6471
+THE TRANSCRIPT   -   scored by meaning and by wording,,
+Meaning match  -  cosine similarity,0.9927,0.9752
+Characters right  -  1 - mean CER,0.8297,-0.2930
+Characters right  -  1 - median CER,0.8577,0.7961
+LATENCY,,
+Per call,6.78 s,77.9 s
+Time for the whole round  -  seconds,765.0 s,"7,478.3 s"
+TOKENS ,,
+Total Input,"1,536,808","450,334 label  +  382,175 analysis"
+Total Output,"178,804","168,624 label  +  7,884 analysis"
+Total tokens,"1,715,612","1,009,017"

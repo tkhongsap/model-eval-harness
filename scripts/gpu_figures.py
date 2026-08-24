@@ -125,6 +125,62 @@ def main(argv: list[str] | None = None) -> int:
                 "throughout, so this is that model rather than the platform.",
     }
 
+    # ---- the same two models, measured on REAL calls by the parallel effort -----------
+    #
+    # THIS IS THE DECISION-GRADE COMPARISON AND OURS IS NOT. Its ground truth is a
+    # human-maintained sheet ('Voice_retention - Groundtruth' in 'AI Benchmark Report.xlsx',
+    # SharePoint), its audio comes from GCS, and it runs Gemini on VERTEX AI BATCH -- which is
+    # how production actually runs it. Ours is synthetic audio, generated labels, and Gemini
+    # through OpenRouter.
+    #
+    # It reverses our ranking. Parsed from the CSV rather than transcribed, so the two cannot
+    # drift apart in the report.
+    csv_path = REPO / "docs/reports/OverallEvaluationReport(Sentiment Retention).csv"
+    if csv_path.is_file():
+        rows = [r.split(",") for r in
+                csv_path.read_text(encoding="utf-8", errors="replace").splitlines()]
+
+        def cell(label: str, col: int) -> str | None:
+            for r in rows:
+                if r and r[0].strip() == label and len(r) > col:
+                    return r[col].strip().strip('"')
+            return None
+
+        # F1 appears once per dimension, in the order the sheet prints them.
+        f1s = [r for r in rows if r and r[0].strip() == "F1-score"]
+        dims = ("call_result", "reason", "product")
+        real: dict = {
+            "source_file": csv_path.name,
+            "calls_scored_gemini": cell("Calls scored", 1),
+            "calls_scored_internal": cell("Calls scored", 2),
+            "gemini_runtime": cell("Where it ran", 1),
+            "internal_runtime": cell("Where it ran", 2),
+            "internal_asr": cell("Speech to text", 2),
+            "ground_truth": "human sheet 'Voice_retention - Groundtruth' "
+                            "(AI Benchmark Report.xlsx, SharePoint); audio from GCS",
+            "gemini": {}, "internal": {},
+        }
+        for dim, row in zip(dims, f1s):
+            real["gemini"][f"{dim}_f1"] = float(row[1])
+            real["internal"][f"{dim}_f1"] = float(row[2])
+        real["latency_per_call_gemini"] = cell("Per call", 1)
+        real["latency_per_call_internal"] = cell("Per call", 2)
+        real["transcript_mean_1_minus_cer_internal"] = cell(
+            "Characters right  -  1 - mean CER", 2)
+        real["transcript_median_1_minus_cer_internal"] = cell(
+            "Characters right  -  1 - median CER", 2)
+        real["ranking"] = (
+            "GEMINI WINS ALL THREE DIMENSIONS on this data. Our synthetic run has the "
+            "internal pipeline winning all three. The reversal, not the level, is the "
+            "finding.")
+        real["why_it_outranks_ours"] = (
+            "Real audio, human ground truth, and the incumbent on its production runtime. "
+            "Ours is synthetic audio whose labels are SPOKEN ALOUD, which removes the need "
+            "for the inferential step the direct-audio arm is plausibly better at -- so the "
+            "corpus may not merely inflate scores but change which arm wins. That mechanism "
+            "is a hypothesis; the reversal is a measurement.")
+        out["real_data_run"] = real
+
     out["caveats"] = {
         "reconciled": "NO",
         "upper_bound":
