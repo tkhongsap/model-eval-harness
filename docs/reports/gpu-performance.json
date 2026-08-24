@@ -93,30 +93,279 @@
     "record": "docs/qwen-asr-outage-2026-08-21.txt",
     "note": "Down for 10 h 40 min on 2026-08-21 without one successful response, and it has not been re-run since. The labeller it shares a gateway with answered throughout, so this is that model rather than the platform."
   },
+  "cross_task": {
+    "source_file": "OverallEvaluationReport (1).xlsx",
+    "parsed_by": "scripts/parallel_eval_workbook.py",
+    "ground_truth": "human-maintained sheets; production's own audio and documents",
+    "tasks": {
+      "RTR-Fraud": {
+        "dimensions": [
+          "Closed_Business",
+          "From_Other_Device",
+          "Same_Photo"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline_formula": "genuine weighted average",
+        "recall_exactly_one": {
+          "cells": 4,
+          "of": 12
+        },
+        "latency_unit": "per call",
+        "internal_arm": "QWEN3.8-27B-FP8",
+        "internal": 0.99228,
+        "incumbent_arm": "GEMINI",
+        "incumbent": 0.987735,
+        "margin": 0.00455,
+        "winner": "internal",
+        "latency_internal_s": 119.9,
+        "latency_incumbent_s": 28.5,
+        "latency_internal_arm": "QWEN3.8-27B-FP8",
+        "latency_incumbent_arm": "GEMINI",
+        "slowdown_x": 4.2
+      },
+      "Tax-Invoice": {
+        "dimensions": [
+          "Field extraction  -  29 fields per line",
+          "Document type  -  1 field per line",
+          "Field extraction  - 21 require fields (Breakdown)",
+          "Field extraction  -  9 optional fields (Breakdown)"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline_formula": "mean of the FIRST 2 of 4 dimension F1 scores -- the remaining 2 are breakdowns and do not enter the headline",
+        "recall_exactly_one": {
+          "cells": 15,
+          "of": 15
+        },
+        "latency_unit": "per page",
+        "internal_arm": "QWEN3.8-27B-FP8  (NEW PROMPT)",
+        "internal": 0.97915,
+        "incumbent_arm": "GEMINI-3.1-PRO-PREVIEW",
+        "incumbent": 0.99925,
+        "margin": -0.0201,
+        "winner": "incumbent",
+        "latency_internal_s": 79.7,
+        "latency_incumbent_s": 2.6,
+        "latency_internal_arm": "QWEN3.8-27B-FP8  (NEW PROMPT)",
+        "latency_incumbent_arm": "GEMINI-3.1-PRO-PREVIEW",
+        "slowdown_x": 30.7
+      },
+      "Sentiment QA": {
+        "dimensions": [
+          "Service quality  -  22 criteria",
+          "How the customer felt  -  3 questions",
+          "What the call was about  -  here all four differ"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline_formula": "mean of all 3 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 6,
+          "of": 9
+        },
+        "latency_unit": "per call",
+        "internal_arm": "QWEN3.8-27B-FP8  (FULL PROMPT)",
+        "internal": 0.8304,
+        "incumbent_arm": "GEMINI-2.5-FLASH",
+        "incumbent": 0.8591333333333333,
+        "margin": -0.02873,
+        "winner": "incumbent",
+        "latency_internal_s": 216.2,
+        "latency_incumbent_s": 2.5,
+        "latency_internal_arm": "QWEN3.8-27B-FP8  (TRIM PROMPT)",
+        "latency_incumbent_arm": "GEMINI-2.5-FLASH",
+        "slowdown_x": 86.5
+      },
+      "Sentiment MNP": {
+        "dimensions": [
+          "Did the customer stay or churn  -  3 outcomes",
+          "Why they wanted to cancel  -  13 reasons"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline_formula": "mean of all 2 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 0,
+          "of": 4
+        },
+        "latency_unit": "per call",
+        "internal_arm": "QWEN3.8-27B-FP8",
+        "internal": 0.8237,
+        "incumbent_arm": "GEMINI-2.5-FLASH",
+        "incumbent": 0.8564499999999999,
+        "margin": -0.03275,
+        "winner": "incumbent",
+        "latency_internal_s": 103.1,
+        "latency_incumbent_s": 2.47,
+        "latency_internal_arm": "QWEN3.8-27B-FP8",
+        "latency_incumbent_arm": "GEMINI-2.5-FLASH",
+        "slowdown_x": 41.7
+      },
+      "Sentiment Telesale": {
+        "dimensions": [
+          "Operations & professionalism  -  15 criteria, 8 hold one label on every call",
+          "Sales effectiveness  -  12 criteria, 7 hold one label on every call",
+          "Customer experience  -  9 criteria, 8 hold one label on every call",
+          "Compliance  -  3 criteria, 2 hold one label on every call"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline_formula": "mean of all 4 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 0,
+          "of": 8
+        },
+        "latency_unit": "per call",
+        "internal_arm": "QWEN3.8-27B-FP8",
+        "internal": 0.9351750000000001,
+        "incumbent_arm": "GEMINI-2.5-FLASH",
+        "incumbent": 0.9272250000000001,
+        "margin": 0.00795,
+        "winner": "internal",
+        "latency_internal_s": 72.1,
+        "latency_incumbent_s": 9.72,
+        "latency_internal_arm": "QWEN3.8-27B-FP8",
+        "latency_incumbent_arm": "GEMINI-2.5-FLASH",
+        "slowdown_x": 7.4
+      },
+      "Sentiment Retention": {
+        "dimensions": [
+          "Did the customer stay or churn  -  4 outcomes",
+          "Why they wanted to cancel  -  11 reasons",
+          "What product the call was about  -  4 products"
+        ],
+        "headline_label": "weighted Average F1 Score",
+        "headline_formula": "mean of all 3 dimension F1 scores",
+        "recall_exactly_one": {
+          "cells": 0,
+          "of": 6
+        },
+        "latency_unit": "per call",
+        "internal_arm": "QWEN3.8-27B-FP8",
+        "internal": 0.8082333333333334,
+        "incumbent_arm": "GEMINI-2.5-FLASH",
+        "incumbent": 0.8831000000000001,
+        "margin": -0.07487,
+        "winner": "incumbent",
+        "latency_internal_s": 77.9,
+        "latency_incumbent_s": 6.78,
+        "latency_internal_arm": "QWEN3.8-27B-FP8",
+        "latency_incumbent_arm": "GEMINI-2.5-FLASH",
+        "slowdown_x": 11.5
+      }
+    },
+    "transcript_runaway_tail": {
+      "cases": [
+        {
+          "task": "Sentiment QA",
+          "arm": "QWEN3.8-27B-FP8  (TRIM PROMPT)",
+          "transcript_source": "typhoon-whisper-large-v3",
+          "mean": 0.1652,
+          "median": 0.6741,
+          "gap": 0.5089
+        },
+        {
+          "task": "Sentiment MNP",
+          "arm": "QWEN3.8-27B-FP8",
+          "transcript_source": "typhoon-whisper-large-v3",
+          "mean": 0.3898,
+          "median": 0.7942,
+          "gap": 0.4044
+        },
+        {
+          "task": "Sentiment Telesale",
+          "arm": "GEMINI-2.5-FLASH",
+          "transcript_source": "none - audio into the model",
+          "mean": 0.4188,
+          "median": 0.8921,
+          "gap": 0.4733
+        },
+        {
+          "task": "Sentiment Retention",
+          "arm": "QWEN3.8-27B-FP8",
+          "transcript_source": "typhoon-whisper-large-v3",
+          "mean": -0.293,
+          "median": 0.7961,
+          "gap": 1.0891
+        }
+      ],
+      "tabs_scanned": [
+        "Sentiment QA",
+        "Sentiment MNP",
+        "Sentiment Telesale",
+        "Sentiment Retention"
+      ],
+      "tabs_without_the_rows": [
+        "RTR-Fraud",
+        "Tax-Invoice"
+      ],
+      "note": "Cases where the mean 'characters right' sits at least 0.15 below the median, which is what a handful of runaway transcripts does to a mean. It is not confined to the internal transcriber: the incumbent's own audio path shows it too."
+    },
+    "scoreboard": {
+      "internal_wins": [
+        "RTR-Fraud",
+        "Sentiment Telesale"
+      ],
+      "incumbent_wins": [
+        "Tax-Invoice",
+        "Sentiment QA",
+        "Sentiment MNP",
+        "Sentiment Retention"
+      ]
+    },
+    "slower_on_every_task": true,
+    "slowdown_range_x": [
+      4.2,
+      86.5
+    ],
+    "both_internal_wins_are_on_saturated_benchmarks": {
+      "RTR-Fraud": {
+        "margin": 0.00455,
+        "accuracy_cells": 9,
+        "items_correct_min": 195,
+        "items_correct_max": 198,
+        "of_items": 198,
+        "why": "Every one of the nine model-by-field accuracy cells lands between 98.5% and 100%: the worst arm misses 3 items out of 198 and the best misses none. Three different model families separated by three items is a saturated benchmark -- it cannot rank them, so the win is not evidence of an advantage."
+      },
+      "Sentiment Telesale": {
+        "margin": 0.00795,
+        "calls": "26 scored for the incumbent, 25 for internal (1 call failed)",
+        "why": "The parallel project's own code records that 25 of 39 criteria carry a single label across all 26 calls and 5 of 14 sub-categories contain no violation at all, so a constant answer scores 98-99%. The internal win is driven by Compliance -- 3 criteria, 2 of which hold one label."
+      }
+    }
+  },
   "real_data_run": {
-    "source_file": "OverallEvaluationReport(Sentiment Retention).csv",
+    "source_file": "OverallEvaluationReport (1).xlsx",
     "calls_scored_gemini": "97",
-    "calls_scored_internal": "96  -  1 call failed (stream exceeded 900s �1)",
+    "calls_scored_internal": "96  -  1 call failed (stream exceeded 900s ×1)",
     "gemini_runtime": "Vertex AI batch",
     "internal_runtime": "internal GPU endpoint",
     "internal_asr": "typhoon-whisper-large-v3",
     "ground_truth": "human sheet 'Voice_retention - Groundtruth' (AI Benchmark Report.xlsx, SharePoint); audio from GCS",
     "gemini": {
-      "call_result_f1": 0.4537,
-      "reason_f1": 0.3015,
-      "product_f1": 0.5675
+      "call_result_f1": 0.9147,
+      "reason_f1": 0.7758,
+      "product_f1": 0.9588
     },
     "internal": {
-      "call_result_f1": 0.4269,
-      "reason_f1": 0.2568,
-      "product_f1": 0.5513
+      "call_result_f1": 0.8279,
+      "reason_f1": 0.6264,
+      "product_f1": 0.9704
     },
+    "headline_gemini": 0.8831,
+    "headline_internal": 0.80823,
     "latency_per_call_gemini": "6.78 s",
     "latency_per_call_internal": "77.9 s",
     "transcript_mean_1_minus_cer_internal": "-0.2930",
     "transcript_median_1_minus_cer_internal": "0.7961",
-    "ranking": "GEMINI WINS ALL THREE DIMENSIONS on this data. Our synthetic run has the internal pipeline winning all three. The reversal, not the level, is the finding.",
+    "margin_in_calls": {
+      "call_result": "37/97 correct against 34/97 -- 3 calls",
+      "product": "61/97 against 58/97 -- 3 calls",
+      "reason": "41/153 labels against 33/153 -- 8 labels"
+    },
+    "ranking": "The incumbent leads all three dimensions and the published headline (0.66135 against 0.61750). The leads on outcome and product are 3 calls out of 97 each, with no replicates, so they are not separable; the reason lead is 8 of 153 labels. Our synthetic run has the internal pipeline ahead on all three. The reversal, not the level, is the finding.",
     "why_it_outranks_ours": "Real audio, human ground truth, and the incumbent on its production runtime. Ours is synthetic audio whose labels are SPOKEN ALOUD, which removes the need for the inferential step the direct-audio arm is plausibly better at -- so the corpus may not merely inflate scores but change which arm wins. That mechanism is a hypothesis; the reversal is a measurement."
+  },
+  "how_their_numbers_are_scored": {
+    "headline_row": "'weighted Average F1 Score' is the SUM of the dimension F1 scores divided by 2 in five of the six tabs. With two dimensions that coincides with the mean; with three or four it does not, which is why Sentiment QA publishes 1.2887 and Telesale 1.8704 -- values above 1.0 that cannot be an F1. The divisor is constant within a tab, so no winner changes; the number is not a score and is not comparable across tabs. RTR-Fraud is the exception and carries real weights, recovered exactly as 0.45 / 0.45 / 0.10.",
+    "recall_that_cannot_fail": "Recall is exactly 1.0000 in all 8 Tax-Invoice cells and 6 of 9 Sentiment QA cells -- the FN=0 signature. Where it appears, accuracy equals precision and F1 is a monotone transform of it, so four reported metrics are one measurement printed four times. We predicted this from production's code (sentiment_qa/fact_check_task.py:1004-1013); these cells measure it.",
+    "macro_vs_micro": "The printed F1 differs from the harmonic mean of the printed precision and recall by at most 0.02 outside one collapsed Gemma column. That is macro-F1 against micro-averaged precision and recall -- a normal choice, not a defect."
   },
   "caveats": {
     "reconciled": "NO",

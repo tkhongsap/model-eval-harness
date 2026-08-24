@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Internal GPU Model Performance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,6 +68,62 @@ tr.ours td:first-child{border-left:2px solid var(--ours-edge)}
   font-family:"IBM Plex Mono",monospace; font-weight:500; white-space:nowrap}
 .pill.down{background:#fbeae6; color:#9d3520; border:1px solid #eec4b8}
 
+/* The one-matrix page: wide and short, so it scrolls sideways with the measure column pinned
+   to the left edge. Without the pin a reader loses which row they are on by column six. */
+.sheet.wide{max-width:1320px}
+table.mx{min-width:1100px; border-collapse:separate; border-spacing:0}
+table.mx th, table.mx td{border-bottom:1px solid var(--rule)}
+table.mx th.ml, table.mx td.ml{position:sticky; left:0; z-index:2; background:var(--card);
+  min-width:196px; box-shadow:1px 0 0 var(--rule-2)}
+table.mx thead th.ml{background:var(--band)}
+table.mx thead th.grp{text-align:center; border-left:2px solid var(--rule-2);
+  letter-spacing:.06em; color:var(--ink); background:var(--band)}
+table.mx thead th{position:sticky; top:0; z-index:1; background:var(--band)}
+table.mx thead tr:first-child th.ml{z-index:3}
+table.mx td.cand{background:var(--ours)}
+table.mx th.cand{background:var(--ours); color:var(--ours-ink)}
+table.mx th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.mx tr.emph td{font-weight:600; background:var(--band)}
+table.mx tr.emph td.cand{background:var(--ours)}
+table.mx tr.emph td.ml{background:var(--band)}
+table.mx .muted{color:var(--muted); font-family:"Public Sans",sans-serif; font-size:11px}
+table.mx td, table.mx th{padding:7px 11px; white-space:nowrap}
+/* ...except the pinned measure column, which carries sentences. Left nowrap it grows to the
+   width of its longest sublabel and shoves the data columns off the card. */
+table.mx td.ml, table.mx th.ml{white-space:normal; max-width:250px}
+table.mx td.ml .hint{white-space:normal}
+/* The unit noun under each cost figure is a second line inside a nowrap cell. */
+table.mx td.n .hint{white-space:nowrap; font-size:10px}
+
+/* The two-column summary that opens the page. */
+table.sum{min-width:0; table-layout:fixed}
+table.sum td:first-child, table.sum th:first-child{width:38%}
+table.sum td.cand, table.sum th.cand{background:var(--ours)}
+table.sum th.cand{color:var(--ours-ink)}
+table.sum th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.sum tr.emph td{background:var(--band); font-weight:600}
+table.sum tr.emph td.cand{background:var(--ours)}
+table.sum td.n{vertical-align:top}
+table.sum td.muted, table.sum .muted{color:var(--muted); font-family:"Public Sans",sans-serif}
+
+/* Use-case tables: a banded group row, and a tint down the candidate columns so the eye can
+   follow "ours" without re-reading the header on every row. */
+p.lede{margin:-4px 0 8px; color:var(--muted); font-size:11.5px}
+table.uc tbody tr.group td{background:var(--band); border-bottom:1px solid var(--rule-2)}
+table.uc tbody tr.group td:first-child{color:var(--ink); font-weight:700; font-size:11.5px}
+table.uc tbody tr.group td.cand{background:var(--ours)}
+table.uc td.cand{background:var(--ours)}
+table.uc thead th.cand{background:var(--ours); color:var(--ours-ink)}
+table.uc thead th.cand .hint{color:var(--ours-ink); opacity:.75}
+table.uc td:first-child{width:34%}
+table.uc tbody td{vertical-align:top}
+
+/* Fixed-layout tables: without this a cell holding a long file path blows the column model up
+   and pushes the right-hand columns off the card, where a reader never scrolls to find them. */
+table.fixed{table-layout:fixed; min-width:0}
+table.fixed td,table.fixed th{overflow-wrap:anywhere; word-break:normal}
+table.fixed td .hint{overflow-wrap:anywhere}
+
 .note{margin:12px 0 0; padding:11px 14px; background:var(--card); border:1px solid var(--rule-2);
   border-left:3px solid var(--accent); border-radius:4px; font-size:12px}
 .note.risk{border-left-color:var(--bad)}
@@ -98,188 +155,258 @@ ul{margin:6px 0 0; padding-left:19px; font-size:12px} li{margin-bottom:4px}
 <div class="masthead">
   <div>
     <h1>How our own GPU models performed</h1>
-    <p class="sub">Thai retention call labelling &middot; <b>two evaluations, and they disagree on the winner</b></p>
+    <p class="sub">Six production tasks &middot; measured on <b>real</b> data by the parallel
+    evaluation project &middot; plus our own synthetic run on one of them</p>
   </div>
   <div class="stamp">
     2026-08-24<br>
-    97 real calls &middot; 138 synthetic<br>
-    read section 1 first
+    2 of 6 tasks to internal<br>
+    slower on all 6
   </div>
 </div>
 
 <div class="strip">
   <div class="tile risk">
-    <div class="big">0.454</div>
-    <div class="cap"><b>Gemini</b> on 97 <b>real</b> calls<br>our pipeline: <b>0.427</b> &mdash; Gemini wins</div>
-  </div>
-  <div class="tile win">
-    <div class="big">0.730</div>
-    <div class="cap">our pipeline on 138 <b>synthetic</b> calls<br>Gemini: <b>0.564</b> &mdash; we win</div>
+    <div class="big">2 of 6</div>
+    <div class="cap">tasks where our models win on quality<br>and <b>both</b> are benchmarks
+    that cannot separate models</div>
   </div>
   <div class="tile risk">
-    <div class="big">77.9s</div>
-    <div class="cap">our per-call latency on real data<br>Gemini: <b>6.8s</b></div>
+    <div class="big">4.2&ndash;86.5&times;</div>
+    <div class="cap">slower than the incumbent<br><b>on every one of the 6</b>, no
+    exception</div>
+  </div>
+  <div class="tile">
+    <div class="big">0.075</div>
+    <div class="cap">the widest quality gap on any task<br>(Sentiment Retention) &mdash; the
+    models are close everywhere</div>
   </div>
   <div class="tile risk">
-    <div class="big">&minus;0.29</div>
-    <div class="cap">our transcript &ldquo;characters right&rdquo;, mean<br>below zero &mdash; runaway insertions</div>
+    <div class="big">8/8</div>
+    <div class="cap">Tax-Invoice recall cells fixed at 1.0000<br>a metric that cannot fail</div>
   </div>
 </div>
 
-<h2><span class="n">1</span>Two evaluations, opposite conclusions &mdash; read this before anything else</h2>
+<h2><span class="n">1</span>The scoreboard, all six tasks</h2>
 
 <div class="card">
 <table>
   <thead><tr>
-    <th>Weighted F1</th><th class="n">outcome</th><th class="n">product</th><th class="n">reason</th>
-    <th class="n">latency / call</th><th>Winner</th>
+    <th>Task</th><th class="n">Ours<span class="hint">qwen3.8-27b-fp8</span></th>
+    <th class="n">Incumbent<span class="hint">Gemini</span></th>
+    <th class="n">Margin</th><th>Winner</th><th class="n">Our latency</th>
   </tr></thead>
   <tbody>
-    <tr><td><b>97 REAL calls &mdash; Gemini</b><span class="hint">human ground truth, GCS audio, Vertex AI batch &mdash; production's own runtime</span></td>
-      <td class="n up">0.4537</td><td class="n up">0.5675</td><td class="n up">0.3015</td>
-      <td class="n up">6.78s</td><td rowspan="2"><b>Gemini</b><br><span class="hint">wins all three, and latency by 11&times;</span></td></tr>
-    <tr><td>97 REAL calls &mdash; ours<span class="hint">Typhoon &rarr; Qwen3.8, internal GPU endpoint</span></td>
-      <td class="n">0.4269</td><td class="n">0.5513</td><td class="n">0.2568</td>
-      <td class="n dn">77.9s</td></tr>
-    <tr class="ours"><td>138 synthetic &mdash; Gemini<span class="hint">generated audio and labels, via OpenRouter</span></td>
-      <td class="n">0.564</td><td class="n">0.798</td><td class="n">0.272</td>
-      <td class="n">5.2s</td><td rowspan="2"><b>Ours</b><br><span class="hint">wins all three, loses latency</span></td></tr>
-    <tr class="ours"><td>138 synthetic &mdash; ours<span class="hint">Typhoon &rarr; Qwen3.8</span></td>
-      <td class="n up">0.730</td><td class="n up">0.864</td><td class="n up">0.272</td>
-      <td class="n">18.3s</td></tr>
+    <tr class="ours"><td>RTR-Fraud<span class='hint'>fraud checks on retail transaction images &middot; 3 dimensions</span></td><td class='n'>0.99228</td><td class='n'>0.98774</td><td class='n'>+0.00455</td><td><span class='up'>internal</span></td><td class='n'><span class='pill down'>4.2&times;</span></td></tr>
+    <tr><td>Tax-Invoice<span class='hint'>field extraction from tax invoice documents &middot; 4 dimensions</span></td><td class='n'>0.97915</td><td class='n'>0.99925</td><td class='n'>-0.02010</td><td><span class='dn'>incumbent</span></td><td class='n'><span class='pill down'>30.7&times;</span></td></tr>
+    <tr><td>Sentiment QA<span class='hint'>call-centre QA against a 22-criterion rubric &middot; 3 dimensions</span></td><td class='n'>0.83040</td><td class='n'>0.85913</td><td class='n'>-0.02873</td><td><span class='dn'>incumbent</span></td><td class='n'><span class='pill down'>86.5&times;</span></td></tr>
+    <tr><td>Sentiment MNP<span class='hint'>number-portability calls: outcome and reason &middot; 2 dimensions</span></td><td class='n'>0.82370</td><td class='n'>0.85645</td><td class='n'>-0.03275</td><td><span class='dn'>incumbent</span></td><td class='n'><span class='pill down'>41.7&times;</span></td></tr>
+    <tr class="ours"><td>Sentiment Telesale<span class='hint'>telesales calls against a 39-criterion rubric &middot; 4 dimensions</span></td><td class='n'>0.93518</td><td class='n'>0.92723</td><td class='n'>+0.00795</td><td><span class='up'>internal</span></td><td class='n'><span class='pill down'>7.4&times;</span></td></tr>
+    <tr><td>Sentiment Retention<span class='hint'>retention calls: outcome, reason and product &middot; 3 dimensions</span></td><td class='n'>0.80823</td><td class='n'>0.88310</td><td class='n'>-0.07487</td><td><span class='dn'>incumbent</span></td><td class='n'><span class='pill down'>11.5&times;</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p>The figure is the workbook's own headline row, <i>weighted Average F1 Score</i>,
+  compared within a task only &mdash; section 4 explains why it is not comparable between
+  tasks. Internal wins <b>2</b>, the incumbent <b>4</b>, and the widest gap in
+  either direction is <b>0.075</b>. On quality these models are close on every task in
+  the set.</p>
+</div>
+
+<h2><span class="n">2</span>Both of our wins are on benchmarks that cannot separate models</h2>
+
+<div class="note risk">
+  <p><b>RTR-Fraud &mdash; saturated.</b> All 9 model-by-field
+  accuracy cells land between 98.5% and 100%. The worst arm misses
+  3 items out of
+  198; the best misses none. Three different model families
+  separated by three items is a benchmark with no room left in it &mdash; our
+  +0.00455 is not evidence of an advantage.</p>
+  <p><b>Sentiment Telesale &mdash; a ground truth that barely varies.</b> Margin
+  +0.00795 on 26 scored for the incumbent, 25 for internal (1 call failed). The
+  parallel project's own code records that <b>25 of 39 criteria carry a single label across all
+  26 calls</b> and 5 of 14 sub-categories contain no violation at all, so a constant answer
+  scores 98&ndash;99%. Our win is driven by the Compliance dimension &mdash; 3 criteria, 2 of
+  which hold one label.</p>
+  <p>Neither is a reason to doubt the models. Both are reasons not to quote these two wins as
+  evidence for migration, and reasons to fix the benchmarks before the next round.</p>
+</div>
+
+<h2><span class="n">3</span>Latency &mdash; the one result that is unanimous</h2>
+
+<div class="note risk">
+  <p>Our models are slower on <b>every task in the set</b>, by <b>4.2&times; to 86.5&times;</b>.
+  This is the only finding in the workbook that points the same way six times out of six, and
+  it is not marginal: Sentiment QA is 216.2&nbsp;s a
+  call against 2.5&nbsp;s, and Tax-Invoice is
+  79.7&nbsp;s a page against
+  2.6&nbsp;s.</p>
+  <p>Two of the six rounds also lost a call outright to a stream exceeding 900&nbsp;s
+  (Retention and Telesale, one each). Whatever the quality verdict turns out to be, throughput
+  is the thing that has to be answered before any of this is deployable.</p>
+</div>
+
+<h2><span class="n">4</span>What the published headline number actually computes</h2>
+
+<div class="note risk">
+  <p><b>It is a sum divided by 2, not an average.</b> 'weighted Average F1 Score' is the SUM of the dimension F1 scores divided by 2 in five of the six tabs. With two dimensions that coincides with the mean; with three or four it does not, which is why Sentiment QA publishes 1.2887 and Telesale 1.8704 -- values above 1.0 that cannot be an F1. The divisor is constant within a tab, so no winner changes; the number is not a score and is not comparable across tabs. RTR-Fraud is the exception and carries real weights, recovered exactly as 0.45 / 0.45 / 0.10.</p>
+  <p><b>Recall that cannot fail.</b> Recall is exactly 1.0000 in all 8 Tax-Invoice cells and 6 of 9 Sentiment QA cells -- the FN=0 signature. Where it appears, accuracy equals precision and F1 is a monotone transform of it, so four reported metrics are one measurement printed four times. We predicted this from production's code (sentiment_qa/fact_check_task.py:1004-1013); these cells measure it.</p>
+  <p>Neither point changes who won any task &mdash; the divisor is constant within a tab. Both
+  change what the numbers may be quoted as. A headline above 1.0 should not be described as an
+  F1 score, and on Tax-Invoice and Sentiment QA the four reported metrics are not four
+  independent checks.</p>
+  <p class="hint">The printed F1 differs from the harmonic mean of the printed precision and recall by at most 0.02 outside one collapsed Gemma column. That is macro-F1 against micro-averaged precision and recall -- a normal choice, not a defect.</p>
+</div>
+
+<h2><span class="n">5</span>The transcript tail, and who actually has it</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Task<span class="hint">transcript source</span></th>
+    <th class="n">Mean</th><th class="n">Median</th><th class="n">Gap</th></tr></thead>
+  <tbody>
+    <tr><td>Sentiment QA<span class='hint'>typhoon-whisper-large-v3</span></td><td class='n'>0.1652</td><td class='n'>0.6741</td><td class='n'>0.5089</td></tr>
+    <tr><td>Sentiment MNP<span class='hint'>typhoon-whisper-large-v3</span></td><td class='n'>0.3898</td><td class='n'>0.7942</td><td class='n'>0.4044</td></tr>
+    <tr><td>Sentiment Telesale<span class='hint'>none - audio into the model</span></td><td class='n'>0.4188</td><td class='n'>0.8921</td><td class='n'>0.4733</td></tr>
+    <tr><td>Sentiment Retention<span class='hint'>typhoon-whisper-large-v3</span></td><td class='n'>-0.2930</td><td class='n'>0.7961</td><td class='n'>1.0891</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p>&ldquo;Characters right&rdquo; is 1&nbsp;&minus;&nbsp;CER, so a <b>mean far below the
+  median</b> means a few transcripts carry more inserted text than the reference &mdash; the
+  runaway failure our own Qwen3-ASR showed 16 times. Retention's mean of
+  <b>-0.2930</b> against a median of
+  <b>0.7961</b> is the extreme case.</p>
+  <p><b>Correcting our earlier report:</b> we attributed this to Typhoon. Across all four
+  speech tasks it hits the internal transcriber 3 times and <b>the incumbent's
+  own direct-audio path 1 time</b> (Telesale, gap
+  0.4733). It is more frequent on our side, and it is not
+  ours alone &mdash; it is a property of scoring long-form Thai audio here. RTR-Fraud and
+  Tax-Invoice have no transcript rows and are excluded rather than counted as clean.</p>
+</div>
+
+<h2><span class="n">6</span>Our own run &mdash; one task, synthetic, and it disagrees</h2>
+
+<div class="card">
+<table>
+  <thead><tr>
+    <th>Retention, call outcome F1</th><th class="n">Incumbent</th><th class="n">Ours</th>
+    <th>Winner</th>
+  </tr></thead>
+  <tbody>
+    <tr><td><b>97 real calls</b><span class="hint">human ground truth, GCS audio, Gemini on
+      Vertex AI batch &mdash; production's own runtime</span></td>
+      <td class="n">0.9147</td>
+      <td class="n">0.8279</td>
+      <td>incumbent, all three dimensions</td></tr>
+    <tr class="ours"><td>138 synthetic calls<span class="hint">generated audio, generated
+      labels, Gemini via OpenRouter</span></td>
+      <td class="n">0.564</td>
+      <td class="n">0.730</td>
+      <td>ours, all three dimensions</td></tr>
   </tbody>
 </table>
 </div>
 
 <div class="note risk">
-  <p><b>The real-data run is the decision-grade one, and it does not favour us.</b> Its ground
-  truth is a human-maintained sheet rather than generated, its audio is real customer calls
-  from GCS, and it runs the incumbent on <b>Vertex AI batch &mdash; how production actually
-  runs it</b>. Ours does none of those three.</p>
+  <p><b>The real-data run is the decision-grade one and it does not favour us.</b> Its ground
+  truth is human-maintained, its audio is real customer calls, and it runs the incumbent on
+  Vertex AI batch. Ours does none of those three.</p>
+  <p><b>But read the margin, not the ranking.</b> 37/97 correct against 34/97 -- 3 calls;
+  61/97 against 58/97 -- 3 calls; 41/153 labels against 33/153 -- 8 labels. With no
+  replicates, three calls out of ninety-seven is not a separation &mdash; on outcome and
+  product these two are <b>indistinguishable on this evidence</b>. The reason dimension is the
+  one real gap.</p>
   <p><b>Why the reversal is plausible rather than a contradiction to explain away.</b> Our
-  corpus <i>states every label aloud</i> — a documented property, not a discovery. That removes
-  the need for the inferential step, and inference is exactly what a direct-audio model may be
-  better at, since a transcript throws away prosody, hesitation and tone. So the synthetic set
-  may not merely inflate scores; it may remove the thing the incumbent is good at.
-  <b>That mechanism is a hypothesis. The reversal is a measurement.</b></p>
-  <p><b>Do not quote the synthetic numbers as a production result.</b> They remain useful for
-  what they were built for — comparing pipeline shapes under controlled conditions — and they
-  are not evidence about production.</p>
+  corpus <i>states every label aloud</i> &mdash; a documented property, not a discovery. That
+  removes the need for the inferential step, and inference is exactly what a direct-audio model
+  may be better at, since a transcript throws away prosody, hesitation and tone. So the
+  synthetic set may not merely inflate scores; it may remove the thing the incumbent is good
+  at. <b>That mechanism is a hypothesis. The reversal is a measurement.</b></p>
 </div>
 
-<h2><span class="n">2</span>On synthetic data: the labeller &mdash; <code>qwen3.8-27b-fp8</code>, on our GPU</h2>
-
-<p style="margin:0 0 8px; font-size:12.5px; color:var(--ink-2); max-width:80ch">
-  The same model in all three rows. What changes is what it was fed, which is how we separate
-  "the model cannot read the call" from "the transcript was bad".
-</p>
+<h2><span class="n">7</span>On synthetic data: the labeller and the transcribers</h2>
 
 <div class="card">
 <table>
-  <thead><tr>
-    <th>What it was given</th><th class="n">Outcome F1</th><th class="n">Product F1</th>
-    <th class="n">Reason F1</th><th class="n">Latency</th><th class="n">Valid JSON</th>
-  </tr></thead>
+  <thead><tr><th>Arm<span class="hint">what the labeller was fed</span></th>
+    <th class="n">Outcome</th><th class="n">Product</th><th class="n">Reason</th>
+    <th class="n">Latency</th><th class="n">Parsed</th></tr></thead>
   <tbody>
-    <tr class="ours"><td>A flawless transcript<span class="hint">the ceiling &mdash; what the labeller can do at best</span></td>
-      <td class="n">0.839</td><td class="n">0.881</td><td class="n">0.277</td>
-      <td class="n">15.6s</td><td class="n">414/414</td></tr>
-    <tr class="ours"><td>Zero mishearing, ASR layout<span class="hint">separates formatting from hearing</span></td>
-      <td class="n">0.836</td><td class="n">0.836</td><td class="n">0.264</td>
-      <td class="n">17.1s</td><td class="n">414/414</td></tr>
-    <tr class="ours"><td><b>A real Typhoon transcript</b><span class="hint">the deployable configuration</span></td>
-      <td class="n up">0.730</td><td class="n up">0.864</td><td class="n">0.272</td>
-      <td class="n">18.3s</td><td class="n">414/414</td></tr>
-    <tr><td>Gemini 2.5 Flash <span class="hint">external, audio direct &mdash; production today</span></td>
-      <td class="n">0.564</td><td class="n">0.798</td><td class="n">0.272</td>
-      <td class="n">5.2s</td><td class="n">411/414</td></tr>
+    <tr><td>ceiling<span class='hint'>a flawless transcript — the upper bound on the labeller</span></td><td class='n'>0.839</td><td class='n'>0.881</td><td class='n'>0.277</td><td class='n'>15.6</td><td class='n'>414/414</td></tr>
+    <tr><td>format control<span class='hint'>ASR-shaped text with zero mishearing — separates layout from hearing</span></td><td class='n'>0.836</td><td class='n'>0.836</td><td class='n'>0.264</td><td class='n'>17.1</td><td class='n'>414/414</td></tr>
+    <tr class='ours'><td>typhoon pipeline<span class='hint'>a real Typhoon transcript — the deployable configuration</span></td><td class='n'>0.730</td><td class='n'>0.864</td><td class='n'>0.272</td><td class='n'>18.3</td><td class='n'>414/414</td></tr>
+    <tr><td>google/gemini-2.5-flash<span class="hint">external &mdash; OpenRouter,
+      audio straight in</span></td>
+      <td class="n">0.564</td>
+      <td class="n">0.798</td>
+      <td class="n">0.272</td>
+      <td class="n">5.2</td>
+      <td class="n">411/414</td></tr>
   </tbody>
 </table>
 </div>
 
 <div class="note">
-  <p><b>Read the first row before the third.</b> Given a <i>perfect</i> transcript our labeller
-  reaches 0.839, and with a real one it reaches 0.730. So roughly <b>0.11 of the gap is the
-  transcription stage and the rest is the labelling step</b> &mdash; which is why better ASR
-  has bought us so little, and where the next round of work belongs.</p>
-  <p><b>`reason` is not being measured.</b> Every row sits at 0.264&ndash;0.277, the ceiling
-  included. A dimension where a flawless transcript scores 0.277 is telling us something about
-  the metric or the labels, not about the models. Do not quote it as a model result.</p>
+  <p>On synthetic data the deployable arm leads the incumbent on outcome and product at no
+  metered cost, with cleaner JSON (414/414
+  against 411/414). The incumbent's metered cost over the run
+  was $3.8554 &mdash; $0.00931 a call.</p>
+  <p><b>Transcription, from the E23 run</b> (E24's ASR reports do not exist &mdash; see the
+  footnote): Typhoon CER 0.0452 with
+  0 runaways;
+  Qwen3-ASR CER 0.1127 with
+  16 runaways.
+  <b>Qwen3-ASR is UNAVAILABLE</b> &mdash; Down for 10 h 40 min on 2026-08-21 without one successful response, and it has not been re-run since. The labeller it shares a gateway with answered throughout, so this is that model rather than the platform.</p>
 </div>
 
-<h2><span class="n">3</span>On synthetic data: the transcribers</h2>
-
-<div class="card">
-<table>
-  <thead><tr>
-    <th>Model</th><th class="n">CER</th><th class="n">WER</th>
-    <th class="n">Runaway failures</th><th class="n">Usable calls</th><th class="n">Entity accuracy</th>
-  </tr></thead>
-  <tbody>
-    <tr class="ours"><td><b>Typhoon Whisper large-v3</b></td>
-      <td class="n up">0.0452</td><td class="n up">0.0784</td>
-      <td class="n up">0</td><td class="n">138 / 138</td><td class="n">94.6%</td></tr>
-    <tr class="ours"><td>Qwen3-ASR 1.7B <span class="pill down">DOWN SINCE 21 AUG</span></td>
-      <td class="n dn">0.1127</td><td class="n dn">0.1699</td>
-      <td class="n dn">16 &nbsp;(11.6%)</td><td class="n">122 / 138</td><td class="n">96.0%</td></tr>
-  </tbody>
-</table>
-</div>
-
-<div class="note risk">
-  <p><b>Typhoon is the clear choice, and not on error rate alone.</b> 2.5&times; better
-  character error rate, and more importantly <b>zero catastrophic runaways against 16</b> —
-  a runaway is a transcript that repeats a fragment hundreds of times and is unusable, not
-  merely wrong. Qwen also lost 16 calls from the scoreable set entirely.</p>
-  <p><b>Qwen3-ASR has been unavailable since 21 August</b> — 10 h 40 min with no successful
-  response on the day, and not re-run since. It stopped at 120 of 138 transcripts, below our
-  90% coverage gate, so it is reported unavailable rather than scored on what survived. The
-  labeller sharing the same gateway answered throughout, so this is that model rather than the
-  platform. <b>One caveat in Qwen's favour:</b> its entity accuracy is marginally
-  <i>higher</i> (96.0% vs 94.6%), so it is not worse at everything.</p>
-</div>
-
-<h2><span class="n">4</span>What this says, and what it does not</h2>
+<h2><span class="n">8</span>What this says, and what it does not</h2>
 
 <div class="note">
-  <p><b>On synthetic data</b> the internal pipeline beats production on both dimensions that
-  matter, at no metered cost and with cleaner JSON (414/414 against 411/414). <b>On real data
-  it does not</b> &mdash; it loses all three dimensions narrowly, and loses latency heavily,
-  77.9&nbsp;s a call against 6.78&nbsp;s.</p>
-  <p><b>Two things both runs agree on, and they are the ones to act on.</b> First, the internal
-  pipeline is <b>much slower</b> &mdash; 3.5&times; on synthetic, 11&times; on real. Second, its
-  transcription has a <b>catastrophic tail</b>: the real run's mean &ldquo;characters
-  right&rdquo; is <b>&minus;0.29</b> against a median of 0.80, meaning a few transcripts are so
-  full of inserted text they are worse than useless, exactly the runaway failure our own
-  Qwen3-ASR showed 16 times. Agreement across two independent evaluations is worth more than
-  either one alone.</p>
+  <p><b>What the six tasks agree on.</b> Quality is close everywhere &mdash; the widest gap in
+  either direction is 0.075. Speed is not close anywhere: we are 4.2&times; to
+  86.5&times; slower, six times out of six. On this evidence the case against migrating is
+  throughput, not accuracy.</p>
+  <p><b>What we should not claim.</b> That we beat the incumbent on RTR-Fraud or Telesale &mdash;
+  both benchmarks are unable to separate models. That the incumbent beats us on Retention
+  outcome or product &mdash; three calls out of ninety-seven, unreplicated, is not a
+  separation. The one clean quality result in the set is Tax-Invoice, where
+  gemini-3.1-pro-preview leads by 0.0201 and Gemma-4-12B
+  collapses outright.</p>
+  <p><b>What to fix before the next round.</b> The headline formula, the FN=0 confusion
+  matrices on Tax-Invoice and Sentiment QA, and the Telesale ground truth. All three are
+  cheap, and all three change what the numbers mean rather than what the models do.</p>
 </div>
 
 <div class="note risk">
   <p><b>Four things that must travel with these numbers.</b></p>
   <ul>
     <li><b>RECONCILED: NO for our own numbers.</b> Not one real production call has been
-    through <i>our</i> pipeline. Sections 2 and 3 are entirely synthetic Thai audio. The
-    real-data run in section 1 is someone else's measurement, read from their published
-    summary and not reproduced here.</li>
-    <li><b>These are upper bounds.</b> Every label in the corpus is spoken aloud, so the set
-    measures fact extraction under noise, not inferential labelling. Real calls state their
-    outcome far less often; both arms will do worse in production.</li>
-    <li><b>The ground truth was corrected after a blind audit whose reviewers were models</b>,
-    not people. A human panel is still what would settle those labels.</li>
-    <li><b>One arm could not be run</b>, so this is a four-arm result, not five.</li>
+    through <i>our</i> pipeline. Sections 6 (synthetic row) and 7 are entirely synthetic Thai
+    audio. Sections 1&ndash;5 are the parallel project's measurement, parsed from their
+    published workbook and not reproduced here.</li>
+    <li><b>Every label in our corpus is spoken aloud</b>, so our synthetic set measures fact
+    extraction under transcription noise, not inferential labelling. Those scores are upper
+    bounds.</li>
+    <li><b>Our arms disagree with themselves</b> across three identical replicates on 17 to 33
+    of 138 items. That instability is a standing property of the task, measured in both of our
+    runs. The real-data run has no replicates at all.</li>
+    <li><b>Our ground truth was corrected after a blind audit whose reviewers were models,
+    not people.</b></li>
   </ul>
 </div>
 
-<div class="foot">
-  Real-data figures parsed from
-  <code>OverallEvaluationReport(Sentiment&nbsp;Retention).csv</code>, produced by the parallel
-  evaluation project, not reproduced here. Synthetic figures generated by
-  <code>scripts/gpu_figures.py</code> from the E24 run
-  (labeller, 138 calls &times; 3 replicates, scored on replicate 1 as preregistered) and the
-  E23 run (transcription, the last run in which both transcribers completed) &mdash; not typed
-  by hand. Full detail in <code>docs/reports/e24-summary.md</code>; the outage record is
-  <code>docs/qwen-asr-outage-2026-08-21.txt</code>.
-</div>
+<p class="foot">
+  Real-data figures across all six tasks parsed from
+  <code>OverallEvaluationReport (1).xlsx</code> by <code>scripts/parallel_eval_workbook.py</code>, produced by the
+  parallel evaluation project and not reproduced here. Synthetic figures generated by
+  <code>scripts/gpu_figures.py</code> from the E24 run (labeller) and the E23 run
+  (transcribers). This page is rendered by <code>scripts/gpu_report.py</code> from
+  <code>docs/reports/gpu-performance.json</code>; no figure on it is typed by hand.
+</p>
 
 </div>

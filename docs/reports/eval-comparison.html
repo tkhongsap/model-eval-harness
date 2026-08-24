@@ -1,0 +1,350 @@
+<meta charset="utf-8">
+<title>How Production Evaluates These Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#1b2024; --ink-2:#4a555f; --muted:#7c8791;
+  --page:#ebeef0; --card:#ffffff; --rule:#e3e8ea; --rule-2:#cfd7db; --band:#f4f6f7;
+  --ours:#e8f0ee; --ours-edge:#b6d0c8; --ours-ink:#12645a;
+  --good:#1f6b47; --bad:#9d3520; --warn:#8a5a11;
+  --accent:#0b6a70;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+    --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+    --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+    --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e8edef; --ink-2:#b6c1c8; --muted:#8a959d;
+  --page:#0f1417; --card:#171d21; --rule:#283237; --rule-2:#39454b; --band:#1c2429;
+  --ours:#14302c; --ours-edge:#2d5a51; --ours-ink:#6fc4b4;
+  --good:#79c79c; --bad:#e08a72; --warn:#d3a75a; --accent:#4fb3b7;
+}
+
+*{box-sizing:border-box}
+body{margin:0; background:var(--page); color:var(--ink); font-size:13.5px; line-height:1.45;
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.sheet{max-width:960px; margin:0 auto; padding:24px 20px 40px}
+
+.masthead{display:flex; justify-content:space-between; align-items:flex-end; gap:18px;
+  flex-wrap:wrap; margin-bottom:16px}
+h1{font-size:19px; font-weight:700; letter-spacing:-.01em; margin:0}
+.sub{color:var(--muted); font-size:12px; margin:3px 0 0}
+.stamp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--muted);
+  text-align:right; line-height:1.7}
+
+h2{font-size:13.5px; font-weight:700; margin:18px 0 8px; letter-spacing:-.005em}
+h2 .n{font-family:"IBM Plex Mono",monospace; color:var(--accent); font-weight:600; margin-right:6px}
+
+.strip{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px}
+.tile{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; padding:11px 13px}
+.tile .big{font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:600;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tile .cap{font-size:10.5px; color:var(--muted); margin-top:3px; line-height:1.35}
+.tile.win .big{color:var(--good)} .tile.risk .big{color:var(--bad)}
+
+.card{background:var(--card); border:1px solid var(--rule-2); border-radius:4px; overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px}
+thead th{padding:9px 13px; text-align:left; border-bottom:1px solid var(--rule-2);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  font-weight:600; background:var(--band)}
+thead th.n, tbody td.n{text-align:right}
+tbody td{padding:8px 13px; border-bottom:1px solid var(--rule); font-size:12.5px; color:var(--ink-2)}
+tbody td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+tbody td:first-child{color:var(--ink); font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+tr.ours td{background:var(--ours)}
+tr.ours td:first-child{border-left:2px solid var(--ours-edge)}
+.hint{display:block; color:var(--muted); font-size:11px; font-weight:400; margin-top:1px}
+.up{color:var(--good); font-weight:600} .dn{color:var(--bad); font-weight:600}
+.pill{display:inline-block; padding:1px 7px; border-radius:100px; font-size:10.5px;
+  font-family:"IBM Plex Mono",monospace; font-weight:500; white-space:nowrap}
+.pill.down{background:#fbeae6; color:#9d3520; border:1px solid #eec4b8}
+
+/* The one-matrix page: wide and short, so it scrolls sideways with the measure column pinned
+   to the left edge. Without the pin a reader loses which row they are on by column six. */
+.sheet.wide{max-width:1320px}
+table.mx{min-width:1100px; border-collapse:separate; border-spacing:0}
+table.mx th, table.mx td{border-bottom:1px solid var(--rule)}
+table.mx th.ml, table.mx td.ml{position:sticky; left:0; z-index:2; background:var(--card);
+  min-width:196px; box-shadow:1px 0 0 var(--rule-2)}
+table.mx thead th.ml{background:var(--band)}
+table.mx thead th.grp{text-align:center; border-left:2px solid var(--rule-2);
+  letter-spacing:.06em; color:var(--ink); background:var(--band)}
+table.mx thead th{position:sticky; top:0; z-index:1; background:var(--band)}
+table.mx thead tr:first-child th.ml{z-index:3}
+table.mx td.cand{background:var(--ours)}
+table.mx th.cand{background:var(--ours); color:var(--ours-ink)}
+table.mx th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.mx tr.emph td{font-weight:600; background:var(--band)}
+table.mx tr.emph td.cand{background:var(--ours)}
+table.mx tr.emph td.ml{background:var(--band)}
+table.mx .muted{color:var(--muted); font-family:"Public Sans",sans-serif; font-size:11px}
+table.mx td, table.mx th{padding:7px 11px; white-space:nowrap}
+/* ...except the pinned measure column, which carries sentences. Left nowrap it grows to the
+   width of its longest sublabel and shoves the data columns off the card. */
+table.mx td.ml, table.mx th.ml{white-space:normal; max-width:250px}
+table.mx td.ml .hint{white-space:normal}
+/* The unit noun under each cost figure is a second line inside a nowrap cell. */
+table.mx td.n .hint{white-space:nowrap; font-size:10px}
+
+/* The two-column summary that opens the page. */
+table.sum{min-width:0; table-layout:fixed}
+table.sum td:first-child, table.sum th:first-child{width:38%}
+table.sum td.cand, table.sum th.cand{background:var(--ours)}
+table.sum th.cand{color:var(--ours-ink)}
+table.sum th.cand .hint{color:var(--ours-ink); opacity:.8}
+table.sum tr.emph td{background:var(--band); font-weight:600}
+table.sum tr.emph td.cand{background:var(--ours)}
+table.sum td.n{vertical-align:top}
+table.sum td.muted, table.sum .muted{color:var(--muted); font-family:"Public Sans",sans-serif}
+
+/* Use-case tables: a banded group row, and a tint down the candidate columns so the eye can
+   follow "ours" without re-reading the header on every row. */
+p.lede{margin:-4px 0 8px; color:var(--muted); font-size:11.5px}
+table.uc tbody tr.group td{background:var(--band); border-bottom:1px solid var(--rule-2)}
+table.uc tbody tr.group td:first-child{color:var(--ink); font-weight:700; font-size:11.5px}
+table.uc tbody tr.group td.cand{background:var(--ours)}
+table.uc td.cand{background:var(--ours)}
+table.uc thead th.cand{background:var(--ours); color:var(--ours-ink)}
+table.uc thead th.cand .hint{color:var(--ours-ink); opacity:.75}
+table.uc td:first-child{width:34%}
+table.uc tbody td{vertical-align:top}
+
+/* Fixed-layout tables: without this a cell holding a long file path blows the column model up
+   and pushes the right-hand columns off the card, where a reader never scrolls to find them. */
+table.fixed{table-layout:fixed; min-width:0}
+table.fixed td,table.fixed th{overflow-wrap:anywhere; word-break:normal}
+table.fixed td .hint{overflow-wrap:anywhere}
+
+.note{margin:12px 0 0; padding:11px 14px; background:var(--card); border:1px solid var(--rule-2);
+  border-left:3px solid var(--accent); border-radius:4px; font-size:12px}
+.note.risk{border-left-color:var(--bad)}
+.note b{color:var(--ink)} .note p{margin:0 0 6px} .note p:last-child{margin-bottom:0}
+ul{margin:6px 0 0; padding-left:19px; font-size:12px} li{margin-bottom:4px}
+.foot{margin-top:14px; font-size:11px; color:var(--muted)}
+
+@media print{
+  @page{size:A4 portrait; margin:9mm}
+  body{background:#fff; font-size:8.6pt}
+  .sheet{padding:0; max-width:none}
+  .card,.tile,.note{border-color:#bbb; overflow:visible}
+  table{min-width:0}
+  h1{font-size:12.6pt} h2{font-size:9.4pt; margin:11px 0 5px}
+  .tile .big{font-size:13pt} .tile .cap{font-size:6.6pt}
+  thead th{padding:5px 7px; font-size:6.4pt}
+  tbody td{padding:3.6px 7px; font-size:7.7pt}
+  .hint{font-size:6.6pt} .note{font-size:7.2pt; padding:7px 9px} ul{font-size:7.4pt}
+  .foot{font-size:6.6pt} .strip{gap:6px}
+  tr.ours td{background:#e8f0ee !important}
+  thead th{background:#f2f4f5 !important}
+  .pill.down{background:#fbeae6 !important}
+  tr.ours td,thead th,.pill{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}
+</style>
+
+<div class="sheet">
+
+<div class="masthead">
+  <div>
+    <h1>How production evaluates these models</h1>
+    <p class="sub">The incumbent against our internal stack &middot; read from production's own
+    evaluation code, area by area &middot; <b>not a re-run of their results</b></p>
+  </div>
+  <div class="stamp">
+    2026-08-24<br>
+    5 task areas surveyed<br>
+    verdict: not-comparable
+  </div>
+</div>
+
+<div class="strip">
+  <div class="tile">
+    <div class="big">5</div>
+    <div class="cap">task areas read on <b>both</b> sides<br>incumbent and internal, in the same
+    codebase</div>
+  </div>
+  <div class="tile risk">
+    <div class="big">7</div>
+    <div class="cap">metrics that <b>cannot fail</b><br>of 30 scoring defects
+    confirmed</div>
+  </div>
+  <div class="tile risk">
+    <div class="big">0 of 5</div>
+    <div class="cap">areas where <b>both sides run through<br>the same scorer</b></div>
+  </div>
+  <div class="tile risk">
+    <div class="big" style="font-size:14px;line-height:1.35">not-comparable</div>
+    <div class="cap">on whether the comparison is fair<br>see section 4</div>
+  </div>
+</div>
+
+<h2><span class="n">1</span>What actually runs on each side</h2>
+
+<div class="card">
+<table class="fixed">
+  <colgroup><col style="width:19%"><col style="width:33%"><col style="width:33%">
+    <col style="width:15%"></colgroup>
+  <thead><tr>
+    <th>Task area</th><th>Incumbent<span class="hint">model &middot; what it is fed</span></th>
+    <th>Internal<span class="hint">stack &middot; what it is fed</span></th>
+    <th>Same scorer<br>both sides?</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>Tax invoice extraction<span class='hint'>documents &middot; 9 dimensions &middot; confidence low</span></td><td><b>gemini-3.1-pro-preview</b><span class='hint'>One PDF page per request, re-saved page-to-page with pypdfium2 and deliberately NOT rasterised so Gemini reads the embedded text layer; referenced by GCS URI as file_data (google_output.py:&#8230;</span></td><td><b>no ASR -&gt; qwen3.8-27b-fp8</b><span class='hint'>One 200-DPI PNG raster per page (pypdfium2 render + Pillow), no text layer, sent inline as a base64 data: URL; pre-rejected above 8 MB decoded or 40 MP (internal_direct_output.py:575-700, :&#8230;</span></td><td><span class='dn'>no</span></td></tr>
+    <tr><td>Call-centre QA<span class='hint'>sentiment &middot; 6 dimensions &middot; confidence low</span></td><td><b>gemini-2.5-flash</b><span class='hint'>Raw telephony audio straight into the model: one file_data part per call, mime from mimetypes.guess_type, no ASR and no transcript (google_output.py:413-434).</span></td><td><b>qwen3-asr-1.7b -&gt; qwen3.8-27b-fp8 -&gt; qwen3.8-27b-fp8</b><span class='hint'>Audio never reaches the scoring model. WAV decoded locally (stdlib wave, hand-written G.711 A-law/mu-law), resampled to 16 kHz, split at quiet points above 24 MiB, POSTed to /v1/audio/trans&#8230;</span></td><td><span class='dn'>no</span></td></tr>
+    <tr><td>Number portability<span class='hint'>sentiment_mnp &middot; 5 dimensions &middot; confidence low</span></td><td><b>gemini-2.5-flash</b><span class='hint'>Raw audio straight into the model - the stored GCS object unmodified, no resampling or splitting (google_output.py:412-433).</span></td><td><b>typhoon-whisper-large-v3 -&gt; qwen3.8-27b-fp8 -&gt; qwen3.8-27b-fp8</b><span class='hint'>Audio never reaches the analysis model. WAV downloaded, G.711 decoded in-process, resampled 8 kHz -&gt; 16 kHz, split at low-energy points above 24 MiB, POSTed to /v1/audio/transcriptions (lan&#8230;</span></td><td><span class='dn'>no</span></td></tr>
+    <tr><td>Retention<span class='hint'>sentiment_retention &middot; 5 dimensions &middot; confidence low</span></td><td><b>gemini-2.5-flash</b><span class='hint'>Raw call audio straight into the model - one file_data part per row pointing at the untouched GCS object with a mimetypes-guessed content type (google_output.py:440-468).</span></td><td><b>typhoon-whisper-large-v3 -&gt; qwen3.8-27b-fp8 -&gt; qwen3.8-27b-fp8</b><span class='hint'>Audio only reaches the ASR endpoint. The analysis model receives a metadata block plus the labelled transcript, no audio and no timestamps. Audio is resampled 8 kHz -&gt; 16 kHz, G.711 decoded&#8230;</span></td><td><span class='dn'>no</span></td></tr>
+    <tr><td>Telesales<span class='hint'>sentiment_telesale &middot; 13 dimensions &middot; confidence low</span></td><td><b>gemini-2.5-flash</b><span class='hint'>Audio straight into the model: a file_data block with the GCS object URI and a guessed MIME type; the WAV bytes are never decoded, resampled or transcribed locally, and the model writes the&#8230;</span></td><td><b>typhoon-whisper-large-v3 -&gt; qwen3.8-27b-fp8 -&gt; qwen3.8-27b-fp8 x4 parallel section calls</b><span class='hint'>Audio -&gt; text -&gt; text. WAV fetched, G.711 decoded when stdlib wave refuses it, resampled to 16 kHz, split at low-energy points above 24 MiB, sent to /v1/audio/transcriptions; the ASR dump g&#8230;</span></td><td><span class='dn'>no</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p>Every row was read out of <code>production-reference/</code> by an agent that cited
+  file:line for each claim, then attacked by a second agent whose instruction was to
+  <b>refute</b> it. Corrections from that pass are already applied; the confidence column is
+  lowered where the adversary refuted more than two claims.</p>
+</div>
+
+<h2><span class="n">2</span>What they scored</h2>
+
+<div class="card">
+<table>
+  <thead><tr><th>Task</th><th class="n">Internal</th><th class="n">Incumbent</th>
+    <th class="n">Margin</th><th class="n">Our latency</th></tr></thead>
+  <tbody>
+    <tr><td>Tax-Invoice</td><td class='n'>0.97915</td><td class='n'>0.99925</td><td class='n'>-0.02010</td><td class='n'>30.7&times;</td></tr>
+    <tr><td>Sentiment QA</td><td class='n'>0.83040</td><td class='n'>0.85913</td><td class='n'>-0.02873</td><td class='n'>86.5&times;</td></tr>
+    <tr><td>Sentiment MNP</td><td class='n'>0.82370</td><td class='n'>0.85645</td><td class='n'>-0.03275</td><td class='n'>41.7&times;</td></tr>
+    <tr><td>Sentiment Retention</td><td class='n'>0.80823</td><td class='n'>0.88310</td><td class='n'>-0.07487</td><td class='n'>11.5&times;</td></tr>
+    <tr class='ours'><td>Sentiment Telesale</td><td class='n'>0.93518</td><td class='n'>0.92723</td><td class='n'>+0.00795</td><td class='n'>7.4&times;</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note">
+  <p>Results as published, from the same workbook, parsed by
+  <code>scripts/parallel_eval_workbook.py</code>. They are here so the methodology above and the
+  numbers can be read together &mdash; <b>section 3 is why several of these columns carry less
+  information than they appear to.</b></p>
+</div>
+
+<h2><span class="n">3</span>What the scoring can and cannot measure</h2>
+
+<div class="card">
+<table class="fixed">
+  <colgroup><col style="width:14%"><col style="width:47%"><col style="width:27%">
+    <col style="width:12%"></colgroup>
+  <thead><tr><th>Area</th><th>Defect<span class="hint">and what it does to the number</span></th>
+    <th>Where</th><th>Severity</th></tr></thead>
+  <tbody>
+    <tr><td>Tax invoice extraction</td><td>The extraction dashboard's confusion counts are built against an all-ones y_true: match_report(verdicts, [MATCH_TRUE] * len(verdicts)). FN and TN are hardcoded 0, precision is literally assigned accuracy, recall is 1.0 whenever n&#8230;<span class='hint'>Verdict correction: the team labels the Precision and Recall rows inline ('equals Accuracy on this method', '1.0000 by construction here', executive_report.py:343-347, :424-428) and the das&#8230;</span></td><td><code>production-reference/ai-local-eval-sentiment_project_v2/src/google_model/documents/google_exact_match.py:646&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Tax invoice extraction</td><td>Ground truth is joined to prediction with how='inner' and there is no row-parity gate anywhere downstream. A failed page emits exactly one blank line-item row, so every ground-truth line item from position #2 upward drops out of&#8230;<span class='hint'>N is whatever the model chose to return, so accuracy rises as output completeness falls. The published Gemma arm failed 19 of 147 pages and is scored on 2,573 rows (executive_report.py:430-&#8230;</span></td><td><code>src/google_model/documents/google_exact_match.py:839, src/local_model/documents/internal_exact_match.py:887,&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Tax invoice extraction</td><td>Two blank cells count as a match: for a column both sides left empty the folded pair ('','') passes both the equality rule and the similarity rule (1 - CER('','') = 1.0).<span class='hint'>Columns the humans rarely fill score near 1.0000 for both arms on co-absence, and those inflated per-column accuracies enter the unweighted 29-column mean published as the headline 'Field e&#8230;</span></td><td><code>src/google_model/documents/google_exact_match.py:619-628 and src/local_model/documents/internal_exact_match.p&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Call-centre QA</td><td>match_report pins FN and TN to 0, so precision is assigned accuracy and recall is 1.0 whenever n&gt;0 and F1 is 2a/(1+a) - guarded, not unconditional: a column with n==0 or zero agreement prints 0.0 (metrics.py:511-516).<span class='hint'>This is the decisive defect for this area, not a spare column: the published scorecard is generated FROM the exact-match dashboard (COL_ACC=6 against the exact-match layout, executive_repor&#8230;</span></td><td><code>production-reference/ai-local-eval-sentiment_project_v2/src/google_model/metrics.py:486-517, reached from src&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Call-centre QA</td><td>error_rate_stats and similarity_stats return all-zero reports on empty input, and the dashboard turns a zero mean CER into a perfect score.<span class='hint'>Zero scoreable transcripts renders as Accuracy 1.0000 and char accuracy 1.0000, with 'Scored: 0' in a cell further down. run() guards only the no-overlapping-stems case (:1516-1536), so dow&#8230;</span></td><td><code>src/google_model/metrics.py:627-636, consumed at src/google_model/sentiment/google_confusion_matrix.py:942 ('&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Retention</td><td>Per-class Accuracy is one-vs-rest (TP+TN)/N, so TN dominates for any rare class and the number is near 1.0 for a model that never predicts that class at all.<span class='hint'>'Accuracy, weighted' is one of the two emphasised rows on the executive scorecard and cannot meaningfully fail on a corpus with many rare reason classes - a model that never emits a categor&#8230;</span></td><td><code>src/google_model/metrics.py:46-54 (LabelScore.accuracy), rendered per class at google_confusion_matrix.py:609&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Telesales</td><td>The corpus itself makes most of the metric un-failable: the human graders used a single label on every call for 25 of the 39 criteria, and 5 of the 14 sub-categories contain no violation at all.<span class='hint'>On 25 criteria a model that ignores the audio and answers a constant is indistinguishable from a perfect one. Only 10 criteria carry any violation support and 8 of the 25 violation cells si&#8230;</span></td><td><code>src/google_model/sentiment_telesale/google_confusion_matrix.py:32-35, :855-933; mirrored at src/local_model/s&#8230;</code></td><td><span class='pill down'>cannot fail</span></td></tr>
+    <tr><td>Tax invoice extraction</td><td>Format compliance is judged over non-blank prediction cells only; a blank prediction is skipped rather than failed, and a check no prediction reached prints 'n/a'.<span class='hint'>The compliance rate can be lowered by malformation but never by omission - leaving a tax id blank scores better than emitting a slightly-wrong one. 'Checked' varies per arm, so the per-chec&#8230;</span></td><td><code>src/google_model/documents/google_exact_match.py:715-731 and src/local_model/documents/internal_exact_match.p&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Tax invoice extraction</td><td>The confusion-matrix scorers DROP any row where either side is blank or out of vocabulary instead of scoring it as a disagreement - the opposite convention to the exact-match sheet built from the same workbook.<span class='hint'>Every failed page emits an all-null row and is therefore excluded from Document type accuracy and all five flag accuracies; the arm that fails more pages has those pages removed from its de&#8230;</span></td><td><code>src/google_model/documents/google_confusion_matrix.py:276-284 and src/local_model/documents/internal_confusio&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Tax invoice extraction</td><td>The published coverage mean is taken over a different column set than the accuracy printed above it: coverage is built over all 30 SCORED_COLUMNS while the extraction accuracy is an unweighted mean over 29 (Document type split ou&#8230;<span class='hint'>Document type sits inside the coverage mean and outside the accuracy mean on the same published row, so the two cells a stakeholder reads as one story are computed over different column set&#8230;</span></td><td><code>src/google_model/documents/google_exact_match.py:889, :899-901, :930 and src/local_model/documents/internal_e&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Call-centre QA</td><td>_score_single_label silently drops any row whose value is outside the label set on either side - which includes every blank prediction left by a failed file - instead of scoring it as a miss.<span class='hint'>Confusion-matrix accuracy and macro-F1 are computed over successes only and cannot be lowered by a pipeline failure; the internal arm has three failure surfaces to the incumbent's one. Verd&#8230;</span></td><td><code>src/google_model/sentiment/google_confusion_matrix.py:440-442 and the identical src/local_model/sentiment/int&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Call-centre QA</td><td>The OVERALL (by family) block prints 'Rows: len(merged)' next to an Accuracy and Macro-F1 computed over report.n, which is smaller whenever any row was excluded.<span class='hint'>The top block an executive reads states a row count the score beside it was not computed over - a run where 40 of 180 calls failed reports Rows 180 with an accuracy measured on 140.</span></td><td><code>src/google_model/sentiment/google_confusion_matrix.py:885-901 (Rows at :887, Accuracy at :888); identical in&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Call-centre QA</td><td>The QA and Sentiment family Accuracy is an unweighted mean of per-column accuracies whose denominators can differ column to column once exclusions fire.<span class='hint'>It is not the pooled agreement rate over all 22 x N cells; a column that excluded half its rows carries the same weight as one that excluded none. The exact-match sibling documents its equi&#8230;</span></td><td><code>src/google_model/sentiment/google_confusion_matrix.py:888 and :898; identical in internal_confusion_matrix.py</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Call-centre QA</td><td>gt.merge(result, on='Voice File Name', how='inner') is unguarded against duplicate keys on the ground-truth side; InputGTSchema declares the column nullable with no unique constraint.<span class='hint'>A duplicated ground-truth key cartesian-expands and double-counts those calls in every metric. The result sheet is protected by an order-preserving dedupe upstream (usage_metrics.py:73); th&#8230;</span></td><td><code>src/google_model/sentiment/google_confusion_matrix.py:835 (and _merge at google_exact_match.py:834-857); sche&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Number portability</td><td>The Call Result scorer never passes missing_label, so a blank prediction inside a present result row is dropped from the metric instead of scored as a miss.<span class='hint'>Every failed file is free on the primary business metric: both pipelines write one blank row per unanswered file, those rows join fine, _canonical returns None and the row is counted in 'dr&#8230;</span></td><td><code>src/google_model/sentiment_mnp/google_confusion_matrix.py:1027 and the identical src/local_model/sentiment_mn&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Number portability</td><td>The same exclusion is inconsistent between the two scored topics on one dashboard: an empty prediction is dropped from Call Result but scored as a full miss on Reason (the empty predicted set makes every ground-truth reason an FN&#8230;<span class='hint'>One failed call costs the Reason block real recall on every reason the graders assigned and costs the Call Result block nothing. A reader comparing 'Call Result F1' with 'Reason F1' across&#8230;</span></td><td><code>src/google_model/sentiment_mnp/google_confusion_matrix.py:541-553 versus :720-731</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Number portability</td><td>The headline 'Accuracy' on both topics is the support-weighted mean of per-class one-vs-rest (TP+TN)/N, not the fraction of calls answered correctly - which classification_report already computes at metrics.py:394 and evaluate()&#8230;<span class='hint'>TN inflates the cell toward 1.0 as the class count grows, and no caveat travels with it onto the stakeholder scorecard. Verdict correction: the survey's worked example (1 - 2E/(kN), '20 wro&#8230;</span></td><td><code>src/google_model/sentiment_mnp/google_confusion_matrix.py:1068 and :1081 via aggregate_scores (src/google_mod&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Number portability</td><td>UNKNOWN_CLASS ('unknown (out-of-vocabulary)') is scored like a real class although the schema-constrained model can never predict it, so its Precision, Recall and F1 are all 0.0 by construction wherever ground truth carries an ou&#8230;<span class='hint'>A guaranteed-zero class is folded into the published Reason averages. The drag is not a flat 1/13: aggregate_scores macro-averages only classes that OCCUR (metrics.py:270), so with several&#8230;</span></td><td><code>src/google_model/sentiment_mnp/google_confusion_matrix.py:120 (REASON_SCORED_CLASSES), fed to multilabel_repo&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Number portability</td><td>The transcript block excludes any call whose transcript is missing or blank on either side, and both pipelines upload a per-call .txt only for calls that fully succeeded.<span class='hint'>Mean/median CER and the CER pass rate are computed over successes only; a failed call has no hypothesis file and simply leaves the denominator. The excluded count is printed on the sheet, s&#8230;</span></td><td><code>src/google_model/sentiment_mnp/google_confusion_matrix.py:863-865; uploads at google_output.py:669-671 and in&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Number portability</td><td>The per-call compare sheets carry MORE rows than the block N: compare_rows emits one row per merged row, while evaluate() drops rows after the merge inside the scorers - contradicting the function's own docstring.<span class='hint'>A blank prediction is marked 'F' on the Call Result compare sheet while being excluded from the Call Result metric. The gap between compare-sheet row count and block N is the visible trace&#8230;</span></td><td><code>src/google_model/sentiment_mnp/google_confusion_matrix.py:1268, :1271-1280 and :1303-1309 versus :541-553 and&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Retention</td><td>The transcript block is scored over the (call, product)-grain merged frame, not per call, so a call that produced N product rows has its transcript scored N times.<span class='hint'>Mean and median CER, best/worst, CER pass rate, mean cosine, the Scored/Excluded counts and the Vertex embedding spend are all row-weighted rather than call-weighted, and the weighting is d&#8230;</span></td><td><code>src/google_model/sentiment_retention/google_confusion_matrix.py:881 (loop over merged[KEY_COLUMN] inside _sco&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Retention</td><td>The '(missing)' sentinel is added to the Call Result label set and scored as a real class, but ground truth can never carry it, so its TP and FN are structurally 0 and its Precision, Recall and F1 are pinned at exactly 0.0 whenev&#8230;<span class='hint'>Call Result Macro-F1, Macro-Precision and Macro-Recall are dragged by a hard 0.0 from a class the model was never asked to produce (roughly 1/k of the other classes' mean, k = occurring cla&#8230;</span></td><td><code>src/google_model/sentiment_retention/google_confusion_matrix.py:106-107 and :1181; the class enters the avera&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Retention</td><td>Every merged row whose ground-truth outcome cell is blank or out of vocabulary is dropped from the Call Result topic entirely - which is exactly the set of rows the model invented (a product the graders never named).<span class='hint'>In the published runs 47 of 144 rows (Gemini) and 45 of 142 (Qwen) - about a third of the join - were excluded from Call Result, so its Precision, Recall, F1 and Accuracy are measured on a&#8230;</span></td><td><code>src/google_model/sentiment_retention/google_confusion_matrix.py:562-576, driven by _canonical with blank_labe&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Telesales</td><td>N/A is structurally unreachable on 33 of the 39 criteria: only 6 fields are typed bool | None (the customer_identity_verification trio and the cross_sell_upsell trio); the other 33 are plain bool and cannot emit N/A on EITHER arm.<span class='hint'>The dashboard's declared 3-label vocabulary (T / F / N/A) is the ground-truth sheet's, not the achievable prediction space. Any macro-F1 over 'occurring classes' and any per-label N/A row o&#8230;</span></td><td><code>src/google_model/sentiment_telesale/schema/model_response.py:120, :125, :130, :357, :362, :367 (6 nullable) v&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Telesales</td><td>A blank result cell is excluded from the criterion rather than scored as wrong, and the 'Rows' cell of every rollup block is the MAXIMUM row count across the group's criteria.<span class='hint'>The two arms' published rates are over different denominators - 26 calls for Gemini, 25 for the internal pipeline whose lost call hit the stream timeout - and the failure shows only in the&#8230;</span></td><td><code>src/google_model/sentiment_telesale/google_confusion_matrix.py:646-690 (_score_single_label, blank_label=None&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Telesales</td><td>A criterion whose rows are all excluded contributes accuracy 0.0 to Macro-average Accuracy but is silently dropped from Macro Precision/Recall/F1, because the accuracy mean divides by len(reports) while aggregate_scores filters t&#8230;<span class='hint'>If an arm produces no answer for one criterion in a group, that group's Macro Accuracy drops by roughly 1/k while its Macro F1 does not move - the two rows disagree about the same failure a&#8230;</span></td><td><code>src/google_model/sentiment_telesale/google_confusion_matrix.py:815-816, :825-833; occurs filter at src/google&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Telesales</td><td>'1 - mean CER' is printed in a column headed Accuracy with character_error_rate deliberately unclipped, and it is published twice - the OVERALL block cell and the TRANSCRIPT block's 'Mean char accuracy (1 - CER)' row.<span class='hint'>One runaway transcript dominates the mean and the cell can go negative on a 0-1 colour scale. Verdict qualifier: the stakeholder report does NOT publish this - _transcription() leads with M&#8230;</span></td><td><code>src/google_model/sentiment_telesale/google_confusion_matrix.py:1282 and :1336-1337; unclipped CER at src/goog&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Telesales</td><td>Weighted-average Accuracy is assigned the identical expression as Micro-average Accuracy, under a block subtitled 'Weighted by support'; and on a single-label column Micro Precision, Recall and F1 are all algebraically equal to M&#8230;<span class='hint'>A rollup row that looks like four independent quality signals is one measurement, and two named rows print the same number. A gap between the arms appears four times over and will be counte&#8230;</span></td><td><code>src/google_model/sentiment_telesale/google_confusion_matrix.py:831-832, :842-844, identity stated at :808-813&#8230;</code></td><td><span class='pill down'>silently wrong</span></td></tr>
+    <tr><td>Retention</td><td>The executive scorecard reads the Call Result N - a count of (call, product) records after exclusions - and labels it 'Calls scored', then reuses it as the call denominator for the Product, Call Result and Reason class blocks.<span class='hint'>The report states 'Both arms scored the same 97 ground-truth calls' as a fact when what it verified is that both arms' Call Result RECORD counts matched. Verdict correction: the published f&#8230;</span></td><td><code>src/google_model/sentiment_retention/executive_report.py:355-357, :368, :460, :469, :470 and the footnote at&#8230;</code></td><td><span class='pill down'>cosmetic</span></td></tr>
+    <tr><td>Retention</td><td>The executive scorecard's three BUSINESS OUTCOME sub-headers understate the scored label spaces and misstate the grain.<span class='hint'>:372 says 'Call result (4 classes, one answer per call)' when 5 classes are scored including '(missing)' at (call,product) grain; :374 says '11 reasons' when 12 rows are scored; :376 says '&#8230;</span></td><td><code>src/google_model/sentiment_retention/executive_report.py:372, :374, :376 against google_confusion_matrix.py:1&#8230;</code></td><td><span class='pill down'>cosmetic</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note risk">
+  <p><b>&ldquo;Cannot fail&rdquo; is the category that matters.</b> A confusion matrix built with
+  FN&nbsp;=&nbsp;0 pins recall at 1.0000 and makes accuracy identical to precision, so four
+  reported metrics carry <b>one</b> measurement. Against a threshold, that indicator can never
+  trip &mdash; the gate is decorative. This is not a criticism of the models; it is a statement
+  about what the published numbers are able to tell anyone.</p>
+</div>
+
+<h2><span class="n">4</span>Is the comparison fair?</h2>
+
+<div class="note risk">
+  <p><b>Verdict: not-comparable.</b> COMPLETENESS: all five required areas were received - documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale - each with a non-empty survey AND a non-empty adversarial verdict. Nothing was missing and nothing was substituted. Every area's verdict refuted more than two claims (6, 5, 7, 6 and 6 respectively), so all five areas are recorded at LOW confidence per the rule, and every refuted claim has been dropped or restated. VERDICT: as a model-versus-model comparison this evidence base is not comparable, and the reason is not the scorer. Scoring is the strongest part: one shared maths module (src/google_model/metrics.py) computes every count, average, CER and cosine for both sides, and the two arms' scorer wrappers, although forked, contain no differing metric logic today. The problem is everything upstream of it. The two sides are fed different artefacts by construction (raw audio versus an ASR-plus-LLM-rewritten transcript in four areas; a PDF text layer versus a 200-DPI raster in the fifth), run different prompts (documents v1 vs v2, telesale one 167 KB monolith vs four trimmed prompts, mnp/retention a wide chain-of-thought schema vs a narrow label-only one), decode under different samplers and output ceilings, get different retry and resume budgets, and read from two physically separate corpus copies that nothing verifies and whose counts are known to differ in at least three areas. Layered on top, the failure-exclusion convention in every area remove&#8230;</p>
+  <p><b>Biggest asymmetry.</b>
+  Input modality. The incumbent receives the raw artefact - telephony audio in the four sentiment areas, the PDF text layer in documents - while the internal side receives a lossy derivative: a transcript that has passed through ASR and then a second LLM rewrite, which discards prosody, tone, pitch, volume, speech rate, diarization and response latency (the internal prompt states this loss itself), or a rasterised page with no text layer. This single variable sits upstream of every quality number&#8230;</p>
+</div>
+
+<div class="note">
+  <p><b>Per-area asymmetries found:</b></p>
+  <ul>
+    <li><b>Tax invoice extraction</b> &mdash; DIFFERENT INPUT - the largest non-model variable. Google reads the PDF text layer; the internal arm gets a 200-DPI PNG and must OCR from pixels (google_output.py:463-487 vs internal_direct_output.py:643-646). Most likely driver of the reported Buyer-tax-id gap (1.0000 vs 0.0795 / 0.1189 / 0.0027, e&#8230;</li>
+    <li><b>Call-centre QA</b> &mdash; INPUT MODALITY IS THE BIGGEST DIFFERENCE AND IT IS NOT THE MODEL. Gemini receives the .wav; the internal analysis model receives text that has passed through qwen3-asr-1.7b and then a qwen3.8-27b-fp8 relabelling pass. The internal prompt says so in its own words - it tells the model it never hears&#8230;</li>
+    <li><b>Number portability</b> &mdash; EVIDENCE DIFFERS AND THE TWO SIDES ARE ASKED FOR DIFFERENT TEXT. Gemini hears the audio and transcribes under a spec forbidding correction of misspellings or grammar (schema/model_response.py:61). The internal CER-scored transcript is a second Qwen call explicitly instructed to REPAIR the ASR: a cl&#8230;</li>
+    <li><b>Retention</b> &mdash; DIFFERENT INPUT BY CONSTRUCTION. Gemini receives the raw WAV and transcribes it itself; the internal arm's analysis model never hears audio and reads a Whisper transcript that a second Qwen call has relabelled. The internal arm's ceiling is bounded by typhoon-whisper-large-v3; the incumbent's is no&#8230;</li>
+    <li><b>Telesales</b> &mdash; DIFFERENT RESPONSE CONTRACTS. The incumbent decodes the full production schema - transcript, campaign_name, campaign_ratio, call_status, the 39 flags, agent_strength/weakness, sales_performance, customer_insight and 13 Thai support_detail justifications. The internal arm asks for the 39 flags plus&#8230;</li>
+  </ul>
+</div>
+
+<h2><span class="n">5</span>What only shows up across areas</h2>
+
+<div class="note">
+  <ul>
+    <li><b>The same structurally-unfailable agreement metric is live in exactly four places, on BOTH arms, and it is what the stakeholder scorecard reads where it survives. match_report hardcodes fn=0 and tn=0,&#8230;</b> &mdash; Verified call sites: src/google_model/documents/google_exact_match.py:646, src/local_model/documents/internal_exact_match.py:686, src/google_model/sentiment/google_exact_match.py:534, src/local_model/sentiment/internal_exact_match.py:534, all consuming src/google_model/metrics.py:486-517. The team&#8230;<span class='hint'>affects: documents, sentiment, sentiment_telesale</span></li>
+    <li><b>The incumbent and the internal side are never scored by one piece of code. Every area ships two forked scorer modules; the only genuinely shared code is src/google_model/metrics.py, which the local p&#8230;</b> &mdash; Measured diff sizes (name/path differences included): documents exact-match 1613 vs 1686 lines / 171 changed, documents confusion-matrix 919 vs 984 / 145, sentiment 1592 vs 1592 / 94, mnp 2027 vs 2027 / 76, retention 2224 vs 2224 / 86, telesale 2198 vs 2200 / 86. There is no src/local_model/metrics&#8230;<span class='hint'>affects: documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+    <li><b>The systematic asymmetry the brief asks about is confirmed and it is total: in every area the incumbent is fed the richer artefact and the internal side a lossy derivative. In the four voice areas th&#8230;</b> &mdash; The internal QA prompt states the loss in its own words - the model never hears the audio and receives no tone, pitch, volume, prosody, speech rate, diarization or response latency (src/local_model/sentiment/prompt/inbound_prompt.txt:2) - yet all three sentiment columns and several QA criteria are&#8230;<span class='hint'>affects: documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+    <li><b>Transcription IS scored in all four voice areas - CER plus embedding cosine against human transcripts - but never as an ASR metric, and never over the whole corpus.</b> &mdash; Three compounding facts. (1) The internal artefact scored is the LABELLING model's rewrite of the ASR output, not the ASR output - so the number is qwen3.8-27b-fp8's rendering of typhoon-whisper/qwen3-asr, and swapping ASR models is not isolable from it. (2) It exists only when the downstream analy&#8230;<span class='hint'>affects: sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+    <li><b>Where transcripts ARE compared, the two arms are instructed to produce different text against one shared human reference, in opposing directions.</b> &mdash; The incumbent's transcript spec forbids rewriting, REQUIRES an explicit inaudible-span marker, and (in QA) orders IVR/announcements/hold music skipped. The internal labelling prompt FORBIDS that same marker and MANDATES rewrites: a closed brand vocabulary in Roman script, and every spoken Thai nume&#8230;<span class='hint'>affects: sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+    <li><b>Failure is free in at least one headline metric in every single area: blank or failed predictions are excluded from the denominator rather than scored as wrong - and the arm with more ways to fail is&#8230;</b> &mdash; Documents: the how='inner' join drops the ground-truth rows a failed page never produced, and the confusion-matrix scorers drop all-null rows. Sentiment QA: _score_single_label drops out-of-vocabulary/blank rows. MNP: Call Result drops blank predictions (no missing_label) while Reason charges them&#8230;<span class='hint'>affects: documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+    <li><b>Retry, resume and pre-flight capability exist only on the internal side, in all five areas, and the published internal runs are multi-session resumed runs.</b> &mdash; Internal arms get 2-3 attempts per stage with seed nudges, jittered backoff, final-attempt token escalation, oversized-input chunk-and-merge, pre-call size rejection (documents), and checkpoint resume by run_id. The incumbent gets exactly one Vertex batch pass with no per-row retry in every area (m&#8230;<span class='hint'>affects: documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+    <li><b>Two physical copies of every corpus, no shipped control that they match, and no way to reproduce a single published number in this checkout.</b> &mdash; In all five areas the incumbent lists sources from a .../&lt;task&gt;/google/src_files prefix and the internal arm from .../&lt;task&gt;/internal/src_files, and nothing in the code counts, hashes or compares them. Where counts are known they differ: 300 vs 180 calls (sentiment QA, stated in the project's own r&#8230;<span class='hint'>affects: documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale</span></li>
+  </ul>
+</div>
+
+<h2><span class="n">6</span>What a decision built on this must not claim</h2>
+
+<div class="note risk">
+  <ul>
+    <li>That any measured gap is a gap between the incumbent model and qwen3.8-27b-fp8. Every voice gap is 'ASR + labelling rewrite + narrowed-schema analysis' versus one audio-native call with an enforced transcript-first chain-of-thought; the documents gap is 'PDF text layer' versus '200-DPI raster'. These are pipeline comp&#8230;</li>
+    <li>That the arms were scored on the same items. The two sides read separate GCS prefixes in all five areas, nothing in the shipped code compares them, and the known counts differ: 300 vs 180 calls (sentiment QA, per the project's own report), 144 vs 142 rows (retention), 26 vs 25 calls (telesale), 2,573 vs 3,634 rows acr&#8230;</li>
+    <li>Any Precision, Recall or F1 taken from an exact-match dashboard (documents, sentiment QA) as independent evidence. Recall is 1.0 by construction, Precision is the same float as Accuracy, and F1 is 2a/(1+a) - a monotone transform of Accuracy that is always higher than it. Quoting the F1 row as a 'win' is quoting the Ac&#8230;</li>
+    <li>That the published accuracy or F1 figures are failure-inclusive. In every area at least one headline metric excludes blank or failed predictions from its denominator instead of scoring them wrong, and the internal arm has three to six failure surfaces per item against the incumbent's one. Report failure counts from th&#8230;</li>
+    <li>That the CER or cosine figures are an ASR benchmark, a transcription-quality benchmark, or a whole-corpus figure. The internal artefact scored is the labelling LLM's rewrite of the ASR output, it exists only when the downstream analysis stage also succeeded, and the two arms are instructed to write different text (man&#8230;</li>
+    <li>That any specific run figure has been verified or reproduced. resources/ contains only 'Personal-API Manual.md'; every workbook the executive_report modules read is absent, those modules are standalone scripts that nothing imports, and consequently every number in this evidence base is a hardcoded literal quoting a pa&#8230;</li>
+    <li>That the two arms ran the same prompt anywhere, and specifically not that the documents prompts are byte-identical. The internal documents Config comment claiming byte-identity is false as written: it points at a 69,174-byte v2 prompt containing tax-ID, name/address and rounding rules that map one-for-one onto checks&#8230;</li>
+    <li>That any cell labelled 'Accuracy' is the fraction of items answered correctly, or that time/token/cost bands are model comparisons. MNP and retention publish a support-weighted mean of one-vs-rest (TP+TN)/N, which TN inflates toward 1.0 as classes multiply; telesale's transcript 'Accuracy' is 1 minus an unclipped mean&#8230;</li>
+  </ul>
+</div>
+
+<p class="foot">
+  Methodology surveyed from <code>production-reference/ai-local-eval-sentiment_project_v2</code>
+  by 5 independent agents, each adversarially verified by a second, and consolidated
+  with the adversary's corrections taking precedence. Results joined from
+  <code>docs/reports/parallel-eval-workbook.json</code>. This page is rendered by
+  <code>scripts/eval_comparison_report.py</code>; no figure on it is typed by hand. <b>Their
+  results are not reproduced here</b> &mdash; this describes and audits their method, it does
+  not re-run it.
+</p>
+
+</div>

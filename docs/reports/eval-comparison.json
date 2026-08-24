@@ -1,0 +1,515 @@
+{
+  "generated": "2026-08-24",
+  "generated_from": "scripts/eval_comparison_figures.py",
+  "survey_source": "eval-comparison-survey.json",
+  "results_source": "parallel-eval-workbook.json",
+  "areas": [
+    {
+      "area": "documents",
+      "label": "Tax invoice extraction",
+      "incumbent_model": "gemini-3.1-pro-preview",
+      "incumbent_runtime": "Vertex AI batch inference, vertex_location='global'; one JSONL row per page to GCS, submit_batch_job, 60s poll, results read from JSONL shards. No per-row retry; only a bounded 600s re-poll for a terminal-but-unreadable job (production-reference/ai-local-eval-sentiment_project_v2/src/google_model/documents/google_output.py:723-794).",
+      "incumbent_input": "One PDF page per request, re-saved page-to-page with pypdfium2 and deliberately NOT rasterised so Gemini reads the embedded text layer; referenced by GCS URI as file_data (google_output.py:418-509, :688-691). MIME from mimetypes.guess_type, and a None MIME is logged but still shipped as \"mime_type\": null (:676-679).",
+      "internal_stack": "no ASR (vision task) -> qwen3.8-27b-fp8 (internal_direct_output.py:255); published scorecard arms: GEMINI 3.1 PRO, QWEN3.8-27B-FP8, QWEN3.8-27B (TUNED), GEMMA-4-12B-IT (executive_report.py:269-296)",
+      "internal_runtime": "Self-hosted OpenAI-compatible endpoint at a raw IP, httpx verify=False (TLS off), max_retries=0, chat.completions.stream with a 900s deadline armed by the first streamed event; ThreadPoolExecutor fan-out from DOC_LLM_CONCURRENCY; up to 2 attempts per page with seed nudge and jittered backoff; per-page GCS checkpoint resume by run_id (src/local_model/documents/internal_direct_output.py:239-314, :722-868, :967-975, :1125-1290). config.llm_timeout is dead - the kwarg is commented out at :970.",
+      "internal_input": "One 200-DPI PNG raster per page (pypdfium2 render + Pillow), no text layer, sent inline as a base64 data: URL; pre-rejected above 8 MB decoded or 40 MP (internal_direct_output.py:575-700, :703-719, :1248-1264).",
+      "dimensions_scored": 9,
+      "dimension_names": [
+        "Field extraction accuracy - per column (29 in family)",
+        "Precision/Recall/F1 on the extraction block",
+        "Coverage (completeness)",
+        "Character Error Rate - 8 free-text name/address columns",
+        "Format compliance - 13 checks over 13 distinct columns",
+        "Document type - agreement view",
+        "Document type - 6-class confusion matrix",
+        "Visual flags - five 2-class confusion matrices",
+        "Run-level reliability, tokens and wall clock (Matrix / Matrix Summary)"
+      ],
+      "same_scorer_both_sides": "no",
+      "confidence": "low",
+      "defects": [
+        {
+          "what": "The extraction dashboard's confusion counts are built against an all-ones y_true: match_report(verdicts, [MATCH_TRUE] * len(verdicts)). FN and TN are hardcoded 0, precision is literally assigned accuracy, recall is 1.0 whenever n>0, F1 collapses to 2a/(1+a) and is always strictly greater than the accuracy under it.",
+          "file_line": "production-reference/ai-local-eval-sentiment_project_v2/src/google_model/documents/google_exact_match.py:646 and src/local_model/documents/internal_exact_match.py:686, both consuming src/google_model/metrics.py:502-517",
+          "consequence": "Verdict correction: the team labels the Precision and Recall rows inline ('equals Accuracy on this method', '1.0000 by construction here', executive_report.py:343-347, :424-428) and the dashboard legend spells the identities out, so those two are disclosed. The criticism survives for the F1 row alone - it is emph=True with best='max' and carries no inline caveat, so the one bolded 'win' a reader can take from this block is a monotone transform of the Accuracy printed beside it.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "Ground truth is joined to prediction with how='inner' and there is no row-parity gate anywhere downstream. A failed page emits exactly one blank line-item row, so every ground-truth line item from position #2 upward drops out of the join.",
+          "file_line": "src/google_model/documents/google_exact_match.py:839, src/local_model/documents/internal_exact_match.py:887, google_confusion_matrix.py:398, internal_confusion_matrix.py:440",
+          "consequence": "N is whatever the model chose to return, so accuracy rises as output completeness falls. The published Gemma arm failed 19 of 147 pages and is scored on 2,573 rows (executive_report.py:430-433) against the docstring's 3,634 (:13), with 1,061 ground-truth rows absent from every rate. The scorecard row that prints those four different Ns is captioned 'Line items scored - each arm against the same ground truth' (:327), which is the single most misleading string on the stakeholder sheet.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "Two blank cells count as a match: for a column both sides left empty the folded pair ('','') passes both the equality rule and the similarity rule (1 - CER('','') = 1.0).",
+          "file_line": "src/google_model/documents/google_exact_match.py:619-628 and src/local_model/documents/internal_exact_match.py:659-668, completed by src/google_model/metrics.py:612-613",
+          "consequence": "Columns the humans rarely fill score near 1.0000 for both arms on co-absence, and those inflated per-column accuracies enter the unweighted 29-column mean published as the headline 'Field extraction Accuracy' (the exec report names Total amount, Vat amount, Withholding tax at :439-441). The counterweight the survey named - coverage - is not one: _coverage iterates the frame AFTER the inner join, so dropped line items leave the GT-filled denominator too. Defects 2 and 3 are the same wound.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "Format compliance is judged over non-blank prediction cells only; a blank prediction is skipped rather than failed, and a check no prediction reached prints 'n/a'.",
+          "file_line": "src/google_model/documents/google_exact_match.py:715-731 and src/local_model/documents/internal_exact_match.py:755-771; registry :264-278 (13 checks over 13 distinct columns, not 11)",
+          "consequence": "The compliance rate can be lowered by malformation but never by omission - leaving a tax id blank scores better than emitting a slightly-wrong one. 'Checked' varies per arm, so the per-check pass rates printed side by side in the scorecard (executive_report.py:461-465) have different denominators per arm, with no winner-suppression on the aggregate figure at :357-359.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The confusion-matrix scorers DROP any row where either side is blank or out of vocabulary instead of scoring it as a disagreement - the opposite convention to the exact-match sheet built from the same workbook.",
+          "file_line": "src/google_model/documents/google_confusion_matrix.py:276-284 and src/local_model/documents/internal_confusion_matrix.py:310-318",
+          "consequence": "Every failed page emits an all-null row and is therefore excluded from Document type accuracy and all five flag accuracies; the arm that fails more pages has those pages removed from its denominator rather than scored against it. Grain matters too: _score_single_label iterates the merged LINE-ITEM frame, so a 20-line page votes 20 times in Document type and in every flag matrix. The two dashboards on one run report different Ns for the same column and nothing reconciles them.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The published coverage mean is taken over a different column set than the accuracy printed above it: coverage is built over all 30 SCORED_COLUMNS while the extraction accuracy is an unweighted mean over 29 (Document type split out).",
+          "file_line": "src/google_model/documents/google_exact_match.py:889, :899-901, :930 and src/local_model/documents/internal_exact_match.py:970-972, :1001; republished as 'Fields also filled (mean coverage)' under the heading 'Field extraction - 29 columns' at executive_report.py:348-350",
+          "consequence": "Document type sits inside the coverage mean and outside the accuracy mean on the same published row, so the two cells a stakeholder reads as one story are computed over different column sets. Same defect on both arms.",
+          "severity": "silently-wrong"
+        }
+      ],
+      "fairness_notes": [
+        "DIFFERENT INPUT - the largest non-model variable. Google reads the PDF text layer; the internal arm gets a 200-DPI PNG and must OCR from pixels (google_output.py:463-487 vs internal_direct_output.py:643-646). Most likely driver of the reported Buyer-tax-id gap (1.0000 vs 0.0795 / 0.1189 / 0.0027, executive_report.py:434-438). Both sides then run the same PUA-glyph normaliser, which only helps the side that has a text layer.",
+        "DIFFERENT PROMPTS. Google runs prompt/system_prompt.md (63,572 B); the internal Config runs system_prompt_v2.md (69,174 B), which adds a four-step tax-ID procedure, name/address boundary rules and a 9-line pre-emit checklist - several mapping one-for-one onto the scorer's own format checks (mod-11 tax id, script purity, ISO date). A byte-identical copy of the Google prompt exists but no code references it, and the Config comment at internal_direct_output.py:244-245 still claims the file it points at is byte-identical, which is false as written. Nothing in code records which prompt each published arm used.",
+        "RETRY, RESUME AND PRE-REJECTION ARE ONE-SIDED. Internal: 2 attempts per page, jittered backoff, per-page checkpoint resume (all three internal arms were resumed runs, executive_report.py:365-370, :415-420), and an 8 MB / 40 MP pre-call gate. Google: one batch pass, no per-row retry, no resume (main.py:137-139). A page the internal arm pre-rejects also leaves its confusion-matrix denominator under defect 5.",
+        "DECODING AND STRUCTURED OUTPUT DIFFER BEYOND THE MODEL. Google: maxOutputTokens 65535 with thinkingBudget -1 (unbounded dynamic thinking), schema enforced by SchemaHelper.vertex_generation_config() merged per row (google_output.py:202-212, :697-700). Internal: max_tokens 20000, no thinking budget, response_format=ReceiptExtraction via the OpenAI SDK (SchemaHelper.openai_response_format() exists at model_response.py:584-600 and is unused). Temperature 0 / top-p 1 / seed 0 match.",
+        "TWO PHYSICAL COPIES OF THE CORPUS AND A MIME ASYMMETRY. Google lists .../tax_invoice/google/src_files, internal lists .../tax_invoice/internal/src_files; nothing compares, counts or hashes them, and the scorecard's '147 pages from 32 source files' (executive_report.py:322) is a hardcoded string. The internal side deliberately refuses mimetypes.guess_type for a fixed three-entry map because guess_type 'consults the OS registry on Windows, which can misname them' (internal_direct_output.py:59-65) - the incumbent is exposed to exactly that documented failure mode.",
+        "THE TWO ARMS ARE SCORED BY FORKED COPIES. google_exact_match.py (1613 lines) vs internal_exact_match.py (1686) differ in 171 lines; the confusion-matrix pair (919 vs 984) in 145 - verified by diff. Every difference is docstring, log message, sheet name or the internal-only _page_key extension fold; no metric logic differs and both import the primitives from the single src/google_model/metrics.py. The comparison is fair today by coincidence of maintenance, not by construction, and nothing tests the two copies against each other."
+      ]
+    },
+    {
+      "area": "sentiment",
+      "label": "Call-centre QA",
+      "incumbent_model": "gemini-2.5-flash",
+      "incumbent_runtime": "Vertex AI batch inference, location 'global'; one JSONL payload to GCS, 60s poll, sharded JSONL results. No per-row retry anywhere (src/google_model/sentiment/google_output.py:44-86, :466-486). Payload rows carry no key, so the parse step recovers the file name from the echoed request's file_uri (:656-660) - a row returned without an echoed request lands keyed on the empty string.",
+      "incumbent_input": "Raw telephony audio straight into the model: one file_data part per call, mime from mimetypes.guess_type, no ASR and no transcript (google_output.py:413-434).",
+      "internal_stack": "qwen3-asr-1.7b -> qwen3.8-27b-fp8 (labelling) -> qwen3.8-27b-fp8 (analysis); the two sibling variants in the same menu section use typhoon-whisper-large-v3 (internal_asr_llm_split_output.py:205, internal_asr_llm_trim_output.py:206)",
+      "internal_runtime": "OpenAI SDK against an internal corporate gateway for BOTH the ASR and LLM legs, httpx verify=False on both clients, LLM max_retries=0 (ASR client keeps the SDK default), streaming with include_usage; ThreadPoolExecutor sized by SENTI_LLM_CONCURRENCY; ASR 3 attempts, label 2, analysis 2 with seed nudge and a final-attempt token escalation; cross-run resume by run_id. llm_timeout and asr_timeout are declared but commented out at both client constructors (:1740, :1751), so only the post-first-token stream deadline binds.",
+      "internal_input": "Audio never reaches the scoring model. WAV decoded locally (stdlib wave, hand-written G.711 A-law/mu-law), resampled to 16 kHz, split at quiet points above 24 MiB, POSTed to /v1/audio/transcriptions with language pinned to 'th'. Both LLM legs receive a '## METADATA / ## TRANSCRIPT' text block; because response_format='json' rather than 'verbose_json', segments come back empty and the label call sees flat text with no timestamps (:236-252, :652-683, :717-739, :1118-1133).",
+      "dimensions_scored": 6,
+      "dimension_names": [
+        "QA Criteria - 22 columns (accuracy + macro-F1)",
+        "Sentiment - overall / initial / final",
+        "Call Type - multi-label over 5 fixed labels",
+        "Summary Story - embedding cosine",
+        "Transcript - CER and embedding cosine",
+        "QA + Sentiment agreement (exact-match scorer, menu options 5 and 6)"
+      ],
+      "same_scorer_both_sides": "no",
+      "confidence": "low",
+      "defects": [
+        {
+          "what": "match_report pins FN and TN to 0, so precision is assigned accuracy and recall is 1.0 whenever n>0 and F1 is 2a/(1+a) - guarded, not unconditional: a column with n==0 or zero agreement prints 0.0 (metrics.py:511-516).",
+          "file_line": "production-reference/ai-local-eval-sentiment_project_v2/src/google_model/metrics.py:486-517, reached from src/google_model/sentiment/google_exact_match.py:534 and src/local_model/sentiment/internal_exact_match.py:534",
+          "consequence": "This is the decisive defect for this area, not a spare column: the published scorecard is generated FROM the exact-match dashboard (COL_ACC=6 against the exact-match layout, executive_report.py:38-39), and _family_metrics prints 'F1-score' as the first, bold, rank-marked row of every family block, above Accuracy (:258-264). The team does footnote the identities honestly, but the degenerate number leads the deliverable.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "_score_single_label silently drops any row whose value is outside the label set on either side - which includes every blank prediction left by a failed file - instead of scoring it as a miss.",
+          "file_line": "src/google_model/sentiment/google_confusion_matrix.py:440-442 and the identical src/local_model/sentiment/internal_confusion_matrix.py:440-442; blank rows created at google_output.py:148-169 / internal_asr_llm_output.py:1497-1518",
+          "consequence": "Confusion-matrix accuracy and macro-F1 are computed over successes only and cannot be lowered by a pipeline failure; the internal arm has three failure surfaces to the incumbent's one. Verdict qualifier: the stakeholder scorecard reads the exact-match dashboard, not this one, so the exclusion inflates the confusion-matrix sheet without reaching the published headline. A second, systematic exclusion runs on the same line in every run: _labels_for hands BINARY_LABELS to manners, enthusiasm, communication_skill and problem_understanding, so any ground-truth 'N/A' on those four columns is out of vocabulary and drops out for both arms.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The OVERALL (by family) block prints 'Rows: len(merged)' next to an Accuracy and Macro-F1 computed over report.n, which is smaller whenever any row was excluded.",
+          "file_line": "src/google_model/sentiment/google_confusion_matrix.py:885-901 (Rows at :887, Accuracy at :888); identical in internal_confusion_matrix.py",
+          "consequence": "The top block an executive reads states a row count the score beside it was not computed over - a run where 40 of 180 calls failed reports Rows 180 with an accuracy measured on 140.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The QA and Sentiment family Accuracy is an unweighted mean of per-column accuracies whose denominators can differ column to column once exclusions fire.",
+          "file_line": "src/google_model/sentiment/google_confusion_matrix.py:888 and :898; identical in internal_confusion_matrix.py",
+          "consequence": "It is not the pooled agreement rate over all 22 x N cells; a column that excluded half its rows carries the same weight as one that excluded none. The exact-match sibling documents its equivalent line as exactly equal to the pooled rate precisely because nothing is excluded there (google_exact_match.py:958-960); the confusion-matrix version has no such property and no such comment.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "error_rate_stats and similarity_stats return all-zero reports on empty input, and the dashboard turns a zero mean CER into a perfect score.",
+          "file_line": "src/google_model/metrics.py:627-636, consumed at src/google_model/sentiment/google_confusion_matrix.py:942 ('Accuracy': 1.0 - transcript_errors.mean) and :1026-1029",
+          "consequence": "Zero scoreable transcripts renders as Accuracy 1.0000 and char accuracy 1.0000, with 'Scored: 0' in a cell further down. run() guards only the no-overlapping-stems case (:1516-1536), so downloaded-but-empty transcript files reach evaluate() and produce the perfect score. An empty labelled transcript is explicitly accepted upstream too (internal_asr_llm_output.py:747, :750-751), uploaded as a zero-byte .txt, and then silently leaves the CER denominator.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "gt.merge(result, on='Voice File Name', how='inner') is unguarded against duplicate keys on the ground-truth side; InputGTSchema declares the column nullable with no unique constraint.",
+          "file_line": "src/google_model/sentiment/google_confusion_matrix.py:835 (and _merge at google_exact_match.py:834-857); schema at src/google_model/sentiment/schema/input_gt_schema.py:11",
+          "consequence": "A duplicated ground-truth key cartesian-expands and double-counts those calls in every metric. The result sheet is protected by an order-preserving dedupe upstream (usage_metrics.py:73); the ground-truth sheet is checked nowhere. The header line at :1040-1043 would show the inflated match count, so it is detectable but not detected.",
+          "severity": "silently-wrong"
+        }
+      ],
+      "fairness_notes": [
+        "INPUT MODALITY IS THE BIGGEST DIFFERENCE AND IT IS NOT THE MODEL. Gemini receives the .wav; the internal analysis model receives text that has passed through qwen3-asr-1.7b and then a qwen3.8-27b-fp8 relabelling pass. The internal prompt says so in its own words - it tells the model it never hears the audio and receives no tone, pitch, volume, prosody, speech rate, diarization or response latency (src/local_model/sentiment/prompt/inbound_prompt.txt:2). Several QA criteria and all three sentiment columns are exactly the judgements that evidence supports. The analysis prompts are otherwise byte-identical apart from the three-line preamble and the removed transcript key.",
+        "THE ARMS DO NOT SHARE A CORPUS. Two GCS prefixes (google/src_files vs internal/src_files) and the project's own executive report states the arms are NOT scored on a common set: Gemini answered 300 calls, both Qwen runs 180 (src/google_model/sentiment/executive_report.py:10, :324, :440-441, :483-485).",
+        "DECODING DIFFERS SUBSTANTIALLY. Incumbent temperature 1, topP 1, maxOutputTokens 65535, thinkingBudget -1 i.e. unbounded reasoning (google_output.py:69-79). Internal temperature 0.0, top_p 1.0, max_tokens 6000, no reasoning budget, escalating to 12000 only on a retried final attempt (internal_asr_llm_output.py:201-222).",
+        "RETRIES AND RESUME ARE ONE-SIDED. Google submits one batch and parses what comes back. Internal gets ASR 3 attempts, label 2, analysis 2 with seed nudge and doubled token budget, oversized-audio chunk-and-merge, and a cross-run resume that re-runs only failures. A published internal number can be the product of several operator-initiated passes; the Google number is a single shot.",
+        "THE CER COMPARISON IS NOT LIKE FOR LIKE, IN BOTH DIRECTIONS. Google's transcript is a field of the same schema-constrained call, generated from audio under a spec that forbids rewriting but ORDERS a literal '[unclear]' marker for inaudible stretches and ORDERS non-conversation audio (IVR, announcements, hold music) skipped (schema/model_response.py:32, :38). The internal transcript is a labelling-model rewrite that FORBIDS that same marker (transcript_prompt.md:50) and MANDATES Thai number words to Arabic digits, a closed brand-spelling list and inter-phrase spacing. The two arms are told to write different things in the same places, against one human reference whose convention is not in this repo. The ASR leg also pins language='th' while the Google prompt instructs code-switching be preserved as spoken.",
+        "THE SCORING CODE IS TWO MAINTAINED COPIES THAT AGREE TODAY. The confusion-matrix pair is 1592 lines each differing in 94 lines, all docstrings, log names, sheet names and dest paths (verified by diff); the one non-cosmetic line is a different OutputSchema import per arm, and those two schema files are identical apart from a docstring. Both scorers write the SAME sheet name ('Evaluation Dashboard') with the same nine block banners, and resolve_sheet_name only appends '_1' to the second - so which dashboard a downstream reader gets depends on which scorer ran first, and executive_report.py parses by banner and would misread a confusion-matrix-first workbook cell-for-cell rather than raising."
+      ]
+    },
+    {
+      "area": "sentiment_mnp",
+      "label": "Number portability",
+      "incumbent_model": "gemini-2.5-flash",
+      "incumbent_runtime": "Vertex AI batch prediction, location 'global'; one JSONL row per call, 60s poll, results from the output shard directory. No per-item retry, no resume (src/google_model/sentiment_mnp/google_output.py:245, :467-472).",
+      "incumbent_input": "Raw audio straight into the model - the stored GCS object unmodified, no resampling or splitting (google_output.py:412-433).",
+      "internal_stack": "typhoon-whisper-large-v3 -> qwen3.8-27b-fp8 (labelling) -> qwen3.8-27b-fp8 (analysis); model_name and label_model_name are separate Config fields holding the same string on purpose (internal_asr_llm_output.py:197, :199-202)",
+      "internal_runtime": "OpenAI SDK against an internal corporate gateway for all three legs, httpx verify=False, streaming with a post-first-token 600s stream deadline; ThreadPoolExecutor from SENTI_LLM_CONCURRENCY; full resume (stored dest JSON reuses the whole result, stored ASR payload skips re-transcription). Config.llm_timeout and Config.asr_timeout are dead - both kwargs are commented out at the client constructions (:1763, :1774) - so the only live wall-clock control is the stream deadline.",
+      "internal_input": "Audio never reaches the analysis model. WAV downloaded, G.711 decoded in-process, resampled 8 kHz -> 16 kHz, split at low-energy points above 24 MiB, POSTed to /v1/audio/transcriptions (language=th, temperature 0.1, response_format=json). Legs 2 and 3 are text only.",
+      "dimensions_scored": 5,
+      "dimension_names": [
+        "Call Result (save / churn / unknown / undefine)",
+        "Cancellation Reason - set union of the three ranks, 13 scored classes",
+        "Transcript CER",
+        "Transcript embedding cosine",
+        "Per-call verdict sheets (diagnostic)"
+      ],
+      "same_scorer_both_sides": "no",
+      "confidence": "low",
+      "defects": [
+        {
+          "what": "The Call Result scorer never passes missing_label, so a blank prediction inside a present result row is dropped from the metric instead of scored as a miss.",
+          "file_line": "src/google_model/sentiment_mnp/google_confusion_matrix.py:1027 and the identical src/local_model/sentiment_mnp/internal_confusion_matrix.py:1027; the drop at :541-553",
+          "consequence": "Every failed file is free on the primary business metric: both pipelines write one blank row per unanswered file, those rows join fine, _canonical returns None and the row is counted in 'dropped' and skipped. Precision, Recall, F1, Accuracy and N on the CALL RESULT block are over survivors only, and the internal arm has three chained network legs that can fail against one Vertex row. Verdict qualifier: do not frame this as a regression against the retention sibling - that scorer needs missing_label because it merges how='outer' and manufactures prediction-less rows; MNP's omission is a defect on its own terms.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The same exclusion is inconsistent between the two scored topics on one dashboard: an empty prediction is dropped from Call Result but scored as a full miss on Reason (the empty predicted set makes every ground-truth reason an FN).",
+          "file_line": "src/google_model/sentiment_mnp/google_confusion_matrix.py:541-553 versus :720-731",
+          "consequence": "One failed call costs the Reason block real recall on every reason the graders assigned and costs the Call Result block nothing. A reader comparing 'Call Result F1' with 'Reason F1' across arms is comparing a metric that penalises failures with one that does not.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The headline 'Accuracy' on both topics is the support-weighted mean of per-class one-vs-rest (TP+TN)/N, not the fraction of calls answered correctly - which classification_report already computes at metrics.py:394 and evaluate() never uses.",
+          "file_line": "src/google_model/sentiment_mnp/google_confusion_matrix.py:1068 and :1081 via aggregate_scores (src/google_model/metrics.py:283-292); republished under the bare label 'Accuracy, weighted' at executive_report.py:265",
+          "consequence": "TN inflates the cell toward 1.0 as the class count grows, and no caveat travels with it onto the stakeholder scorecard. Verdict correction: the survey's worked example (1 - 2E/(kN), '20 wrong of 100 prints as 0.90') is the MACRO identity, not the weighted cell that is actually published - the direction of the defect stands, the arithmetic does not.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "UNKNOWN_CLASS ('unknown (out-of-vocabulary)') is scored like a real class although the schema-constrained model can never predict it, so its Precision, Recall and F1 are all 0.0 by construction wherever ground truth carries an out-of-vocabulary cell.",
+          "file_line": "src/google_model/sentiment_mnp/google_confusion_matrix.py:120 (REASON_SCORED_CLASSES), fed to multilabel_report at :749 and averaged at :1035; _prf zero-denominator behaviour at src/google_model/metrics.py:168-170",
+          "consequence": "A guaranteed-zero class is folded into the published Reason averages. The drag is not a flat 1/13: aggregate_scores macro-averages only classes that OCCUR (metrics.py:270), so with several of the 12 categories unused on a 100-call corpus the macro drag is larger than 1/13, and the published headline is the WEIGHTED row where the effect is proportional to how many ground-truth cells are out of vocabulary. The scorer's docstring names two such spellings, so the row does occur.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The transcript block excludes any call whose transcript is missing or blank on either side, and both pipelines upload a per-call .txt only for calls that fully succeeded.",
+          "file_line": "src/google_model/sentiment_mnp/google_confusion_matrix.py:863-865; uploads at google_output.py:669-671 and internal_asr_llm_output.py:1997-2002",
+          "consequence": "Mean/median CER and the CER pass rate are computed over successes only; a failed call has no hypothesis file and simply leaves the denominator. The excluded count is printed on the sheet, so this is visible rather than hidden, but the published CER is not a whole-corpus figure.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The per-call compare sheets carry MORE rows than the block N: compare_rows emits one row per merged row, while evaluate() drops rows after the merge inside the scorers - contradicting the function's own docstring.",
+          "file_line": "src/google_model/sentiment_mnp/google_confusion_matrix.py:1268, :1271-1280 and :1303-1309 versus :541-553 and :724-726; the overclaiming docstring at :1252-1255",
+          "consequence": "A blank prediction is marked 'F' on the Call Result compare sheet while being excluded from the Call Result metric. The gap between compare-sheet row count and block N is the visible trace of defect 1, and the docstring tells a reader the two agree.",
+          "severity": "silently-wrong"
+        }
+      ],
+      "fairness_notes": [
+        "EVIDENCE DIFFERS AND THE TWO SIDES ARE ASKED FOR DIFFERENT TEXT. Gemini hears the audio and transcribes under a spec forbidding correction of misspellings or grammar (schema/model_response.py:61). The internal CER-scored transcript is a second Qwen call explicitly instructed to REPAIR the ASR: a closed brand/unit rewrite list, context-forced homophone fixes, proper-name normalisation, and - the largest driver, one line past where the survey stopped reading - a rule at transcript_prompt.md:52-56 ordering EVERY Thai number word rewritten as Arabic digits, 'no exceptions', applied to prices, package names, data volumes, dates, times and identifier-shaped values. A script-level rewrite of every numeral dwarfs the brand list as a CER effect.",
+        "DIFFERENT SCHEMAS AND NO CHAIN-OF-THOUGHT ON THE INTERNAL SIDE. Gemini generates transcript, then an explicit reasoning field, then each reason paired with quoted customer evidence, before committing to call_result - declaration order is generation order and is documented as load-bearing. The internal schema emits three bare reason strings and call_result: no reasoning, no evidence keywords, no event detection, no recommendation, no network block. The divergence is pinned as an exact set by tests/test_internal_sentiment_mnp.py:67-89. The 12 reason definitions and 4 result definitions are byte-identical between the prompts, so the divergence is confined to what is asked for around them. Note the local schema docstring contradicts itself - :3-4 claims 'field-for-field identical', :21-25 says 'deliberately narrow'; the first is stale and is exactly the sentence an auditor checking comparability would rely on.",
+        "ONE SIDE GETS RETRIES AND A RESUME. Internal: ASR 3 attempts with non-retryable short-circuit, 2 seed-nudged attempts each for labelling and analysis, a one-shot max_tokens escalation 6000 -> 12000, and full GCS checkpoint resume - the published Qwen run reused 99 of 100 calls from a checkpoint (executive_report.py:427-428). Google: one batch row per call, no per-item retry, no resume (main.py:137-139).",
+        "DECODING AND AUDIO PREPROCESSING DIFFER. Gemini temperature 0.1, topP 1, maxOutputTokens 65535, thinkingBudget 0. Qwen temperature 0.0, top_p 1.0, max_tokens 6000/12000 - a hard output ceiling that can truncate a long answer into a failed attempt while Gemini effectively has none. The internal arm also resamples 8 kHz telephony to 16 kHz and splits above 24 MiB; Gemini receives the stored object unchanged.",
+        "TWO GCS PREFIXES AND ONLY ONE PRE-FLIGHT. Google reads .../sentiment_mnp/google/src_files, internal reads .../internal/src_files; nothing asserts the two hold the same recordings. Only the internal side runs a ground-truth/source stem-overlap pre-flight and aborts on zero overlap; the Google run aborts only if the prefix is empty.",
+        "THE ONLY EQUALITY GUARD IS IN DEAD CODE. The check that raises when the two arms' Call Result N differ lives in executive_report.py:338-340, and no .py in the repo imports executive_report - it is a standalone __main__ script with no menu entry (main.py:174-189), and both workbooks build() loads are absent from resources/. So no operative control in the shipped pipeline asserts the two arms scored the same calls. By contrast the scoring path itself is genuinely shared: internal_confusion_matrix.py imports its maths, class registry and ground-truth pandera schema from the google package, and there is no src/local_model/metrics.py at all."
+      ]
+    },
+    {
+      "area": "sentiment_retention",
+      "label": "Retention",
+      "incumbent_model": "gemini-2.5-flash",
+      "incumbent_runtime": "Vertex AI batch inference (vertexai=True, location 'global'); payload upload :497-502, submit_batch_job :506-511, wait_for_batch_job :523. No per-row retry of any kind (src/google_model/sentiment_retention/google_output.py:280).",
+      "incumbent_input": "Raw call audio straight into the model - one file_data part per row pointing at the untouched GCS object with a mimetypes-guessed content type (google_output.py:440-468).",
+      "internal_stack": "typhoon-whisper-large-v3 -> qwen3.8-27b-fp8 (labelling) -> qwen3.8-27b-fp8 (analysis) (internal_asr_llm_output.py:206, :211, :212)",
+      "internal_runtime": "Three OpenAI-compatible HTTP calls per file against an internal corporate gateway, httpx verify=False; max_retries=0 is applied only to the LLM client - the ASR client is constructed without it and keeps the SDK default of 2, so ASR transport retries multiply with the 3-attempt loop (:1823-1839, comment at :1828-1830). ThreadPoolExecutor from SENTI_LLM_CONCURRENCY; per-run GCS checkpoint resume by run_id.",
+      "internal_input": "Audio only reaches the ASR endpoint. The analysis model receives a metadata block plus the labelled transcript, no audio and no timestamps. Audio is resampled 8 kHz -> 16 kHz, G.711 decoded locally, and anything over 24 MiB is split at the quietest point within a +/-10 s window, transcribed chunk by chunk and merged.",
+      "dimensions_scored": 5,
+      "dimension_names": [
+        "Call Result (retention outcome) - 5 scored classes incl. the '(missing)' sentinel",
+        "Cancellation Reason - 12 scored rows at (call,product) grain",
+        "Product - multi-label per call, 5 scored rows",
+        "Transcript CER",
+        "Transcript embedding cosine"
+      ],
+      "same_scorer_both_sides": "no",
+      "confidence": "low",
+      "defects": [
+        {
+          "what": "The transcript block is scored over the (call, product)-grain merged frame, not per call, so a call that produced N product rows has its transcript scored N times.",
+          "file_line": "src/google_model/sentiment_retention/google_confusion_matrix.py:881 (loop over merged[KEY_COLUMN] inside _score_transcript, called at :1208-1216 with the merged frame from :1160); identical at src/local_model/sentiment_retention/internal_confusion_matrix.py:881",
+          "consequence": "Mean and median CER, best/worst, CER pass rate, mean cosine, the Scored/Excluded counts and the Vertex embedding spend are all row-weighted rather than call-weighted, and the weighting is driven by how many products EACH ARM chose to name. The published dashboards report 144 merged rows for Gemini and 142 for Qwen, so the scorecard's 'Typical call - median CER' is a median over row instances, not over calls, and the two arms fanned out differently - not a symmetric wash.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "The '(missing)' sentinel is added to the Call Result label set and scored as a real class, but ground truth can never carry it, so its TP and FN are structurally 0 and its Precision, Recall and F1 are pinned at exactly 0.0 whenever it occurs.",
+          "file_line": "src/google_model/sentiment_retention/google_confusion_matrix.py:106-107 and :1181; the class enters the average via src/google_model/metrics.py:189, :237-247; _prf zero denominators at :170-171",
+          "consequence": "Call Result Macro-F1, Macro-Precision and Macro-Recall are dragged by a hard 0.0 from a class the model was never asked to produce (roughly 1/k of the other classes' mean, k = occurring classes), and its FPs enter the Micro pool. The Weighted row is unaffected. The executive scorecard publishes 'Macro F1 - every class counts the same' for Call Result from this row, and the published runs had 36 (Gemini) / 39 (Qwen) such rows. Verdict correction: this is a class that can never SUCCEED rather than a metric that cannot fail, and the team does document that '(missing)' is scored as its own class - what is undocumented is that it sits inside the headline Macro number.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "Every merged row whose ground-truth outcome cell is blank or out of vocabulary is dropped from the Call Result topic entirely - which is exactly the set of rows the model invented (a product the graders never named).",
+          "file_line": "src/google_model/sentiment_retention/google_confusion_matrix.py:562-576, driven by _canonical with blank_label=None at :510-530",
+          "consequence": "In the published runs 47 of 144 rows (Gemini) and 45 of 142 (Qwen) - about a third of the join - were excluded from Call Result, so its Precision, Recall, F1 and Accuracy are measured on a filtered subset where invented products cannot cost the model anything; the mistake is charged once, to the Product topic. Deliberate and documented, but the headline Call Result numbers are not computed over the whole join and the scorecard's 'Calls scored - common set 97' is the post-exclusion count.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "Per-class Accuracy is one-vs-rest (TP+TN)/N, so TN dominates for any rare class and the number is near 1.0 for a model that never predicts that class at all.",
+          "file_line": "src/google_model/metrics.py:46-54 (LabelScore.accuracy), rendered per class at google_confusion_matrix.py:609 and aggregated at metrics.py:250, :267, :279",
+          "consequence": "'Accuracy, weighted' is one of the two emphasised rows on the executive scorecard and cannot meaningfully fail on a corpus with many rare reason classes - a model that never emits a category appearing on 3 of 100 calls still scores about 0.97 on it. The scorer's own legend and the LabelScore docstring say exactly this and tell the reader never to read Accuracy alone; the scorecard prints it anyway, in bold, beside F1.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "The executive scorecard reads the Call Result N - a count of (call, product) records after exclusions - and labels it 'Calls scored', then reuses it as the call denominator for the Product, Call Result and Reason class blocks.",
+          "file_line": "src/google_model/sentiment_retention/executive_report.py:355-357, :368, :460, :469, :470 and the footnote at :434",
+          "consequence": "The report states 'Both arms scored the same 97 ground-truth calls' as a fact when what it verified is that both arms' Call Result RECORD counts matched. Verdict correction: the published figures come from an earlier 97-row corpus (the dashboard string is 'X of len(gt_df) ground-truth rows', the RAW sheet row count, :1329-1331), while the sheet the repo's tests pin is 100 rows / 98 records / 97 calls - on which the record count and the call count would NOT coincide and the label would simply be wrong.",
+          "severity": "cosmetic"
+        },
+        {
+          "what": "The executive scorecard's three BUSINESS OUTCOME sub-headers understate the scored label spaces and misstate the grain.",
+          "file_line": "src/google_model/sentiment_retention/executive_report.py:372, :374, :376 against google_confusion_matrix.py:107, :112, :135 and the (call,product) merge at :1035-1049",
+          "consequence": ":372 says 'Call result (4 classes, one answer per call)' when 5 classes are scored including '(missing)' at (call,product) grain; :374 says '11 reasons' when 12 rows are scored; :376 says '4 products' when 5 are. A second, independent mislabel alongside the 'Calls scored' one, on the same sheet. The scorer's own comment at :118 ('The twelve reason classes') is likewise stale text carried over from the MNP sibling - retention has eleven.",
+          "severity": "cosmetic"
+        }
+      ],
+      "fairness_notes": [
+        "DIFFERENT INPUT BY CONSTRUCTION. Gemini receives the raw WAV and transcribes it itself; the internal arm's analysis model never hears audio and reads a Whisper transcript that a second Qwen call has relabelled. The internal arm's ceiling is bounded by typhoon-whisper-large-v3; the incumbent's is not. The scorecard marks no winner on the transcription band for this reason.",
+        "DIFFERENT PROMPTS, DELIBERATELY. The google prompt is 270 lines and requires a verbatim transcript FIRST - schema field order is generation order, i.e. an enforced chain-of-thought before any label. The local prompt is 114 lines asking only for product/reasons/outcome, with no transcript, keyword, event, recommendation or network_issue field; the narrowing is pinned as intentional by tests/test_internal_sentiment_retention.py:86-102. The incumbent reasons over its own committed transcript while the local model reasons over someone else's. (The prompt's numbered list is 13 items covering product through the area tags - the transcript is requested in the Reminder block and JSON example, not as one of the 13.)",
+        "DIFFERENT DECODING. Gemini temperature 0, topP 0, maxOutputTokens 65535, thinkingBudget 0. Qwen analysis temperature 0.0, top_p 1.0, max_tokens 8000, escalating to 16000 only on a retry. topP 0 versus top_p 1.0 and a 65535 versus 8000 output ceiling are not the same sampler, and the code comments say the two production systems differ here on purpose and must not be unified.",
+        "RETRIES AND RESUME ARE ASYMMETRIC, WITH A HIDDEN MULTIPLIER. Internal: ASR 3 attempts (times the ASR client's default 2 SDK retries), labelling 2 with a seed nudge, analysis 2 with a seed nudge and a doubled token budget, plus checkpoint resume - the published internal numbers come from a RESUMED run in which 94 of 97 calls were reused, so its ASR Attempts cells are blank rather than measured. Gemini gets exactly one Vertex batch pass and no retry; a row that fails to parse is simply Failed.",
+        "TWO PHYSICAL COPIES OF THE CORPUS. google/src_files versus internal/src_files, nothing in the code compares them; the only equality check is on the post-exclusion Call Result record count in an executive report whose input workbooks are absent, and the two arms produced different merged row counts (144 vs 142).",
+        "THE CER-SCORED ARTEFACTS ARE NOT THE SAME KIND OF OBJECT. Gemini's is the transcript field of its single analysis response. The internal arm's is the output of a separate Qwen labelling call over Whisper text, appended only when the ANALYSIS stage also succeeded - so its CER measures Whisper plus a Qwen rewrite, conditioned on a downstream stage, while a labelling failure removes the file from the transcript block entirely. Both are compared against the same human transcript folder with the same embedder."
+      ]
+    },
+    {
+      "area": "sentiment_telesale",
+      "label": "Telesales",
+      "incumbent_model": "gemini-2.5-flash",
+      "incumbent_runtime": "Vertex AI batch prediction, location 'global'; one JSONL row per audio file, submit_batch_job, 60s poll, sharded JSONL results read back. No per-row retry - one batch submission per run (src/google_model/sentiment_telesale/google_output.py:255, :477-493).",
+      "incumbent_input": "Audio straight into the model: a file_data block with the GCS object URI and a guessed MIME type; the WAV bytes are never decoded, resampled or transcribed locally, and the model writes the transcript itself as the first field of its answer.",
+      "internal_stack": "typhoon-whisper-large-v3 -> qwen3.8-27b-fp8 (labelling) -> qwen3.8-27b-fp8 x4 parallel section calls (internal_asr_llm_split_output.py:203, :208, :209)",
+      "internal_runtime": "OpenAI SDK against an internal corporate gateway for both ASR and LLM legs, httpx verify=False. max_retries=0 is passed ONLY to the LLM client (:1947-1956); the ASR client is built without it (:1958-1963) and keeps the SDK default of 2, so ASR transport retries multiply with the 3-attempt loop - up to 9 requests per file. Files fan out over a ThreadPoolExecutor and the 4 section calls run in their own pool inside each file, so peak in-flight is concurrency x 4. Run-level resume reuses stored dest JSON and stored ASR payloads. Config.llm_timeout (300.0) and Config.asr_timeout (600.0) are dead - both commented out at :1950 and :1961 - even though the stream-deadline design explicitly relies on the read timeout to bound queue wait.",
+      "internal_input": "Audio -> text -> text. WAV fetched, G.711 decoded when stdlib wave refuses it, resampled to 16 kHz, split at low-energy points above 24 MiB, sent to /v1/audio/transcriptions; the ASR dump goes to a schema-free labelling call that assigns Agent:/Customer: turns and applies a closed list of transcription repairs; the four analysis calls receive that labelled transcript with timestamps dropped. The model that produces the scored labels never hears audio.",
+      "dimensions_scored": 13,
+      "dimension_names": [
+        "COMPARISON block - join denominator, unmatched and duplicate counts",
+        "Per-criterion accuracy (39 criteria)",
+        "Per-criterion macro-F1",
+        "Per-criterion per-label confusion cells and P/R/F1",
+        "Sub-category rollup (14 groups, Macro/Micro/Weighted)",
+        "Category rollup (4 families)",
+        "GT labels / Majority (discriminating power)",
+        "Ground-truth coverage block",
+        "Transcript CER",
+        "Transcript embedding cosine",
+        "Transcript row on the OVERALL block (1 - mean CER)",
+        "Per-call compare verdicts"
+      ],
+      "same_scorer_both_sides": "no",
+      "confidence": "low",
+      "defects": [
+        {
+          "what": "The corpus itself makes most of the metric un-failable: the human graders used a single label on every call for 25 of the 39 criteria, and 5 of the 14 sub-categories contain no violation at all.",
+          "file_line": "src/google_model/sentiment_telesale/google_confusion_matrix.py:32-35, :855-933; mirrored at src/local_model/sentiment_telesale/internal_confusion_matrix.py:857-935; pinned at tests/test_google_sentiment_telesale.py:605 (REAL_DISCRIMINATING = 14) and :843-871",
+          "consequence": "On 25 criteria a model that ignores the audio and answers a constant is indistinguishable from a perfect one. Only 10 criteria carry any violation support and 8 of the 25 violation cells sit on one criterion, so a weighted F1 near 0.95 on either arm is mostly a statement about the ground truth, not about the model.",
+          "severity": "metric-cannot-fail"
+        },
+        {
+          "what": "N/A is structurally unreachable on 33 of the 39 criteria: only 6 fields are typed bool | None (the customer_identity_verification trio and the cross_sell_upsell trio); the other 33 are plain bool and cannot emit N/A on EITHER arm.",
+          "file_line": "src/google_model/sentiment_telesale/schema/model_response.py:120, :125, :130, :357, :362, :367 (6 nullable) versus 33 plain bool fields; same set at src/local_model/sentiment_telesale/schema/model_response.py:82, :87, :92, :270, :275, :280",
+          "consequence": "The dashboard's declared 3-label vocabulary (T / F / N/A) is the ground-truth sheet's, not the achievable prediction space. Any macro-F1 over 'occurring classes' and any per-label N/A row on those 33 criteria is measuring a class one side can never produce, and a ground-truth N/A there is an automatic loss rather than a judgement.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "A blank result cell is excluded from the criterion rather than scored as wrong, and the 'Rows' cell of every rollup block is the MAXIMUM row count across the group's criteria.",
+          "file_line": "src/google_model/sentiment_telesale/google_confusion_matrix.py:646-690 (_score_single_label, blank_label=None), :1211-1218 and :840; consumed as 'Calls scored - as run' at executive_report.py:331-332",
+          "consequence": "The two arms' published rates are over different denominators - 26 calls for Gemini, 25 for the internal pipeline whose lost call hit the stream timeout - and the failure shows only in the Excluded cell and the RELIABILITY band, never in the Accuracy/F1 the comparison is read on. Because Rows is a max, uneven exclusions across criteria would still report the largest count as the number of calls scored; today failures blank all 39 columns at once so max equals min, but nothing enforces that.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "A criterion whose rows are all excluded contributes accuracy 0.0 to Macro-average Accuracy but is silently dropped from Macro Precision/Recall/F1, because the accuracy mean divides by len(reports) while aggregate_scores filters to classes that occur.",
+          "file_line": "src/google_model/sentiment_telesale/google_confusion_matrix.py:815-816, :825-833; occurs filter at src/google_model/metrics.py:237; zero-on-empty at metrics.py:394; identical at internal_confusion_matrix.py:817-818, :827-835",
+          "consequence": "If an arm produces no answer for one criterion in a group, that group's Macro Accuracy drops by roughly 1/k while its Macro F1 does not move - the two rows disagree about the same failure and only the Excluded cell says why. On a 3-criterion family such as Compliance that is a 0.33 swing in one metric and none in the other.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "'1 - mean CER' is printed in a column headed Accuracy with character_error_rate deliberately unclipped, and it is published twice - the OVERALL block cell and the TRANSCRIPT block's 'Mean char accuracy (1 - CER)' row.",
+          "file_line": "src/google_model/sentiment_telesale/google_confusion_matrix.py:1282 and :1336-1337; unclipped CER at src/google_model/metrics.py:598-615; internal_confusion_matrix.py:1284",
+          "consequence": "One runaway transcript dominates the mean and the cell can go negative on a 0-1 colour scale. Verdict qualifier: the stakeholder report does NOT publish this - _transcription() leads with MEDIAN CER and footnotes that '1 - mean CER' would reverse the verdict (executive_report.py:277-285, :411-413). Note also that the run figures quoted for this effect (CER 11.74, mean 0.5812, medians 0.1079 vs 0.1632) appear nowhere but that hardcoded footnote string.",
+          "severity": "silently-wrong"
+        },
+        {
+          "what": "Weighted-average Accuracy is assigned the identical expression as Micro-average Accuracy, under a block subtitled 'Weighted by support'; and on a single-label column Micro Precision, Recall and F1 are all algebraically equal to Micro Accuracy.",
+          "file_line": "src/google_model/sentiment_telesale/google_confusion_matrix.py:831-832, :842-844, identity stated at :808-813 and asserted in tests/test_google_sentiment_telesale.py:729-748; the mislabelling subtitle at :121-124; same at internal_confusion_matrix.py:833-834",
+          "consequence": "A rollup row that looks like four independent quality signals is one measurement, and two named rows print the same number. A gap between the arms appears four times over and will be counted four times by any reader summing columns. The sheet actively mislabels the Accuracy cell as support-weighted when it is correct/scored.",
+          "severity": "silently-wrong"
+        }
+      ],
+      "fairness_notes": [
+        "DIFFERENT RESPONSE CONTRACTS. The incumbent decodes the full production schema - transcript, campaign_name, campaign_ratio, call_status, the 39 flags, agent_strength/weakness, sales_performance, customer_insight and 13 Thai support_detail justifications. The internal arm asks for the 39 flags plus call_status and nothing else. The local schema's own docstring states the cost: support_detail is the prompt's evidence-before-verdict step, so a gap on the 39 flags mixes model quality with prompt shape (src/local_model/sentiment_telesale/schema/model_response.py:1-25, pinned in tests/test_internal_sentiment_telesale.py:192-205).",
+        "DIFFERENT PROMPTS, NOT SLICES OF ONE. Incumbent: a single 167,249-byte system prompt. Internal: four hand-trimmed topic prompts (49,230 + 43,298 + 29,047 + 20,471 B) with the campaign-ratio worked examples, the support_detail rules and the seven-scenario verification walkthrough removed. The QA sibling cuts its monolith on a header regex and keeps the per-request text identical; telesale does not.",
+        "DIFFERENT INPUT MODALITY, AND THE CER-SCORED ARTEFACT IS THE REWRITE. Gemini hears the audio and writes its own transcript inside the scored call. The internal judging model reads a transcript that passed through typhoon-whisper-large-v3 and then a qwen3.8-27b-fp8 labelling call, and it is that LABELLED transcript that run() uploads as <stem>.txt for CER scoring (internal_asr_llm_split_output.py:1618-1621, :2194-2195, :2406-2416) - so every mandated rewrite is inside the CER measurement.",
+        "THE TWO SIDES ARE TOLD TO WRITE DIFFERENT TEXT, IN BOTH DIRECTIONS. The incumbent's transcript spec forbids rewriting and REQUIRES an explicit inaudible-span marker (schema/model_response.py:36); the local labelling prompt FORBIDS inserting that marker and orders garbled text kept verbatim (transcript_prompt.md:50), while mandating a closed brand vocabulary in Roman letters (:36-47) and every spoken Thai numeral converted to Arabic digits (:52-63). The two rules move CER in opposite directions against one human reference whose convention is not in the repo.",
+        "RETRY, RESUME AND OUTPUT CEILINGS ARE ASYMMETRIC. Internal: 3 ASR attempts (times the ASR client's inherited 2 SDK retries), 2 on labelling, 2 per analysis section with a seed nudge and a final-attempt max_tokens escalation, plus run-level resume. Incumbent: one batch submission, no per-row retry. Ceilings differ by an order of magnitude - maxOutputTokens 65535 versus max_tokens 6000 per section (12000 on a final attempt) - and a truncated internal section fails the whole file and blanks the row, which then leaves the denominator under defect 3.",
+        "TWO GCS PREFIXES, DIFFERENT AS-RUN COUNTS, AND FORKED SCORERS. google/src_files versus internal/src_files with nothing checking they hold the same 26 WAVs; the as-run counts already differ, 26 versus 25. The two confusion-matrix modules are two ~2,200-line forks differing in 86 lines (verified by diff) - both module docstrings, dest_file, result_sheet_name, ~14 log namespaces, FIVE rewritten legend entries and a different OutputSchema import; the only guard against drift is one 3-row fabricated-frame parity test. Time and token bands are marked no-winner and the internal per-call figure is divided by the 25 calls that returned."
+      ]
+    }
+  ],
+  "cross_cutting": [
+    {
+      "finding": "The same structurally-unfailable agreement metric is live in exactly four places, on BOTH arms, and it is what the stakeholder scorecard reads where it survives. match_report hardcodes fn=0 and tn=0, assigns precision=accuracy, sets recall=1.0 whenever n>0 and computes F1=2a/(1+a), which is always strictly greater than the accuracy beside it.",
+      "areas_affected": [
+        "documents",
+        "sentiment",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "Verified call sites: src/google_model/documents/google_exact_match.py:646, src/local_model/documents/internal_exact_match.py:686, src/google_model/sentiment/google_exact_match.py:534, src/local_model/sentiment/internal_exact_match.py:534, all consuming src/google_model/metrics.py:486-517. The team deliberately DELETED the exact-match scorer for MNP, retention and telesale for exactly this reason (main.py:176-179, :193-196, :219-222) - but in sentiment QA the executive scorecard is generated from the surviving exact-match dashboard and prints 'F1-score' as the first bold rank-marked row of every family block, and in documents the F1 row is emph=True with best='max' and no inline caveat. Telesale's docstring records the same formula as what production's own Confusion_Matrix workbook uses, measuring that a model catching NONE of the 25 violations still scores 0.9813-0.9935 by category. So the defect is both partly fixed and still leading two of five deliverables.",
+      "evidence": "grep of match_report( across src returns 4 call sites plus the definition; src/google_model/sentiment/executive_report.py:258-264; src/google_model/documents/executive_report.py:343"
+    },
+    {
+      "finding": "The incumbent and the internal side are never scored by one piece of code. Every area ships two forked scorer modules; the only genuinely shared code is src/google_model/metrics.py, which the local packages import from the google package.",
+      "areas_affected": [
+        "documents",
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "Measured diff sizes (name/path differences included): documents exact-match 1613 vs 1686 lines / 171 changed, documents confusion-matrix 919 vs 984 / 145, sentiment 1592 vs 1592 / 94, mnp 2027 vs 2027 / 76, retention 2224 vs 2224 / 86, telesale 2198 vs 2200 / 86. There is no src/local_model/metrics.py at all. Metric logic is identical TODAY, so scoring is not currently a source of asymmetry - but that is a property of maintenance, not of construction. The guards are uneven: mnp/retention/telesale have frame-equality parity tests on fabricated input, documents has none, and telesale's forks already differ in five rewritten legend entries and a different OutputSchema import.",
+      "evidence": "diff of each google_/internal_ scorer pair; grep 'from src.google_model.metrics import' hits every local scorer package; ls src/local_model/metrics.py fails"
+    },
+    {
+      "finding": "The systematic asymmetry the brief asks about is confirmed and it is total: in every area the incumbent is fed the richer artefact and the internal side a lossy derivative. In the four voice areas the incumbent gets raw telephony audio and the internal judging model gets text that has passed through ASR and then a second LLM rewrite; in documents the incumbent gets the PDF text layer and the internal side a 200-DPI raster.",
+      "areas_affected": [
+        "documents",
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "The internal QA prompt states the loss in its own words - the model never hears the audio and receives no tone, pitch, volume, prosody, speech rate, diarization or response latency (src/local_model/sentiment/prompt/inbound_prompt.txt:2) - yet all three sentiment columns and several QA criteria are precisely the judgements prosody supports. The incumbent additionally reasons over a transcript it wrote itself (schema field order is generation order, an enforced chain-of-thought) while the internal model reasons over someone else's; in mnp and telesale the incumbent also gets an explicit reasoning field and evidence quotes that the narrowed internal schema drops. Every measured gap is a whole-pipeline gap, and no area ever gives the internal arm what the incumbent receives.",
+      "evidence": "audio file_data payload rows in all four voice google_output.py; internal _build_analysis_content text-only user turns; documents google_output.py:463-487 (PDF re-save) vs internal_direct_output.py:643-646 (200-DPI PNG)"
+    },
+    {
+      "finding": "Transcription IS scored in all four voice areas - CER plus embedding cosine against human transcripts - but never as an ASR metric, and never over the whole corpus.",
+      "areas_affected": [
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "Three compounding facts. (1) The internal artefact scored is the LABELLING model's rewrite of the ASR output, not the ASR output - so the number is qwen3.8-27b-fp8's rendering of typhoon-whisper/qwen3-asr, and swapping ASR models is not isolable from it. (2) It exists only when the downstream analysis stage also succeeded (the transcript is appended inside the success branch), so the transcription quality metric is conditioned on a later LLM leg. (3) Blank-on-either-side rows are excluded, so mean/median CER and the pass rate are computed over successes only. Documents has no speech stage at all, so nothing in the five areas measures ASR in isolation.",
+      "evidence": "transcripts.append inside the success branch at internal_asr_llm_output.py:1960 (sentiment), :2000 (mnp), :2063 (retention), internal_asr_llm_split_output.py:2194 (telesale); grep character_error_rate hits all four voice scorers on both sides and no documents-side transcript"
+    },
+    {
+      "finding": "Where transcripts ARE compared, the two arms are instructed to produce different text against one shared human reference, in opposing directions.",
+      "areas_affected": [
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "The incumbent's transcript spec forbids rewriting, REQUIRES an explicit inaudible-span marker, and (in QA) orders IVR/announcements/hold music skipped. The internal labelling prompt FORBIDS that same marker and MANDATES rewrites: a closed brand vocabulary in Roman script, and every spoken Thai numeral converted to Arabic digits, with the rule marked 'very important and often ignored' and applied to prices, package names, data volumes, dates, times and identifier-shaped values. Whichever orthography the human reference uses, it moves one arm's CER and not the other's, and the direction is unknowable from this repo because no ground-truth transcript is committed. The reports do mark the transcription band no-winner - but the CER cells are still printed side by side.",
+      "evidence": "src/google_model/sentiment/schema/model_response.py:32, :38; src/google_model/sentiment_telesale/schema/model_response.py:36; src/local_model/*/prompt/transcript_prompt.md:36-47, :50, :52-63"
+    },
+    {
+      "finding": "Failure is free in at least one headline metric in every single area: blank or failed predictions are excluded from the denominator rather than scored as wrong - and the arm with more ways to fail is the internal one.",
+      "areas_affected": [
+        "documents",
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "Documents: the how='inner' join drops the ground-truth rows a failed page never produced, and the confusion-matrix scorers drop all-null rows. Sentiment QA: _score_single_label drops out-of-vocabulary/blank rows. MNP: Call Result drops blank predictions (no missing_label) while Reason charges them fully - two headline numbers on one sheet pricing a failure differently. Retention: rows whose ground-truth outcome is blank, i.e. the products the model invented, leave the Call Result topic (about a third of the join in the published runs). Telesale: blank cells are excluded, giving 26 vs 25 call denominators. The incumbent fails on one Vertex row per item; the internal arm has 3 to 6 network legs per item (ASR + labelling + 1-4 analysis calls), so the exclusion convention systematically favours the side with more failure surfaces. The one counter-case is sentiment QA's exact-match sheet, which excludes nothing - and that is the sheet the QA scorecard reads.",
+      "evidence": "google_exact_match.py:839 / internal_exact_match.py:887 (documents inner join); sentiment google_confusion_matrix.py:440-442; mnp google_confusion_matrix.py:541-553 vs :724-726; retention google_confusion_matrix.py:562-576; telesale google_confusion_matrix.py:646-690"
+    },
+    {
+      "finding": "Retry, resume and pre-flight capability exist only on the internal side, in all five areas, and the published internal runs are multi-session resumed runs.",
+      "areas_affected": [
+        "documents",
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "Internal arms get 2-3 attempts per stage with seed nudges, jittered backoff, final-attempt token escalation, oversized-input chunk-and-merge, pre-call size rejection (documents), and checkpoint resume by run_id. The incumbent gets exactly one Vertex batch pass with no per-row retry in every area (main.py:137-139 documents this for the Google pipelines). Three published runs are on record as resumed: mnp reused 99 of 100 calls, retention 94 of 97, and all three documents internal arms were resumed runs. Two consequences: any quality number for the internal arm may be the product of several operator-initiated passes, and any TIME or COST comparison is a cloud batch service with a queue against a resumed multi-session loop at an unrecorded SENTI_LLM_CONCURRENCY. The reports correctly mark time/token bands no-winner. Note also that on retention and telesale the ASR client is built WITHOUT max_retries, so it keeps the SDK default of 2 and multiplies with the 3-attempt loop - up to 9 ASR requests per file - while the config timeouts meant to bound this are commented out in every internal pipeline.",
+      "evidence": "internal Config attempt budgets and resume plans in each internal_asr_llm*/internal_direct_output.py; retention internal_asr_llm_output.py:1823-1839; telesale internal_asr_llm_split_output.py:1947-1963; commented-out timeout kwargs at documents :970, sentiment :1740/:1751, mnp :1763/:1774, telesale :1950/:1961"
+    },
+    {
+      "finding": "Two physical copies of every corpus, no shipped control that they match, and no way to reproduce a single published number in this checkout.",
+      "areas_affected": [
+        "documents",
+        "sentiment",
+        "sentiment_mnp",
+        "sentiment_retention",
+        "sentiment_telesale"
+      ],
+      "why_it_matters": "In all five areas the incumbent lists sources from a .../<task>/google/src_files prefix and the internal arm from .../<task>/internal/src_files, and nothing in the code counts, hashes or compares them. Where counts are known they differ: 300 vs 180 calls (sentiment QA, stated in the project's own report), 144 vs 142 merged rows (retention), 26 vs 25 calls as run (telesale), and 2,573 vs 3,634 scored rows across documents arms. The only equality checks that exist live in executive_report.py modules that NO .py in the repo imports - standalone __main__ scripts with no menu entry - and every workbook they read is absent, since resources/ holds only 'Personal-API Manual.md'. Consequently every figure quoted anywhere in this evidence base is a hardcoded string literal inside a report module that cannot execute here, sitting beside live-read cells with no mechanism that can ever catch the two drifting apart.",
+      "evidence": "google_output.py vs internal_*_output.py source prefixes per area; ls resources/; src/google_model/sentiment_mnp/executive_report.py:456-457 and main.py:174-189 (no report entry point)"
+    }
+  ],
+  "fairness_verdict": {
+    "verdict": "not-comparable",
+    "reasoning": "COMPLETENESS: all five required areas were received - documents, sentiment, sentiment_mnp, sentiment_retention, sentiment_telesale - each with a non-empty survey AND a non-empty adversarial verdict. Nothing was missing and nothing was substituted. Every area's verdict refuted more than two claims (6, 5, 7, 6 and 6 respectively), so all five areas are recorded at LOW confidence per the rule, and every refuted claim has been dropped or restated. VERDICT: as a model-versus-model comparison this evidence base is not comparable, and the reason is not the scorer. Scoring is the strongest part: one shared maths module (src/google_model/metrics.py) computes every count, average, CER and cosine for both sides, and the two arms' scorer wrappers, although forked, contain no differing metric logic today. The problem is everything upstream of it. The two sides are fed different artefacts by construction (raw audio versus an ASR-plus-LLM-rewritten transcript in four areas; a PDF text layer versus a 200-DPI raster in the fifth), run different prompts (documents v1 vs v2, telesale one 167 KB monolith vs four trimmed prompts, mnp/retention a wide chain-of-thought schema vs a narrow label-only one), decode under different samplers and output ceilings, get different retry and resume budgets, and read from two physically separate corpus copies that nothing verifies and whose counts are known to differ in at least three areas. Layered on top, the failure-exclusion convention in every area removes failed items from the denominator rather than scoring them wrong, which systematically favours the arm with three to six network failure surfaces per item over the arm with one. Some bands remain interpretable: within-arm distributions, the operational reliability counts, and rankings where a defect is provably symmetric. Nothing in this evidence base supports attributing a measured gap to the models.",
+    "biggest_asymmetry": "Input modality. The incumbent receives the raw artefact - telephony audio in the four sentiment areas, the PDF text layer in documents - while the internal side receives a lossy derivative: a transcript that has passed through ASR and then a second LLM rewrite, which discards prosody, tone, pitch, volume, speech rate, diarization and response latency (the internal prompt states this loss itself), or a rasterised page with no text layer. This single variable sits upstream of every quality number in all five areas and is confounded with the model change everywhere."
+  },
+  "what_the_report_must_not_claim": [
+    "That any measured gap is a gap between the incumbent model and qwen3.8-27b-fp8. Every voice gap is 'ASR + labelling rewrite + narrowed-schema analysis' versus one audio-native call with an enforced transcript-first chain-of-thought; the documents gap is 'PDF text layer' versus '200-DPI raster'. These are pipeline comparisons, and in mnp/retention/telesale the internal side was also asked for a different, narrower output.",
+    "That the arms were scored on the same items. The two sides read separate GCS prefixes in all five areas, nothing in the shipped code compares them, and the known counts differ: 300 vs 180 calls (sentiment QA, per the project's own report), 144 vs 142 rows (retention), 26 vs 25 calls (telesale), 2,573 vs 3,634 rows across documents arms. The documents scorecard row captioned 'each arm against the same ground truth' is printed above four different Ns.",
+    "Any Precision, Recall or F1 taken from an exact-match dashboard (documents, sentiment QA) as independent evidence. Recall is 1.0 by construction, Precision is the same float as Accuracy, and F1 is 2a/(1+a) - a monotone transform of Accuracy that is always higher than it. Quoting the F1 row as a 'win' is quoting the Accuracy row twice.",
+    "That the published accuracy or F1 figures are failure-inclusive. In every area at least one headline metric excludes blank or failed predictions from its denominator instead of scoring them wrong, and the internal arm has three to six failure surfaces per item against the incumbent's one. Report failure counts from the Matrix/reliability sheets alongside any quality number, never quality alone.",
+    "That the CER or cosine figures are an ASR benchmark, a transcription-quality benchmark, or a whole-corpus figure. The internal artefact scored is the labelling LLM's rewrite of the ASR output, it exists only when the downstream analysis stage also succeeded, and the two arms are instructed to write different text (mandated numeral and brand rewrites on one side, a mandated inaudible-span marker and skipped IVR audio on the other) against one human reference whose convention is not in the repo.",
+    "That any specific run figure has been verified or reproduced. resources/ contains only 'Personal-API Manual.md'; every workbook the executive_report modules read is absent, those modules are standalone scripts that nothing imports, and consequently every number in this evidence base is a hardcoded literal quoting a past run. Retention's published counts do not even match the corpus shape the repo's own tests pin.",
+    "That the two arms ran the same prompt anywhere, and specifically not that the documents prompts are byte-identical. The internal documents Config comment claiming byte-identity is false as written: it points at a 69,174-byte v2 prompt containing tax-ID, name/address and rounding rules that map one-for-one onto checks the scorer runs, while the incumbent runs a 63,572-byte v1. Nothing in code records which prompt each published arm used.",
+    "That any cell labelled 'Accuracy' is the fraction of items answered correctly, or that time/token/cost bands are model comparisons. MNP and retention publish a support-weighted mean of one-vs-rest (TP+TN)/N, which TN inflates toward 1.0 as classes multiply; telesale's transcript 'Accuracy' is 1 minus an unclipped mean CER, and its Weighted accuracy is the same expression as its Micro accuracy under a 'weighted by support' subtitle; retention's Call Result N is a (call, product) record count after exclusions labelled 'Calls scored'. Time and cost compare a queued cloud batch service against a resumed multi-session self-hosted loop at an unrecorded concurrency."
+  ],
+  "results_by_task": {
+    "Tax-Invoice": {
+      "area": "documents",
+      "internal": 0.97915,
+      "incumbent": 0.99925,
+      "margin": -0.0201,
+      "winner": "incumbent",
+      "slowdown_x": 30.7
+    },
+    "Sentiment QA": {
+      "area": "sentiment",
+      "internal": 0.8304,
+      "incumbent": 0.8591333333333333,
+      "margin": -0.02873,
+      "winner": "incumbent",
+      "slowdown_x": 86.5
+    },
+    "Sentiment MNP": {
+      "area": "sentiment_mnp",
+      "internal": 0.8237,
+      "incumbent": 0.8564499999999999,
+      "margin": -0.03275,
+      "winner": "incumbent",
+      "slowdown_x": 41.7
+    },
+    "Sentiment Retention": {
+      "area": "sentiment_retention",
+      "internal": 0.8082333333333334,
+      "incumbent": 0.8831000000000001,
+      "margin": -0.07487,
+      "winner": "incumbent",
+      "slowdown_x": 11.5
+    },
+    "Sentiment Telesale": {
+      "area": "sentiment_telesale",
+      "internal": 0.9351750000000001,
+      "incumbent": 0.9272250000000001,
+      "margin": 0.00795,
+      "winner": "internal",
+      "slowdown_x": 7.4
+    }
+  },
+  "results_without_a_surveyed_area": {
+    "tabs": [
+      "RTR-Fraud"
+    ],
+    "why": "These results appear in the workbook but have no area in this evaluation project. RTR-Fraud is a separate production application (production-reference/rtr-fraud-validation-main) and was not surveyed here, so nothing in this report describes how its numbers were produced."
+  },
+  "verification": {
+    "areas_surveyed": 5,
+    "areas_adversarially_verified": 5,
+    "claims_refuted": 30,
+    "corrections_applied": 35,
+    "gaps_the_adversary_found": 30,
+    "method": "Each area was surveyed by one agent citing file:line, then attacked by a second agent instructed to refute rather than agree. The adversary's corrections take precedence in the consolidated result."
+  }
+}
