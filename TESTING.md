@@ -34,6 +34,17 @@ PYTHONPATH=src python scripts/evalgen.py experiment-check --plan experiments/ret
 pre-commit run --all-files                      # the same hooks that run before every commit
 ```
 
+`scripts/verify.py` (the full gate) also needs the ASR environment, which is a separate
+pin universe that must never share a venv with the root pins:
+
+```bash
+python3.12 -m venv .venv-asr
+.venv-asr/bin/pip install -r asr-eval/requirements-asr.txt
+```
+
+Without it, four of `verify.py`'s ten gates fail with "no interpreter under .venv-asr" —
+missing tooling, not a broken repository.
+
 Not run, on purpose, and recorded rather than silent: `ruff format --check` (137 files
 would be reformatted and prose cites `file:line` into them); coverage (no floor has been
 measured); type-checking `asr-eval/` (needs `.venv-asr`; use `scripts/verify.py` for its

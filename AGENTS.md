@@ -16,6 +16,19 @@ scores what it produced. The mission above is unchanged by that: what moved is w
 scorers' input comes from, not what they do with it, and the scoring half still makes no
 model calls.
 
+## Project contract
+
+- **Risk tier:** R1. The harness produces evidence for a migration decision but takes
+  no action on it; no production system reads its output. It handles synthetic and
+  hashed data only (`keys.py`, `paths.py`); real call data would raise this to R2.
+- **Release path:** none — two libraries and a test suite with no deployment target.
+  Versions are recorded in `CHANGELOG.md` and tagged when a report is published.
+- **Rollback path:** revert the commit; every experiment plan is self-hashed, so a
+  reverted plan is a different experiment id, not a corrupted one.
+- **Incident path:** none as a procedure. Endpoint outages during experiments are
+  recorded as evidence (`docs/*-outage-*.txt`); a published figure found wrong is
+  corrected in the report and noted in `CHANGELOG.md` under the report's entry.
+
 ## Architecture
 
 **Two packages, and the boundary between them is the load-bearing part.**
@@ -150,7 +163,7 @@ decisions, measured baselines and deviations are in
 `changes/2026-09-11-adopt-toolchain/`.
 
 ```bash
-.venv/bin/pip install -r requirements.txt -r requirements-dev.txt   # pins first, tools second
+.venv/bin/pip install -r requirements.txt -r requirements-dev.txt   # one install; the dev tools share no pins with production
 source .venv/bin/activate && pre-commit install                     # once per clone; the mypy hook uses the venv's python
 
 ruff check .                                   # lint  (CI: lint job; pre-commit: ruff-check --fix)
@@ -164,8 +177,9 @@ pre-commit run --all-files                     # every hook, as CI would see it
 ```
 
 Measured 2026-09-11 on the adoption branch: `ruff check .` clean; `mypy .` clean
-against a **61-module burn-down list in `mypy.ini`** (295 errors exempted at adoption:
-remove a module's block, fix its errors, repeat; shrink it, never grow it); suite 1071
+against a **56-module burn-down list in `mypy.ini`** (276 errors exempted, re-measured in
+review after the adoption commit over-counted 295 in 61: remove a module's block, fix
+its errors, repeat; shrink it, never grow it); suite 1071
 passed / 50 skipped standalone, 1082 / 39 with production source. Report what your
 checkout ran, not these numbers.
 
@@ -266,17 +280,18 @@ is what defends it.
 ## Cross-Project References
 
 > These live in canon and apply to all projects. Linked, never restated here.
-> The current workspace source is `/home/tkhongsap/my-github/s42/canon`; canon is not
-> vendored into this repository.
+> Canon is not vendored into this repository. Its checkout path is machine-specific:
+> `/Users/tkhongsap/github/canon` on macOS, `/home/tkhongsap/my-github/s42/canon` on
+> the Linux workstation. The rows below use the macOS path; substitute yours.
 
 | Resource | Location | Use When |
 |----------|----------|----------|
-| **Project structure and repo policy** | `/home/tkhongsap/my-github/s42/canon/guides/project-structure.md` | Repo location, visibility, layout |
-| **Git workflow** | `/home/tkhongsap/my-github/s42/canon/guides/git-workflow.md` | Branching, commits, PRs |
-| **Production patterns** | `/home/tkhongsap/my-github/s42/canon/guides/production-patterns.md` | If this ever grows a service |
-| **Release versioning** | `/home/tkhongsap/my-github/s42/canon/guides/release-versioning.md` | Tagging a version |
-| **Development process** | `/home/tkhongsap/my-github/s42/canon/development/development-process.md` | Session workflow |
-| **Infrastructure service layers** | `/home/tkhongsap/my-github/s42/canon/guides/infrastructure-service-layers.md` | Before adding any AI, auth or integration |
+| **Project structure and repo policy** | `/Users/tkhongsap/github/canon/guides/project-structure.md` | Repo location, visibility, layout |
+| **Git workflow** | `/Users/tkhongsap/github/canon/guides/git-workflow.md` | Branching, commits, PRs |
+| **Production patterns** | `/Users/tkhongsap/github/canon/guides/production-patterns.md` | If this ever grows a service |
+| **Release versioning** | `/Users/tkhongsap/github/canon/guides/release-versioning.md` | Tagging a version |
+| **Development process** | `/Users/tkhongsap/github/canon/development/development-process.md` | Session workflow |
+| **Infrastructure service layers** | `/Users/tkhongsap/github/canon/guides/infrastructure-service-layers.md` | Before adding any AI, auth or integration |
 
 **`guides/model-reference.md` deliberately does not govern which models get evaluated
 here**, for the same reason OpenRouter/WorkOS/Composio partly do not apply (see above):
@@ -342,9 +357,9 @@ True needs access.
 **Linter and type checker adopted 2026-09-11; formatter and burn-down still open.**
 This entry used to read "No linter, type checker or `pyproject.toml`". Now:
 `pyproject.toml` exists with tool configuration only (still no `[project]`, still not
-under `backend/`), `mypy.ini` holds a 61-module burn-down list, `requirements-dev.txt`
+under `backend/`), `mypy.ini` holds a 56-module burn-down list, `requirements-dev.txt`
 pins the tools, and CI runs `lint` and `typecheck` jobs beside `test`. Still open, and
-listed under Commands with reasons: `ruff format` is not gated; 61 modules are exempt
+listed under Commands with reasons: `ruff format` is not gated; 56 modules are exempt
 from mypy; no coverage floor; the `test` job's actions are not SHA-pinned. The adoption
 record, including what the playbook did not say, is `changes/2026-09-11-adopt-toolchain/`.
 

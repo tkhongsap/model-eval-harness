@@ -23,7 +23,9 @@ says so. DEVLOG.md remains authoritative for that window.
 - **A lint and type gate, 2026-09-11.** `ruff check .` and `mypy .` now run on every
   pull request (`lint` and `typecheck` CI jobs) and before every local commit
   (`.pre-commit-config.yaml`), configured in `pyproject.toml` (`[tool.*]` sections only,
-  still no `[project]`) and `mypy.ini`. mypy is lenient with a 61-module burn-down list
+  still no `[project]`) and `mypy.ini`. mypy is lenient with a 56-module burn-down list
+  (the adoption commit listed 61; independent review found five of them clean and the
+  count re-measured at 276 errors in 56 files)
   so it exits 0 today and blocks new errors; 53 mechanical ruff fixes (import order,
   unused imports, placeholder-less f-strings) landed in their own commit with the suite
   unchanged in both modes. `ruff format` is deliberately not gated yet: 137 files would
