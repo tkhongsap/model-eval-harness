@@ -31,7 +31,7 @@ What that costs, measured on `main` at `982237f` on 2026-09-11 in a venv built t
 |---|---|
 | `ruff check` (E, F, I at line-length 100, `production-reference/` excluded) | 4,454 findings at line-length 88; 108 `E501` + 78 others at 100. Of the others: 35 unsorted imports, 16 unused imports, 12 ambiguous names, 9 redefinitions, 7 placeholder-less f-strings, 7 late imports, 6 unused locals |
 | `ruff format --check` | 137 of 226 files would be reformatted |
-| `mypy` (lenient shape from `toolchains/python.md`, `src/` on the module path) | 295 errors in 61 files (132 files checked) |
+| `mypy` (lenient shape from `toolchains/python.md`, `src/` on the module path) | 295 errors in 61 files as first measured; 276 in 56 on re-measurement with `--no-incremental` (see review R-101) |
 | One of them is already a runtime warning | `src/evalgen/artifacts.py:128: SyntaxWarning: invalid escape sequence '\.'` printed on every test run |
 
 None of these blocks anything today, because nothing runs them. A new `import openai`

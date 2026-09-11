@@ -18,7 +18,7 @@
 | `mypy.ini` | Add | Lenient config with 61-module burn-down |
 | `requirements-dev.txt` | Add | Pinned `ruff`, `mypy`, `pre-commit`; the pip equivalent of the exemplar's `[dependency-groups] dev` |
 | `src/evalgen/{judge,severity,stability,testsets}.py`, `src/evalharness/metrics.py` | Modify (mechanical) | `ruff check --fix`: import order, unused imports |
-| `scripts/*.py` (16 files), `tests/*.py` (13 files), `asr-eval/**/*.py` (10 files) | Modify (mechanical) | same |
+| `scripts/*.py` (16 files), `tests/*.py` (14 files), `asr-eval/**/*.py` (10 files) | Modify (mechanical) | same |
 | `.pre-commit-config.yaml` | Add | Hooks mirroring CI, with excludes for pinned/generated paths |
 | `.github/workflows/ci.yml` | Modify | Add `permissions:`, `lint` and `typecheck` jobs; correct header items 3–4; keep every existing step |
 | `AGENTS.md` | Modify | "Commands" section, burn-down pointer, stated gaps, Open-items correction, Conventions line |
@@ -142,3 +142,30 @@ Recorded as they happened. Plan adherence: the file list held except for one fil
    Both modes were run before and after: 1071/50 and 1082/39, unchanged.
 10. **Approval.** No approver existed; the plan is self-approved and says so. The
     playbook's template has no procedure for a single-person or agent-only session.
+
+### After independent review (PR #62, 2026-09-11)
+
+- **R-101 confirmed and fixed.** Re-measured with every exemption stripped and
+  `--no-incremental`: 276 errors in 56 files, not 295 in 61. The five clean modules were
+  removed from `mypy.ini`; the count is corrected in `mypy.ini`, `AGENTS.md`, `CHANGELOG.md`,
+  `intent.md`, `spec.md`, and the self-review's R-004, which had used the wrong check.
+- **R-102: global `exclude` scoped to the two fixer hooks.** The read-only hygiene hooks now
+  see every path; `check-added-large-files` demonstrably runs on `asr-eval/`.
+- **R-103 applied in part.** `known-first-party` added so new files sort correctly. Re-sorting
+  under it moved imports by one line in five `asr-eval/scripts/` files carrying seven prose
+  citations; those five are per-file-exempted from `I001` with the citations listed, the same
+  pattern as `cli.py`. The seven uncited files were re-sorted.
+- **Two things the R-102 fix broke, found by running the hook, fixed the same session.** With
+  the global `exclude` gone, pre-commit handed `production-reference/*.py` to ruff explicitly.
+  `force-exclude = true` was not enough: the vendored projects carry their own `[tool.ruff]`
+  and ruff resolves config per file to the nearest `pyproject.toml`. The ruff hook now
+  excludes `^production-reference/` itself. Before that exclusion was in place, a hook run
+  applied `--fix` to 31 vendored files; caught by `git status` on the pinned paths and
+  reverted. The vendored tree is byte-identical to `main`.
+- **R-201, R-202, R-303** applied: exact action versions in the pin comments; hook repos
+  pinned by SHA with `pre-commit autoupdate --freeze` noted; counts and the install comment
+  corrected.
+- **Fresh-reader gaps** (risk tier, release/rollback/incident paths, canon path, `.venv-asr`
+  setup) addressed in `AGENTS.md` and `TESTING.md`.
+- **Not done here:** branch protection for `main` (R-301) is a repository setting, not a file;
+  and the PR body still says 295/61. Both need the owner.

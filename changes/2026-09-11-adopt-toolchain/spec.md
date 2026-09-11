@@ -53,7 +53,7 @@
 
 | Contract | This change |
 |---|---|
-| Capability | Three deterministic checks run locally and in CI with one shared configuration. Limits: `ruff format` is not enforced; mypy is lenient with 61 exempt modules; `asr-eval/` is linted but not type-checked. |
+| Capability | Three deterministic checks run locally and in CI with one shared configuration. Limits: `ruff format` is not enforced; mypy is lenient with 56 exempt modules; `asr-eval/` is linted but not type-checked. |
 | Data | No data read. Tools read source text only. Hash-pinned assets are excluded from every hook that writes. |
 | Tool | `ruff`, `mypy`, `pre-commit` and its two upstream hook repositories (`pre-commit/pre-commit-hooks`, `astral-sh/ruff-pre-commit`), pinned. Side-effect class: writes to working-tree source files under `--fix` (reviewed as a diff), nothing else. |
 | Evaluation | The existing suite in both modes is the gate; the three new commands must exit 0; the pin gate `tests/test_requirements.py` proves the dev-tool install moved no pin. |
@@ -97,7 +97,7 @@ five `file:line` citations in `ci.yml`, `DEVLOG.md`, `EXPERIMENTS.md`, `RUNS.md`
 `per-file-ignores = ["I001"]` with the reason, and the citations stay true. Fixing the
 imports and the citations together is a follow-up.
 
-**mypy burn-down is per-module, not per-directory.** Listing 61 modules is long but it
+**mypy burn-down is per-module, not per-directory.** Listing 56 modules is long but it
 is the shape the playbook prescribes and the only shape that blocks a new error in a
 currently-clean module.
 
@@ -111,10 +111,10 @@ playbook says, which means hooks must be run from the activated `.venv`. Recorde
 |---|---|---|---|---|
 | The exemplar's `trailing-whitespace` and `end-of-file-fixer` hooks, copied verbatim, would rewrite `src/evalgen/prompts/retention_wrapper.txt` and `retention_v9_16_body.txt`, whose sha256 is pinned in every experiment plan, breaking `experiment-check` and the prompt tests. | author, from a dry survey of trailing whitespace | Blocking if unhandled | Resolved: per-hook `exclude` regex covering every hash-pinned and generated path | author |
 | `F811` in `tests/test_compare.py` (9 findings) is pytest fixtures imported from a helper module and re-bound as parameter names — a false positive, not a shadowed test. | author | Minor | Per-file ignore with reason; not a code change | author |
-| `ruff check --fix` changes 47 files; a bad fix would be invisible in a diff that size. | author | Material | Resolved: run the full suite in both modes on the fixed tree before committing; review the diff for anything other than import moves and removed unused imports | author |
+| `ruff check --fix` changes 45 files; a bad fix would be invisible in a diff that size. | author | Material | Resolved: run the full suite in both modes on the fixed tree before committing; review the diff for anything other than import moves and removed unused imports | author |
 | Installing `mypy`/`pre-commit` into the pinned venv could move a pin. | author | Material | Resolved: `tests/test_requirements.py` re-run after install; `pip freeze` shows pandas 2.3.3 / numpy 2.3.4 / openpyxl 3.1.5 unchanged | author |
 | The `ruff format` gate required by `ci.md` and `pre-commit.md` is not added. | author | Material | Deferred with a filed follow-up in `AGENTS.md`; the playbook's migration path never mentions formatting | author |
-| `pre-commit`'s `check-added-large-files` (500 KB) will block any future audio pack commit under `asr-eval/`. | author | Note | Accepted: audio packs are gitignored by policy (`asr-eval-v2/`, `-v3/`); the existing 20 committed wavs are not "added" so they pass | author |
+| `pre-commit`'s `check-added-large-files` (500 KB) will block any future audio pack commit under `asr-eval/`. | author | Note | Was wrong as first written: the global `exclude` also disabled this read-only hook on `asr-eval/` (review R-102). Fixed by scoping `exclude` to the two fixers only; the large-files check now sees every path | author |
 | No second reviewer exists in this trial. | author | Material | Deferred to the PR; `review.md` records the author's self-review only | pending owner |
 
 ## Alternatives considered
