@@ -4,7 +4,8 @@
 # the gate and was re-run after this install on 2026-09-11 (pandas 2.3.3, numpy 2.3.4,
 # openpyxl 3.1.5 unchanged).
 #
-# Install AFTER the production pins, into the same .venv:
+# Install into the same .venv as the production pins (one command is fine; nothing here
+# overlaps them, and tests/test_requirements.py proves the pins afterwards):
 #     .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
 #
 # This is the pip equivalent of the playbook exemplar's [dependency-groups] dev block;
