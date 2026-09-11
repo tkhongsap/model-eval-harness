@@ -101,4 +101,44 @@ DEVLOG (an experiment log, not a tooling log).
 
 ## Deviations
 
-Filled in during implementation; see the end of this file.
+Recorded as they happened. Plan adherence: the file list held except for one file
+(item 5); the work order held; two proofs needed hand intervention (items 3, 4).
+
+1. **The "playbook version" is not a commit.** Step 1 assumed `28d946c` was the version
+   adopted. `git status` in the playbook showed `toolchains/` and the four chain
+   templates as untracked files. The intent was corrected before the chain commit; the
+   version adopted is a working tree, and no commit can be cited for it.
+2. **`python3 -m venv .venv` as instructed used Python 3.9.6.** The project states 3.12
+   and its pins (numpy 2.3.4) do not install on 3.9. Used `uv`'s 3.12.14
+   (`~/.local/bin/python3.12 -m venv .venv`). Neither the playbook nor `TESTING.md`
+   says how to obtain the interpreter; `AGENTS.md` "Commands" now does.
+3. **`ruff check --fix` output was not commit-ready.** It split one import line in
+   `scripts/provider_probe.py` and dropped the `# noqa: E402` from the new half, so the
+   fixed tree had one *new* finding; and in `tests/test_outcomes.py` it merged a
+   deliberately separate private import into the block, relocating its explanatory
+   comment. Both hand-adjusted in the mechanical commit and stated in its message.
+   The plan treated the tool's output as mechanical; it was mechanical plus two edits.
+4. **One violation class the spec did not list: `E402` (7) in
+   `tests/test_enterprise_experiments.py`**, the `sys.path.insert` before imports
+   pattern, which the file already marks with a `# noqa: E402` on its first import.
+   Added a per-file ignore with reason before the config commit.
+5. **`pre-commit run --all-files` changed a file not on the plan's list:**
+   `Token_Factory_API_Guide.html` lacked a final newline. Not pinned, not generated;
+   committed alone as `style:` (`f407bf9`) so the hook-config commit carries no content.
+   Every excluded path was verified untouched.
+6. **Hook id `ruff` is a legacy alias in ruff-pre-commit v0.16.7** (the run printed
+   "ruff (legacy alias)"). Used `ruff-check`. The playbook block is verbatim from an
+   older rev and does not say so.
+7. **The `lint` CI job installs `requirements-dev.txt` only**, not the production pins
+   as the plan's "same install" implied. ruff reads no project import. `typecheck`
+   installs both and re-proves the pins.
+8. **The mypy hook is skipped on commits that touch no `.py` file** (`types: [python]`
+   in the exemplar block), observed on the hook-config, CI and docs commits: "mypy
+   ... (no files to check) Skipped". A `mypy.ini`-only edit is therefore not
+   type-checked locally; CI still runs it. Kept the exemplar shape; noting it.
+9. **The second test mode was available.** The constraints anticipated
+   `TRUE_SOURCE_ROOT` being unavailable; the tracked copy at
+   `production-reference/sentiment-batch-retention-main` works, as `TESTING.md` says.
+   Both modes were run before and after: 1071/50 and 1082/39, unchanged.
+10. **Approval.** No approver existed; the plan is self-approved and says so. The
+    playbook's template has no procedure for a single-person or agent-only session.
