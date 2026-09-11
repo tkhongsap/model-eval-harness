@@ -1,0 +1,17 @@
+# Development tools ONLY. Deliberately separate from requirements.txt, whose pins mirror
+# production exactly and are load-bearing (see its header). Nothing here imports pandas,
+# numpy or openpyxl, and nothing here may move those pins; tests/test_requirements.py is
+# the gate and was re-run after this install on 2026-09-11 (pandas 2.3.3, numpy 2.3.4,
+# openpyxl 3.1.5 unchanged).
+#
+# Install AFTER the production pins, into the same .venv:
+#     .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+#
+# This is the pip equivalent of the playbook exemplar's [dependency-groups] dev block;
+# pyproject.toml here carries [tool.*] sections only, on purpose.
+#
+# Keep the ruff version equal to the `rev:` of astral-sh/ruff-pre-commit in
+# .pre-commit-config.yaml. Two versions of ruff is two opinions about lint.
+ruff==0.16.7
+mypy==2.3.1
+pre-commit==4.6.2

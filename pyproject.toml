@@ -1,0 +1,56 @@
+# Tool configuration ONLY.
+#
+# Deliberately no [project] and no [build-system]. This repository resolves imports
+# through PYTHONPATH=src and is not an installable package (TESTING.md "Quick Start";
+# .github/workflows/ci.yml header, item 2). Adding [project] changes import resolution,
+# which is a separate decision. Dependencies stay where they are: requirements.txt holds
+# production's pins (load-bearing, see its header) and requirements-dev.txt holds the
+# tools configured here.
+#
+# Adopted 2026-09-11 from the engineering playbook, toolchains/python.md, "Migrating an
+# existing repository". Decisions and measured baselines are in
+# changes/2026-09-11-adopt-toolchain/. Commands are in AGENTS.md "Commands".
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    # True's vendored production source, kept byte-for-byte so that file:line citations
+    # across tests/fixtures/ and src/evalgen/ resolve. Not ours to lint or reformat.
+    "production-reference",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = [
+    # 108 lines over 100 columns at adoption. Reflowing them moves line numbers, and this
+    # repository's prose cites file:line into source. Burn down by hand, in reviewed diffs.
+    "E501",
+    # 12 single-letter `l` loop variables in scripts/ and tests/. Style only. Burn down.
+    "E741",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Re-sorting the imports in these two files adds net lines (+4 and +2), and prose cites
+# file:line into them past the import block: 16 citations into cli.py (five in the
+# ci.yml comments), 5 into experiments.py. Sort the imports and correct every citation
+# together, in one reviewed change; until then the citations stay true.
+"src/evalgen/cli.py" = ["I001"]
+"src/evalgen/experiments.py" = ["I001"]
+# pytest fixtures imported from a helper module are re-bound as parameter names, which
+# ruff reads as a redefinition. Not a shadowed test; F811 stays live everywhere else.
+"tests/test_compare.py" = ["F811"]
+# Inserts src/ on sys.path before importing the packages, deliberately (the file already
+# carries one `# noqa: E402`). The seven late imports are that pattern, not misplacement.
+"tests/test_enterprise_experiments.py" = ["E402"]
+# Six unused locals at adoption, real but harmless. Listed per file so F841 keeps
+# catching the next one anywhere else.
+"asr-eval/scripts/plot_audio.py" = ["F841"]
+"scripts/model_comparison_html.py" = ["F841"]
+"tests/test_audit_packet_is_blind.py" = ["F841"]
+"tests/test_judge.py" = ["F841"]
+
+[tool.pytest.ini_options]
+# Discovery only. No `pythonpath = ["src"]` here: PYTHONPATH=src stays explicit and
+# documented, because making it implicit is the import-resolution decision above.
+testpaths = ["tests"]
