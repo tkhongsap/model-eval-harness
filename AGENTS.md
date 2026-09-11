@@ -1,6 +1,6 @@
 # Project Context for AI Agents
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-09-11
 
 ## Mission
 
@@ -140,9 +140,72 @@ the moment somebody adds `import openai` for a plausible-sounding reason.
   insertion proxy, each documented with what it is **not** evidence of. Deliberately kept
   outside `src/` and out of `requirements.txt`'s pins — see its own README for why.
 
+## Commands
+
+Run from the repository root, in a venv built to `requirements.txt` on Python 3.12. On a
+machine whose `python3` is older (this one's is 3.9), `uv python install 3.12` and then
+`~/.local/bin/python3.12 -m venv .venv`. Adopted 2026-09-11 from the engineering
+playbook's Python baseline (`toolchains/python.md`, "Migrating an existing repository");
+decisions, measured baselines and deviations are in
+`changes/2026-09-11-adopt-toolchain/`.
+
+```bash
+.venv/bin/pip install -r requirements.txt -r requirements-dev.txt   # pins first, tools second
+source .venv/bin/activate && pre-commit install                     # once per clone; the mypy hook uses the venv's python
+
+ruff check .                                   # lint  (CI: lint job; pre-commit: ruff-check --fix)
+python -m mypy .                               # types (CI: typecheck job; pre-commit: mypy). Must exit 0.
+PYTHONPATH=src pytest tests/ -q -rs            # suite, standalone mode (CI: test job)
+PYTHONPATH=src TRUE_SOURCE_ROOT=production-reference/sentiment-batch-retention-main pytest tests/ -q -rs
+                                               # suite, production-differential mode (local only; CI cannot)
+PYTHONPATH=src python scripts/evalgen.py experiment-check --plan experiments/retention-e7.plan.json
+                                               # eval assets valid, zero model calls (CI: test job)
+pre-commit run --all-files                     # every hook, as CI would see it
+```
+
+Measured 2026-09-11 on the adoption branch: `ruff check .` clean; `mypy .` clean
+against a **61-module burn-down list in `mypy.ini`** (295 errors exempted at adoption:
+remove a module's block, fix its errors, repeat; shrink it, never grow it); suite 1071
+passed / 50 skipped standalone, 1082 / 39 with production source. Report what your
+checkout ran, not these numbers.
+
+**Deviations from the playbook baseline, each with its reason** (`toolchains/README.md`
+step 4):
+
+- **pip, not `uv`.** `requirements.txt` mirrors production and `python.md` says uv is
+  "the choice for new repositories, not a migration order". Dev tools are pinned in
+  `requirements-dev.txt`, the pip equivalent of the exemplar's `[dependency-groups] dev`.
+- **`pyproject.toml` carries `[tool.*]` sections only.** No `[project]`, no
+  `[build-system]`: imports resolve through `PYTHONPATH=src`, on purpose, and a
+  `[project]` section would change that.
+- **`ruff format` is not enforced. Stated gap.** 137 of 226 files would be reformatted,
+  and this repository's prose and the `ci.yml` comments cite `file:line` into source.
+  Adopt it in its own change, together with a citation sweep.
+- **Line length 100** (canon's baseline), not the exemplar's 88. The code was written
+  to 100: 108 lines exceed it versus 4,362 that exceed 88.
+- **`E501` and `E741` are ignored globally; `E402`, `F811`, `F841` and `I001` per file**,
+  with the reason beside each entry in `pyproject.toml`. `src/evalgen/cli.py` and
+  `src/evalgen/experiments.py` keep their current import order because re-sorting them
+  shifts 21 line numbers that `ci.yml`, `DEVLOG.md`, `EXPERIMENTS.md`, `RUNS.md`,
+  `TESTING.md` and `docs/` cite.
+- **`asr-eval/` is linted but not type-checked** from the root venv: its pins live in
+  `.venv-asr` and must never merge with the root pins. `production-reference/` is
+  excluded from every tool; it is True's code, kept verbatim.
+- **No coverage floor.** The playbook says to set it at the current number; none has
+  ever been measured here, and `pytest-cov` would be a new package in the pinned venv.
+  Follow-up for the owner.
+- **The `test` CI job keeps its floating `@v4`/`@v5` action tags**; the two new jobs pin
+  by SHA. Follow-up: pin `test` the same way.
+- **The pre-commit hygiene fixers exclude every hash-pinned or generated path** (the
+  list, with reasons, is at the top of `.pre-commit-config.yaml`). The two prompt files
+  under `src/evalgen/prompts/` carry trailing whitespace that is part of their pinned
+  sha256; a hook that "fixed" it would break every experiment plan.
+
 ## Conventions
 
-- **Code style**: PEP 8. No formatter or linter is configured yet (see Open items).
+- **Code style**: PEP 8, linted by `ruff` (`E`, `F`, `I` at 100 columns) and typed by
+  `mypy` against the burn-down list in `mypy.ini`. Formatting is not enforced yet; see
+  Commands for the reason.
 - **Testing**: `pytest`. See [TESTING.md](./TESTING.md).
 - **Commits**: Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
 - **Dependency pins are load-bearing, not cosmetic.** Under pandas 3.x the production
@@ -276,9 +339,14 @@ re-checked if either changes:
 Revisit if the True GitHub Enterprise org becomes available, or if anyone outside
 True needs access.
 
-**No linter, type checker or `pyproject.toml`.** Canon's Python CI template expects
-ruff, mypy and a `pyproject.toml` under `backend/`. This repository has none. CI runs
-the test suite only; see the comment block in `.github/workflows/ci.yml`.
+**Linter and type checker adopted 2026-09-11; formatter and burn-down still open.**
+This entry used to read "No linter, type checker or `pyproject.toml`". Now:
+`pyproject.toml` exists with tool configuration only (still no `[project]`, still not
+under `backend/`), `mypy.ini` holds a 61-module burn-down list, `requirements-dev.txt`
+pins the tools, and CI runs `lint` and `typecheck` jobs beside `test`. Still open, and
+listed under Commands with reasons: `ruff format` is not gated; 61 modules are exempt
+from mypy; no coverage floor; the `test` job's actions are not SHA-pinned. The adoption
+record, including what the playbook did not say, is `changes/2026-09-11-adopt-toolchain/`.
 
 ## Project-Specific Notes
 

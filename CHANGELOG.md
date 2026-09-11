@@ -20,6 +20,17 @@ says so. DEVLOG.md remains authoritative for that window.
 
 ### Added
 
+- **A lint and type gate, 2026-09-11.** `ruff check .` and `mypy .` now run on every
+  pull request (`lint` and `typecheck` CI jobs) and before every local commit
+  (`.pre-commit-config.yaml`), configured in `pyproject.toml` (`[tool.*]` sections only,
+  still no `[project]`) and `mypy.ini`. mypy is lenient with a 61-module burn-down list
+  so it exits 0 today and blocks new errors; 53 mechanical ruff fixes (import order,
+  unused imports, placeholder-less f-strings) landed in their own commit with the suite
+  unchanged in both modes. `ruff format` is deliberately not gated yet: 137 files would
+  move, and prose cites `file:line` into them. Adopted from the engineering playbook's
+  Python baseline; every deviation and its reason is in AGENTS.md "Commands", and the
+  full record is `changes/2026-09-11-adopt-toolchain/`.
+
 - **A blind audit of the ground truth, and the finding that the benchmark was wrong.** 68
   cases — product disagreements, outcome disagreements and undisputed controls, shuffled
   under a recorded seed — sent to three frontier models shown only the Thai transcript and

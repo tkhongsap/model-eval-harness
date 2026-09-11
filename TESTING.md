@@ -11,8 +11,38 @@ $env:PYTHONPATH = 'src'
 
 On macOS/Linux, use `.venv/bin/python` and set
 `export PYTHONPATH="$PWD/src"` before running the suite. This explicit path is required
-because the repository intentionally has no `pyproject.toml` or editable install yet.
+because the repository intentionally has no editable install; the `pyproject.toml` added
+on 2026-09-11 carries tool configuration only and does not change import resolution.
 Commands below assume `PYTHONPATH` remains set in the current shell.
+
+## Required checks
+
+Run from the repository root in the venv above, with `requirements-dev.txt` also
+installed (`pip install -r requirements.txt -r requirements-dev.txt`). These are the
+checks CI runs, in the order a reader should run them; each is deterministic and makes
+no model call. Adopted 2026-09-11 from the engineering playbook's Python baseline; the
+reasons for every deviation from it are in [AGENTS.md](./AGENTS.md), "Commands".
+
+```bash
+ruff check .                                    # lint      (CI: lint job)
+python -m mypy .                                # types     (CI: typecheck job) -- exits 0 against mypy.ini's burn-down list
+PYTHONPATH=src pytest tests/ -q -rs             # suite     (CI: test job), standalone mode
+PYTHONPATH=src TRUE_SOURCE_ROOT=production-reference/sentiment-batch-retention-main pytest tests/ -q -rs
+                                                # suite, production-differential mode (local only)
+PYTHONPATH=src python scripts/evalgen.py experiment-check --plan experiments/retention-e7.plan.json
+                                                # eval assets valid (CI: test job)
+pre-commit run --all-files                      # the same hooks that run before every commit
+```
+
+Not run, on purpose, and recorded rather than silent: `ruff format --check` (137 files
+would be reformatted and prose cites `file:line` into them); coverage (no floor has been
+measured); type-checking `asr-eval/` (needs `.venv-asr`; use `scripts/verify.py` for its
+gates). Never report one of these as passed.
+
+Measured on 2026-09-11 after adoption: `ruff check .` "All checks passed!";
+`mypy .` "Success: no issues found in 132 source files"; `pre-commit run --all-files`
+every hook Passed. The suite counts are unchanged by the toolchain change; see
+"Two modes, two different counts" below.
 
 Historical fresh-checkout baseline on 2026-08-07: **524 passed, 33 skipped** (computed:
 498 + the 26 self-contained tests then added for `judge.py` and its audit-fix
