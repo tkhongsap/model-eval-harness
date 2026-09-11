@@ -148,7 +148,6 @@ def test_every_outcome_pool_can_express_its_label(tmp_path):
     """
     _build(tmp_path / "fixed")
     import thai_corpus
-
     from evalharness.labelspaces import RETENTION
 
     assert set(thai_corpus.CUSTOMER_CLOSE) == set(RETENTION.call_result)

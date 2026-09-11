@@ -29,6 +29,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 import thai_corpus as T
 
 REPO = Path(__file__).resolve().parents[2]

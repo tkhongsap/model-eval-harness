@@ -30,12 +30,13 @@ import json
 import matplotlib
 
 matplotlib.use("Agg")
-import asr_common as C  # noqa: E402
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import soundfile as sf  # noqa: E402
 from scipy import signal  # noqa: E402
+
+import asr_common as C  # noqa: E402
 
 SPEAKER_COLOR = {"agent": "#2c7fb8", "customer": "#d95f0e", "ivr": "#7a7a7a"}
 PLOT_DIR = C.REPORT_DIR / "plots"
