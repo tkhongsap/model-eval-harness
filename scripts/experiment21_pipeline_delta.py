@@ -69,8 +69,8 @@ sys.path.insert(0, str(REPO / "src"))
 
 import httpx  # noqa: E402  (a dependency of the pinned openai client in .venv)
 
-from evalgen.decoding import decoding_schema  # noqa: E402
 from evalgen import prompts as P  # noqa: E402
+from evalgen.decoding import decoding_schema  # noqa: E402
 
 # The pack root, overridable with ASR_EVAL_ROOT so a second corpus can be run without
 # disturbing the frozen twenty-call set. Mirrors asr_common.ROOT, which does the same for
@@ -593,7 +593,7 @@ def main() -> int:
             for pop, rows in pops.items():
                 c = collections.Counter(r["verdict"] for r in rows)
                 print(f"  {pair:34} {pop:17} {dict(c)}")
-        print(f"  noise floors: " + ", ".join(
+        print("  noise floors: " + ", ".join(
             f"{a}={v['rate']}" for a, v in result["noise_floor"].items()))
         return 0
 

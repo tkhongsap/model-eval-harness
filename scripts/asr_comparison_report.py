@@ -24,8 +24,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 
-from asr_comparison_html import (EXTRA_CSS, STYLE, asr_charts_js,  # noqa: E402
-                                 esc, num)
+from asr_comparison_html import EXTRA_CSS, STYLE, asr_charts_js, esc, num  # noqa: E402
 
 CONFIG_DIR = REPO / "configs" / "comparison"
 DEFAULT_CONFIG = CONFIG_DIR / "asr-voice-v1.json"

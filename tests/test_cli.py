@@ -1807,8 +1807,8 @@ def test_a_run_log_written_before_these_fields_existed_still_loads(
 
 from types import SimpleNamespace  # noqa: E402
 
-from evalgen.cli import CliError  # noqa: E402
 from evalgen.cli import (  # noqa: E402
+    CliError,  # noqa: E402
     _refuse_before_spending,
     _refuse_incomparable,
     _require_only_the_prompt_differs,

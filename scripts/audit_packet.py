@@ -52,7 +52,6 @@ import html
 import importlib.util
 import json
 import random
-import re
 import sys
 from pathlib import Path
 

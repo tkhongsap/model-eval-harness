@@ -11,11 +11,11 @@ import pytest
 
 from evalgen.contracts import (
     APPLICATION_CONTRACT_SCHEMA_VERSION,
+    RETENTION_APPLICATION,
     ApplicationContractError,
     ApplicationSpec,
     ContractReference,
     DimensionSpec,
-    RETENTION_APPLICATION,
 )
 
 

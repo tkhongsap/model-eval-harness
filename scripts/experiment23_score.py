@@ -419,7 +419,7 @@ def main() -> int:
         )
 
     print("=" * 78)
-    print(f"EXPERIMENT 23 -- end to end, scored against authored truth")
+    print("EXPERIMENT 23 -- end to end, scored against authored truth")
     print(f"run  {args.run.name}")
     print(f"pack {args.pack.name}   {len(truth)} calls with business labels")
     print("=" * 78)

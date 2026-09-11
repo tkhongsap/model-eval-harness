@@ -45,8 +45,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Sequence
 
-from evalharness.records import from_row
 from evalgen.flatten import to_rows
+from evalharness.records import from_row
 
 __all__ = [
     "UNSCORED_FIELDS",

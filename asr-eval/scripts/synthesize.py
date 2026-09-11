@@ -33,7 +33,6 @@ import hashlib
 import io
 import json
 import sys
-from pathlib import Path
 
 import edge_tts
 import numpy as np

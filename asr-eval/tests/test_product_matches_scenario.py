@@ -29,8 +29,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 import business_labels as B
 import compose_dialogues as CD
-import thai_corpus as T
 from reason_lines import PRODUCT_PHRASE
+
+import thai_corpus as T
 
 # The five scenarios whose dialogue names the product outright, and what it names.
 # Read off the PROBE pools rather than restated from the source table, so a test that

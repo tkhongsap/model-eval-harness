@@ -63,6 +63,7 @@ from evalharness.adapters.retention import load_csv  # noqa: E402
 from evalharness.compare import _correct, disagreement  # noqa: E402
 from evalharness.records import Record  # noqa: E402
 
+
 # Loaded by path, not by name. `scripts/` holds `evalgen.py`, a launcher, so putting this
 # directory on sys.path makes `import evalgen.cli` resolve to that module and fail with
 # "'evalgen' is not a package" -- shadowing the real package with its own entry point.

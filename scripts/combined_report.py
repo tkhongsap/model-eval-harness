@@ -66,7 +66,11 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 
 from model_comparison_html import (  # noqa: E402
-    STYLE, VERDICT_WORDS, charts_js, esc, num,
+    STYLE,
+    VERDICT_WORDS,
+    charts_js,
+    esc,
+    num,
 )
 
 DOCS = REPO / "docs" / "reports"

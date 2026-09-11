@@ -48,11 +48,9 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+import asr_common as C
 import numpy as np
 import soundfile as sf
-
-import asr_common as C
-
 
 # --------------------------------------------------------------------------------------
 # The one output normalisation this runner applies

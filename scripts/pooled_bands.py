@@ -259,7 +259,7 @@ def main(out_path: Path | None = None) -> int:
         for dim in DIMS:
             a = models_a[key]["paired_vs_gemini"][dim]
             b = models_b[key]["paired_vs_gemini"][dim]
-            for label, t, n in ((f"pack A", a, n_a), (f"pack B", b, n_b),
+            for label, t, n in (("pack A", a, n_a), ("pack B", b, n_b),
                                 ("POOLED", None, n_a + n_b)):
                 if t is None:
                     inc = (a["both_right"] + a["incumbent_only"]

@@ -59,7 +59,6 @@ import os
 import re
 import sys
 import time
-import warnings
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

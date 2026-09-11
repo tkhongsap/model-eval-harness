@@ -41,7 +41,6 @@ import collections
 import csv
 import re
 import sys
-from pathlib import Path
 
 import asr_common as C
 import reason_lines as R

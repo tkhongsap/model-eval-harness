@@ -37,6 +37,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
 
 from asr_comparison_report import pooled_cer  # noqa: E402  one subset-pooling rule
+
 from model_comparison_html import esc  # noqa: E402
 
 DOCS = REPO / "docs" / "reports"

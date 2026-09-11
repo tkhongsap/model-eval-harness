@@ -33,7 +33,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from model_comparison_html import STYLE, esc, num          # noqa: E402  house style, not forked
+from model_comparison_html import STYLE, esc, num  # noqa: E402  house style, not forked
 
 __all__ = ["STYLE", "EXTRA_CSS", "esc", "num", "asr_charts_js"]
 

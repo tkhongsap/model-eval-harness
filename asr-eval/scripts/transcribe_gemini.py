@@ -34,7 +34,6 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 import asr_common as C
 

@@ -149,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
             "label_changed_audio_identical": table[(True, False)],
             "agreement": f"{agree}/{total}",
         }
-        print(f"\n  audio provenance                 identical      changed")
+        print("\n  audio provenance                 identical      changed")
         print(f"    label unchanged        {table[(False, False)]:14d} {table[(False, True)]:12d}")
         print(f"    label changed          {table[(True, False)]:14d} {table[(True, True)]:12d}")
         print(f"    agreement: {agree}/{total} = {agree / total:.1%}")

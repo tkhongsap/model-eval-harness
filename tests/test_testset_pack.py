@@ -125,10 +125,10 @@ from evalgen.evidence import _turns  # noqa: E402
 from evalgen.testsets import (  # noqa: E402
     CALL_ID_PATTERN,
     PHONE_PATTERN,
+    _labels_in_row,  # noqa: E402
     load_testset,
     validate,
 )
-from evalgen.testsets import _labels_in_row  # noqa: E402
 from evalharness.labelspaces import RETENTION  # noqa: E402
 
 TESTSETS = ROOT / "tests" / "fixtures" / "testsets"
