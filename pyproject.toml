@@ -14,6 +14,11 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Honour extend-exclude when files are passed explicitly (editors do that). Not sufficient
+# for production-reference/: its vendored projects carry their own [tool.ruff] and ruff
+# resolves config per file to the nearest pyproject, so the pre-commit hook excludes that
+# tree itself.
+force-exclude = true
 extend-exclude = [
     # True's vendored production source, kept byte-for-byte so that file:line citations
     # across tests/fixtures/ and src/evalgen/ resolve. Not ours to lint or reformat.
@@ -30,6 +35,11 @@ ignore = [
     "E741",
 ]
 
+[tool.ruff.lint.isort]
+# Local modules reached via sys.path.insert (asr-eval/scripts/, scripts/) are first-party;
+# without this ruff files them with numpy and soundfile (review R-103).
+known-first-party = ["evalharness", "evalgen", "asr_common", "thai_corpus", "model_comparison_html"]
+
 [tool.ruff.lint.per-file-ignores]
 # Re-sorting the imports in these two files adds net lines (+4 and +2), and prose cites
 # file:line into them past the import block: 16 citations into cli.py (five in the
@@ -37,6 +47,14 @@ ignore = [
 # together, in one reviewed change; until then the citations stay true.
 "src/evalgen/cli.py" = ["I001"]
 "src/evalgen/experiments.py" = ["I001"]
+# Same trap under the first-party rule: re-sorting moves each file's imports by one line and
+# seven prose citations (compose_dialogues.py:198/:244, leak_probe.py:106, score_asr.py:308,
+# transcribe.py:58/:352, validate_audio.py:310) would go stale. Sort and re-cite together.
+"asr-eval/scripts/compose_dialogues.py" = ["I001"]
+"asr-eval/scripts/leak_probe.py" = ["I001"]
+"asr-eval/scripts/score_asr.py" = ["I001"]
+"asr-eval/scripts/transcribe.py" = ["I001"]
+"asr-eval/scripts/validate_audio.py" = ["I001"]
 # pytest fixtures imported from a helper module are re-bound as parameter names, which
 # ruff reads as a redefinition. Not a shadowed test; F811 stays live everywhere else.
 "tests/test_compare.py" = ["F811"]
