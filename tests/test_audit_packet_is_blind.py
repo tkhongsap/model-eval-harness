@@ -27,9 +27,7 @@ alongside the packet by accident.
 
 from __future__ import annotations
 
-import csv
 import importlib.util
-import json
 import re
 from pathlib import Path
 
@@ -136,7 +134,6 @@ def test_the_answer_key_is_written_outside_docs(tmp_path):
     `docs/` is committed and is where the packet goes. `out/` is gitignored. The default has
     to put them in different places, or one careless attachment sends both.
     """
-    import argparse
 
     parser = [a for a in AP.main.__doc__ or ""]  # touch, so a docstring-only main is caught
     source = (REPO / "scripts" / "audit_packet.py").read_text(encoding="utf-8")

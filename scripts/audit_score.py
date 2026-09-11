@@ -232,7 +232,7 @@ def main() -> int:
         # it is invisible from the numbers alone, so it is said here.
         if len(reviews) == 2 and len(ties) > 0.25 * len(key):
             print()
-            print(f"  NOTE: with 2 reviewers a strict majority IS unanimity, so every")
+            print("  NOTE: with 2 reviewers a strict majority IS unanimity, so every")
             print(f"  disagreement lands here. {len(ties)} of {len(key)} cases went")
             print("  unresolved for that reason alone. A third reviewer would resolve most")
             print("  of them; without one, this packet can only speak to the cases the two")

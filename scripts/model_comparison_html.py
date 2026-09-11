@@ -681,7 +681,7 @@ def render(d: dict) -> str:
 
     if not same_attempts:
         attempts_note = (
-            f'API attempts differed between our models: '
+            'API attempts differed between our models: '
             + ', '.join(f'{esc(lab[k]["short"])} {M[k]["attempts_total"]}' for k in ours)
             + f' for {esc(shared["rows"])} calls.')
     elif retried == 0:

@@ -15,13 +15,11 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from evalgen.testsets import load_testset, validate  # noqa: E402
 from evalharness.labelspaces import RETENTION  # noqa: E402
-
 
 FIXTURES = ROOT / "tests" / "fixtures" / "testsets"
 TESTSET_PATH = FIXTURES / "retention_challenge_v1.jsonl"

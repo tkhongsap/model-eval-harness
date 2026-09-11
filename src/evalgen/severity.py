@@ -74,12 +74,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
-from evalharness.compare import CoverageMismatch, comparison_units, label_set
-from evalharness.labelspaces import RETENTION, LabelSpace
-from evalgen.testsets import label_space_for
-from evalharness.records import Record
-from evalgen.runtime import RuntimeSpec, build_runtime_request
-
 # One implementation of rule quoting, not two. These are internals of the same package,
 # imported rather than re-derived because the 2026-08-09 defect-4 review found that the
 # expensive mistake in this area is having two ways to answer "what does the rule say".
@@ -96,6 +90,11 @@ from evalgen.judge import (
     label_citation_union,
     resolve_citations_dedup,
 )
+from evalgen.runtime import RuntimeSpec, build_runtime_request
+from evalgen.testsets import label_space_for
+from evalharness.compare import CoverageMismatch, comparison_units, label_set
+from evalharness.labelspaces import RETENTION, LabelSpace
+from evalharness.records import Record
 
 __all__ = [
     "SEVERITY_CATEGORIES",

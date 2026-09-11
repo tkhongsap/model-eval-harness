@@ -63,7 +63,7 @@ import re
 from dataclasses import dataclass, fields
 from pathlib import Path
 
-from evalharness.labelspaces import MNP, RETENTION, REASON_COLUMNS, LabelSpace
+from evalharness.labelspaces import MNP, REASON_COLUMNS, RETENTION, LabelSpace
 
 __all__ = [
     "CALL_ID_PATTERN",

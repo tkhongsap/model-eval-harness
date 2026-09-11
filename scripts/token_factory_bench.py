@@ -29,7 +29,6 @@ import os
 import re
 import sys
 import time
-import warnings
 from datetime import datetime
 from pathlib import Path
 

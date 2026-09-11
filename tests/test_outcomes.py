@@ -26,7 +26,11 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+# Imported private on purpose: two tests below assert that the marker they use IS in
+# this list, so that they discriminate the WINDOW rather than passing because the
+# marker was quietly removed.
 from evalgen.outcomes import (  # noqa: E402
+    _REFUSAL_MARKERS,  # the private name the comment above is about
     REPAIR_FIRST_OBJECT,
     REPAIR_STRIP_BOM,
     REPAIR_STRIP_FENCE,
@@ -34,10 +38,6 @@ from evalgen.outcomes import (  # noqa: E402
     classify,
     transport_error,
 )
-# Imported private on purpose: two tests below assert that the marker they use IS in
-# this list, so that they discriminate the WINDOW rather than passing because the
-# marker was quietly removed.
-from evalgen.outcomes import _REFUSAL_MARKERS  # noqa: E402
 
 OUTCOMES_PY = ROOT / "src" / "evalgen" / "outcomes.py"
 

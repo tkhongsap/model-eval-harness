@@ -31,11 +31,10 @@ import pathlib
 import sys
 from collections import Counter
 
+import asr_common as C
 import numpy as np
 import soundfile as sf
 from scipy import signal
-
-import asr_common as C
 
 MIN_DURATION_S = 180.0     # the 3 minutes the set promises
 MAX_DURATION_S = 600.0     # the 10 minutes the set promises

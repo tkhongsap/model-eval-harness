@@ -14,11 +14,11 @@ sys.path.insert(0, str(ROOT / "src"))
 from evalharness.adapters.retention import load_csv  # noqa: E402
 from evalharness.manifest import (  # noqa: E402
     Manifest,
-    scoring_code_sha,
     ManifestMismatch,
     assert_comparable,
     items_hash,
     provenance_banner,
+    scoring_code_sha,
     workload_sha,
 )
 

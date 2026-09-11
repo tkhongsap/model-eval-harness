@@ -92,9 +92,9 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
+from evalgen.runtime import RuntimeSpec, build_runtime_request
 from evalharness.compare import CoverageMismatch, comparison_clusters
 from evalharness.records import Record
-from evalgen.runtime import RuntimeSpec, build_runtime_request
 
 __all__ = [
     "JUDGE_VERDICTS",

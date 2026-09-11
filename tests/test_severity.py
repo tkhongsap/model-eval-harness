@@ -1383,7 +1383,7 @@ def test_a_provenance_digest_never_aborts_a_shareable_export_after_the_calls_are
     keyed `*_sha`, and `judge_runtime.fingerprint` is a bare digest. A 64-hex value trips
     the phone-like check 2.08% of the time and an export carries 5-11 of them, so 10-21%
     of exports raised -- after every call was paid for, outside the CliError path."""
-    from evalgen.artifacts import assert_shareable_payload, ArtifactError
+    from evalgen.artifacts import ArtifactError, assert_shareable_payload
 
     phone_like = "d274bf120808ab1e1b750adc32a07811413b3580df12611dea305b0807650402"
     assert_shareable_payload({"incumbent_manifest_sha": phone_like})

@@ -16,9 +16,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import asr_common as C          # noqa: E402
-import score_asr as S           # noqa: E402
-import transcribe as T          # noqa: E402
+import asr_common as C  # noqa: E402
+import score_asr as S  # noqa: E402
+import transcribe as T  # noqa: E402
 
 SR = 8000
 

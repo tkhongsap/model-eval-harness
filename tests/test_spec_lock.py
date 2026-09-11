@@ -27,7 +27,6 @@ Update the constant last, as the record that the rest was done.
 from __future__ import annotations
 
 import hashlib
-import re
 from pathlib import Path
 
 import pytest

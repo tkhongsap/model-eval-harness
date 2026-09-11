@@ -27,7 +27,8 @@ from evalgen.cli import response_format  # noqa: E402
 from evalgen.client import OpenRouterClient  # noqa: E402
 from evalgen.config import ENV_FILES, find_api_key, load_env_file  # noqa: E402
 from evalgen.console import configure_stdout  # noqa: E402
-from evalgen.prompts import build_messages, get as get_prompt  # noqa: E402
+from evalgen.prompts import build_messages  # noqa: E402
+from evalgen.prompts import get as get_prompt  # noqa: E402
 from evalgen.testsets import load_testset  # noqa: E402
 
 REQUIRED = ("product", "call_event_detection", "recommendation")
